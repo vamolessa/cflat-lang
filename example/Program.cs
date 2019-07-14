@@ -7,23 +7,27 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = "(print 12 )";
+			var source = "(print (+ 12 1) )";
 
 			var parser = new LispParser();
-			var result = parser.Parse(source);
-			if (result.IsSuccess)
+			var parseResult = parser.Parse(source);
+			if (parseResult.IsSuccess)
 			{
 				System.Console.WriteLine("END SUCCESS");
-				PrintAst(result.parsed);
+				PrintAst(parseResult.parsed);
 
-				System.Console.WriteLine("\nNOW INTERPRETING...");
+				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
 				var environment = new Dictionary<string, Expression>();
-				LispInterpreter.Eval(result.parsed, environment);
+				var evalResult = LispInterpreter.Eval(parseResult.parsed, environment);
+				if (evalResult.IsSuccess)
+					System.Console.WriteLine("SUCCESS EVAL. RETURN {0}", evalResult.value.underlying.ToString());
+				else
+					System.Console.WriteLine("DEU RUIM EVAL. ERROR '{0}'", evalResult.error);
 			}
 			else
 			{
-				System.Console.WriteLine("END DEU RUIM: error '{0}'", result.errorMessage);
+				System.Console.WriteLine("END DEU RUIM: error '{0}'", parseResult.errorMessage);
 			}
 		}
 

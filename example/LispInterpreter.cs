@@ -70,7 +70,7 @@ public static class LispInterpreter
 					sb.Append(" ");
 				}
 				System.Console.WriteLine(sb);
-				break;
+				return new Result(new ValueExpression(0));
 			case "+":
 				var aggregate = 0;
 				for (var i = 1; i < list.expressions.Count; i++)
@@ -95,7 +95,16 @@ public static class LispInterpreter
 				);
 			}
 		}
-
-		return new Result("First list element is not an identifier");
+		else
+		{
+			Result lastResult = new Result("Invalid list");
+			foreach (var e in list.expressions)
+			{
+				lastResult = Eval(e, environment);
+				if (!lastResult.IsSuccess)
+					return lastResult;
+			}
+			return lastResult;
+		}
 	}
 }
