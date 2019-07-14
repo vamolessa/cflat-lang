@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 namespace interpreter_tools
 {
@@ -6,7 +7,7 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = "( a 12 )";
+			var source = "(print 12 )";
 
 			var parser = new LispParser();
 			var result = parser.Parse(source);
@@ -14,6 +15,11 @@ namespace interpreter_tools
 			{
 				System.Console.WriteLine("END SUCCESS");
 				PrintAst(result.parsed);
+
+				System.Console.WriteLine("\nNOW INTERPRETING...");
+
+				var environment = new Dictionary<string, Expression>();
+				LispInterpreter.Eval(result.parsed, environment);
 			}
 			else
 			{
