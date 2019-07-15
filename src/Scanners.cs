@@ -30,7 +30,7 @@ public sealed class WhiteSpaceScanner : Scanner
 
 public sealed class CharScanner : Scanner
 {
-	public char ch;
+	public readonly char ch;
 
 	public CharScanner(char ch)
 	{
@@ -43,9 +43,38 @@ public sealed class CharScanner : Scanner
 	}
 }
 
+public sealed class CommentScanner : Scanner
+{
+	public readonly string start;
+
+	public CommentScanner(string start)
+	{
+		this.start = start;
+	}
+
+	public override int Scan(string input, int index)
+	{
+		if (input.Length - index < start.Length)
+			return 0;
+
+		for (var i = 0; i < start.Length; i++)
+		{
+			if (start[i] != input[index + i])
+				return 0;
+		}
+
+		var startIndex = index;
+		index += start.Length;
+		while (index < input.Length && input[index] != '\n')
+			index += 1;
+
+		return index - startIndex + 1;
+	}
+}
+
 public sealed class ExactScanner : Scanner
 {
-	public string str;
+	public readonly string str;
 
 	public ExactScanner(string str)
 	{
@@ -70,7 +99,7 @@ public sealed class ExactScanner : Scanner
 
 public sealed class EnclosedScanner : Scanner
 {
-	public char delimiter;
+	public readonly char delimiter;
 
 	public EnclosedScanner(char delimiter)
 	{
@@ -131,7 +160,7 @@ public sealed class RealNumberScanner : Scanner
 
 public sealed class IdentifierScanner : Scanner
 {
-	public string extraChars;
+	public readonly string extraChars;
 
 	public IdentifierScanner(string additionalChars)
 	{
