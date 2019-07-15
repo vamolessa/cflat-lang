@@ -60,9 +60,9 @@
 		)).Expect("Expected a number, string literal, identifier or list");
 
 		listParser = Parser<Expression>.Build(builder => builder.All(
-			builder.Token((int)TokenKind.OpenParenthesis),
+			builder.Token((int)TokenKind.OpenParenthesis).Expect("Expected a ("),
 			valueParser.SupressError().RepeatAtLeast(0).As(es => new ListExpression(es)),
-			builder.Token((int)TokenKind.CloseParenthesis)
+			builder.Token((int)TokenKind.CloseParenthesis).Expect("Expected a )")
 		)).Expect("Expected a list");
 
 		parser = Parser<Expression>.Build(builder =>
