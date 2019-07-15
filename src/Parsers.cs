@@ -8,37 +8,56 @@ public sealed class DebugParser<T> : Parser<T>
 		public readonly Result<PartialOk> result;
 		public readonly string source;
 		public readonly List<Token> tokens;
-		public readonly int index;
+		public readonly int tokenIndex;
+
+		public string InputLeft
+		{
+			get
+			{
+				var index = tokenIndex;
+				if (result.IsOk)
+					index += result.ok.matchCount;
+				return index < tokens.Count ?
+					string.Format(
+						"input left: {0}",
+						source.Substring(tokens[index].index)
+					) :
+					"no input left";
+			}
+		}
+
+		public string MatchCountOrError
+		{
+			get
+			{
+				return result.IsOk ?
+					string.Format("match count: {0}", result.ok.matchCount) :
+					string.Format("error: {0}", result.errorMessage);
+			}
+		}
 
 		public DebugInfo(
 			Parser<T> parser,
 			Result<PartialOk> result,
 			string source,
 			List<Token> tokens,
-			int index)
+			int tokenIndex)
 		{
 			this.parser = parser;
 			this.result = result;
 			this.source = source;
 			this.tokens = tokens;
-			this.index = index;
+			this.tokenIndex = tokenIndex;
 		}
 
 		public override string ToString()
 		{
-			return result.IsOk ?
-				string.Format(
-					"DebugInfo parser: {0} read: {1} input left: {2}",
-					parser.GetType().Name,
-					result.ok.matchCount,
-					source.Substring(tokens[index].index)
-				) :
-				string.Format(
-					"DebugInfo parser: {0} error: {1} input left: {2}",
-					parser.GetType().Name,
-					result.errorMessage,
-					source.Substring(tokens[index].index)
-				);
+			return string.Format(
+				"DebugInfo parser: {0} {1} {2}",
+				parser.GetType().Name,
+				MatchCountOrError,
+				InputLeft
+			);
 		}
 	}
 
@@ -202,7 +221,7 @@ public sealed class RepeatParser<T> : Parser<T>
 		var allConverted = new List<T>();
 		var initialIndex = index;
 
-		while (true)
+		while (index < tokens.Count)
 		{
 			var result = parser.PartialParse(source, tokens, index);
 			if (!result.IsOk)

@@ -7,9 +7,9 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = "(print (" +
+			var source = "(print (\n" +
 			"+ 1 2 3 //4\n" +
-			"))";
+			"))\n";
 
 			var parser = new LispParser();
 			var parseResult = parser.Parse(source);

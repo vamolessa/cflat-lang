@@ -16,30 +16,7 @@ public readonly struct Token
 
 public static class Tokenizer
 {
-	public readonly struct Result
-	{
-		public readonly List<Token> tokens;
-		public readonly int errorIndex;
-
-		public bool IsSuccess
-		{
-			get { return tokens != null && errorIndex < 0; }
-		}
-
-		public Result(List<Token> tokens)
-		{
-			this.tokens = tokens;
-			this.errorIndex = -1;
-		}
-
-		public Result(int errorIndex)
-		{
-			this.tokens = null;
-			this.errorIndex = errorIndex;
-		}
-	}
-
-	public static Result Tokenize(string source, Scanner[] scanners)
+	public static Result<List<Token>> Tokenize(Scanner[] scanners, string source)
 	{
 		var tokens = new List<Token>();
 
@@ -58,13 +35,13 @@ public static class Tokenizer
 			}
 
 			if (tokenLength == 0)
-				return new Result(index);
+				return Result.Error(index, "");
 
 			if (tokenKind >= 0)
 				tokens.Add(new Token(tokenKind, index, tokenLength));
 			index += tokenLength;
 		}
 
-		return new Result(tokens);
+		return Result.Ok(tokens);
 	}
 }

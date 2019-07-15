@@ -22,7 +22,7 @@ public sealed class WhiteSpaceScanner : Scanner
 	public override int Scan(string input, int index)
 	{
 		var startIndex = index;
-		while (char.IsWhiteSpace(input, index))
+		while (index < input.Length && char.IsWhiteSpace(input, index))
 			index += 1;
 		return index - startIndex;
 	}

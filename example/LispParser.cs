@@ -10,8 +10,8 @@
 		Identifier,
 	}
 
-	private readonly Scanner[] scanners;
-	private readonly Parser<Expression> parser;
+	public readonly Scanner[] scanners;
+	public readonly Parser<Expression> parser;
 
 	public LispParser()
 	{
@@ -57,7 +57,7 @@
 				return new IdentifierExpression(sub);
 			}),
 			listParser
-		)).Expect("Expected a value (number, string literal, identifier or list)");
+		)).Expect("Expected a number, string literal, identifier or list");
 
 		listParser = Parser<Expression>.Build(builder => builder.All(
 			builder.Token((int)TokenKind.OpenParenthesis),
@@ -72,46 +72,46 @@
 
 	public Result<Expression> Parse(string source)
 	{
-		var tokenizerResult = Tokenizer.Tokenize(source, scanners);
-		if (!tokenizerResult.IsSuccess)
+		var tokens = Tokenizer.Tokenize(scanners, source);
+		if (!tokens.IsOk)
 		{
-			var position = ParserHelper.GetLineAndColumn(source, tokenizerResult.errorIndex);
-			return new Result<Expression>(
-				tokenizerResult.errorIndex,
+			var position = ParserHelper.GetLineAndColumn(source, tokens.errorIndex);
+			return Result.Error(
+				tokens.errorIndex,
 				string.Format(
 					"Unexpected char '{0}' at {1}",
-					source[tokenizerResult.errorIndex],
+					source[tokens.errorIndex],
 					position
 				)
 			);
 		}
 
-		var parseResult = parser.Parse(source, tokenizerResult.tokens);
-		if (parseResult.IsOk)
+		var expression = parser.Parse(source, tokens.ok);
+		if (expression.IsOk)
 		{
-			var errorMessage = CheckAst(parseResult.ok);
+			var errorMessage = CheckAst(expression.ok);
 			if (!string.IsNullOrEmpty(errorMessage))
-				return new Result<Expression>(0, errorMessage);
+				return Result.Error(0, errorMessage);
 		}
 
-		if (parseResult.errorIndex >= 0 && parseResult.errorIndex < tokenizerResult.tokens.Count)
+		if (expression.errorIndex >= 0 && expression.errorIndex < tokens.ok.Count)
 		{
-			var errorToken = tokenizerResult.tokens[parseResult.errorIndex];
+			var errorToken = tokens.ok[expression.errorIndex];
 			var position = ParserHelper.GetLineAndColumn(source, errorToken.index);
 
-			return new Result<Expression>(
-				tokenizerResult.errorIndex,
+			return Result.Error(
+				tokens.errorIndex,
 				string.Format(
 					"Unexpected token '{0}' at {1}\n{2}",
 					source.Substring(errorToken.index, errorToken.length),
 					position,
-					parseResult.errorMessage
+					expression.errorMessage
 				)
 			);
 		}
 		else
 		{
-			return parseResult;
+			return expression;
 		}
 	}
 
