@@ -11,19 +11,19 @@ namespace interpreter_tools
 
 			var parser = new LispParser();
 			var parseResult = parser.Parse(source);
-			if (parseResult.IsSuccess)
+			if (parseResult.IsOk)
 			{
 				System.Console.WriteLine("END SUCCESS");
-				PrintAst(parseResult.parsed);
+				PrintAst(parseResult.ok);
 
 				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
 				var environment = new Dictionary<string, Expression>();
-				var evalResult = LispInterpreter.Eval(parseResult.parsed, environment);
-				if (evalResult.IsSuccess)
-					System.Console.WriteLine("SUCCESS EVAL. RETURN {0}", evalResult.value.underlying.ToString());
+				var evalResult = LispInterpreter.Eval(parseResult.ok, environment);
+				if (evalResult.IsOk)
+					System.Console.WriteLine("SUCCESS EVAL. RETURN {0}", evalResult.ok.underlying.ToString());
 				else
-					System.Console.WriteLine("DEU RUIM EVAL. ERROR '{0}'", evalResult.error);
+					System.Console.WriteLine("DEU RUIM EVAL. ERROR '{0}'", evalResult.errorMessage);
 			}
 			else
 			{

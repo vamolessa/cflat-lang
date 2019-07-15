@@ -35,15 +35,15 @@
 					int value;
 					var sub = s.Substring(t.index, t.length);
 					if (!int.TryParse(sub, out value))
-						return MaybeParsed.NotParsed;
+						return Option.None;
 					return new ValueExpression(value);
-				}),
+			}),
 				builder.Token((int)TokenKind.RealNumber).As((s, t) =>
 				{
 					float value;
 					var sub = s.Substring(t.index, t.length);
 					if (!float.TryParse(sub, out value))
-						return MaybeParsed.NotParsed;
+						return Option.None;
 					return new ValueExpression(value);
 				}),
 				builder.Token((int)TokenKind.String).As((s, t) =>
@@ -71,13 +71,13 @@
 		);
 	}
 
-	public Parser<Expression>.Result Parse(string source)
+	public Result<Expression> Parse(string source)
 	{
 		var tokenizerResult = Tokenizer.Tokenize(source, scanners);
 		if (!tokenizerResult.IsSuccess)
 		{
 			var position = ParserHelper.GetLineAndColumn(source, tokenizerResult.errorIndex);
-			return new Parser<Expression>.Result(
+			return new Result<Expression>(
 				tokenizerResult.errorIndex,
 				string.Format(
 					"Unexpected char '{0}' at {1}",
@@ -88,11 +88,11 @@
 		}
 
 		var parseResult = parser.Parse(source, tokenizerResult.tokens);
-		if (parseResult.IsSuccess)
+		if (parseResult.IsOk)
 		{
-			var errorMessage = CheckAst(parseResult.parsed);
+			var errorMessage = CheckAst(parseResult.ok);
 			if (!string.IsNullOrEmpty(errorMessage))
-				return new Parser<Expression>.Result(0, errorMessage);
+				return new Result<Expression>(0, errorMessage);
 		}
 
 		if (parseResult.errorIndex >= 0 && parseResult.errorIndex < tokenizerResult.tokens.Count)
@@ -100,7 +100,7 @@
 			var errorToken = tokenizerResult.tokens[parseResult.errorIndex];
 			var position = ParserHelper.GetLineAndColumn(source, errorToken.index);
 
-			return new Parser<Expression>.Result(
+			return new Result<Expression>(
 				tokenizerResult.errorIndex,
 				string.Format(
 					"Unexpected token '{0}' at {1}\n{2}",
