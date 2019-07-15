@@ -18,11 +18,6 @@ public abstract class Parser<T>
 		{
 			return new AllParser<T>(parsers);
 		}
-
-		public RepeatParser<T> Repeat(Parser<T> parser, int minMatchCount)
-		{
-			return new RepeatParser<T>(parser, minMatchCount);
-		}
 	}
 
 	public readonly struct PartialOk
@@ -65,6 +60,16 @@ public abstract class Parser<T>
 	public Parser<T> Debug(System.Action<DebugParser<T>.DebugInfo> checkpoint)
 	{
 		return new DebugParser<T>(this, checkpoint);
+	}
+
+	public RepeatParser<T> RepeatAtLeast(int minRepeatCount)
+	{
+		return new RepeatParser<T>(this, minRepeatCount);
+	}
+
+	public SupressErrorParser<T> SupressError()
+	{
+		return new SupressErrorParser<T>(this);
 	}
 
 	public abstract Result<PartialOk> PartialParse(string source, List<Token> tokens, int index);

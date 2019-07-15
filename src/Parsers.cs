@@ -127,7 +127,7 @@ public sealed class AnyParser<T> : Parser<T>
 				return result;
 		}
 
-		return new Result<PartialOk>(index, expectedErrorMessage);
+		return Result.Error(index, expectedErrorMessage);
 	}
 }
 
@@ -139,7 +139,9 @@ public sealed class AllParser<T> : Parser<T>
 	public AllParser(Parser<T>[] parsers)
 	{
 		this.parsers = parsers;
-		this.converter = parsed => parsed.Count > 0 ? Option.Some(parsed[0]) : Option.None;
+		this.converter = parsed => parsed.Count > 0 ?
+			Option.Some(parsed[0]) :
+			Option.None;
 	}
 
 	public AllParser<T> As(System.Func<List<T>, Option<T>> converter)
@@ -175,14 +177,16 @@ public sealed class AllParser<T> : Parser<T>
 public sealed class RepeatParser<T> : Parser<T>
 {
 	private readonly Parser<T> parser;
-	private readonly int minMatchCount;
+	private readonly int minRepeatCount;
 	private System.Func<List<T>, Option<T>> converter;
 
-	public RepeatParser(Parser<T> parser, int minMatchCount)
+	public RepeatParser(Parser<T> parser, int minRepeatCount)
 	{
 		this.parser = parser;
-		this.minMatchCount = minMatchCount;
-		this.converter = parsed => parsed.Count > 0 ? Option.Some(parsed[0]) : Option.None;
+		this.minRepeatCount = minRepeatCount;
+		this.converter = parsed => parsed.Count > 0 ?
+			Option.Some(parsed[0]) :
+			Option.None;
 	}
 
 	public RepeatParser<T> As(System.Func<List<T>, Option<T>> converter)
@@ -194,7 +198,7 @@ public sealed class RepeatParser<T> : Parser<T>
 
 	public override Result<PartialOk> PartialParse(string source, List<Token> tokens, int index)
 	{
-		var matchCount = 0;
+		var repeatCount = 0;
 		var allConverted = new List<T>();
 		var initialIndex = index;
 
@@ -202,25 +206,42 @@ public sealed class RepeatParser<T> : Parser<T>
 		{
 			var result = parser.PartialParse(source, tokens, index);
 			if (!result.IsOk)
-			{
-				if (matchCount < minMatchCount)
-					return result;
-				break;
-			}
+				return result;
 
 			if (result.ok.matchCount == 0)
 				break;
 
-			matchCount += 1;
+			repeatCount += 1;
 			index += result.ok.matchCount;
 			if (result.ok.maybeParsed.isSome)
 				allConverted.Add(result.ok.maybeParsed.value);
 		}
 
+		if (repeatCount < minRepeatCount)
+			return Result.Error(index, expectedErrorMessage);
+
 		var maybeParsed = converter(allConverted);
 		return maybeParsed.isSome ?
 			Result.Ok(new PartialOk(index - initialIndex, maybeParsed)) :
 			Result.Error(index, expectedErrorMessage);
+	}
+}
+
+public sealed class SupressErrorParser<T> : Parser<T>
+{
+	private readonly Parser<T> parser;
+
+	public SupressErrorParser(Parser<T> parser)
+	{
+		this.parser = parser;
+	}
+
+	public override Result<PartialOk> PartialParse(string source, List<Token> tokens, int index)
+	{
+		var result = parser.PartialParse(source, tokens, index);
+		if (!result.IsOk)
+			return Result.Ok(new PartialOk(0, Option.None));
+		return result;
 	}
 }
 

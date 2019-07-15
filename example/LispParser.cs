@@ -29,47 +29,45 @@
 		Parser<Expression> valueParser = null;
 		Parser<Expression> listParser = null;
 
-		valueParser = Parser<Expression>.Build(builder => builder.All(
-			builder.Any(
-				builder.Token((int)TokenKind.IntegerNumber).As((s, t) =>
-				   {
-					   int value;
-					   var sub = s.Substring(t.index, t.length);
-					   if (!int.TryParse(sub, out value))
-						   return Option.None;
-					   return new ValueExpression(value);
-				   }),
-					builder.Token((int)TokenKind.RealNumber).As((s, t) =>
-				   {
-					   float value;
-					   var sub = s.Substring(t.index, t.length);
-					   if (!float.TryParse(sub, out value))
-						   return Option.None;
-					   return new ValueExpression(value);
-				   }),
-					builder.Token((int)TokenKind.String).As((s, t) =>
-				   {
-					   var sub = s.Substring(t.index + 1, t.length - 2).Replace("\\\"", "\"");
-					   return new ValueExpression(sub);
-				   }),
-					builder.Token((int)TokenKind.Identifier).As((s, t) =>
-				   {
-					   var sub = s.Substring(t.index, t.length);
-					   return new IdentifierExpression(sub);
-				   }),
-					listParser
-				)
-			)).Expect("Expected a value (number, string literal, identifier or list)");
+		valueParser = Parser<Expression>.Build(builder => builder.Any(
+			builder.Token((int)TokenKind.IntegerNumber).As((s, t) =>
+			{
+				int value;
+				var sub = s.Substring(t.index, t.length);
+				if (!int.TryParse(sub, out value))
+					return Option.None;
+				return new ValueExpression(value);
+			}),
+			builder.Token((int)TokenKind.RealNumber).As((s, t) =>
+			{
+				float value;
+				var sub = s.Substring(t.index, t.length);
+				if (!float.TryParse(sub, out value))
+					return Option.None;
+				return new ValueExpression(value);
+			}),
+			builder.Token((int)TokenKind.String).As((s, t) =>
+			{
+				var sub = s.Substring(t.index + 1, t.length - 2).Replace("\\\"", "\"");
+				return new ValueExpression(sub);
+			}),
+			builder.Token((int)TokenKind.Identifier).As((s, t) =>
+			{
+				var sub = s.Substring(t.index, t.length);
+				return new IdentifierExpression(sub);
+			}),
+			listParser
+		)).Expect("Expected a value (number, string literal, identifier or list)");
 
 		listParser = Parser<Expression>.Build(builder => builder.All(
 			builder.Token((int)TokenKind.OpenParenthesis),
-				builder.Repeat(valueParser, 0).As(es => new ListExpression(es)),
-				builder.Token((int)TokenKind.CloseParenthesis)
-			)).Expect("Expected a list");
+			valueParser.SupressError().RepeatAtLeast(0).As(es => new ListExpression(es)),
+			builder.Token((int)TokenKind.CloseParenthesis)
+		)).Expect("Expected a list");
 
 		parser = Parser<Expression>.Build(builder =>
-				builder.All(builder.Repeat(listParser, 1).As(es => new ListExpression(es)))
-			);
+			listParser.RepeatAtLeast(1).As(es => new ListExpression(es))
+		);
 	}
 
 	public Result<Expression> Parse(string source)
