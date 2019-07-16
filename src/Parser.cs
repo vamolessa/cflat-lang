@@ -62,14 +62,14 @@ public abstract class Parser<T>
 		return new DebugParser<T>(this, checkpoint);
 	}
 
-	public RepeatParser<T> RepeatAtLeast(int minRepeatCount)
+	public RepeatParser<T> AtLeast(int minRepeatCount)
 	{
 		return new RepeatParser<T>(this, minRepeatCount);
 	}
 
-	public SupressErrorParser<T> SupressError()
+	public MaybeParser<T> Maybe()
 	{
-		return new SupressErrorParser<T>(this);
+		return new MaybeParser<T>(this);
 	}
 
 	public abstract Result<PartialOk> PartialParse(string source, List<Token> tokens, int index);

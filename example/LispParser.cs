@@ -61,12 +61,12 @@
 
 		listParser = Parser<Expression>.Build(builder => builder.All(
 			builder.Token((int)TokenKind.OpenParenthesis).Expect("Expected a ("),
-			valueParser.SupressError().RepeatAtLeast(0).As(es => new ListExpression(es)),
+			valueParser.Maybe().AtLeast(0).As(es => new ListExpression(es)),
 			builder.Token((int)TokenKind.CloseParenthesis).Expect("Expected a )")
 		)).Expect("Expected a list");
 
 		parser = Parser<Expression>.Build(builder =>
-			listParser.RepeatAtLeast(1).As(es => new ListExpression(es))
+			listParser.AtLeast(1).As(es => new ListExpression(es))
 		);
 	}
 

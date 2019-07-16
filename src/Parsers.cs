@@ -246,11 +246,11 @@ public sealed class RepeatParser<T> : Parser<T>
 	}
 }
 
-public sealed class SupressErrorParser<T> : Parser<T>
+public sealed class MaybeParser<T> : Parser<T>
 {
 	private readonly Parser<T> parser;
 
-	public SupressErrorParser(Parser<T> parser)
+	public MaybeParser(Parser<T> parser)
 	{
 		this.parser = parser;
 	}
