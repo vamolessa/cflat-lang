@@ -62,9 +62,9 @@ public sealed class LispParser
 		)).Expect("Expected a number, string literal, identifier or list");
 
 		listParser = Parser<Expression>.Build(builder => builder.All(
-			builder.Token((int)TokenKind.OpenParenthesis).Expect("Expected a ("),
+			builder.Token((int)TokenKind.OpenParenthesis).Expect("Expected a '('"),
 			valueParser.Maybe().AtLeast(0).As(es => new ListExpression(es)),
-			builder.Token((int)TokenKind.CloseParenthesis).Expect("Expected a )")
+			builder.Token((int)TokenKind.CloseParenthesis).Expect("Expected a ')'")
 		)).Expect("Expected a list");
 
 		parser = Parser<Expression>.Build(builder =>
@@ -116,7 +116,7 @@ public sealed class LispParser
 
 			return Result.Error(
 				string.Format(
-					"'{0}' at {1}\n{2}",
+					"{0} at {1}\n{2}",
 					expression.error.message,
 					position,
 					ParserHelper.GetContext(source, position, 2)
