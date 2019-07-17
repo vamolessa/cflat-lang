@@ -31,6 +31,6 @@ public static class ParserHelper
 			}
 		}
 
-		return new LineAndColumn(line, index - lastNewLineIndex + 1);
+		return new LineAndColumn(line, index - lastNewLineIndex);
 	}
 }

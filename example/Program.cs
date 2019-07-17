@@ -8,10 +8,22 @@ namespace interpreter_tools
 		public static void Main(string[] args)
 		{
 			var source = "(print \n" +
-			"+ 1 2 3 //4\n" +
+			"(+ 1 2 3 //4\n" +
 			")\n";
 
 			var parser = new LispParser();
+
+			/*
+			var tokens = Tokenizer.Tokenize(parser.scanners, source);
+			if (tokens.IsOk)
+			{
+				System.Console.WriteLine("HERE COMES TOKENS");
+				foreach (var t in tokens.ok)
+					System.Console.WriteLine(source.Substring(t.index, t.length));
+				System.Console.WriteLine("---");
+			}
+			*/
+
 			var parseResult = parser.Parse(source);
 			if (parseResult.IsOk)
 			{

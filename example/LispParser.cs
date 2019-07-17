@@ -92,6 +92,7 @@
 			var errorMessage = CheckAst(expression.ok);
 			if (!string.IsNullOrEmpty(errorMessage))
 				return Result.Error(0, errorMessage);
+			return expression;
 		}
 
 		{
