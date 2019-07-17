@@ -16,7 +16,7 @@ public readonly struct Token
 
 public static class Tokenizer
 {
-	public static Result<List<Token>> Tokenize(Scanner[] scanners, string source)
+	public static Result<List<Token>, int> Tokenize(Scanner[] scanners, string source)
 	{
 		var tokens = new List<Token>();
 
@@ -35,7 +35,7 @@ public static class Tokenizer
 			}
 
 			if (tokenLength == 0)
-				return Result.Error(index, "");
+				return Result.Error(index);
 
 			if (tokenKind >= 0)
 				tokens.Add(new Token(tokenKind, index, tokenLength));

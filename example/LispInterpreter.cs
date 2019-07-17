@@ -3,7 +3,7 @@ using System.Text;
 
 public static class LispInterpreter
 {
-	public static Result<ValueExpression> Eval(Expression expression, Dictionary<string, Expression> environment)
+	public static Result<ValueExpression, string> Eval(Expression expression, Dictionary<string, Expression> environment)
 	{
 		switch (expression)
 		{
@@ -13,22 +13,22 @@ public static class LispInterpreter
 			if (environment.TryGetValue(identifier.name, out var envValue))
 				return Eval(envValue, environment);
 
-			return Result.Error(0, string.Format(
+			return Result.Error(string.Format(
 				"Undefined identifier '{0}'", identifier.name
 			));
 		case ListExpression list:
 			return EvalList(list, environment);
 		default:
-			return Result.Error(0, string.Format(
+			return Result.Error(string.Format(
 				"Invalid '{0}' expression", expression.GetType().Name
 			));
 		}
 	}
 
-	private static Result<ValueExpression> EvalList(ListExpression list, Dictionary<string, Expression> environment)
+	private static Result<ValueExpression, string> EvalList(ListExpression list, Dictionary<string, Expression> environment)
 	{
 		if (list.expressions.Count == 0)
-			return Result.Error(0, "List expression can not be empty");
+			return Result.Error("List expression can not be empty");
 
 		var firstExpression = list.expressions[0];
 		if (firstExpression is IdentifierExpression identifier)
@@ -59,7 +59,7 @@ public static class LispInterpreter
 					if (result.ok.underlying is int value)
 						aggregate += value;
 					else
-						return Result.Error(0, string.Format(
+						return Result.Error(string.Format(
 							"'+' function can not accept type '{0}' at index {1}",
 							result.ok.underlying.GetType().Name,
 							i - 1
@@ -67,14 +67,14 @@ public static class LispInterpreter
 				}
 				return Result.Ok(new ValueExpression(aggregate));
 			default:
-				return Result.Error(0, string.Format(
+				return Result.Error(string.Format(
 					"Could not call function '{0}'", identifier.name
 				));
 			}
 		}
 		else
 		{
-			Result<ValueExpression> lastResult = Result.Error(0, "Invalid list");
+			Result<ValueExpression, string> lastResult = Result.Error("Invalid list");
 			foreach (var e in list.expressions)
 			{
 				lastResult = Eval(e, environment);

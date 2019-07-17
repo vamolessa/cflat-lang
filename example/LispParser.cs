@@ -70,17 +70,16 @@
 		);
 	}
 
-	public Result<Expression> Parse(string source)
+	public Result<Expression, string> Parse(string source)
 	{
 		var tokens = Tokenizer.Tokenize(scanners, source);
 		if (!tokens.IsOk)
 		{
-			var position = ParserHelper.GetLineAndColumn(source, tokens.errorIndex);
+			var position = ParserHelper.GetLineAndColumn(source, tokens.error);
 			return Result.Error(
-				tokens.errorIndex,
 				string.Format(
 					"Unexpected char '{0}' at {1}\n\n{2}",
-					source[tokens.errorIndex],
+					source[tokens.error],
 					position,
 					ParserHelper.GetContext(source, position, 2)
 				)
@@ -92,15 +91,15 @@
 		{
 			var errorMessage = CheckAst(expression.ok);
 			if (!string.IsNullOrEmpty(errorMessage))
-				return Result.Error(0, errorMessage);
-			return expression;
+				return Result.Error(errorMessage);
+			return Result.Ok(expression.ok);
 		}
 
 		{
 			LineAndColumn position;
-			if (expression.errorIndex >= 0 && expression.errorIndex < tokens.ok.Count)
+			if (expression.error.errorIndex >= 0 && expression.error.errorIndex < tokens.ok.Count)
 			{
-				var errorToken = tokens.ok[expression.errorIndex];
+				var errorToken = tokens.ok[expression.error.errorIndex];
 				position = ParserHelper.GetLineAndColumn(source, errorToken.index);
 			}
 			else
@@ -110,10 +109,9 @@
 			}
 
 			return Result.Error(
-				tokens.errorIndex,
 				string.Format(
 					"'{0}' at {1}\n\n{2}",
-					expression.errorMessage,
+					expression.error.errorMessage,
 					position,
 					ParserHelper.GetContext(source, position, 2)
 				)

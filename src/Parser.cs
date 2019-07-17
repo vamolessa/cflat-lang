@@ -32,6 +32,18 @@ public abstract class Parser<T>
 		}
 	}
 
+	public readonly struct Error
+	{
+		public readonly int errorIndex;
+		public readonly string errorMessage;
+
+		public Error(int errorIndex, string errorMessage)
+		{
+			this.errorIndex = errorIndex;
+			this.errorMessage = errorMessage;
+		}
+	}
+
 	public static Parser<T> Build(System.Func<Builder, Parser<T>> body)
 	{
 		return new LazyParser<T>(body);
@@ -39,14 +51,14 @@ public abstract class Parser<T>
 
 	public string expectedErrorMessage = "Invalid input";
 
-	public Result<T> Parse(string source, List<Token> tokens)
+	public Result<T, Error> Parse(string source, List<Token> tokens)
 	{
 		var result = PartialParse(source, tokens, 0);
 		if (!result.IsOk)
-			return Result.Error(result.errorIndex, result.errorMessage);
+			return Result.Error(new Error(result.error.errorIndex, result.error.errorMessage));
 
 		if (result.ok.matchCount != tokens.Count || !result.ok.maybeParsed.isSome)
-			return Result.Error(result.errorIndex, "Not a valid program");
+			return Result.Error(new Error(result.error.errorIndex, "Not a valid program"));
 
 		return Result.Ok(result.ok.maybeParsed.value);
 	}
@@ -72,5 +84,5 @@ public abstract class Parser<T>
 		return new MaybeParser<T>(this);
 	}
 
-	public abstract Result<PartialOk> PartialParse(string source, List<Token> tokens, int index);
+	public abstract Result<PartialOk, Error> PartialParse(string source, List<Token> tokens, int index);
 }

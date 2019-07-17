@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿
+using System.Collections.Generic;
 using System.Text;
 
 namespace interpreter_tools
@@ -9,7 +10,7 @@ namespace interpreter_tools
 		{
 			var source = "(print \n" +
 			"(+ 1 2 3 //4\n" +
-			")\n";
+			"))\n";
 
 			var parser = new LispParser();
 
@@ -28,7 +29,7 @@ namespace interpreter_tools
 			if (parseResult.IsOk)
 			{
 				System.Console.WriteLine("END SUCCESS");
-				PrintAst(parseResult.ok);
+				//PrintAst(parseResult.ok);
 
 				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
@@ -37,11 +38,11 @@ namespace interpreter_tools
 				if (evalResult.IsOk)
 					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.underlying.ToString());
 				else
-					System.Console.WriteLine("DEU RUIM EVAL. ERROR\n{0}", evalResult.errorMessage);
+					System.Console.WriteLine("DEU RUIM EVAL. ERROR\n{0}", evalResult.error);
 			}
 			else
 			{
-				System.Console.WriteLine("END DEU RUIM: error\n{0}", parseResult.errorMessage);
+				System.Console.WriteLine("END DEU RUIM: error\n{0}", parseResult.error);
 			}
 		}
 
