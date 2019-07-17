@@ -33,4 +33,35 @@ public static class ParserHelper
 
 		return new LineAndColumn(line, index - lastNewLineIndex);
 	}
+
+	public static string GetLine(string source, int lineIndex)
+	{
+		var lastLineIndex = 0;
+		var lineCount = 0;
+
+		for (var i = 0; i < source.Length; i++)
+		{
+			if (source[i] != '\n')
+				continue;
+
+			if (lineCount == lineIndex)
+				return source.Substring(lastLineIndex, i - lastLineIndex);
+
+			lineCount += 1;
+			lastLineIndex = i + 1;
+		}
+
+		if (lineCount == lineIndex)
+			return source.Substring(lastLineIndex);
+
+		return "";
+	}
+
+	public static string GetContext(string source, LineAndColumn position)
+	{
+		return string.Format("{0}\n{1}^ here\n",
+			ParserHelper.GetLine(source, position.line - 1),
+			new string(' ', position.column - 1)
+		);
+	}
 }

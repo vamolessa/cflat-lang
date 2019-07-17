@@ -79,9 +79,10 @@
 			return Result.Error(
 				tokens.errorIndex,
 				string.Format(
-					"Unexpected char '{0}' at {1}",
+					"Unexpected char '{0}' at {1}\n\n{2}",
 					source[tokens.errorIndex],
-					position
+					position,
+					ParserHelper.GetContext(source, position)
 				)
 			);
 		}
@@ -111,9 +112,10 @@
 			return Result.Error(
 				tokens.errorIndex,
 				string.Format(
-					"'{0}' at {1}",
+					"'{0}' at {1}\n\n{2}",
 					expression.errorMessage,
-					position
+					position,
+					ParserHelper.GetContext(source, position)
 				)
 			);
 		}
