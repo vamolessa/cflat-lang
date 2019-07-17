@@ -19,7 +19,7 @@ public sealed class LispParser
 	{
 		scanners = new Scanner[] {
 			new WhiteSpaceScanner().Ignore(),
-			new CommentScanner("//").Ignore(),
+			new CommentScanner(";;").Ignore(),
 			new CharScanner('(').WithToken((int)TokenKind.OpenParenthesis),
 			new CharScanner(')').WithToken((int)TokenKind.CloseParenthesis),
 			new IntegerNumberScanner().WithToken((int)TokenKind.IntegerNumber),

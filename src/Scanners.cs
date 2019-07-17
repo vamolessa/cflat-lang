@@ -45,26 +45,26 @@ public sealed class CharScanner : Scanner
 
 public sealed class CommentScanner : Scanner
 {
-	public readonly string start;
+	public readonly string leading;
 
 	public CommentScanner(string start)
 	{
-		this.start = start;
+		this.leading = start;
 	}
 
 	public override int Scan(string input, int index)
 	{
-		if (input.Length - index < start.Length)
+		if (input.Length - index < leading.Length)
 			return 0;
 
-		for (var i = 0; i < start.Length; i++)
+		for (var i = 0; i < leading.Length; i++)
 		{
-			if (start[i] != input[index + i])
+			if (leading[i] != input[index + i])
 				return 0;
 		}
 
 		var startIndex = index;
-		index += start.Length;
+		index += leading.Length;
 		while (index < input.Length && input[index] != '\n')
 			index += 1;
 
