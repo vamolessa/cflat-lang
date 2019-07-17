@@ -1,5 +1,6 @@
 ﻿
 using System.Collections.Generic;
+using System.IO;
 using System.Text;
 
 namespace interpreter_tools
@@ -8,9 +9,7 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = "(print \n" +
-			"(+ 1 2 3 //4\n" +
-			"))\n";
+			var source = File.ReadAllText("example/script.lisp");
 
 			var parser = new LispParser();
 
