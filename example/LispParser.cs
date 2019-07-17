@@ -82,7 +82,7 @@
 					"Unexpected char '{0}' at {1}\n\n{2}",
 					source[tokens.errorIndex],
 					position,
-					ParserHelper.GetContext(source, position)
+					ParserHelper.GetContext(source, position, 2)
 				)
 			);
 		}
@@ -115,7 +115,7 @@
 					"'{0}' at {1}\n\n{2}",
 					expression.errorMessage,
 					position,
-					ParserHelper.GetContext(source, position)
+					ParserHelper.GetContext(source, position, 2)
 				)
 			);
 		}

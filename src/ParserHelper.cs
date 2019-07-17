@@ -34,9 +34,9 @@ public static class ParserHelper
 		return new LineAndColumn(line, index - lastNewLineIndex);
 	}
 
-	public static string GetLine(string source, int lineIndex)
+	public static string GetLines(string source, int startLine, int endLine)
 	{
-		var lastLineIndex = 0;
+		var startLineIndex = 0;
 		var lineCount = 0;
 
 		for (var i = 0; i < source.Length; i++)
@@ -44,23 +44,29 @@ public static class ParserHelper
 			if (source[i] != '\n')
 				continue;
 
-			if (lineCount == lineIndex)
-				return source.Substring(lastLineIndex, i - lastLineIndex);
+			if (lineCount == endLine)
+				return source.Substring(startLineIndex, i - startLineIndex);
+			if (lineCount == startLine)
+				startLineIndex = i + 1;
 
 			lineCount += 1;
-			lastLineIndex = i + 1;
 		}
 
-		if (lineCount == lineIndex)
-			return source.Substring(lastLineIndex);
+		if (lineCount == endLine)
+			return source.Substring(startLineIndex);
 
 		return "";
 	}
 
-	public static string GetContext(string source, LineAndColumn position)
+	public static string GetContext(string source, LineAndColumn position, int lineCount)
 	{
-		return string.Format("{0}\n{1}^ here\n",
-			ParserHelper.GetLine(source, position.line - 1),
+		return string.Format(
+			"{0}\n{1}^ here\n",
+			ParserHelper.GetLines(
+				source,
+				position.line - 1 - lineCount,
+				position.line - 1
+			),
 			new string(' ', position.column - 1)
 		);
 	}
