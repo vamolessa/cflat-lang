@@ -34,13 +34,13 @@ public abstract class Parser<T>
 
 	public readonly struct Error
 	{
-		public readonly int errorIndex;
-		public readonly string errorMessage;
+		public readonly int tokenIndex;
+		public readonly string message;
 
-		public Error(int errorIndex, string errorMessage)
+		public Error(int tokenIndex, string message)
 		{
-			this.errorIndex = errorIndex;
-			this.errorMessage = errorMessage;
+			this.tokenIndex = tokenIndex;
+			this.message = message;
 		}
 	}
 
@@ -55,10 +55,10 @@ public abstract class Parser<T>
 	{
 		var result = PartialParse(source, tokens, 0);
 		if (!result.IsOk)
-			return Result.Error(new Error(result.error.errorIndex, result.error.errorMessage));
+			return Result.Error(new Error(result.error.tokenIndex, result.error.message));
 
 		if (result.ok.matchCount != tokens.Count || !result.ok.maybeParsed.isSome)
-			return Result.Error(new Error(result.error.errorIndex, "Not a valid program"));
+			return Result.Error(new Error(result.error.tokenIndex, "Not a valid program"));
 
 		return Result.Ok(result.ok.maybeParsed.value);
 	}

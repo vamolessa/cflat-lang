@@ -32,7 +32,7 @@ public sealed class DebugParser<T> : Parser<T>
 			{
 				return result.IsOk ?
 					string.Format("match count: {0}", result.ok.matchCount) :
-					string.Format("error: {0}", result.error.errorMessage);
+					string.Format("error: {0}", result.error.message);
 			}
 		}
 

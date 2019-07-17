@@ -1,4 +1,6 @@
-﻿public sealed class LispParser
+﻿using System.Text;
+
+public sealed class LispParser
 {
 	private enum TokenKind
 	{
@@ -75,15 +77,19 @@
 		var tokens = Tokenizer.Tokenize(scanners, source);
 		if (!tokens.IsOk)
 		{
-			var position = ParserHelper.GetLineAndColumn(source, tokens.error);
-			return Result.Error(
-				string.Format(
-					"Unexpected char '{0}' at {1}\n\n{2}",
-					source[tokens.error],
+			var sb = new StringBuilder();
+			foreach (var errorIndex in tokens.error)
+			{
+				var position = ParserHelper.GetLineAndColumn(source, errorIndex);
+				sb.AppendLine(string.Format(
+					"Unexpected char '{0}' at {1}\n{2}",
+					source[errorIndex],
 					position,
 					ParserHelper.GetContext(source, position, 2)
-				)
-			);
+				));
+			}
+
+			return Result.Error(sb.ToString());
 		}
 
 		var expression = parser.Parse(source, tokens.ok);
@@ -97,9 +103,9 @@
 
 		{
 			LineAndColumn position;
-			if (expression.error.errorIndex >= 0 && expression.error.errorIndex < tokens.ok.Count)
+			if (expression.error.tokenIndex >= 0 && expression.error.tokenIndex < tokens.ok.Count)
 			{
-				var errorToken = tokens.ok[expression.error.errorIndex];
+				var errorToken = tokens.ok[expression.error.tokenIndex];
 				position = ParserHelper.GetLineAndColumn(source, errorToken.index);
 			}
 			else
@@ -110,8 +116,8 @@
 
 			return Result.Error(
 				string.Format(
-					"'{0}' at {1}\n\n{2}",
-					expression.error.errorMessage,
+					"'{0}' at {1}\n{2}",
+					expression.error.message,
 					position,
 					ParserHelper.GetContext(source, position, 2)
 				)
