@@ -43,10 +43,10 @@ public abstract class Parser<T>
 	{
 		var result = PartialParse(source, tokens, 0);
 		if (!result.IsOk)
-			return Result.Error(result.ok.matchCount, result.errorMessage);
+			return Result.Error(result.errorIndex, result.errorMessage);
 
 		if (result.ok.matchCount != tokens.Count || !result.ok.maybeParsed.isSome)
-			return Result.Error(result.ok.matchCount, "Not a valid program");
+			return Result.Error(result.errorIndex, "Not a valid program");
 
 		return Result.Ok(result.ok.maybeParsed.value);
 	}

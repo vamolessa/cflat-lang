@@ -7,9 +7,9 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = "(print (\n" +
+			var source = "(print \n" +
 			"+ 1 2 3 //4\n" +
-			"))\n";
+			")\n";
 
 			var parser = new LispParser();
 			var parseResult = parser.Parse(source);
@@ -23,13 +23,13 @@ namespace interpreter_tools
 				var environment = new Dictionary<string, Expression>();
 				var evalResult = LispInterpreter.Eval(parseResult.ok, environment);
 				if (evalResult.IsOk)
-					System.Console.WriteLine("SUCCESS EVAL. RETURN {0}", evalResult.ok.underlying.ToString());
+					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.underlying.ToString());
 				else
-					System.Console.WriteLine("DEU RUIM EVAL. ERROR '{0}'", evalResult.errorMessage);
+					System.Console.WriteLine("DEU RUIM EVAL. ERROR\n{0}", evalResult.errorMessage);
 			}
 			else
 			{
-				System.Console.WriteLine("END DEU RUIM: error '{0}'", parseResult.errorMessage);
+				System.Console.WriteLine("END DEU RUIM: error\n{0}", parseResult.errorMessage);
 			}
 		}
 

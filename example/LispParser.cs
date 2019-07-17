@@ -94,24 +94,27 @@
 				return Result.Error(0, errorMessage);
 		}
 
-		if (expression.errorIndex >= 0 && expression.errorIndex < tokens.ok.Count)
 		{
-			var errorToken = tokens.ok[expression.errorIndex];
-			var position = ParserHelper.GetLineAndColumn(source, errorToken.index);
+			LineAndColumn position;
+			if (expression.errorIndex >= 0 && expression.errorIndex < tokens.ok.Count)
+			{
+				var errorToken = tokens.ok[expression.errorIndex];
+				position = ParserHelper.GetLineAndColumn(source, errorToken.index);
+			}
+			else
+			{
+				var errorToken = tokens.ok[tokens.ok.Count - 1];
+				position = ParserHelper.GetLineAndColumn(source, errorToken.index + errorToken.length);
+			}
 
 			return Result.Error(
 				tokens.errorIndex,
 				string.Format(
-					"Unexpected token '{0}' at {1}\n{2}",
-					source.Substring(errorToken.index, errorToken.length),
-					position,
-					expression.errorMessage
+					"'{0}' at {1}",
+					expression.errorMessage,
+					position
 				)
 			);
-		}
-		else
-		{
-			return expression;
 		}
 	}
 
