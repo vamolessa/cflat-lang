@@ -23,21 +23,6 @@ public static class Parser
 	{
 		return new TokenParser<T>(tokenKind).As(converter);
 	}
-
-	public static AndParser<T, L, R> And<T, L, R>(Parser<L> leftParser, Parser<R> rightParser, System.Func<L, R, T> aggregator)
-	{
-		return new AndParser<T, L, R>(leftParser, rightParser).Aggregate(aggregator);
-	}
-
-	public static AnyParser<T> Any<T>(params Parser<T>[] parsers)
-	{
-		return new AnyParser<T>(parsers);
-	}
-
-	public static AllParser<T> All<T>(params Parser<T>[] parsers)
-	{
-		return new AllParser<T>(parsers);
-	}
 }
 
 public abstract class Parser<T>
@@ -59,6 +44,11 @@ public abstract class Parser<T>
 		return new DeferParser<T>();
 	}
 
+	public static AnyParser<T> operator |(Parser<T> a, Parser<T> b)
+	{
+		return a.Or(b);
+	}
+
 	public Result<T, Parser.Error> Parse(string source, List<Token> tokens)
 	{
 		var result = PartialParse(source, tokens, 0);
@@ -74,6 +64,11 @@ public abstract class Parser<T>
 	public Parser<T> Debug(System.Action<DebugParser<T>.DebugInfo> checkpoint)
 	{
 		return new DebugParser<T>(this, checkpoint);
+	}
+
+	public virtual AnyParser<T> Or(Parser<T> other)
+	{
+		return new AnyParser<T>(this, other);
 	}
 
 	public RepeatParser<T> AtLeast(int minRepeatCount)

@@ -47,46 +47,48 @@ public sealed class ExampleParser
 			(int)ExampleTokenKind.Slash
 		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
 
-		unary.parser = Parser.Any(
-			from op in Parser.Any(
-				Parser.Token((int)ExampleTokenKind.Bang),
-				Parser.Token((int)ExampleTokenKind.Minus)
-			)
-			from un in unary
-			select new UnaryOperationExpression(op, un) as Expression,
+		unary.parser = (
+			(
+				from op in (
+					Parser.Token((int)ExampleTokenKind.Bang) |
+					Parser.Token((int)ExampleTokenKind.Minus)
+				)
+				from un in unary
+				select new UnaryOperationExpression(op, un) as Expression
+			) |
 			primary
 		);
 
-		primary.parser = Parser.Any(
+		primary.parser = (
 			Parser.Token((int)ExampleTokenKind.IntegerNumber, (s, t) =>
 			{
 				var sub = s.Substring(t.index, t.length);
 				var value = int.Parse(sub);
 				return new ValueExpression(t, value) as Expression;
-			}),
+			}) |
 			Parser.Token((int)ExampleTokenKind.RealNumber, (s, t) =>
 			{
 				var sub = s.Substring(t.index, t.length);
 				var value = float.Parse(sub);
 				return new ValueExpression(t, value) as Expression;
-			}),
+			}) |
 			Parser.Token((int)ExampleTokenKind.String, (s, t) =>
 			{
 				var sub = s.Substring(t.index + 1, t.length - 2);
 				return new ValueExpression(t, sub) as Expression;
-			}),
+			}) |
 			Parser.Token((int)ExampleTokenKind.True, (s, t) =>
 			{
 				return new ValueExpression(t, true) as Expression;
-			}),
+			}) |
 			Parser.Token((int)ExampleTokenKind.False, (s, t) =>
 			{
 				return new ValueExpression(t, false) as Expression;
-			}),
+			}) |
 			Parser.Token((int)ExampleTokenKind.Nil, (s, t) =>
 			{
 				return new ValueExpression(t, null) as Expression;
-			}),
+			}) |
 			from open in Parser.Token((int)ExampleTokenKind.OpenParenthesis)
 			from exp in expression
 			from close in Parser.Token((int)ExampleTokenKind.CloseParenthesis)

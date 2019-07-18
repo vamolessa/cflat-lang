@@ -132,12 +132,20 @@ public sealed class TokenParser<T> : Parser<T>
 
 public sealed class AnyParser<T> : Parser<T>
 {
-	private readonly Parser<T>[] parsers;
+	private readonly List<Parser<T>> parsers;
 	private string expectedErrorMessage = "Did not have any match";
 
-	public AnyParser(Parser<T>[] parsers)
+	public AnyParser(Parser<T> a, Parser<T> b)
 	{
-		this.parsers = parsers;
+		parsers = new List<Parser<T>>();
+		parsers.Add(a);
+		parsers.Add(b);
+	}
+
+	public override AnyParser<T> Or(Parser<T> other)
+	{
+		parsers.Add(other);
+		return this;
 	}
 
 	public AnyParser<T> Expect(string expectedErrorMessage)
@@ -145,7 +153,6 @@ public sealed class AnyParser<T> : Parser<T>
 		this.expectedErrorMessage = expectedErrorMessage;
 		return this;
 	}
-
 
 	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
@@ -157,83 +164,6 @@ public sealed class AnyParser<T> : Parser<T>
 		}
 
 		return Result.Error(new Parser.Error(index, expectedErrorMessage));
-	}
-}
-
-public sealed class AndParser<T, L, R> : Parser<T>
-{
-	private readonly Parser<L> leftParser;
-	private readonly Parser<R> rightParser;
-	private System.Func<L, R, T> aggregator;
-
-	public AndParser(Parser<L> leftParser, Parser<R> rightParser)
-	{
-		this.leftParser = leftParser;
-		this.rightParser = rightParser;
-	}
-
-	public AndParser<T, L, R> Aggregate(System.Func<L, R, T> aggregator)
-	{
-		this.aggregator = aggregator;
-		return this;
-	}
-
-	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
-	{
-		var leftResult = leftParser.PartialParse(source, tokens, index);
-		if (!leftResult.isOk)
-			return Result.Error(leftResult.error);
-
-		index += leftResult.ok.matchCount;
-
-		var rightResult = rightParser.PartialParse(source, tokens, index);
-		if (!rightResult.isOk)
-			return Result.Error(rightResult.error);
-
-		var parsed = aggregator(leftResult.ok.parsed, rightResult.ok.parsed);
-		return Result.Ok(new PartialOk(
-			leftResult.ok.matchCount + rightResult.ok.matchCount,
-			parsed
-		));
-	}
-}
-
-public sealed class AllParser<T> : Parser<T>
-{
-	private readonly Parser<T>[] parsers;
-	private System.Func<List<T>, T> converter;
-
-	public AllParser(Parser<T>[] parsers)
-	{
-		this.parsers = parsers;
-		this.converter = parsed => parsed[0];
-	}
-
-	public AllParser<T> As(System.Func<List<T>, T> converter)
-	{
-		if (converter != null)
-			this.converter = converter;
-		return this;
-	}
-
-	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
-	{
-		var allConverted = new List<T>();
-
-		var initialIndex = index;
-		foreach (var parser in parsers)
-		{
-			var result = parser.PartialParse(source, tokens, index);
-			if (!result.isOk)
-				return result;
-
-			index += result.ok.matchCount;
-			if (result.ok.matchCount > 0)
-				allConverted.Add(result.ok.parsed);
-		}
-
-		var parsed = converter(allConverted);
-		return Result.Ok(new PartialOk(index - initialIndex, parsed));
 	}
 }
 
