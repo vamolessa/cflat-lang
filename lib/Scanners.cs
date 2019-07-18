@@ -28,93 +28,43 @@ public sealed class WhiteSpaceScanner : Scanner
 	}
 }
 
-public sealed class CharScanner : Scanner
-{
-	public readonly char ch;
-
-	public CharScanner(char ch)
-	{
-		this.ch = ch;
-	}
-
-	public override int Scan(string input, int index)
-	{
-		return input[index] == ch ? 1 : 0;
-	}
-}
-
-public sealed class CommentScanner : Scanner
-{
-	public readonly string leading;
-
-	public CommentScanner(string start)
-	{
-		this.leading = start;
-	}
-
-	public override int Scan(string input, int index)
-	{
-		if (input.Length - index < leading.Length)
-			return 0;
-
-		for (var i = 0; i < leading.Length; i++)
-		{
-			if (leading[i] != input[index + i])
-				return 0;
-		}
-
-		var startIndex = index;
-		index += leading.Length;
-		while (index < input.Length && input[index] != '\n')
-			index += 1;
-
-		return index - startIndex + 1;
-	}
-}
-
 public sealed class ExactScanner : Scanner
 {
-	public readonly string str;
+	public readonly string match;
 
-	public ExactScanner(string str)
+	public ExactScanner(string match)
 	{
-		this.str = str;
+		this.match = match;
 	}
 
 	public override int Scan(string input, int index)
 	{
-		var count = str.Length;
-		if (input.Length - index < str.Length)
-			return 0;
-
-		for (var i = 0; i < str.Length; i++)
-		{
-			if (str[i] != input[index + i])
-				return 0;
-		}
-
-		return str.Length;
+		return ScannerHelper.StartsWith(input, index, match) ?
+			match.Length :
+			0;
 	}
 }
 
 public sealed class EnclosedScanner : Scanner
 {
-	public readonly char delimiter;
+	public readonly string beginMatch;
+	public readonly string endMatch;
 
-	public EnclosedScanner(char delimiter)
+	public EnclosedScanner(string beginMatch, string endMatch)
 	{
-		this.delimiter = delimiter;
+		this.beginMatch = beginMatch;
+		this.endMatch = endMatch;
 	}
 
 	public override int Scan(string input, int index)
 	{
-		if (input[index] != delimiter)
+		if (!ScannerHelper.StartsWith(input, index, beginMatch))
 			return 0;
 
-		for (var i = index + 1; i < input.Length; i++)
+		for (var i = index + beginMatch.Length; i < input.Length; i++)
 		{
-			if (input[i] == delimiter && input[i - 1] != '\\')
-				return i - index + 1;
+			if (ScannerHelper.StartsWith(input, i, endMatch) && input[i - 1] != '\\')
+				return i - index + endMatch.Length;
 		}
 
 		return 0;

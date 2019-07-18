@@ -6,10 +6,16 @@ public sealed class LispParser
 	{
 		OpenParenthesis,
 		CloseParenthesis,
+		OpenCurlyBrackets,
+		CloseCurlyBrackets,
 		IntegerNumber,
 		RealNumber,
 		String,
 		Identifier,
+		Sum,
+		Minus,
+		Asterisk,
+		Slash,
 	}
 
 	public readonly Scanner[] scanners;
@@ -19,13 +25,19 @@ public sealed class LispParser
 	{
 		scanners = new Scanner[] {
 			new WhiteSpaceScanner().Ignore(),
-			new CommentScanner(";;").Ignore(),
-			new CharScanner('(').WithToken((int)TokenKind.OpenParenthesis),
-			new CharScanner(')').WithToken((int)TokenKind.CloseParenthesis),
+			new EnclosedScanner("//", "\n").Ignore(),
+
 			new IntegerNumberScanner().WithToken((int)TokenKind.IntegerNumber),
 			new RealNumberScanner().WithToken((int)TokenKind.RealNumber),
-			new EnclosedScanner('"').WithToken((int)TokenKind.String),
-			new IdentifierScanner("+-*_.:@#$%&").WithToken((int)TokenKind.Identifier)
+			new EnclosedScanner("\"", "\"").WithToken((int)TokenKind.String),
+			new IdentifierScanner("_").WithToken((int)TokenKind.Identifier),
+
+			new ExactScanner("(").WithToken((int)TokenKind.OpenParenthesis),
+			new ExactScanner(")").WithToken((int)TokenKind.CloseParenthesis),
+			new ExactScanner("{").WithToken((int)TokenKind.OpenCurlyBrackets),
+			new ExactScanner("}").WithToken((int)TokenKind.CloseCurlyBrackets),
+
+
 		};
 
 		Parser<Expression> valueParser = null;
