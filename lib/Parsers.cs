@@ -381,3 +381,63 @@ public sealed class DeferParser<T> : Parser<T>
 		return parser.PartialParse(source, tokens, index);
 	}
 }
+
+public sealed class SelectParser<A, B> : Parser<B>
+{
+	private readonly Parser<A> parser;
+	private readonly System.Func<A, B> selector;
+
+	public SelectParser(Parser<A> parser, System.Func<A, B> selector)
+	{
+		this.parser = parser;
+		this.selector = selector;
+	}
+
+	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
+	{
+		var result = parser.PartialParse(source, tokens, index);
+		if (!result.isOk)
+			return Result.Error(result.error);
+
+		return Result.Ok(new PartialOk(
+			result.ok.matchCount,
+			selector(result.ok.parsed)
+		));
+	}
+}
+
+public sealed class SelectManyParser<A, B, C> : Parser<C>
+{
+	private readonly Parser<A> parser;
+	private readonly System.Func<A, Parser<B>> parserSelector;
+	private readonly System.Func<A, B, C> resultSelector;
+
+	public SelectManyParser(Parser<A> parser, System.Func<A, Parser<B>> parserSelector, System.Func<A, B, C> resultSelector)
+	{
+		this.parser = parser;
+		this.parserSelector = parserSelector;
+		this.resultSelector = resultSelector;
+	}
+
+	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
+	{
+		var result = parser.PartialParse(source, tokens, index);
+		if (!result.isOk)
+			return Result.Error(result.error);
+
+		var otherParser = parserSelector(result.ok.parsed);
+		var otherResult = otherParser.PartialParse(
+			source,
+			tokens,
+			index + result.ok.matchCount
+		);
+
+		if (!otherResult.isOk)
+			return Result.Error(result.error);
+
+		return Result.Ok(new PartialOk(
+			result.ok.matchCount + otherResult.ok.matchCount,
+			resultSelector(result.ok.parsed, otherResult.ok.parsed)
+		));
+	}
+}

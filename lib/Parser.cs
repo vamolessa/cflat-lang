@@ -86,5 +86,15 @@ public abstract class Parser<T>
 		return new MaybeParser<T>(this);
 	}
 
+	public Parser<R> Select<R>(System.Func<T, R> selector)
+	{
+		return new SelectParser<T, R>(this, selector);
+	}
+
+	public Parser<C> SelectMany<B, C>(System.Func<T, Parser<B>> parserSelector, System.Func<T, B, C> resultSelector)
+	{
+		return new SelectManyParser<T, B, C>(this, parserSelector, resultSelector);
+	}
+
 	public abstract Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index);
 }

@@ -48,14 +48,12 @@ public sealed class ExampleParser
 		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
 
 		unary.parser = Parser.Any(
-			Parser.And(
-				Parser.Any(
-					Parser.Token((int)ExampleTokenKind.Bang),
-					Parser.Token((int)ExampleTokenKind.Minus)
-				),
-				unary,
-				(t, e) => new UnaryOperationExpression(t, e) as Expression
-			),
+			from op in Parser.Any(
+				Parser.Token((int)ExampleTokenKind.Bang),
+				Parser.Token((int)ExampleTokenKind.Minus)
+			)
+			from un in unary
+			select new UnaryOperationExpression(op, un) as Expression,
 			primary
 		);
 
@@ -88,14 +86,11 @@ public sealed class ExampleParser
 			Parser.Token((int)ExampleTokenKind.Nil, (s, t) =>
 			{
 				return new ValueExpression(t, null) as Expression;
-			})
-		/*
-		b.All(
-			b.Token((int)ExampleTokenKind.OpenParenthesis),
-			expression,
-			b.Token((int)ExampleTokenKind.CloseParenthesis)
-		)
-		 */
+			}),
+			from open in Parser.Token((int)ExampleTokenKind.OpenParenthesis)
+			from exp in expression
+			from close in Parser.Token((int)ExampleTokenKind.CloseParenthesis)
+			select new GroupExpression(open, close, exp) as Expression
 		).Expect("Expected a value or identifier");
 	}
 
