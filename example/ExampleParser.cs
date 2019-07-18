@@ -1,6 +1,6 @@
 ﻿using System.Text;
 
-public sealed class LispParser
+public sealed class ExampleParser
 {
 	private enum TokenKind
 	{
@@ -21,7 +21,7 @@ public sealed class LispParser
 	public readonly Scanner[] scanners;
 	public readonly Parser<Expression> parser;
 
-	public LispParser()
+	public ExampleParser()
 	{
 		scanners = new Scanner[] {
 			new WhiteSpaceScanner().Ignore(),

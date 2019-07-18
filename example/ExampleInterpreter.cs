@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using System.Text;
 
-public static class LispInterpreter
+public static class ExampleInterpreter
 {
 	public static Result<ValueExpression, string> Eval(Expression expression, Dictionary<string, Expression> environment)
 	{

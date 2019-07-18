@@ -10,7 +10,7 @@ namespace interpreter_tools
 		{
 			var source = File.ReadAllText("script.mn");
 
-			var parser = new LispParser();
+			var parser = new ExampleParser();
 
 			/*
 			var tokens = Tokenizer.Tokenize(parser.scanners, source);
@@ -32,7 +32,7 @@ namespace interpreter_tools
 				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
 				var environment = new Dictionary<string, Expression>();
-				var evalResult = LispInterpreter.Eval(parseResult.ok, environment);
+				var evalResult = ExampleInterpreter.Eval(parseResult.ok, environment);
 				if (evalResult.IsOk)
 					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.underlying.ToString());
 				else

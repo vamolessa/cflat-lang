@@ -29,6 +29,7 @@ public sealed class ScannerTests
 	[InlineData("xx(foo)", 2, "(", ")", 5)]
 	[InlineData("(foo\\)bar)", 0, "(", ")", 10)]
 	[InlineData("((foo)bar))", 0, "((", "))", 11)]
+	[InlineData("(foobar", 0, "(", ")", 0)]
 	public void EnclosedScanTest(string input, int index, string beginMatch, string endMatch, int expected)
 	{
 		var scanner = new EnclosedScanner(beginMatch, endMatch);

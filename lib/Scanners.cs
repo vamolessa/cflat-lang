@@ -107,7 +107,6 @@ public sealed class RealNumberScanner : Scanner
 	}
 }
 
-
 public sealed class IdentifierScanner : Scanner
 {
 	public readonly string extraChars;
