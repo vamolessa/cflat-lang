@@ -1,6 +1,5 @@
 ﻿using System.Collections.Generic;
 using System.IO;
-using System.Text;
 
 namespace interpreter_tools
 {
@@ -10,10 +9,11 @@ namespace interpreter_tools
 		{
 			var source = File.ReadAllText("script.mn");
 
-			var parser = new ExampleParser();
+			var tokenizer = new ExampleTokenizer();
+			var parser = new ExampleParser(tokenizer);
 
 			/*
-			var tokens = Tokenizer.Tokenize(parser.scanners, source);
+			var tokens = tokenizer.Tokenize(source);
 			if (tokens.IsOk)
 			{
 				System.Console.WriteLine("HERE COMES TOKENS");
@@ -42,49 +42,6 @@ namespace interpreter_tools
 			{
 				System.Console.WriteLine("END DEU RUIM: error\n{0}", parseResult.error);
 			}
-		}
-
-		private static void PrintAst(Expression e)
-		{
-			var sb = new StringBuilder();
-			PrintAstRecursive(e, sb, 0);
-			System.Console.WriteLine(sb);
-		}
-
-		private static void PrintAstRecursive(Expression e, StringBuilder sb, int indentationLevel)
-		{
-			if (e is IdentifierExpression)
-			{
-				var i = e as IdentifierExpression;
-				Indent(sb, indentationLevel);
-				sb.AppendLine(i.name);
-			}
-			else if (e is ValueExpression)
-			{
-				var v = e as ValueExpression;
-				Indent(sb, indentationLevel);
-				sb.Append("[");
-				sb.Append(v.underlying.GetType());
-				sb.Append("] ");
-				sb.Append(v.underlying);
-				sb.AppendLine();
-			}
-			else if (e is ListExpression)
-			{
-				var l = e as ListExpression;
-				Indent(sb, indentationLevel);
-				sb.AppendLine("(");
-				foreach (var c in l.expressions)
-					PrintAstRecursive(c, sb, indentationLevel + 1);
-				Indent(sb, indentationLevel);
-				sb.AppendLine(")");
-			}
-		}
-
-		private static void Indent(StringBuilder sb, int indentationLevel)
-		{
-			for (var i = 0; i < indentationLevel; i++)
-				sb.Append("  ");
 		}
 	}
 }

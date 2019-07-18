@@ -44,9 +44,9 @@ public abstract class Parser<T>
 		}
 	}
 
-	public static Parser<T> Build(System.Func<Builder, Parser<T>> body)
+	public static DeferParser<T> Declare()
 	{
-		return new LazyParser<T>(body);
+		return new DeferParser<T>();
 	}
 
 	public string expectedErrorMessage = "Invalid input";

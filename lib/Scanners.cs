@@ -4,7 +4,7 @@
 
 	public abstract int Scan(string input, int index);
 
-	public Scanner WithToken(int tokenKind)
+	public Scanner ForToken(int tokenKind)
 	{
 		this.tokenKind = tokenKind;
 		return this;
@@ -76,7 +76,7 @@ public sealed class IntegerNumberScanner : Scanner
 	public override int Scan(string input, int index)
 	{
 		var firstCh = input[index];
-		if (!char.IsDigit(firstCh) || firstCh == '+' || firstCh == '-')
+		if (!char.IsDigit(firstCh))
 			return 0;
 
 		for (var i = index + 1; i < input.Length; i++)
@@ -94,7 +94,7 @@ public sealed class RealNumberScanner : Scanner
 	public override int Scan(string input, int index)
 	{
 		var firstCh = input[index];
-		if (!char.IsDigit(firstCh) || firstCh == '+' || firstCh == '-')
+		if (!char.IsDigit(firstCh))
 			return 0;
 
 		for (var i = index + 1; i < input.Length; i++)

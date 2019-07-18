@@ -264,21 +264,18 @@ public sealed class MaybeParser<T> : Parser<T>
 	}
 }
 
-public sealed class LazyParser<T> : Parser<T>
+public sealed class DeferParser<T> : Parser<T>
 {
 	private Parser<T> parser;
-	private readonly System.Func<Builder, Parser<T>> initialization;
 
-	public LazyParser(System.Func<Builder, Parser<T>> initialization)
+	public Parser<T> Build(System.Func<Builder, Parser<T>> builder)
 	{
-		this.initialization = initialization;
+		parser = builder(new Builder());
+		return this;
 	}
 
 	public override Result<PartialOk, Error> PartialParse(string source, List<Token> tokens, int index)
 	{
-		if (parser == null)
-			parser = initialization(new Builder());
-
 		return parser.PartialParse(source, tokens, index);
 	}
 }
