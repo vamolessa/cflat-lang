@@ -82,7 +82,7 @@ public sealed class ExampleTokenizer
 			new ExactScanner("!=").ForToken((int)ExampleTokenKind.BangEqual),
 			new ExactScanner("!").ForToken((int)ExampleTokenKind.Bang),
 
-			new ExactScanner(">").ForToken((int)ExampleTokenKind.Lesser),
+			new ExactScanner("<").ForToken((int)ExampleTokenKind.Lesser),
 			new ExactScanner(">").ForToken((int)ExampleTokenKind.Greater),
 			new ExactScanner("<=").ForToken((int)ExampleTokenKind.LesserEqual),
 			new ExactScanner(">=").ForToken((int)ExampleTokenKind.GreaterEqual),
