@@ -26,13 +26,25 @@ public sealed class ValueExpression : Expression
 	}
 }
 
-public sealed class OperationExpression : Expression
+public sealed class UnaryOperationExpression : Expression
+{
+	public readonly Token token;
+	public readonly Expression expression;
+
+	public UnaryOperationExpression(Token token, Expression expression)
+	{
+		this.token = token;
+		this.expression = expression;
+	}
+}
+
+public sealed class BinaryOperationExpression : Expression
 {
 	public readonly Token token;
 	public readonly Expression left;
 	public readonly Expression right;
 
-	public OperationExpression(Token token, Expression left, Expression right)
+	public BinaryOperationExpression(Token token, Expression left, Expression right)
 	{
 		this.token = token;
 		this.left = left;

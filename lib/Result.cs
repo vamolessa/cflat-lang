@@ -33,13 +33,13 @@ public readonly struct ErrorResult<E>
 
 public readonly struct Result<T, E>
 {
-	public readonly bool IsOk;
+	public readonly bool isOk;
 	public readonly T ok;
 	public readonly E error;
 
 	public Result(bool isOk, T ok, E error)
 	{
-		this.IsOk = isOk;
+		this.isOk = isOk;
 		this.ok = ok;
 		this.error = error;
 	}

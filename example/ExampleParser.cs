@@ -19,129 +19,90 @@ public sealed class ExampleParser
 
 		parser = expression;
 
-		expression.Build(b => equality);
+		expression.parser = equality;
 
-		equality.Build(b => b.All(
+		equality.parser = new LeftAssociativeParser<Expression>(
 			comparison,
-			b.All(
-				b.Any(
-					b.Token((int)ExampleTokenKind.EqualEqual),
-					b.Token((int)ExampleTokenKind.BangEqual)
-				),
-				comparison
-			).AtLeast(0)
-		));
+			(int)ExampleTokenKind.EqualEqual,
+			(int)ExampleTokenKind.BangEqual
+		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
 
-		comparison.Build(b => b.All(
+		comparison.parser = new LeftAssociativeParser<Expression>(
 			addition,
-			b.All(
-				b.Any(
-					b.Token((int)ExampleTokenKind.Lesser),
-					b.Token((int)ExampleTokenKind.LesserEqual),
-					b.Token((int)ExampleTokenKind.Greater),
-					b.Token((int)ExampleTokenKind.GreaterEqual)
-				),
-				addition
-			).AtLeast(0)
-		));
+			(int)ExampleTokenKind.Lesser,
+			(int)ExampleTokenKind.LesserEqual,
+			(int)ExampleTokenKind.Greater,
+			(int)ExampleTokenKind.GreaterEqual
+		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
 
-		addition.Build(b => b.All(
+		addition.parser = new LeftAssociativeParser<Expression>(
 			multiplication,
-			b.All(
-				b.Any(
-					b.Token((int)ExampleTokenKind.Sum),
-					b.Token((int)ExampleTokenKind.Minus)
-				),
-				multiplication
-			).AtLeast(0)
-		));
+			(int)ExampleTokenKind.Sum,
+			(int)ExampleTokenKind.Minus
+		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
 
-		multiplication.Build(b => b.All(
+		multiplication.parser = new LeftAssociativeParser<Expression>(
 			unary,
-			b.All(
-				b.Any(
-					b.Token((int)ExampleTokenKind.Asterisk),
-					b.Token((int)ExampleTokenKind.Slash)
-				),
-				unary
-			).AtLeast(0)
-		));
+			(int)ExampleTokenKind.Asterisk,
+			(int)ExampleTokenKind.Slash
+		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
 
-		unary.Build(b => b.Any(
-			b.All(
-				b.Any(
-					b.Token((int)ExampleTokenKind.Bang),
-					b.Token((int)ExampleTokenKind.Minus)
+		unary.parser = Parser.Any(
+			Parser.And(
+				Parser.Any(
+					Parser.Token((int)ExampleTokenKind.Bang),
+					Parser.Token((int)ExampleTokenKind.Minus)
 				),
-				unary
+				unary,
+				(t, e) => new UnaryOperationExpression(t, e) as Expression
 			),
 			primary
-		));
-
-		primary.Build(b => b.Any(
-			b.Token((int)ExampleTokenKind.IntegerNumber),
-			b.Token((int)ExampleTokenKind.RealNumber),
-			b.Token((int)ExampleTokenKind.String),
-			b.Token((int)ExampleTokenKind.True),
-			b.Token((int)ExampleTokenKind.False),
-			b.Token((int)ExampleTokenKind.Nil),
-			b.All(
-				b.Token((int)ExampleTokenKind.OpenParenthesis),
-				expression,
-				b.Token((int)ExampleTokenKind.CloseParenthesis)
-			)
-		));
-
-		/*
-		Parser<Expression> valueParser = null;
-		Parser<Expression> listParser = null;
-
-		valueParser = Parser<Expression>.Build(builder => builder.Any(
-			builder.Token((int)ExampleToken.IntegerNumber).As((s, t) =>
-			{
-				int value;
-				var sub = s.Substring(t.index, t.length);
-				if (!int.TryParse(sub, out value))
-					return Option.None;
-				return new ValueExpression(value);
-			}),
-			builder.Token((int)ExampleToken.RealNumber).As((s, t) =>
-			{
-				float value;
-				var sub = s.Substring(t.index, t.length);
-				if (!float.TryParse(sub, out value))
-					return Option.None;
-				return new ValueExpression(value);
-			}),
-			builder.Token((int)ExampleToken.String).As((s, t) =>
-			{
-				var sub = s.Substring(t.index + 1, t.length - 2).Replace("\\\"", "\"");
-				return new ValueExpression(sub);
-			}),
-			builder.Token((int)ExampleToken.Identifier).As((s, t) =>
-			{
-				var sub = s.Substring(t.index, t.length);
-				return new IdentifierExpression(sub);
-			}),
-			listParser
-		)).Expect("Expected a number, string literal, identifier or list");
-
-		listParser = Parser<Expression>.Build(builder => builder.All(
-			builder.Token((int)ExampleToken.OpenParenthesis).Expect("Expected a '('"),
-			valueParser.Maybe().AtLeast(0).As(es => new ListExpression(es)),
-			builder.Token((int)ExampleToken.CloseParenthesis).Expect("Expected a ')'")
-		)).Expect("Expected a list");
-
-		parser = Parser<Expression>.Build(builder =>
-			listParser.AtLeast(1).As(es => new ListExpression(es))
 		);
-		*/
+
+		primary.parser = Parser.Any(
+			Parser.Token((int)ExampleTokenKind.IntegerNumber, (s, t) =>
+			{
+				var sub = s.Substring(t.index, t.length);
+				var value = int.Parse(sub);
+				return new ValueExpression(t, value) as Expression;
+			}),
+			Parser.Token((int)ExampleTokenKind.RealNumber, (s, t) =>
+			{
+				var sub = s.Substring(t.index, t.length);
+				var value = float.Parse(sub);
+				return new ValueExpression(t, value) as Expression;
+			}),
+			Parser.Token((int)ExampleTokenKind.String, (s, t) =>
+			{
+				var sub = s.Substring(t.index + 1, t.length - 2);
+				return new ValueExpression(t, sub) as Expression;
+			}),
+			Parser.Token((int)ExampleTokenKind.True, (s, t) =>
+			{
+				return new ValueExpression(t, true) as Expression;
+			}),
+			Parser.Token((int)ExampleTokenKind.False, (s, t) =>
+			{
+				return new ValueExpression(t, false) as Expression;
+			}),
+			Parser.Token((int)ExampleTokenKind.Nil, (s, t) =>
+			{
+				return new ValueExpression(t, null) as Expression;
+			})
+		/*
+		b.All(
+			b.Token((int)ExampleTokenKind.OpenParenthesis),
+			expression,
+			b.Token((int)ExampleTokenKind.CloseParenthesis)
+		)
+		 */
+		).Expect("Expected a value or identifier");
 	}
 
 	public Result<Expression, string> Parse(string source)
 	{
 		var tokens = tokenizer.Tokenize(source);
-		if (!tokens.IsOk)
+		if (!tokens.isOk)
 		{
 			var sb = new StringBuilder();
 			foreach (var errorIndex in tokens.error)
@@ -159,7 +120,7 @@ public sealed class ExampleParser
 		}
 
 		var expression = parser.Parse(source, tokens.ok);
-		if (expression.IsOk)
+		if (expression.isOk)
 			return Result.Ok(expression.ok);
 
 		{

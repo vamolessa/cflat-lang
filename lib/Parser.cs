@@ -1,37 +1,7 @@
 ﻿using System.Collections.Generic;
 
-public abstract class Parser<T>
+public static class Parser
 {
-	public struct Builder
-	{
-		public TokenParser<T> Token(int tokenKind)
-		{
-			return new TokenParser<T>(tokenKind);
-		}
-
-		public AnyParser<T> Any(params Parser<T>[] parsers)
-		{
-			return new AnyParser<T>(parsers);
-		}
-
-		public AllParser<T> All(params Parser<T>[] parsers)
-		{
-			return new AllParser<T>(parsers);
-		}
-	}
-
-	public readonly struct PartialOk
-	{
-		public readonly int matchCount;
-		public readonly Option<T> maybeParsed;
-
-		public PartialOk(int matchCount, Option<T> maybeParsed)
-		{
-			this.matchCount = matchCount;
-			this.maybeParsed = maybeParsed;
-		}
-	}
-
 	public readonly struct Error
 	{
 		public readonly int tokenIndex;
@@ -44,29 +14,61 @@ public abstract class Parser<T>
 		}
 	}
 
+	public static TokenParser<Token> Token(int tokenKind)
+	{
+		return new TokenParser<Token>(tokenKind).As((s, t) => t);
+	}
+
+	public static TokenParser<T> Token<T>(int tokenKind, System.Func<string, Token, T> converter)
+	{
+		return new TokenParser<T>(tokenKind).As(converter);
+	}
+
+	public static AndParser<T, L, R> And<T, L, R>(Parser<L> leftParser, Parser<R> rightParser, System.Func<L, R, T> aggregator)
+	{
+		return new AndParser<T, L, R>(leftParser, rightParser).Aggregate(aggregator);
+	}
+
+	public static AnyParser<T> Any<T>(params Parser<T>[] parsers)
+	{
+		return new AnyParser<T>(parsers);
+	}
+
+	public static AllParser<T> All<T>(params Parser<T>[] parsers)
+	{
+		return new AllParser<T>(parsers);
+	}
+}
+
+public abstract class Parser<T>
+{
+	public readonly struct PartialOk
+	{
+		public readonly int matchCount;
+		public readonly T parsed;
+
+		public PartialOk(int matchCount, T parsed)
+		{
+			this.matchCount = matchCount;
+			this.parsed = parsed;
+		}
+	}
+
 	public static DeferParser<T> Declare()
 	{
 		return new DeferParser<T>();
 	}
 
-	public string expectedErrorMessage = "Invalid input";
-
-	public Result<T, Error> Parse(string source, List<Token> tokens)
+	public Result<T, Parser.Error> Parse(string source, List<Token> tokens)
 	{
 		var result = PartialParse(source, tokens, 0);
-		if (!result.IsOk)
-			return Result.Error(new Error(result.error.tokenIndex, result.error.message));
+		if (!result.isOk)
+			return Result.Error(new Parser.Error(result.error.tokenIndex, result.error.message));
 
-		if (result.ok.matchCount != tokens.Count || !result.ok.maybeParsed.isSome)
-			return Result.Error(new Error(result.error.tokenIndex, "Not a valid program"));
+		if (result.ok.matchCount != tokens.Count)
+			return Result.Error(new Parser.Error(result.error.tokenIndex, "Not a valid program"));
 
-		return Result.Ok(result.ok.maybeParsed.value);
-	}
-
-	public Parser<T> Expect(string expectedErrorMessage)
-	{
-		this.expectedErrorMessage = expectedErrorMessage;
-		return this;
+		return Result.Ok(result.ok.parsed);
 	}
 
 	public Parser<T> Debug(System.Action<DebugParser<T>.DebugInfo> checkpoint)
@@ -84,5 +86,5 @@ public abstract class Parser<T>
 		return new MaybeParser<T>(this);
 	}
 
-	public abstract Result<PartialOk, Error> PartialParse(string source, List<Token> tokens, int index);
+	public abstract Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index);
 }

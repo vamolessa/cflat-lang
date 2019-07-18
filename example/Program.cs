@@ -24,7 +24,7 @@ namespace interpreter_tools
 			*/
 
 			var parseResult = parser.Parse(source);
-			if (parseResult.IsOk)
+			if (parseResult.isOk)
 			{
 				System.Console.WriteLine("END SUCCESS");
 				//PrintAst(parseResult.ok);
@@ -33,7 +33,7 @@ namespace interpreter_tools
 
 				var environment = new Dictionary<string, Expression>();
 				var evalResult = ExampleInterpreter.Eval(parseResult.ok, environment);
-				if (evalResult.IsOk)
+				if (evalResult.isOk)
 					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.underlying.ToString());
 				else
 					System.Console.WriteLine("DEU RUIM EVAL. ERROR\n{0}", evalResult.error);
