@@ -8,7 +8,7 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = File.ReadAllText("example/script.lisp");
+			var source = File.ReadAllText("script.mn");
 
 			var parser = new LispParser();
 

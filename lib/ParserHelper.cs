@@ -31,7 +31,7 @@ public static class ParserHelper
 			}
 		}
 
-		return new LineAndColumn(line, index - lastNewLineIndex);
+		return new LineAndColumn(line, index - lastNewLineIndex + 1);
 	}
 
 	public static string GetLines(string source, int startLine, int endLine)
