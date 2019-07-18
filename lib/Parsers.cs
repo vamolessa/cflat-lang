@@ -167,25 +167,16 @@ public sealed class AnyParser<T> : Parser<T>
 	}
 }
 
-public sealed class RepeatParser<T> : Parser<T>
+public sealed class RepeatParser<T> : Parser<List<T>>
 {
 	private readonly Parser<T> parser;
 	private readonly int minRepeatCount;
-	private System.Func<List<T>, T> converter;
 	private string expectedErrorMessage = "Did not repeat enough";
 
 	public RepeatParser(Parser<T> parser, int minRepeatCount)
 	{
 		this.parser = parser;
 		this.minRepeatCount = minRepeatCount;
-		this.converter = parsed => parsed[0];
-	}
-
-	public RepeatParser<T> As(System.Func<List<T>, T> converter)
-	{
-		if (converter != null)
-			this.converter = converter;
-		return this;
 	}
 
 	public RepeatParser<T> Expect(string expectedErrorMessage)
@@ -197,27 +188,26 @@ public sealed class RepeatParser<T> : Parser<T>
 	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
 		var repeatCount = 0;
-		var allConverted = new List<T>();
+		var parsed = new List<T>();
 		var initialIndex = index;
 
 		while (index < tokens.Count)
 		{
 			var result = parser.PartialParse(source, tokens, index);
 			if (!result.isOk)
-				return result;
+				return Result.Error(result.error);
 
 			if (result.ok.matchCount == 0)
 				break;
 
 			repeatCount += 1;
 			index += result.ok.matchCount;
-			allConverted.Add(result.ok.parsed);
+			parsed.Add(result.ok.parsed);
 		}
 
 		if (repeatCount < minRepeatCount)
 			return Result.Error(new Parser.Error(index, expectedErrorMessage));
 
-		var parsed = converter(allConverted);
 		return Result.Ok(new PartialOk(index - initialIndex, parsed));
 	}
 }
@@ -284,6 +274,7 @@ public sealed class LeftAssociativeParser<T> : Parser<T>
 			if (operatorToken.kind < 0)
 				break;
 
+			index += 1;
 			var rightResult = higherPrecedenceParser.PartialParse(source, tokens, index);
 			if (!rightResult.isOk)
 				return rightResult;
