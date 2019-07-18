@@ -35,4 +35,36 @@ public sealed class ScannerTests
 		var result = scanner.Scan(input, index);
 		Assert.Equal(expected, result);
 	}
+
+	[Theory]
+	[InlineData("1234", 0, 4)]
+	[InlineData("xx1234", 2, 4)]
+	public void IntegerNumberScanTest(string input, int index, int expected)
+	{
+		var scanner = new IntegerNumberScanner();
+		var result = scanner.Scan(input, index);
+		Assert.Equal(expected, result);
+	}
+
+	[Theory]
+	[InlineData("1234", 0, 4)]
+	[InlineData("xx1234", 2, 4)]
+	public void RealNumberScanTest(string input, int index, int expected)
+	{
+		var scanner = new RealNumberScanner();
+		var result = scanner.Scan(input, index);
+		Assert.Equal(expected, result);
+	}
+
+	[Theory]
+	[InlineData("foo", 0, 3)]
+	[InlineData("xxfoo", 2, 3)]
+	[InlineData("xx_", 2, 1)]
+	[InlineData("xx_foo_", 2, 5)]
+	public void IdentifierScanTest(string input, int index, int expected)
+	{
+		var scanner = new IdentifierScanner("_");
+		var result = scanner.Scan(input, index);
+		Assert.Equal(expected, result);
+	}
 }
