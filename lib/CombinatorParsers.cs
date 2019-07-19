@@ -32,9 +32,6 @@ public sealed class TokenParser<T> : Parser<T>
 
 	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
-		if (index >= tokens.Count)
-			return Result.Error(new Parser.Error(index, expectErrorMessage));
-
 		var token = tokens[index];
 		if (token.kind != tokenKind)
 			return Result.Error(new Parser.Error(index, expectErrorMessage));
@@ -89,23 +86,20 @@ public sealed class RepeatUntilParser<A, B> : Parser<List<A>>
 		var parsed = new List<A>();
 		var initialIndex = index;
 
-		while (index < tokens.Count)
+		while (true)
 		{
-			var repeatResult = repeatParser.PartialParse(source, tokens, index);
-			if (!repeatResult.isOk)
-			{
-				var endResult = endParser.PartialParse(source, tokens, index);
-				if (endResult.isOk)
-					break;
-				else
-					return Result.Error(repeatResult.error);
-			}
-
-			if (repeatResult.ok.matchCount == 0)
+			var result = repeatParser.PartialParse(source, tokens, index);
+			if (!result.isOk || result.ok.matchCount == 0)
 				break;
 
-			index += repeatResult.ok.matchCount;
-			parsed.Add(repeatResult.ok.parsed);
+			index += result.ok.matchCount;
+			parsed.Add(result.ok.parsed);
+		}
+
+		{
+			var result = endParser.PartialParse(source, tokens, index);
+			if (!result.isOk)
+				return Result.Error(result.error);
 		}
 
 		return Result.Ok(new PartialOk(index - initialIndex, parsed));

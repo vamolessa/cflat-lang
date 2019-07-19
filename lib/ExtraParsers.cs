@@ -126,22 +126,19 @@ public sealed class RepeatWithSeparatorParser<A, B> : Parser<List<A>>
 
 		do
 		{
-			var repeatResult = repeatParser.PartialParse(source, tokens, index);
-			if (!repeatResult.isOk)
-			{
-				var endResult = endParser.PartialParse(source, tokens, index);
-				if (endResult.isOk)
-					break;
-				else
-					return Result.Error(repeatResult.error);
-			}
-
-			if (repeatResult.ok.matchCount == 0)
+			var result = repeatParser.PartialParse(source, tokens, index);
+			if (!result.isOk || result.ok.matchCount == 0)
 				break;
 
-			index += repeatResult.ok.matchCount;
-			parsed.Add(repeatResult.ok.parsed);
+			index += result.ok.matchCount;
+			parsed.Add(result.ok.parsed);
 		} while (MatchSeparator(tokens, ref index));
+
+		{
+			var result = endParser.PartialParse(source, tokens, index);
+			if (!result.isOk)
+				return Result.Error(result.error);
+		}
 
 		return Result.Ok(new PartialOk(index - initialIndex, parsed));
 	}
@@ -185,7 +182,7 @@ public sealed class LeftAssociativeParser<T> : Parser<T>
 
 		index += result.ok.matchCount;
 
-		while (index < tokens.Count)
+		while (true)
 		{
 			var operatorToken = new Token(-1, 0, 0);
 			foreach (var token in operatorTokens)
