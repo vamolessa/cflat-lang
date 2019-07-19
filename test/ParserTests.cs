@@ -7,7 +7,8 @@ public sealed class ParserTests
 	{
 		Number,
 		Sum,
-		Minus
+		Minus,
+		Comma
 	}
 
 	private readonly string source = "01234";
@@ -23,6 +24,7 @@ public sealed class ParserTests
 		new IntegerNumberScanner().ForToken((int)TokenKind.Number),
 		new ExactScanner("+").ForToken((int)TokenKind.Sum),
 		new ExactScanner("-").ForToken((int)TokenKind.Minus),
+		new ExactScanner(",").ForToken((int)TokenKind.Comma),
 	};
 
 	[Fact]
@@ -69,27 +71,6 @@ public sealed class ParserTests
 	[InlineData("1+2", 3)]
 	[InlineData("1+2+3", 5)]
 	[InlineData("1-2+3", 5)]
-	public void AssociativeExpressionParser(string source, int tokenCount)
-	{
-		var tokens = Tokenizer.Tokenize(scanners, source);
-		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount, tokens.ok.Count);
-
-		var parser = ExtraParsers.LeftAssociative(
-			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
-			(int)TokenKind.Sum, (int)TokenKind.Minus
-		).Aggregate((t, l, r) => new None());
-
-		var result = parser.PartialParse(source, tokens.ok, 0);
-		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
-		Assert.Equal(tokenCount, result.ok.matchCount);
-	}
-
-	[Theory]
-	[InlineData("1", 1)]
-	[InlineData("1+2", 3)]
-	[InlineData("1+2+3", 5)]
-	[InlineData("1-2+3", 5)]
 	public void ExpressionParser(string source, int tokenCount)
 	{
 		var tokens = Tokenizer.Tokenize(scanners, source);
@@ -111,5 +92,49 @@ public sealed class ParserTests
 		var result = parser.PartialParse(source, tokens.ok, 0);
 		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
 		Assert.Equal(tokenCount, result.ok.matchCount);
+	}
+
+	[Theory]
+	[InlineData("1", 1)]
+	[InlineData("1+2", 3)]
+	[InlineData("1+2+3", 5)]
+	[InlineData("1-2+3", 5)]
+	public void AssociativeExpressionParser(string source, int tokenCount)
+	{
+		var tokens = Tokenizer.Tokenize(scanners, source);
+		Assert.True(tokens.isOk);
+		Assert.Equal(tokenCount, tokens.ok.Count);
+
+		var parser = ExtraParsers.LeftAssociative(
+			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
+			(int)TokenKind.Sum,
+			(int)TokenKind.Minus
+		).Aggregate((t, l, r) => new None());
+
+		var result = parser.PartialParse(source, tokens.ok, 0);
+		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
+		Assert.Equal(tokenCount, result.ok.matchCount);
+	}
+
+	[Theory]
+	[InlineData("", 0, 0)]
+	[InlineData("1", 1, 1)]
+	[InlineData("1,2", 3, 2)]
+	[InlineData("1,2,3", 5, 3)]
+	public void ListWithSeparatorParser(string source, int tokenCount, int parseCount)
+	{
+		var tokens = Tokenizer.Tokenize(scanners, source);
+		Assert.True(tokens.isOk);
+		Assert.Equal(tokenCount, tokens.ok.Count);
+
+		var parser = ExtraParsers.RepeatWithSeparator(
+			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
+			(int)TokenKind.Comma
+		);
+
+		var result = parser.PartialParse(source, tokens.ok, 0);
+		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
+		Assert.Equal(tokenCount, result.ok.matchCount);
+		Assert.Equal(parseCount, result.ok.parsed.Count);
 	}
 }

@@ -21,12 +21,12 @@ public static class Parser
 
 	public static TokenParser<Token> Token(int tokenKind)
 	{
-		return new TokenParser<Token>(tokenKind).As((s, t) => t);
+		return new TokenParser<Token>(tokenKind, (s, t) => t);
 	}
 
 	public static TokenParser<T> Token<T>(int tokenKind, System.Func<string, Token, T> converter)
 	{
-		return new TokenParser<T>(tokenKind).As(converter);
+		return new TokenParser<T>(tokenKind, converter);
 	}
 
 	public static AnyParser<T> Any<T>(params Parser<T>[] parsers)

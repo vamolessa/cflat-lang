@@ -91,23 +91,13 @@ public sealed class DebugParser<T> : Parser<T>
 public sealed class TokenParser<T> : Parser<T>
 {
 	private readonly int tokenKind;
-	private System.Func<string, Token, T> converter;
+	private readonly System.Func<string, Token, T> converter;
 	private string expectErrorMessage = "Invalid token";
 
-	public TokenParser()
-	{
-		this.tokenKind = -1;
-	}
-
-	public TokenParser(int tokenKind)
+	public TokenParser(int tokenKind, System.Func<string, Token, T> converter)
 	{
 		this.tokenKind = tokenKind;
-	}
-
-	public TokenParser<T> As(System.Func<string, Token, T> converter)
-	{
 		this.converter = converter;
-		return this;
 	}
 
 	public TokenParser<T> Expect(string expectErrorMessage)
