@@ -25,12 +25,6 @@ public sealed class ExampleParser
 		parser = program;
 
 		program.parser =
-			from exp in expression
-			from sc in Parser.Token((int)ExampleTokenKind.Semicolon)
-			from end in Parser.End()
-			select exp;
-		/*
-		program.parser =
 			from exps in (
 				from exp in expression
 				from sc in Parser.Token((int)ExampleTokenKind.Semicolon)
@@ -40,10 +34,8 @@ public sealed class ExampleParser
 			select exps.Count > 0 ?
 				exps[exps.Count - 1] :
 				ValueExpression.New(Token.EndToken, null);
-		*/
 
-		//expression.parser = declaration;
-		expression.parser = logicOr;
+		expression.parser = declaration;
 
 		declaration.parser = Parser.Any(
 			from lt in Parser.Token((int)ExampleTokenKind.Let)

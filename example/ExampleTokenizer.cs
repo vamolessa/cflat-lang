@@ -53,14 +53,6 @@ public sealed class ExampleTokenizer
 			new WhiteSpaceScanner().Ignore(),
 			new EnclosedScanner("//", "\n").Ignore(),
 
-			new IntegerNumberScanner().ForToken((int)ExampleTokenKind.IntegerNumber),
-			new RealNumberScanner().ForToken((int)ExampleTokenKind.RealNumber),
-			new EnclosedScanner("\"", "\"").ForToken((int)ExampleTokenKind.String),
-			new ExactScanner("true").ForToken((int)ExampleTokenKind.True),
-			new ExactScanner("false").ForToken((int)ExampleTokenKind.False),
-			new ExactScanner("nil").ForToken((int)ExampleTokenKind.Nil),
-			new IdentifierScanner("_").ForToken((int)ExampleTokenKind.Identifier),
-
 			new ExactScanner("fn").ForToken((int)ExampleTokenKind.Function),
 			new ExactScanner("let").ForToken((int)ExampleTokenKind.Let),
 			new ExactScanner("for").ForToken((int)ExampleTokenKind.For),
@@ -92,6 +84,14 @@ public sealed class ExampleTokenizer
 			new CharScanner('>').ForToken((int)ExampleTokenKind.Greater),
 			new ExactScanner("<=").ForToken((int)ExampleTokenKind.LesserEqual),
 			new ExactScanner(">=").ForToken((int)ExampleTokenKind.GreaterEqual),
+
+			new IntegerNumberScanner().ForToken((int)ExampleTokenKind.IntegerNumber),
+			new RealNumberScanner().ForToken((int)ExampleTokenKind.RealNumber),
+			new EnclosedScanner("\"", "\"").ForToken((int)ExampleTokenKind.String),
+			new ExactScanner("true").ForToken((int)ExampleTokenKind.True),
+			new ExactScanner("false").ForToken((int)ExampleTokenKind.False),
+			new ExactScanner("nil").ForToken((int)ExampleTokenKind.Nil),
+			new IdentifierScanner("_").ForToken((int)ExampleTokenKind.Identifier),
 		};
 	}
 

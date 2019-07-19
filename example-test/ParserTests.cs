@@ -16,8 +16,8 @@ public sealed class ParserTest
 	[InlineData("\"text\" != nil;")]
 	[InlineData("true or false;")]
 	[InlineData("true and false or 3 > 2;")]
-	//[InlineData("let declaration = 3 + 1 > 4;")]
-	//[InlineData("assign = true or false;")]
+	[InlineData("let declaration = 3 + 1 > 4;")]
+	[InlineData("assign = true or false;")]
 	public void TestExpressions(string expression)
 	{
 		var result = parser.Parse(expression);
