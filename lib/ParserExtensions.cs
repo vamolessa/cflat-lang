@@ -1,13 +1,8 @@
 public static class ParserExtensions
 {
-	public static Parser<A> Debug<A>(this Parser<A> self, System.Action<DebugParser<A>.DebugInfo> checkpoint)
+	public static RepeatUntilParser<A, B> RepeatUntil<A, B>(this Parser<A> self, Parser<B> endParser)
 	{
-		return new DebugParser<A>(self, checkpoint);
-	}
-
-	public static RepeatParser<A> Repeat<A>(this Parser<A> self)
-	{
-		return new RepeatParser<A>(self);
+		return new RepeatUntilParser<A, B>(self, endParser);
 	}
 
 	public static OptionalParser<A> Optional<A>(this Parser<A> self)

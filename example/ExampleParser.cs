@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 public sealed class ExampleParser
 {
@@ -9,7 +10,12 @@ public sealed class ExampleParser
 	{
 		this.tokenizer = tokenizer;
 
+		var program = Parser.Declare<Expression>();
 		var expression = Parser.Declare<Expression>();
+		var declaration = Parser.Declare<Expression>();
+		var assignment = Parser.Declare<Expression>();
+		var logicOr = Parser.Declare<Expression>();
+		var logicAnd = Parser.Declare<Expression>();
 		var equality = Parser.Declare<Expression>();
 		var comparison = Parser.Declare<Expression>();
 		var addition = Parser.Declare<Expression>();
@@ -17,15 +23,57 @@ public sealed class ExampleParser
 		var unary = Parser.Declare<Expression>();
 		var primary = Parser.Declare<Expression>();
 
-		parser = expression;
+		parser = program;
 
-		expression.parser = equality;
+		program.parser =
+			from exps in expression.RepeatUntil(Parser.End())
+			from _ in Parser.End()
+			select exps.Count > 0 ?
+				exps[exps.Count - 1] :
+				ValueExpression.New(Token.EndToken, null);
+
+		expression.parser = declaration;
+
+		declaration.parser = Parser.Any(
+			from lt in Parser.Token((int)ExampleTokenKind.Let)
+			from id in Parser.Token((int)ExampleTokenKind.Identifier)
+			from eq in Parser.Token((int)ExampleTokenKind.Equal)
+			from ex in assignment
+			select new DeclarationExpression
+			{
+				identifierToken = id,
+				expression = ex
+			} as Expression,
+			assignment
+		);
+
+		assignment.parser = Parser.Any(
+			from id in Parser.Token((int)ExampleTokenKind.Identifier)
+			from eq in Parser.Token((int)ExampleTokenKind.Equal)
+			from ex in assignment
+			select new AssignmentExpression
+			{
+				identifierToken = id,
+				expression = ex
+			} as Expression,
+			logicOr
+		);
+
+		logicOr.parser = ExtraParsers.LeftAssociative(
+			logicAnd,
+			(int)ExampleTokenKind.Or
+		).Aggregate(LogicOperationExpression.New);
+
+		logicAnd.parser = ExtraParsers.LeftAssociative(
+			equality,
+			(int)ExampleTokenKind.And
+		).Aggregate(LogicOperationExpression.New);
 
 		equality.parser = ExtraParsers.LeftAssociative(
 			comparison,
 			(int)ExampleTokenKind.EqualEqual,
 			(int)ExampleTokenKind.BangEqual
-		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
+		).Aggregate(BinaryOperationExpression.New);
 
 		comparison.parser = ExtraParsers.LeftAssociative(
 			addition,
@@ -33,19 +81,19 @@ public sealed class ExampleParser
 			(int)ExampleTokenKind.LesserEqual,
 			(int)ExampleTokenKind.Greater,
 			(int)ExampleTokenKind.GreaterEqual
-		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
+		).Aggregate(BinaryOperationExpression.New);
 
 		addition.parser = ExtraParsers.LeftAssociative(
 			multiplication,
 			(int)ExampleTokenKind.Sum,
 			(int)ExampleTokenKind.Minus
-		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
+		).Aggregate(BinaryOperationExpression.New);
 
 		multiplication.parser = ExtraParsers.LeftAssociative(
 			unary,
 			(int)ExampleTokenKind.Asterisk,
 			(int)ExampleTokenKind.Slash
-		).Aggregate((t, l, r) => new BinaryOperationExpression(t, l, r));
+		).Aggregate(BinaryOperationExpression.New);
 
 		unary.parser = Parser.Any(
 			from op in Parser.Any(
@@ -53,7 +101,11 @@ public sealed class ExampleParser
 				Parser.Token((int)ExampleTokenKind.Minus)
 			)
 			from un in unary
-			select new UnaryOperationExpression(op, un) as Expression,
+			select new UnaryOperationExpression
+			{
+				token = op,
+				expression = un
+			} as Expression,
 			primary
 		);
 
@@ -62,35 +114,45 @@ public sealed class ExampleParser
 			{
 				var sub = s.Substring(t.index, t.length);
 				var value = int.Parse(sub);
-				return new ValueExpression(t, value) as Expression;
+				return ValueExpression.New(t, value);
 			}),
 			Parser.Token((int)ExampleTokenKind.RealNumber, (s, t) =>
 			{
 				var sub = s.Substring(t.index, t.length);
 				var value = float.Parse(sub);
-				return new ValueExpression(t, value) as Expression;
+				return ValueExpression.New(t, value);
 			}),
 			Parser.Token((int)ExampleTokenKind.String, (s, t) =>
 			{
-				var sub = s.Substring(t.index + 1, t.length - 2);
-				return new ValueExpression(t, sub) as Expression;
+				var value = s.Substring(t.index + 1, t.length - 2);
+				return ValueExpression.New(t, value);
 			}),
 			Parser.Token((int)ExampleTokenKind.True, (s, t) =>
 			{
-				return new ValueExpression(t, true) as Expression;
+				return ValueExpression.New(t, true);
 			}),
 			Parser.Token((int)ExampleTokenKind.False, (s, t) =>
 			{
-				return new ValueExpression(t, false) as Expression;
+				return ValueExpression.New(t, false);
 			}),
 			Parser.Token((int)ExampleTokenKind.Nil, (s, t) =>
 			{
-				return new ValueExpression(t, null) as Expression;
+				return ValueExpression.New(t, null);
+			}),
+			Parser.Token((int)ExampleTokenKind.Identifier, (s, t) =>
+			{
+				var name = s.Substring(t.index, t.length);
+				return new VariableExpression { token = t, name = name } as Expression;
 			}),
 			from open in Parser.Token((int)ExampleTokenKind.OpenParenthesis)
 			from exp in expression
 			from close in Parser.Token((int)ExampleTokenKind.CloseParenthesis)
-			select new GroupExpression(open, close, exp) as Expression
+			select new GroupExpression
+			{
+				leftToken = open,
+				rightToken = close,
+				expression = exp
+			} as Expression
 		).Expect("Expected a value or identifier");
 	}
 

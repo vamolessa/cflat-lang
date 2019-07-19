@@ -1,90 +1,14 @@
 ﻿using System.Collections.Generic;
 
-public sealed class DebugParser<T> : Parser<T>
+public sealed class EndParser : Parser<None>
 {
-	public readonly struct DebugInfo
-	{
-		public readonly Parser<T> parser;
-		public readonly Result<PartialOk, Parser.Error> result;
-		public readonly string source;
-		public readonly List<Token> tokens;
-		public readonly int tokenIndex;
-
-		public string InputLeft
-		{
-			get
-			{
-				var index = tokenIndex;
-				if (result.isOk)
-					index += result.ok.matchCount;
-				return index < tokens.Count ?
-					string.Format(
-						"input left: {0}",
-						source.Substring(tokens[index].index)
-					) :
-					"no input left";
-			}
-		}
-
-		public string MatchCountOrError
-		{
-			get
-			{
-				return result.isOk ?
-					string.Format("match count: {0}", result.ok.matchCount) :
-					string.Format("error: {0}", result.error.message);
-			}
-		}
-
-		public DebugInfo(
-			Parser<T> parser,
-			Result<PartialOk, Parser.Error> result,
-			string source,
-			List<Token> tokens,
-			int tokenIndex)
-		{
-			this.parser = parser;
-			this.result = result;
-			this.source = source;
-			this.tokens = tokens;
-			this.tokenIndex = tokenIndex;
-		}
-
-		public override string ToString()
-		{
-			return string.Format(
-				"DebugInfo parser: {0} {1} {2}",
-				parser.GetType().Name,
-				MatchCountOrError,
-				InputLeft
-			);
-		}
-	}
-
-	private readonly Parser<T> parser;
-	private readonly System.Action<DebugInfo> checkpoint;
-
-	public DebugParser(Parser<T> parser, System.Action<DebugInfo> checkpoint)
-	{
-		this.parser = parser;
-		this.checkpoint = checkpoint;
-	}
-
 	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
-		var result = parser.PartialParse(source, tokens, index);
-		if (checkpoint != null)
-		{
-			checkpoint(new DebugInfo(
-				parser,
-				result,
-				source,
-				tokens,
-				index
-			));
-		}
+		var token = tokens[index];
+		if (token.kind != Token.EndToken.kind)
+			return Result.Error(new Parser.Error(index, "Not end of program"));
 
-		return result;
+		return Result.Ok(new PartialOk(1, Option.None));
 	}
 }
 
@@ -149,31 +73,39 @@ public sealed class AnyParser<T> : Parser<T>
 	}
 }
 
-public sealed class RepeatParser<T> : Parser<List<T>>
+public sealed class RepeatUntilParser<A, B> : Parser<List<A>>
 {
-	private readonly Parser<T> parser;
+	private readonly Parser<A> repeatParser;
+	private readonly Parser<B> endParser;
 
-	public RepeatParser(Parser<T> parser)
+	public RepeatUntilParser(Parser<A> repeatParser, Parser<B> endParser)
 	{
-		this.parser = parser;
+		this.repeatParser = repeatParser;
+		this.endParser = endParser;
 	}
 
 	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
-		var parsed = new List<T>();
+		var parsed = new List<A>();
 		var initialIndex = index;
 
 		while (index < tokens.Count)
 		{
-			var result = parser.PartialParse(source, tokens, index);
-			if (!result.isOk)
-				return Result.Error(result.error);
+			var repeatResult = repeatParser.PartialParse(source, tokens, index);
+			if (!repeatResult.isOk)
+			{
+				var endResult = endParser.PartialParse(source, tokens, index);
+				if (endResult.isOk)
+					break;
+				else
+					return Result.Error(repeatResult.error);
+			}
 
-			if (result.ok.matchCount == 0)
+			if (repeatResult.ok.matchCount == 0)
 				break;
 
-			index += result.ok.matchCount;
-			parsed.Add(result.ok.parsed);
+			index += repeatResult.ok.matchCount;
+			parsed.Add(repeatResult.ok.parsed);
 		}
 
 		return Result.Ok(new PartialOk(index - initialIndex, parsed));

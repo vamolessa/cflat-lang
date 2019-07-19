@@ -2,6 +2,8 @@
 
 public readonly struct Token
 {
+	public static readonly Token EndToken = new Token(-1, 0, 0);
+
 	public readonly int kind;
 	public readonly int index;
 	public readonly int length;
@@ -53,6 +55,8 @@ public static class Tokenizer
 
 		if (errorIndexes.Count > 0)
 			return Result.Error(errorIndexes);
+
+		tokens.Add(Token.EndToken);
 		return Result.Ok(tokens);
 	}
 }

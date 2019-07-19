@@ -18,7 +18,8 @@ public sealed class ParserTests
 		new Token(1, 1, 1),
 		new Token(2, 2, 1),
 		new Token(3, 3, 1),
-		new Token(4, 4, 1)
+		new Token(4, 4, 1),
+		Token.EndToken
 	};
 	private readonly Scanner[] scanners = {
 		new IntegerNumberScanner().ForToken((int)TokenKind.Number),
@@ -67,6 +68,24 @@ public sealed class ParserTests
 	}
 
 	[Theory]
+	[InlineData("", 0)]
+	[InlineData("+", 1)]
+	[InlineData("++", 2)]
+	[InlineData("+++++", 5)]
+	public void RepeatParser(string source, int tokenCount)
+	{
+		var tokens = Tokenizer.Tokenize(scanners, source);
+		Assert.True(tokens.isOk);
+		Assert.Equal(tokenCount + 1, tokens.ok.Count);
+
+		var parser = Parser.Token((int)TokenKind.Sum).RepeatUntil(Parser.End());
+
+		var result = parser.PartialParse(source, tokens.ok, 0);
+		Assert.True(result.isOk);
+		Assert.Equal(tokenCount, result.ok.matchCount);
+	}
+
+	[Theory]
 	[InlineData("1", 1)]
 	[InlineData("1+2", 3)]
 	[InlineData("1+2+3", 5)]
@@ -75,7 +94,7 @@ public sealed class ParserTests
 	{
 		var tokens = Tokenizer.Tokenize(scanners, source);
 		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount, tokens.ok.Count);
+		Assert.Equal(tokenCount + 1, tokens.ok.Count);
 
 		var parser =
 			from p0 in Parser.Token((int)TokenKind.Number)
@@ -86,7 +105,7 @@ public sealed class ParserTests
 				)
 				from p3 in Parser.Token((int)TokenKind.Number)
 				select (p2, p3)
-			).Optional().Repeat()
+			).RepeatUntil(Parser.End())
 			select new None();
 
 		var result = parser.PartialParse(source, tokens.ok, 0);
@@ -103,7 +122,7 @@ public sealed class ParserTests
 	{
 		var tokens = Tokenizer.Tokenize(scanners, source);
 		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount, tokens.ok.Count);
+		Assert.Equal(tokenCount + 1, tokens.ok.Count);
 
 		var parser = ExtraParsers.LeftAssociative(
 			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
@@ -125,10 +144,11 @@ public sealed class ParserTests
 	{
 		var tokens = Tokenizer.Tokenize(scanners, source);
 		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount, tokens.ok.Count);
+		Assert.Equal(tokenCount + 1, tokens.ok.Count);
 
 		var parser = ExtraParsers.RepeatWithSeparator(
 			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
+			Parser.End(),
 			(int)TokenKind.Comma
 		);
 

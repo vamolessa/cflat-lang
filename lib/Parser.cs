@@ -14,9 +14,16 @@ public static class Parser
 		}
 	}
 
+	private static readonly EndParser endParser = new EndParser();
+
 	public static DeferParser<T> Declare<T>()
 	{
 		return new DeferParser<T>();
+	}
+
+	public static EndParser End()
+	{
+		return endParser;
 	}
 
 	public static TokenParser<Token> Token(int tokenKind)

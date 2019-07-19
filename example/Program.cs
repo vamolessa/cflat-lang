@@ -32,7 +32,7 @@ namespace interpreter_tools
 				var environment = new Dictionary<string, Expression>();
 				var evalResult = ExampleInterpreter.Eval(parseResult.ok, environment);
 				if (evalResult.isOk)
-					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.underlying.ToString());
+					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.value.ToString());
 				else
 					System.Console.WriteLine("DEU RUIM EVAL. ERROR\n{0}", evalResult.error);
 			}
