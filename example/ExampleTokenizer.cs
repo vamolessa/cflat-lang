@@ -17,6 +17,9 @@ public enum ExampleTokenKind
 	While,
 	Return,
 
+	And,
+	Or,
+
 	Colon,
 	Semicolon,
 	OpenParenthesis,
@@ -64,6 +67,9 @@ public sealed class ExampleTokenizer
 			new ExactScanner("if").ForToken((int)ExampleTokenKind.If),
 			new ExactScanner("while").ForToken((int)ExampleTokenKind.While),
 			new ExactScanner("return").ForToken((int)ExampleTokenKind.Return),
+
+			new ExactScanner("and").ForToken((int)ExampleTokenKind.And),
+			new ExactScanner("or").ForToken((int)ExampleTokenKind.Or),
 
 			new ExactScanner(",").ForToken((int)ExampleTokenKind.Colon),
 			new ExactScanner(";").ForToken((int)ExampleTokenKind.Semicolon),

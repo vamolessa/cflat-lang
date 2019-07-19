@@ -7,7 +7,7 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
-			var source = File.ReadAllText("script.mn");
+			var source = File.ReadAllText("script.txt");
 
 			var tokenizer = new ExampleTokenizer();
 			var parser = new ExampleParser(tokenizer);
@@ -27,8 +27,6 @@ namespace interpreter_tools
 			if (parseResult.isOk)
 			{
 				System.Console.WriteLine("END SUCCESS");
-				//PrintAst(parseResult.ok);
-
 				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
 				var environment = new Dictionary<string, Expression>();

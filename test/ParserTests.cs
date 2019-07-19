@@ -75,7 +75,7 @@ public sealed class ParserTests
 		Assert.True(tokens.isOk);
 		Assert.Equal(tokenCount, tokens.ok.Count);
 
-		var parser = new LeftAssociativeParser<None>(
+		var parser = ExtraParsers.LeftAssociative(
 			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
 			(int)TokenKind.Sum, (int)TokenKind.Minus
 		).Aggregate((t, l, r) => new None());
@@ -99,13 +99,13 @@ public sealed class ParserTests
 		var parser =
 			from p0 in Parser.Token((int)TokenKind.Number)
 			from p1 in (
-				from p2 in (
-					Parser.Token((int)TokenKind.Sum) |
+				from p2 in Parser.Any(
+					Parser.Token((int)TokenKind.Sum),
 					Parser.Token((int)TokenKind.Minus)
 				)
 				from p3 in Parser.Token((int)TokenKind.Number)
 				select (p2, p3)
-			).Maybe().AtLeast(0)
+			).Optional().Repeat()
 			select new None();
 
 		var result = parser.PartialParse(source, tokens.ok, 0);
