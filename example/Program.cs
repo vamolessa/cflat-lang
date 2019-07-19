@@ -14,14 +14,15 @@ namespace interpreter_tools
 
 			/*
 			var tokens = tokenizer.Tokenize(source);
-			if (tokens.IsOk)
+			if (tokens.isOk)
 			{
 				System.Console.WriteLine("HERE COMES TOKENS");
 				foreach (var t in tokens.ok)
 					System.Console.WriteLine(source.Substring(t.index, t.length));
 				System.Console.WriteLine("---");
+				return;
 			}
-			*/
+			//*/
 
 			var parseResult = parser.Parse(source);
 			if (parseResult.isOk)

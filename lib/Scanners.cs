@@ -28,6 +28,21 @@ public sealed class WhiteSpaceScanner : Scanner
 	}
 }
 
+public sealed class CharScanner : Scanner
+{
+	public readonly char ch;
+
+	public CharScanner(char ch)
+	{
+		this.ch = ch;
+	}
+
+	public override int Scan(string input, int index)
+	{
+		return input[index] == ch ? 1 : 0;
+	}
+}
+
 public sealed class ExactScanner : Scanner
 {
 	public readonly string match;

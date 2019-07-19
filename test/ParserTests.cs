@@ -23,9 +23,9 @@ public sealed class ParserTests
 	};
 	private readonly Scanner[] scanners = {
 		new IntegerNumberScanner().ForToken((int)TokenKind.Number),
-		new ExactScanner("+").ForToken((int)TokenKind.Sum),
-		new ExactScanner("-").ForToken((int)TokenKind.Minus),
-		new ExactScanner(",").ForToken((int)TokenKind.Comma),
+		new CharScanner('+').ForToken((int)TokenKind.Sum),
+		new CharScanner('-').ForToken((int)TokenKind.Minus),
+		new CharScanner(',').ForToken((int)TokenKind.Comma),
 	};
 
 	[Fact]

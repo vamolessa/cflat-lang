@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using System.Text;
+﻿using System.Text;
 
 public sealed class ExampleParser
 {
@@ -26,13 +25,25 @@ public sealed class ExampleParser
 		parser = program;
 
 		program.parser =
-			from exps in expression.RepeatUntil(Parser.End())
-			from _ in Parser.End()
+			from exp in expression
+			from sc in Parser.Token((int)ExampleTokenKind.Semicolon)
+			from end in Parser.End()
+			select exp;
+		/*
+		program.parser =
+			from exps in (
+				from exp in expression
+				from sc in Parser.Token((int)ExampleTokenKind.Semicolon)
+				select exp
+			).RepeatUntil(Parser.End())
+			from end in Parser.End()
 			select exps.Count > 0 ?
 				exps[exps.Count - 1] :
 				ValueExpression.New(Token.EndToken, null);
+		*/
 
-		expression.parser = declaration;
+		//expression.parser = declaration;
+		expression.parser = logicOr;
 
 		declaration.parser = Parser.Any(
 			from lt in Parser.Token((int)ExampleTokenKind.Let)
