@@ -70,6 +70,32 @@ public sealed class AnyParser<T> : Parser<T>
 	}
 }
 
+public sealed class IgnoreParser<T> : Parser<None>
+{
+	private readonly Parser<T> parser;
+
+	public IgnoreParser(Parser<T> parser)
+	{
+		this.parser = parser;
+	}
+
+	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
+	{
+		var initialIndex = index;
+
+		while (true)
+		{
+			var result = parser.PartialParse(source, tokens, index);
+			if (!result.isOk || result.ok.matchCount == 0)
+				break;
+
+			index += result.ok.matchCount;
+		}
+
+		return Result.Ok(new PartialOk(index - initialIndex, new None()));
+	}
+}
+
 public sealed class RepeatUntilParser<A, B> : Parser<List<A>>
 {
 	private readonly Parser<A> repeatParser;

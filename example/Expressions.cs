@@ -90,12 +90,6 @@ public sealed class GroupExpression : Expression
 	public Expression expression;
 }
 
-public sealed class DeclarationExpression : Expression
-{
-	public Token identifierToken;
-	public Expression expression;
-}
-
 public sealed class AssignmentExpression : Expression
 {
 	public Token identifierToken;

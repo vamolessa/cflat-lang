@@ -11,7 +11,6 @@ public enum ExampleTokenKind
 	Identifier,
 
 	Function,
-	Let,
 	For,
 	If,
 	While,
@@ -20,6 +19,7 @@ public enum ExampleTokenKind
 	And,
 	Or,
 
+	NewLine,
 	Colon,
 	Semicolon,
 	OpenParenthesis,
@@ -50,11 +50,7 @@ public sealed class ExampleTokenizer
 	public ExampleTokenizer()
 	{
 		scanners = new Scanner[] {
-			new WhiteSpaceScanner().Ignore(),
-			new EnclosedScanner("//", "\n").Ignore(),
-
 			new ExactScanner("fn").ForToken((int)ExampleTokenKind.Function),
-			new ExactScanner("let").ForToken((int)ExampleTokenKind.Let),
 			new ExactScanner("for").ForToken((int)ExampleTokenKind.For),
 			new ExactScanner("if").ForToken((int)ExampleTokenKind.If),
 			new ExactScanner("while").ForToken((int)ExampleTokenKind.While),
@@ -63,6 +59,7 @@ public sealed class ExampleTokenizer
 			new ExactScanner("and").ForToken((int)ExampleTokenKind.And),
 			new ExactScanner("or").ForToken((int)ExampleTokenKind.Or),
 
+			new CharScanner('\n').ForToken((int)ExampleTokenKind.NewLine),
 			new CharScanner(',').ForToken((int)ExampleTokenKind.Colon),
 			new CharScanner(';').ForToken((int)ExampleTokenKind.Semicolon),
 			new CharScanner('(').ForToken((int)ExampleTokenKind.OpenParenthesis),
@@ -92,6 +89,9 @@ public sealed class ExampleTokenizer
 			new ExactScanner("false").ForToken((int)ExampleTokenKind.False),
 			new ExactScanner("nil").ForToken((int)ExampleTokenKind.Nil),
 			new IdentifierScanner("_").ForToken((int)ExampleTokenKind.Identifier),
+
+			new WhiteSpaceScanner().Ignore(),
+			new EnclosedScanner("//", "\n").Ignore(),
 		};
 	}
 

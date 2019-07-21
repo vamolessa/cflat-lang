@@ -1,4 +1,5 @@
-﻿using System.Text;
+﻿using System.Collections.Generic;
+using System.Text;
 
 public sealed class ExampleParser
 {
@@ -11,7 +12,6 @@ public sealed class ExampleParser
 
 		var program = Parser.Declare<Expression>();
 		var expression = Parser.Declare<Expression>();
-		var declaration = Parser.Declare<Expression>();
 		var assignment = Parser.Declare<Expression>();
 		var logicOr = Parser.Declare<Expression>();
 		var logicAnd = Parser.Declare<Expression>();
@@ -25,9 +25,10 @@ public sealed class ExampleParser
 		parser = program;
 
 		program.parser =
+			from nls0 in Parser.Token((int)ExampleTokenKind.NewLine).Ignore()
 			from exps in (
 				from exp in expression
-				from sc in Parser.Token((int)ExampleTokenKind.Semicolon)
+				from nls1 in Parser.Token((int)ExampleTokenKind.NewLine).Ignore()
 				select exp
 			).RepeatUntil(Parser.End())
 			from end in Parser.End()
@@ -35,20 +36,7 @@ public sealed class ExampleParser
 				exps[exps.Count - 1] :
 				ValueExpression.New(Token.EndToken, null);
 
-		expression.parser = declaration;
-
-		declaration.parser = Parser.Any(
-			from lt in Parser.Token((int)ExampleTokenKind.Let)
-			from id in Parser.Token((int)ExampleTokenKind.Identifier)
-			from eq in Parser.Token((int)ExampleTokenKind.Equal)
-			from ex in assignment
-			select new DeclarationExpression
-			{
-				identifierToken = id,
-				expression = ex
-			} as Expression,
-			assignment
-		);
+		expression.parser = assignment;
 
 		assignment.parser = Parser.Any(
 			from id in Parser.Token((int)ExampleTokenKind.Identifier)

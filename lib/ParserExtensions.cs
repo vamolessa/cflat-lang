@@ -1,5 +1,10 @@
 public static class ParserExtensions
 {
+	public static IgnoreParser<T> Ignore<T>(this Parser<T> self)
+	{
+		return new IgnoreParser<T>(self);
+	}
+
 	public static RepeatUntilParser<A, B> RepeatUntil<A, B>(this Parser<A> self, Parser<B> endParser)
 	{
 		return new RepeatUntilParser<A, B>(self, endParser);
