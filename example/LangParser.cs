@@ -35,8 +35,8 @@ public sealed class LangParser
 		var token = parser.Consume((int)TokenKind.Identifier, "Expected function name");
 		var name = parser.source.Substring(token.index, token.length);
 		parser.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
-		var parameters = new List<FunctionExpression.Parameter>();
-		if (!parser.Match((int)TokenKind.CloseParenthesis))
+		var parameters = new List<Identifier>();
+		if (!parser.Check((int)TokenKind.CloseParenthesis))
 		{
 			do
 			{
@@ -48,7 +48,7 @@ public sealed class LangParser
 					paramToken.index,
 					paramToken.length
 				);
-				parameters.Add(new FunctionExpression.Parameter(
+				parameters.Add(new Identifier(
 					paramToken,
 					paramName
 				));
@@ -60,8 +60,7 @@ public sealed class LangParser
 
 		return new FunctionExpression
 		{
-			token = token,
-			name = name,
+			identifier = new Identifier(token, name),
 			parameters = parameters,
 			body = body
 		};
@@ -230,7 +229,7 @@ public sealed class LangParser
 		Expression FinishCall(Expression callee)
 		{
 			var args = new List<Expression>();
-			if (!parser.Match((int)TokenKind.CloseParenthesis))
+			if (!parser.Check((int)TokenKind.CloseParenthesis))
 			{
 				do
 					args.Add(Expression());
@@ -282,10 +281,10 @@ public sealed class LangParser
 			);
 		case TokenKind.Identifier:
 			parser.Next();
-			return new VariableExpression(
+			return new VariableExpression(new Identifier(
 				token,
 				parser.source.Substring(token.index, token.length)
-			);
+			));
 		case TokenKind.OpenCurlyBrackets:
 			return Block();
 		case TokenKind.Function:

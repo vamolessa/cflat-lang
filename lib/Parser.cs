@@ -27,7 +27,7 @@ public sealed class Parser
 	private readonly List<ParseError> errors = new List<ParseError>();
 	private int nextIndex;
 
-	public Result<T, List<ParseError>> Parse<T>(string source, Scanner[] scanners, System.Func<T> tryParse)
+	public Result<T, List<ParseError>> Parse<T>(string source, Scanner[] scanners, System.Func<T> tryParse, System.Action recover = null)
 	{
 		this.source = source;
 		tokens.Clear();
@@ -49,29 +49,42 @@ public sealed class Parser
 			return Result.Error(errors);
 		}
 
-		try
+		while (!Check(Token.EndToken.kind))
 		{
-			return Result.Ok(tryParse());
+			try
+			{
+				return Result.Ok(tryParse());
+			}
+			catch (ParseException e)
+			{
+				AddError(e.Message);
+				if (recover != null)
+					recover();
+				else
+					break;
+			}
 		}
-		catch (ParseException e)
-		{
-			var errorIndex = 0;
-			if (nextIndex < tokens.Count - 1)
-			{
-				errorIndex = tokens[nextIndex].index;
-			}
-			else if (tokens.Count > 1)
-			{
-				var lastToken = tokens[tokens.Count - 2];
-				errorIndex = lastToken.index + lastToken.length;
-			}
 
-			errors.Add(new ParseError(
-				ParserHelper.GetLineAndColumn(source, errorIndex),
-				e.Message
-			));
-			return Result.Error(errors);
+		return Result.Error(errors);
+	}
+
+	public void AddError(string errorMessage)
+	{
+		var errorIndex = 0;
+		if (nextIndex < tokens.Count - 1)
+		{
+			errorIndex = tokens[nextIndex].index;
 		}
+		else if (tokens.Count > 1)
+		{
+			var lastToken = tokens[tokens.Count - 2];
+			errorIndex = lastToken.index + lastToken.length;
+		}
+
+		errors.Add(new ParseError(
+			ParserHelper.GetLineAndColumn(source, errorIndex),
+			errorMessage
+		));
 	}
 
 	public Token Peek()

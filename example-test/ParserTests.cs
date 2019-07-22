@@ -18,6 +18,9 @@ public sealed class ParserTest
 	[InlineData("true or false")]
 	[InlineData("true and false or 3 > 2")]
 	[InlineData("assign = true or false")]
+	[InlineData("func()")]
+	[InlineData("func(0)")]
+	[InlineData("assign = func(3 + 4)(false)")]
 	public void TestExpressions(string source)
 	{
 		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
@@ -47,7 +50,9 @@ public sealed class ParserTest
 	}
 
 	[Theory]
+	[InlineData("fn foo(){}")]
 	[InlineData("fn foo(a,b) { return true }")]
+	[InlineData("fn foo(a,b) { fn bar() { return nil } return true }")]
 	public void TestFunctionDeclaration(string source)
 	{
 		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Function);

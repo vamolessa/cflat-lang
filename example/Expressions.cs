@@ -1,38 +1,35 @@
 ﻿using System.Collections.Generic;
 
+public readonly struct Identifier
+{
+	public readonly Token token;
+	public readonly string name;
+
+	public Identifier(Token token, string name)
+	{
+		this.token = token;
+		this.name = name;
+	}
+}
+
 public abstract class Expression
 {
 }
 
 public sealed class FunctionExpression : Expression
 {
-	public readonly struct Parameter
-	{
-		public readonly Token token;
-		public readonly string name;
-
-		public Parameter(Token token, string name)
-		{
-			this.token = token;
-			this.name = name;
-		}
-	}
-
-	public Token token;
-	public string name;
-	public List<Parameter> parameters;
+	public Identifier identifier;
+	public List<Identifier> parameters;
 	public Expression body;
 }
 
 public sealed class VariableExpression : Expression
 {
-	public readonly Token token;
-	public readonly string name;
+	public readonly Identifier identifier;
 
-	public VariableExpression(Token token, string name)
+	public VariableExpression(Identifier identifier)
 	{
-		this.token = token;
-		this.name = name;
+		this.identifier = identifier;
 	}
 }
 
