@@ -13,13 +13,14 @@ public enum ExampleTokenKind
 	Function,
 	For,
 	If,
+	Else,
 	While,
 	Return,
+	Break,
 
 	And,
 	Or,
 
-	NewLine,
 	Colon,
 	Semicolon,
 	OpenParenthesis,
@@ -53,13 +54,13 @@ public sealed class ExampleTokenizer
 			new ExactScanner("fn").ForToken((int)ExampleTokenKind.Function),
 			new ExactScanner("for").ForToken((int)ExampleTokenKind.For),
 			new ExactScanner("if").ForToken((int)ExampleTokenKind.If),
+			new ExactScanner("else").ForToken((int)ExampleTokenKind.Else),
 			new ExactScanner("while").ForToken((int)ExampleTokenKind.While),
 			new ExactScanner("return").ForToken((int)ExampleTokenKind.Return),
 
 			new ExactScanner("and").ForToken((int)ExampleTokenKind.And),
 			new ExactScanner("or").ForToken((int)ExampleTokenKind.Or),
 
-			new CharScanner('\n').ForToken((int)ExampleTokenKind.NewLine),
 			new CharScanner(',').ForToken((int)ExampleTokenKind.Colon),
 			new CharScanner(';').ForToken((int)ExampleTokenKind.Semicolon),
 			new CharScanner('(').ForToken((int)ExampleTokenKind.OpenParenthesis),

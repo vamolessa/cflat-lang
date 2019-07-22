@@ -1,1 +1,1 @@
-true or false;
+while true { 1 + 2 }

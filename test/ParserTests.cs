@@ -157,4 +157,24 @@ public sealed class ParserTests
 		Assert.Equal(tokenCount, result.ok.matchCount);
 		Assert.Equal(parseCount, result.ok.parsed.Count);
 	}
+
+	[Theory]
+	[InlineData("11", 1)]
+	public void AnyParserFail(string source, int errorIndex)
+	{
+		var tokens = Tokenizer.Tokenize(scanners, source);
+		Assert.True(tokens.isOk);
+
+		var parser =
+			from n in Parser.Token((int)TokenKind.Number)
+			from o in Parser.Any(
+				Parser.Token((int)TokenKind.Sum),
+				Parser.Token((int)TokenKind.Minus)
+			)
+			select new None();
+
+		var result = parser.PartialParse(source, tokens.ok, 0);
+		Assert.False(result.isOk);
+		Assert.Equal(errorIndex, result.error.tokenIndex);
+	}
 }

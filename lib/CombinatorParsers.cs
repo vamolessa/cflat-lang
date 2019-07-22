@@ -44,55 +44,31 @@ public sealed class TokenParser<T> : Parser<T>
 public sealed class AnyParser<T> : Parser<T>
 {
 	private readonly Parser<T>[] parsers;
-	private string expectErrorMessage = "Did not have any match";
 
 	public AnyParser(Parser<T>[] parsers)
 	{
 		this.parsers = parsers;
 	}
 
-	public AnyParser<T> Expect(string expectErrorMessage)
-	{
-		this.expectErrorMessage = expectErrorMessage;
-		return this;
-	}
-
 	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
+		var furtherTokenIndex = int.MinValue;
+		var furtherMessage = "";
+
 		foreach (var parser in parsers)
 		{
 			var result = parser.PartialParse(source, tokens, index);
 			if (result.isOk)
 				return result;
+
+			if (result.error.tokenIndex > furtherTokenIndex)
+			{
+				furtherTokenIndex = result.error.tokenIndex;
+				furtherMessage = result.error.message;
+			}
 		}
 
-		return Result.Error(new Parser.Error(index, expectErrorMessage));
-	}
-}
-
-public sealed class IgnoreParser<T> : Parser<None>
-{
-	private readonly Parser<T> parser;
-
-	public IgnoreParser(Parser<T> parser)
-	{
-		this.parser = parser;
-	}
-
-	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
-	{
-		var initialIndex = index;
-
-		while (true)
-		{
-			var result = parser.PartialParse(source, tokens, index);
-			if (!result.isOk || result.ok.matchCount == 0)
-				break;
-
-			index += result.ok.matchCount;
-		}
-
-		return Result.Ok(new PartialOk(index - initialIndex, new None()));
+		return Result.Error(new Parser.Error(furtherTokenIndex, furtherMessage));
 	}
 }
 
@@ -215,7 +191,7 @@ public sealed class SelectManyParser<A, B, C> : Parser<C>
 		);
 
 		if (!otherResult.isOk)
-			return Result.Error(result.error);
+			return Result.Error(otherResult.error);
 
 		return Result.Ok(new PartialOk(
 			result.ok.matchCount + otherResult.ok.matchCount,

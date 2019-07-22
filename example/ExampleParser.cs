@@ -11,6 +11,15 @@ public sealed class ExampleParser
 		this.tokenizer = tokenizer;
 
 		var program = Parser.Declare<Expression>();
+		var block = Parser.Declare<BlockExpression>();
+
+		var statement = Parser.Declare<Expression>();
+		var ifStmt = Parser.Declare<Expression>();
+		var whileStmt = Parser.Declare<Expression>();
+		var breakStmt = Parser.Declare<Expression>();
+		var returnStmt = Parser.Declare<Expression>();
+		var expressionStmt = Parser.Declare<Expression>();
+
 		var expression = Parser.Declare<Expression>();
 		var assignment = Parser.Declare<Expression>();
 		var logicOr = Parser.Declare<Expression>();
@@ -24,17 +33,66 @@ public sealed class ExampleParser
 
 		parser = program;
 
-		program.parser =
-			from nls0 in Parser.Token((int)ExampleTokenKind.NewLine).Ignore()
-			from exps in (
-				from exp in expression
-				from nls1 in Parser.Token((int)ExampleTokenKind.NewLine).Ignore()
-				select exp
-			).RepeatUntil(Parser.End())
-			from end in Parser.End()
-			select exps.Count > 0 ?
-				exps[exps.Count - 1] :
-				ValueExpression.New(Token.EndToken, null);
+		// program.parser =
+		// 	from stmts in statement.RepeatUntil(Parser.End())
+		// 	from end in Parser.End()
+		// 	select stmts.Count > 0 ?
+		// 		stmts[stmts.Count - 1] :
+		// 		ValueExpression.New(Token.EndToken, null);
+
+		program.parser = statement;
+
+		block.parser =
+			from open in Parser.Token((int)ExampleTokenKind.OpenCurlyBrackets)
+			from stmts in statement.RepeatUntil(Parser.Token((int)ExampleTokenKind.CloseCurlyBrackets))
+			from close in Parser.Token((int)ExampleTokenKind.CloseCurlyBrackets)
+			select new BlockExpression { expressions = stmts };
+
+		statement.parser = Parser.Any(
+			ifStmt,
+			whileStmt,
+			breakStmt,
+			returnStmt,
+			expressionStmt
+		);
+
+		ifStmt.parser =
+			from it in Parser.Token((int)ExampleTokenKind.If)
+			from con in expression
+			from thb in block
+			from elb in (
+				from et in Parser.Token((int)ExampleTokenKind.Else)
+				from bl in block
+				select bl
+			).Optional()
+			select new IfExpression
+			{
+				condition = con,
+				thenBlock = thb,
+				elseBlock = elb
+			} as Expression;
+
+		whileStmt.parser =
+			from wt in Parser.Token((int)ExampleTokenKind.While)
+			from con in expression
+			from blc in block
+			select new WhileExpression
+			{
+				condition = con,
+				body = blc
+			} as Expression;
+
+		breakStmt.parser = Parser.Token((int)ExampleTokenKind.Break, (s, t) => new BreakExpression() as Expression);
+
+		returnStmt.parser =
+			from rt in Parser.Token((int)ExampleTokenKind.Return)
+			from ex in expression
+			select new ReturnExpression { expression = ex } as Expression;
+
+		expressionStmt.parser =
+			from exp in expression
+			from sc in Parser.Token((int)ExampleTokenKind.Semicolon)
+			select exp;
 
 		expression.parser = assignment;
 
@@ -144,7 +202,7 @@ public sealed class ExampleParser
 				rightToken = close,
 				expression = exp
 			} as Expression
-		).Expect("Expected a value or identifier");
+		);
 	}
 
 	public Result<Expression, string> Parse(string source)

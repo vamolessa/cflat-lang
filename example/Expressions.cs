@@ -80,7 +80,16 @@ public sealed class IfExpression : Expression
 {
 	public Expression condition;
 	public BlockExpression thenBlock;
-	public BlockExpression elseBlock;
+	public Option<BlockExpression> elseBlock;
+}
+
+public sealed class BreakExpression : Expression
+{
+}
+
+public sealed class ReturnExpression : Expression
+{
+	public Expression expression;
 }
 
 public sealed class GroupExpression : Expression
