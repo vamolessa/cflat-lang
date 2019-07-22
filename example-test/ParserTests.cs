@@ -29,7 +29,8 @@ public sealed class ParserTest
 	[InlineData("if true { 1 + 2 }")]
 	[InlineData("if true { 1 + 2 } else { 3 == 4 }")]
 	[InlineData("if true { 1 + 2 } else if a > 3 { 3 == 4 } else { c = \"txt\" }")]
-	public void TestStatements(string source)
+	[InlineData("if if true { false } { c = 4 }")]
+	public void TestComplexExpressions(string source)
 	{
 		var result = parser.Parse(source, tokenizer.scanners);
 		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
