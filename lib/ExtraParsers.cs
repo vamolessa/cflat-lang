@@ -2,28 +2,28 @@ using System.Collections.Generic;
 
 public static class ExtraParsers
 {
-	public static Parser<A> Debug<A>(this Parser<A> self, System.Action<DebugParser<A>.DebugInfo> checkpoint)
+	public static OldParser<A> Debug<A>(this OldParser<A> self, System.Action<DebugParser<A>.DebugInfo> checkpoint)
 	{
 		return new DebugParser<A>(self, checkpoint);
 	}
 
-	public static RepeatWithSeparatorParser<A, B> RepeatWithSeparator<A, B>(this Parser<A> self, Parser<B> endParser, int separatorToken)
+	public static RepeatWithSeparatorParser<A, B> RepeatWithSeparator<A, B>(this OldParser<A> self, OldParser<B> endParser, int separatorToken)
 	{
 		return new RepeatWithSeparatorParser<A, B>(self, endParser, separatorToken);
 	}
 
-	public static LeftAssociativeParser<T> LeftAssociative<T>(this Parser<T> higherPrecedenceParser, params int[] operatorTokens)
+	public static LeftAssociativeParser<T> LeftAssociative<T>(this OldParser<T> higherPrecedenceParser, params int[] operatorTokens)
 	{
 		return new LeftAssociativeParser<T>(higherPrecedenceParser, operatorTokens);
 	}
 }
 
-public sealed class DebugParser<T> : Parser<T>
+public sealed class DebugParser<T> : OldParser<T>
 {
 	public readonly struct DebugInfo
 	{
-		public readonly Parser<T> parser;
-		public readonly Result<PartialOk, Parser.Error> result;
+		public readonly OldParser<T> parser;
+		public readonly Result<PartialOk, OldParser.Error> result;
 		public readonly string source;
 		public readonly List<Token> tokens;
 		public readonly int tokenIndex;
@@ -55,8 +55,8 @@ public sealed class DebugParser<T> : Parser<T>
 		}
 
 		public DebugInfo(
-			Parser<T> parser,
-			Result<PartialOk, Parser.Error> result,
+			OldParser<T> parser,
+			Result<PartialOk, OldParser.Error> result,
 			string source,
 			List<Token> tokens,
 			int tokenIndex)
@@ -79,16 +79,16 @@ public sealed class DebugParser<T> : Parser<T>
 		}
 	}
 
-	private readonly Parser<T> parser;
+	private readonly OldParser<T> parser;
 	private readonly System.Action<DebugInfo> checkpoint;
 
-	public DebugParser(Parser<T> parser, System.Action<DebugInfo> checkpoint)
+	public DebugParser(OldParser<T> parser, System.Action<DebugInfo> checkpoint)
 	{
 		this.parser = parser;
 		this.checkpoint = checkpoint;
 	}
 
-	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
+	public override Result<PartialOk, OldParser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
 		var result = parser.PartialParse(source, tokens, index);
 		if (checkpoint != null)
@@ -106,20 +106,20 @@ public sealed class DebugParser<T> : Parser<T>
 	}
 }
 
-public sealed class RepeatWithSeparatorParser<A, B> : Parser<List<A>>
+public sealed class RepeatWithSeparatorParser<A, B> : OldParser<List<A>>
 {
-	private readonly Parser<A> repeatParser;
-	private readonly Parser<B> endParser;
+	private readonly OldParser<A> repeatParser;
+	private readonly OldParser<B> endParser;
 	private readonly int separatorToken;
 
-	public RepeatWithSeparatorParser(Parser<A> repeatParser, Parser<B> endParser, int separatorToken)
+	public RepeatWithSeparatorParser(OldParser<A> repeatParser, OldParser<B> endParser, int separatorToken)
 	{
 		this.repeatParser = repeatParser;
 		this.endParser = endParser;
 		this.separatorToken = separatorToken;
 	}
 
-	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
+	public override Result<PartialOk, OldParser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
 		var parsed = new List<A>();
 		var initialIndex = index;
@@ -153,13 +153,13 @@ public sealed class RepeatWithSeparatorParser<A, B> : Parser<List<A>>
 	}
 }
 
-public sealed class LeftAssociativeParser<T> : Parser<T>
+public sealed class LeftAssociativeParser<T> : OldParser<T>
 {
-	private readonly Parser<T> higherPrecedenceParser;
+	private readonly OldParser<T> higherPrecedenceParser;
 	private readonly int[] operatorTokens;
 	private System.Func<Token, T, T, T> aggregator;
 
-	public LeftAssociativeParser(Parser<T> higherPrecedenceParser, int[] operatorTokens)
+	public LeftAssociativeParser(OldParser<T> higherPrecedenceParser, int[] operatorTokens)
 	{
 		this.higherPrecedenceParser = higherPrecedenceParser;
 		this.operatorTokens = operatorTokens;
@@ -172,7 +172,7 @@ public sealed class LeftAssociativeParser<T> : Parser<T>
 		return this;
 	}
 
-	public override Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index)
+	public override Result<PartialOk, OldParser.Error> PartialParse(string source, List<Token> tokens, int index)
 	{
 		var initialIndex = index;
 

@@ -32,7 +32,7 @@ public sealed class ParserTests
 	public void SelectParser1()
 	{
 		var parser =
-			from p0 in Parser.Token(0)
+			from p0 in OldParser.Token(0)
 			select new None();
 
 		var result = parser.PartialParse(source, tokens, 0);
@@ -44,8 +44,8 @@ public sealed class ParserTests
 	public void SelectParser2()
 	{
 		var parser =
-			from p0 in Parser.Token(0)
-			from p1 in Parser.Token(1)
+			from p0 in OldParser.Token(0)
+			from p1 in OldParser.Token(1)
 			select new None();
 
 		var result = parser.PartialParse(source, tokens, 0);
@@ -57,9 +57,9 @@ public sealed class ParserTests
 	public void SelectParser3()
 	{
 		var parser =
-			from p0 in Parser.Token(0)
-			from p1 in Parser.Token(1)
-			from p2 in Parser.Token(2)
+			from p0 in OldParser.Token(0)
+			from p1 in OldParser.Token(1)
+			from p2 in OldParser.Token(2)
 			select new None();
 
 		var result = parser.PartialParse(source, tokens, 0);
@@ -74,13 +74,15 @@ public sealed class ParserTests
 	[InlineData("+++++", 5)]
 	public void RepeatParser(string source, int tokenCount)
 	{
-		var tokens = Tokenizer.Tokenize(scanners, source);
-		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount + 1, tokens.ok.Count);
+		var tokens = new List<Token>();
+		var errors = new List<int>();
+		Tokenizer.Tokenize(source, scanners, tokens, errors);
+		Assert.True(errors.Count == 0);
+		Assert.Equal(tokenCount + 1, tokens.Count);
 
-		var parser = Parser.Token((int)TokenKind.Sum).RepeatUntil(Parser.End());
+		var parser = OldParser.Token((int)TokenKind.Sum).RepeatUntil(OldParser.End());
 
-		var result = parser.PartialParse(source, tokens.ok, 0);
+		var result = parser.PartialParse(source, tokens, 0);
 		Assert.True(result.isOk);
 		Assert.Equal(tokenCount, result.ok.matchCount);
 	}
@@ -92,23 +94,25 @@ public sealed class ParserTests
 	[InlineData("1-2+3", 5)]
 	public void ExpressionParser(string source, int tokenCount)
 	{
-		var tokens = Tokenizer.Tokenize(scanners, source);
-		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount + 1, tokens.ok.Count);
+		var tokens = new List<Token>();
+		var errors = new List<int>();
+		Tokenizer.Tokenize(source, scanners, tokens, errors);
+		Assert.True(errors.Count == 0);
+		Assert.Equal(tokenCount + 1, tokens.Count);
 
 		var parser =
-			from p0 in Parser.Token((int)TokenKind.Number)
+			from p0 in OldParser.Token((int)TokenKind.Number)
 			from p1 in (
-				from p2 in Parser.Any(
-					Parser.Token((int)TokenKind.Sum),
-					Parser.Token((int)TokenKind.Minus)
+				from p2 in OldParser.Any(
+					OldParser.Token((int)TokenKind.Sum),
+					OldParser.Token((int)TokenKind.Minus)
 				)
-				from p3 in Parser.Token((int)TokenKind.Number)
+				from p3 in OldParser.Token((int)TokenKind.Number)
 				select (p2, p3)
-			).RepeatUntil(Parser.End())
+			).RepeatUntil(OldParser.End())
 			select new None();
 
-		var result = parser.PartialParse(source, tokens.ok, 0);
+		var result = parser.PartialParse(source, tokens, 0);
 		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
 		Assert.Equal(tokenCount, result.ok.matchCount);
 	}
@@ -120,17 +124,19 @@ public sealed class ParserTests
 	[InlineData("1-2+3", 5)]
 	public void AssociativeExpressionParser(string source, int tokenCount)
 	{
-		var tokens = Tokenizer.Tokenize(scanners, source);
-		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount + 1, tokens.ok.Count);
+		var tokens = new List<Token>();
+		var errors = new List<int>();
+		Tokenizer.Tokenize(source, scanners, tokens, errors);
+		Assert.True(errors.Count == 0);
+		Assert.Equal(tokenCount + 1, tokens.Count);
 
 		var parser = ExtraParsers.LeftAssociative(
-			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
+			OldParser.Token((int)TokenKind.Number, (s, t) => new None()),
 			(int)TokenKind.Sum,
 			(int)TokenKind.Minus
 		).Aggregate((t, l, r) => new None());
 
-		var result = parser.PartialParse(source, tokens.ok, 0);
+		var result = parser.PartialParse(source, tokens, 0);
 		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
 		Assert.Equal(tokenCount, result.ok.matchCount);
 	}
@@ -142,38 +148,43 @@ public sealed class ParserTests
 	[InlineData("1,2,3", 5, 3)]
 	public void ListWithSeparatorParser(string source, int tokenCount, int parseCount)
 	{
-		var tokens = Tokenizer.Tokenize(scanners, source);
-		Assert.True(tokens.isOk);
-		Assert.Equal(tokenCount + 1, tokens.ok.Count);
+		var tokens = new List<Token>();
+		var errors = new List<int>();
+		Tokenizer.Tokenize(source, scanners, tokens, errors);
+		Assert.True(errors.Count == 0);
+		Assert.Equal(tokenCount + 1, tokens.Count);
 
 		var parser = ExtraParsers.RepeatWithSeparator(
-			Parser.Token((int)TokenKind.Number, (s, t) => new None()),
-			Parser.End(),
+			OldParser.Token((int)TokenKind.Number, (s, t) => new None()),
+			OldParser.End(),
 			(int)TokenKind.Comma
 		);
 
-		var result = parser.PartialParse(source, tokens.ok, 0);
+		var result = parser.PartialParse(source, tokens, 0);
 		Assert.True(result.isOk, $"{result.error.message} @{result.error.tokenIndex}");
 		Assert.Equal(tokenCount, result.ok.matchCount);
 		Assert.Equal(parseCount, result.ok.parsed.Count);
 	}
 
 	[Theory]
+	[InlineData("+", 0)]
 	[InlineData("11", 1)]
 	public void AnyParserFail(string source, int errorIndex)
 	{
-		var tokens = Tokenizer.Tokenize(scanners, source);
-		Assert.True(tokens.isOk);
+		var tokens = new List<Token>();
+		var errors = new List<int>();
+		Tokenizer.Tokenize(source, scanners, tokens, errors);
+		Assert.True(errors.Count == 0);
 
 		var parser =
-			from n in Parser.Token((int)TokenKind.Number)
-			from o in Parser.Any(
-				Parser.Token((int)TokenKind.Sum),
-				Parser.Token((int)TokenKind.Minus)
+			from n in OldParser.Token((int)TokenKind.Number)
+			from o in OldParser.Any(
+				OldParser.Token((int)TokenKind.Sum),
+				OldParser.Token((int)TokenKind.Minus)
 			)
 			select new None();
 
-		var result = parser.PartialParse(source, tokens.ok, 0);
+		var result = parser.PartialParse(source, tokens, 0);
 		Assert.False(result.isOk);
 		Assert.Equal(errorIndex, result.error.tokenIndex);
 	}

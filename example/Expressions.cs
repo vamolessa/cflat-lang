@@ -12,56 +12,68 @@ public sealed class VariableExpression : Expression
 
 public sealed class ValueExpression : Expression
 {
-	public Token token;
-	public object value;
+	public readonly Token token;
+	public readonly object value;
+
+	public ValueExpression(Token token, object value)
+	{
+		this.token = token;
+		this.value = value;
+	}
 
 	public static Expression New(Token token, object value)
 	{
-		return new ValueExpression
-		{
-			token = token,
-			value = value
-		};
+		return new ValueExpression(token, value);
 	}
 }
 
 public sealed class UnaryOperationExpression : Expression
 {
-	public Token token;
-	public Expression expression;
+	public readonly Token opToken;
+	public readonly Expression expression;
+
+	public UnaryOperationExpression(Token opToken, Expression expression)
+	{
+		this.opToken = opToken;
+		this.expression = expression;
+	}
 }
 
 public sealed class BinaryOperationExpression : Expression
 {
-	public Token token;
-	public Expression left;
-	public Expression right;
+	public readonly Token opToken;
+	public readonly Expression left;
+	public readonly Expression right;
+
+	public BinaryOperationExpression(Token opToken, Expression left, Expression right)
+	{
+		this.opToken = opToken;
+		this.left = left;
+		this.right = right;
+	}
 
 	public static Expression New(Token token, Expression left, Expression right)
 	{
-		return new BinaryOperationExpression
-		{
-			token = token,
-			left = left,
-			right = right
-		};
+		return new BinaryOperationExpression(token, left, right);
 	}
 }
 
 public sealed class LogicOperationExpression : Expression
 {
-	public Token token;
-	public Expression left;
-	public Expression right;
+	public readonly Token opToken;
+	public readonly Expression left;
+	public readonly Expression right;
+
+	public LogicOperationExpression(Token opToken, Expression left, Expression right)
+	{
+		this.opToken = opToken;
+		this.left = left;
+		this.right = right;
+	}
 
 	public static Expression New(Token token, Expression left, Expression right)
 	{
-		return new LogicOperationExpression
-		{
-			token = token,
-			left = left,
-			right = right
-		};
+		return new LogicOperationExpression(token, left, right);
 	}
 }
 
@@ -73,14 +85,14 @@ public sealed class BlockExpression : Expression
 public sealed class WhileExpression : Expression
 {
 	public Expression condition;
-	public BlockExpression body;
+	public Expression body;
 }
 
 public sealed class IfExpression : Expression
 {
 	public Expression condition;
-	public BlockExpression thenBlock;
-	public Option<BlockExpression> elseBlock;
+	public Expression thenBlock;
+	public Option<Expression> elseBlock;
 }
 
 public sealed class BreakExpression : Expression
@@ -94,13 +106,24 @@ public sealed class ReturnExpression : Expression
 
 public sealed class GroupExpression : Expression
 {
-	public Token leftToken;
-	public Token rightToken;
 	public Expression expression;
 }
 
 public sealed class AssignmentExpression : Expression
 {
-	public Token identifierToken;
-	public Expression expression;
+	public readonly VariableExpression target;
+	public readonly Expression valueExpression;
+
+	public AssignmentExpression(VariableExpression target, Expression valueExpression)
+	{
+		this.target = target;
+		this.valueExpression = valueExpression;
+	}
+}
+
+public sealed class CallExpression : Expression
+{
+	public Expression callee;
+	public Token closeParenthesis;
+	public List<Expression> arguments;
 }

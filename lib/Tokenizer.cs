@@ -18,10 +18,8 @@ public readonly struct Token
 
 public static class Tokenizer
 {
-	public static Result<List<Token>, List<int>> Tokenize(Scanner[] scanners, string source)
+	public static void Tokenize(string source, Scanner[] scanners, List<Token> tokens, List<int> errorIndexes)
 	{
-		var tokens = new List<Token>();
-		var errorIndexes = new List<int>();
 		var lastErrorIndex = int.MinValue;
 
 		for (var index = 0; index < source.Length;)
@@ -53,10 +51,6 @@ public static class Tokenizer
 			index += tokenLength;
 		}
 
-		if (errorIndexes.Count > 0)
-			return Result.Error(errorIndexes);
-
 		tokens.Add(Token.EndToken);
-		return Result.Ok(tokens);
 	}
 }

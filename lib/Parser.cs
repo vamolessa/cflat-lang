@@ -1,72 +1,136 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 
-public static class Parser
+public struct ParseError
 {
-	public readonly struct Error
-	{
-		public readonly int tokenIndex;
-		public readonly string message;
+	public readonly LineAndColumn position;
+	public readonly string message;
 
-		public Error(int tokenIndex, string message)
-		{
-			this.tokenIndex = tokenIndex;
-			this.message = message;
-		}
+	public ParseError(LineAndColumn position, string message)
+	{
+		this.position = position;
+		this.message = message;
 	}
+}
 
-	private static readonly EndParser endParser = new EndParser();
-
-	public static DeferParser<T> Declare<T>()
+public sealed class ParseException : System.Exception
+{
+	public ParseException(string message) : base(message, null)
 	{
-		return new DeferParser<T>();
-	}
-
-	public static EndParser End()
-	{
-		return endParser;
-	}
-
-	public static TokenParser<Token> Token(int tokenKind)
-	{
-		return new TokenParser<Token>(tokenKind, (s, t) => t);
-	}
-
-	public static TokenParser<T> Token<T>(int tokenKind, System.Func<string, Token, T> converter)
-	{
-		return new TokenParser<T>(tokenKind, converter);
-	}
-
-	public static AnyParser<T> Any<T>(params Parser<T>[] parsers)
-	{
-		return new AnyParser<T>(parsers);
 	}
 }
 
 public abstract class Parser<T>
 {
-	public readonly struct PartialOk
-	{
-		public readonly int matchCount;
-		public readonly T parsed;
+	protected string source;
+	private readonly List<Token> tokens = new List<Token>();
+	private readonly List<ParseError> errors = new List<ParseError>();
+	private int nextIndex;
 
-		public PartialOk(int matchCount, T parsed)
+	public Result<T, List<ParseError>> Parse(string source, Scanner[] scanners)
+	{
+		tokens.Clear();
+		errors.Clear();
+		this.source = source;
+		nextIndex = 0;
+
+		var errorIndexes = new List<int>();
+		Tokenizer.Tokenize(source, scanners, tokens, errorIndexes);
+		if (errorIndexes.Count > 0)
 		{
-			this.matchCount = matchCount;
-			this.parsed = parsed;
+			foreach (var errorIndex in errorIndexes)
+			{
+				errors.Add(new ParseError(
+					ParserHelper.GetLineAndColumn(source, errorIndex),
+					string.Format("Invalid char '{0}'", source[errorIndex])
+				));
+			}
+
+			return Result.Error(errors);
+		}
+
+		try
+		{
+			return Result.Ok(TryParse());
+		}
+		catch (ParseException e)
+		{
+			var errorIndex = 0;
+			if (nextIndex < tokens.Count - 1)
+			{
+				errorIndex = tokens[nextIndex].index;
+			}
+			else if (tokens.Count > 1)
+			{
+				var lastToken = tokens[tokens.Count - 2];
+				errorIndex = lastToken.index + lastToken.length;
+			}
+
+			errors.Add(new ParseError(
+				ParserHelper.GetLineAndColumn(source, errorIndex),
+				e.Message
+			));
+			return Result.Error(errors);
 		}
 	}
 
-	public Result<T, Parser.Error> Parse(string source, List<Token> tokens)
+	protected abstract T TryParse();
+
+	protected Token Peek()
 	{
-		var result = PartialParse(source, tokens, 0);
-		if (!result.isOk)
-			return Result.Error(new Parser.Error(result.error.tokenIndex, result.error.message));
-
-		if (result.ok.matchCount != tokens.Count)
-			return Result.Error(new Parser.Error(result.error.tokenIndex, "Not a valid program"));
-
-		return Result.Ok(result.ok.parsed);
+		return tokens[nextIndex];
 	}
 
-	public abstract Result<PartialOk, Parser.Error> PartialParse(string source, List<Token> tokens, int index);
+	protected bool Match(int tokenKind)
+	{
+		if (!Check(tokenKind))
+			return false;
+
+		nextIndex += 1;
+		return true;
+	}
+
+	protected bool Check(int tokenKind)
+	{
+		return tokens[nextIndex].kind == tokenKind;
+	}
+
+	protected bool CheckAny(int kindA, int kindB)
+	{
+		var tokenKind = Peek().kind;
+		return
+			tokenKind == kindA ||
+			tokenKind == kindB;
+	}
+
+	protected bool CheckAny(int kindA, int kindB, int kindC)
+	{
+		var tokenKind = Peek().kind;
+		return
+			tokenKind == kindA ||
+			tokenKind == kindB ||
+			tokenKind == kindC;
+	}
+
+	protected bool CheckAny(int kindA, int kindB, int kindC, int kindD)
+	{
+		var tokenKind = Peek().kind;
+		return
+			tokenKind == kindA ||
+			tokenKind == kindB ||
+			tokenKind == kindC ||
+			tokenKind == kindD;
+	}
+
+	protected Token Next()
+	{
+		return tokens[nextIndex++];
+	}
+
+	protected Token Consume(int tokenKind, string expectMessage)
+	{
+		if (Check(tokenKind))
+			return Next();
+
+		throw new ParseException(expectMessage);
+	}
 }

@@ -9,29 +9,17 @@ namespace interpreter_tools
 		{
 			var source = File.ReadAllText("script.txt");
 
-			var tokenizer = new ExampleTokenizer();
-			var parser = new ExampleParser(tokenizer);
+			var tokenizer = new LangTokenizer();
+			var parser = new LangParser();
 
-			/*
-			var tokens = tokenizer.Tokenize(source);
-			if (tokens.isOk)
-			{
-				System.Console.WriteLine("HERE COMES TOKENS");
-				foreach (var t in tokens.ok)
-					System.Console.WriteLine(source.Substring(t.index, t.length));
-				System.Console.WriteLine("---");
-				return;
-			}
-			//*/
-
-			var parseResult = parser.Parse(source);
+			var parseResult = parser.Parse(source, tokenizer.scanners);
 			if (parseResult.isOk)
 			{
 				System.Console.WriteLine("END SUCCESS");
 				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
 				var environment = new Dictionary<string, Expression>();
-				var evalResult = ExampleInterpreter.Eval(parseResult.ok, environment);
+				var evalResult = LangInterpreter.Eval(parseResult.ok, environment);
 				if (evalResult.isOk)
 					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.value.ToString());
 				else

@@ -1,4 +1,7 @@
-﻿public readonly struct LineAndColumn
+﻿using System.Collections.Generic;
+using System.Text;
+
+public readonly struct LineAndColumn
 {
 	public readonly int line;
 	public readonly int column;
@@ -58,16 +61,32 @@ public static class ParserHelper
 		return "";
 	}
 
-	public static string GetContext(string source, LineAndColumn position, int lineCount)
+	public static string FormatError(string source, List<ParseError> errors, int contextSize)
 	{
-		return string.Format(
-			"{0}\n{1}^ here\n",
-			ParserHelper.GetLines(
+		if (errors == null)
+			return "";
+
+		var sb = new StringBuilder();
+
+		foreach (var e in errors)
+		{
+			sb.Append(e.message);
+			sb.Append(" (line: ");
+			sb.Append(e.position.line);
+			sb.Append(", column: ");
+			sb.Append(e.position.column);
+			sb.AppendLine(")");
+
+			sb.Append(ParserHelper.GetLines(
 				source,
-				position.line - 1 - lineCount,
-				position.line - 1
-			),
-			new string(' ', position.column - 1)
-		);
+				e.position.line - 1 - contextSize,
+				e.position.line - 1
+			));
+			sb.AppendLine();
+			sb.Append(' ', e.position.column - 1);
+			sb.Append("^ here\n");
+		}
+
+		return sb.ToString();
 	}
 }
