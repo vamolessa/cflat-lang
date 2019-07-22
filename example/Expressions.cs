@@ -4,6 +4,26 @@ public abstract class Expression
 {
 }
 
+public sealed class FunctionExpression : Expression
+{
+	public readonly struct Parameter
+	{
+		public readonly Token token;
+		public readonly string name;
+
+		public Parameter(Token token, string name)
+		{
+			this.token = token;
+			this.name = name;
+		}
+	}
+
+	public Token token;
+	public string name;
+	public List<Parameter> parameters;
+	public Expression body;
+}
+
 public sealed class VariableExpression : Expression
 {
 	public readonly Token token;

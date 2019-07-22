@@ -35,4 +35,12 @@ public sealed class ParserTest
 		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
 		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
 	}
+
+	[Theory]
+	[InlineData("fn foo(a,b) { return true }")]
+	public void TestFunctionDeclaration(string source)
+	{
+		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Function);
+		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
+	}
 }

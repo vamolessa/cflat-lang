@@ -4,6 +4,14 @@ public sealed class LangParser
 {
 	public readonly Parser parser = new Parser();
 
+	public List<Expression> Functions()
+	{
+		var functions = new List<Expression>();
+		while (!parser.Check(Token.EndToken.kind))
+			functions.Add(Function());
+		return functions;
+	}
+
 	public Expression Expression()
 	{
 		var token = parser.Peek();
@@ -11,6 +19,8 @@ public sealed class LangParser
 		{
 		case TokenKind.OpenCurlyBrackets:
 			return Block();
+		case TokenKind.Function:
+			return Function();
 		case TokenKind.If:
 			return If();
 		case TokenKind.While:
@@ -36,6 +46,44 @@ public sealed class LangParser
 
 		parser.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block");
 		return new BlockExpression { expressions = statements };
+	}
+
+	public Expression Function()
+	{
+		parser.Consume((int)TokenKind.Function, "Expected 'fn' keyword");
+		var token = parser.Consume((int)TokenKind.Identifier, "Expected function name");
+		var name = parser.source.Substring(token.index, token.length);
+		parser.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
+		var parameters = new List<FunctionExpression.Parameter>();
+		if (!parser.Match((int)TokenKind.CloseParenthesis))
+		{
+			do
+			{
+				var paramToken = parser.Consume(
+					(int)TokenKind.Identifier,
+					"Expect parameter name"
+				);
+				var paramName = parser.source.Substring(
+					paramToken.index,
+					paramToken.length
+				);
+				parameters.Add(new FunctionExpression.Parameter(
+					paramToken,
+					paramName
+				));
+			} while (parser.Match((int)TokenKind.Comma));
+		}
+
+		parser.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after parameters");
+		var body = Block();
+
+		return new FunctionExpression
+		{
+			token = token,
+			name = name,
+			parameters = parameters,
+			body = body
+		};
 	}
 
 	private IfExpression If()
