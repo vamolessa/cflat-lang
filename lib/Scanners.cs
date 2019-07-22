@@ -2,6 +2,21 @@
 {
 	public int tokenKind;
 
+	public static bool StartsWith(string str, int index, string match)
+	{
+		var count = str.Length;
+		if (str.Length - index < match.Length)
+			return false;
+
+		for (var i = 0; i < match.Length; i++)
+		{
+			if (str[index + i] != match[i])
+				return false;
+		}
+
+		return true;
+	}
+
 	public abstract int Scan(string input, int index);
 
 	public Scanner ForToken(int tokenKind)
@@ -54,9 +69,7 @@ public sealed class ExactScanner : Scanner
 
 	public override int Scan(string input, int index)
 	{
-		return ScannerHelper.StartsWith(input, index, match) ?
-			match.Length :
-			0;
+		return StartsWith(input, index, match) ? match.Length : 0;
 	}
 }
 
@@ -73,12 +86,12 @@ public sealed class EnclosedScanner : Scanner
 
 	public override int Scan(string input, int index)
 	{
-		if (!ScannerHelper.StartsWith(input, index, beginMatch))
+		if (!StartsWith(input, index, beginMatch))
 			return 0;
 
 		for (var i = index + beginMatch.Length; i < input.Length; i++)
 		{
-			if (ScannerHelper.StartsWith(input, i, endMatch) && input[i - 1] != '\\')
+			if (StartsWith(input, i, endMatch) && input[i - 1] != '\\')
 				return i - index + endMatch.Length;
 		}
 

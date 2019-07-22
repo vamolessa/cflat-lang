@@ -9,7 +9,7 @@ public sealed class ScannerTests
 	[InlineData("xxfooxx", 2, "foo")]
 	public void StartsWithTest(string str, int index, string match)
 	{
-		var result = ScannerHelper.StartsWith(str, index, match);
+		var result = Scanner.StartsWith(str, index, match);
 		Assert.True(result);
 	}
 
