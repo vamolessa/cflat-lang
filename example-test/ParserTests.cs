@@ -26,7 +26,9 @@ public sealed class ParserTest
 
 	[Theory]
 	[InlineData("while true { 1 + 2 }")]
+	[InlineData("if true { 1 + 2 }")]
 	[InlineData("if true { 1 + 2 } else { 3 == 4 }")]
+	[InlineData("if true { 1 + 2 } else if a > 3 { 3 == 4 } else { c = \"txt\" }")]
 	public void TestStatements(string source)
 	{
 		var result = parser.Parse(source, tokenizer.scanners);
