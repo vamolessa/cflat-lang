@@ -30,6 +30,6 @@ public sealed class ParserTest
 	public void TestStatements(string source)
 	{
 		var result = parser.Parse(source, tokenizer.scanners);
-		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 1));
+		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
 	}
 }

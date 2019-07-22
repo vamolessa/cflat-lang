@@ -49,13 +49,14 @@ public static class ParserHelper
 
 			if (lineCount == endLine)
 				return source.Substring(startLineIndex, i - startLineIndex);
-			if (lineCount == startLine)
-				startLineIndex = i + 1;
 
 			lineCount += 1;
+
+			if (lineCount == startLine)
+				startLineIndex = i + 1;
 		}
 
-		if (lineCount == endLine)
+		if (lineCount >= startLine && lineCount <= endLine)
 			return source.Substring(startLineIndex);
 
 		return "";
@@ -79,8 +80,8 @@ public static class ParserHelper
 
 			sb.Append(ParserHelper.GetLines(
 				source,
-				e.position.line - 1 - contextSize,
-				e.position.line - 1
+				System.Math.Max(e.position.line - 1 - contextSize, 0),
+				System.Math.Max(e.position.line - 1, 0)
 			));
 			sb.AppendLine();
 			sb.Append(' ', e.position.column - 1);

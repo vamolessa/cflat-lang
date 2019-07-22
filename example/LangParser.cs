@@ -84,10 +84,11 @@ public sealed class LangParser : Parser<Expression>
 		if (!Match((int)TokenKind.Equal))
 			return exp;
 
-		var value = LogicOr();
-
 		if (exp is VariableExpression varExp)
+		{
+			var value = LogicOr();
 			return new AssignmentExpression(varExp, value);
+		}
 
 		throw new ParseException("Invalid assignment target");
 	}
@@ -248,7 +249,7 @@ public sealed class LangParser : Parser<Expression>
 				source.Substring(token.index + 1, token.length - 2)
 			);
 		case TokenKind.Identifier:
-			return new ValueExpression(
+			return new VariableExpression(
 				token,
 				source.Substring(token.index, token.length)
 			);

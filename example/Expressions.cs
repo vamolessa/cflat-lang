@@ -6,8 +6,14 @@ public abstract class Expression
 
 public sealed class VariableExpression : Expression
 {
-	public Token token;
-	public string name;
+	public readonly Token token;
+	public readonly string name;
+
+	public VariableExpression(Token token, string name)
+	{
+		this.token = token;
+		this.name = name;
+	}
 }
 
 public sealed class ValueExpression : Expression
@@ -19,11 +25,6 @@ public sealed class ValueExpression : Expression
 	{
 		this.token = token;
 		this.value = value;
-	}
-
-	public static Expression New(Token token, object value)
-	{
-		return new ValueExpression(token, value);
 	}
 }
 
@@ -51,11 +52,6 @@ public sealed class BinaryOperationExpression : Expression
 		this.left = left;
 		this.right = right;
 	}
-
-	public static Expression New(Token token, Expression left, Expression right)
-	{
-		return new BinaryOperationExpression(token, left, right);
-	}
 }
 
 public sealed class LogicOperationExpression : Expression
@@ -69,11 +65,6 @@ public sealed class LogicOperationExpression : Expression
 		this.opToken = opToken;
 		this.left = left;
 		this.right = right;
-	}
-
-	public static Expression New(Token token, Expression left, Expression right)
-	{
-		return new LogicOperationExpression(token, left, right);
 	}
 }
 
