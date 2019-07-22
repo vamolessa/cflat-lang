@@ -37,6 +37,16 @@ public sealed class ParserTest
 	}
 
 	[Theory]
+	[InlineData("a = 2 b = 3")]
+	[InlineData("a = 2 b = 3 + 4")]
+	[InlineData("a = if true { 1 < 2 } b = 3 + 4")]
+	public void TestMultiExpressions(string source)
+	{
+		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
+		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
+	}
+
+	[Theory]
 	[InlineData("fn foo(a,b) { return true }")]
 	public void TestFunctionDeclaration(string source)
 	{

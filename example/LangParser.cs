@@ -14,26 +14,7 @@ public sealed class LangParser
 
 	public Expression Expression()
 	{
-		var token = parser.Peek();
-		switch ((TokenKind)token.kind)
-		{
-		case TokenKind.OpenCurlyBrackets:
-			return Block();
-		case TokenKind.Function:
-			return Function();
-		case TokenKind.If:
-			return If();
-		case TokenKind.While:
-			return While();
-		case TokenKind.Return:
-			parser.Next();
-			return new ReturnExpression { expression = Expression() };
-		case TokenKind.Break:
-			parser.Next();
-			return new BreakExpression();
-		default:
-			return Assignment();
-		}
+		return Assignment();
 	}
 
 	private BlockExpression Block()
@@ -269,36 +250,58 @@ public sealed class LangParser
 
 	private Expression Primary()
 	{
-		var token = parser.Next();
+		var token = parser.Peek();
 		switch ((TokenKind)token.kind)
 		{
 		case TokenKind.True:
+			parser.Next();
 			return new ValueExpression(token, true);
 		case TokenKind.False:
+			parser.Next();
 			return new ValueExpression(token, false);
 		case TokenKind.Nil:
+			parser.Next();
 			return new ValueExpression(token, null);
 		case TokenKind.IntegerNumber:
+			parser.Next();
 			return new ValueExpression(
 				token,
 				int.Parse(parser.source.Substring(token.index, token.length))
 			);
 		case TokenKind.RealNumber:
+			parser.Next();
 			return new ValueExpression(
 				token,
 				float.Parse(parser.source.Substring(token.index, token.length))
 			);
 		case TokenKind.String:
+			parser.Next();
 			return new ValueExpression(
 				token,
 				parser.source.Substring(token.index + 1, token.length - 2)
 			);
 		case TokenKind.Identifier:
+			parser.Next();
 			return new VariableExpression(
 				token,
 				parser.source.Substring(token.index, token.length)
 			);
+		case TokenKind.OpenCurlyBrackets:
+			return Block();
+		case TokenKind.Function:
+			return Function();
+		case TokenKind.If:
+			return If();
+		case TokenKind.While:
+			return While();
+		case TokenKind.Return:
+			parser.Next();
+			return new ReturnExpression { expression = Expression() };
+		case TokenKind.Break:
+			parser.Next();
+			return new BreakExpression();
 		case TokenKind.OpenParenthesis:
+			parser.Next();
 			var exp = Expression();
 			parser.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
 			return new GroupExpression { expression = exp };
