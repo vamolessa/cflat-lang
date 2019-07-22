@@ -1,15 +1,12 @@
 ﻿using System.Collections.Generic;
 
-public sealed class LangParser : Parser<Expression>
+public sealed class LangParser
 {
-	protected override Expression TryParse()
-	{
-		return Expression();
-	}
+	public readonly Parser parser = new Parser();
 
-	private Expression Expression()
+	public Expression Expression()
 	{
-		var token = Peek();
+		var token = parser.Peek();
 		switch ((TokenKind)token.kind)
 		{
 		case TokenKind.OpenCurlyBrackets:
@@ -19,10 +16,10 @@ public sealed class LangParser : Parser<Expression>
 		case TokenKind.While:
 			return While();
 		case TokenKind.Return:
-			Next();
+			parser.Next();
 			return new ReturnExpression { expression = Expression() };
 		case TokenKind.Break:
-			Next();
+			parser.Next();
 			return new BreakExpression();
 		default:
 			return Assignment();
@@ -31,26 +28,26 @@ public sealed class LangParser : Parser<Expression>
 
 	private BlockExpression Block()
 	{
-		Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before block");
+		parser.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before block");
 		var statements = new List<Expression>();
 
-		while (!Check((int)TokenKind.CloseCurlyBrackets))
+		while (!parser.Check((int)TokenKind.CloseCurlyBrackets))
 			statements.Add(Expression());
 
-		Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block");
+		parser.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block");
 		return new BlockExpression { expressions = statements };
 	}
 
 	private IfExpression If()
 	{
-		Consume((int)TokenKind.If, "Expected 'if' keyword");
+		parser.Consume((int)TokenKind.If, "Expected 'if' keyword");
 		var condition = Expression();
 		var thenBlock = Block();
 
 		Option<Expression> elseBlock = Option.None;
-		if (Match((int)TokenKind.Else))
+		if (parser.Match((int)TokenKind.Else))
 		{
-			elseBlock = Option.Some(Check((int)TokenKind.If) ?
+			elseBlock = Option.Some(parser.Check((int)TokenKind.If) ?
 				If() as Expression :
 				Block() as Expression
 			);
@@ -66,7 +63,7 @@ public sealed class LangParser : Parser<Expression>
 
 	private WhileExpression While()
 	{
-		Consume((int)TokenKind.While, "Expected 'while' keyword");
+		parser.Consume((int)TokenKind.While, "Expected 'while' keyword");
 		var condition = Expression();
 		var body = Block();
 
@@ -81,7 +78,7 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = LogicOr();
 
-		if (!Match((int)TokenKind.Equal))
+		if (!parser.Match((int)TokenKind.Equal))
 			return exp;
 
 		if (exp is VariableExpression varExp)
@@ -97,9 +94,9 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = LogicAnd();
 
-		while (Check((int)TokenKind.Or))
+		while (parser.Check((int)TokenKind.Or))
 		{
-			var op = Next();
+			var op = parser.Next();
 			var right = LogicAnd();
 			exp = new LogicOperationExpression(op, exp, right);
 		}
@@ -111,9 +108,9 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = Equality();
 
-		while (Check((int)TokenKind.And))
+		while (parser.Check((int)TokenKind.And))
 		{
-			var op = Next();
+			var op = parser.Next();
 			var right = Equality();
 			exp = new LogicOperationExpression(op, exp, right);
 		}
@@ -125,9 +122,9 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = Comparison();
 
-		while (CheckAny((int)TokenKind.EqualEqual, (int)TokenKind.BangEqual))
+		while (parser.CheckAny((int)TokenKind.EqualEqual, (int)TokenKind.BangEqual))
 		{
-			var op = Next();
+			var op = parser.Next();
 			var right = Comparison();
 			exp = new BinaryOperationExpression(op, exp, right);
 		}
@@ -139,14 +136,14 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = Addition();
 
-		while (CheckAny(
+		while (parser.CheckAny(
 			(int)TokenKind.Lesser,
 			(int)TokenKind.LesserEqual,
 			(int)TokenKind.Greater,
 			(int)TokenKind.GreaterEqual
 		))
 		{
-			var op = Next();
+			var op = parser.Next();
 			var right = Addition();
 			exp = new BinaryOperationExpression(op, exp, right);
 		}
@@ -158,9 +155,9 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = Multiplication();
 
-		while (CheckAny((int)TokenKind.Sum, (int)TokenKind.Minus))
+		while (parser.CheckAny((int)TokenKind.Sum, (int)TokenKind.Minus))
 		{
-			var op = Next();
+			var op = parser.Next();
 			var right = Multiplication();
 			exp = new BinaryOperationExpression(op, exp, right);
 		}
@@ -172,9 +169,9 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = Unary();
 
-		while (CheckAny((int)TokenKind.Asterisk, (int)TokenKind.Slash))
+		while (parser.CheckAny((int)TokenKind.Asterisk, (int)TokenKind.Slash))
 		{
-			var op = Next();
+			var op = parser.Next();
 			var right = Unary();
 			exp = new BinaryOperationExpression(op, exp, right);
 		}
@@ -184,10 +181,10 @@ public sealed class LangParser : Parser<Expression>
 
 	private Expression Unary()
 	{
-		if (!CheckAny((int)TokenKind.Minus, (int)TokenKind.Bang))
+		if (!parser.CheckAny((int)TokenKind.Minus, (int)TokenKind.Bang))
 			return Call();
 
-		var op = Next();
+		var op = parser.Next();
 		var exp = Unary();
 		return new UnaryOperationExpression(op, exp);
 	}
@@ -196,7 +193,7 @@ public sealed class LangParser : Parser<Expression>
 	{
 		var exp = Primary();
 
-		while (Match((int)TokenKind.OpenParenthesis))
+		while (parser.Match((int)TokenKind.OpenParenthesis))
 			exp = FinishCall(exp);
 
 		return exp;
@@ -204,14 +201,14 @@ public sealed class LangParser : Parser<Expression>
 		Expression FinishCall(Expression callee)
 		{
 			var args = new List<Expression>();
-			if (!Match((int)TokenKind.CloseParenthesis))
+			if (!parser.Match((int)TokenKind.CloseParenthesis))
 			{
 				do
 					args.Add(Expression());
-				while (Match((int)TokenKind.Comma));
+				while (parser.Match((int)TokenKind.Comma));
 			}
 
-			Token paren = Consume((int)TokenKind.CloseParenthesis, "Expected ')' after arguments.");
+			Token paren = parser.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after arguments.");
 
 			return new CallExpression
 			{
@@ -224,7 +221,7 @@ public sealed class LangParser : Parser<Expression>
 
 	private Expression Primary()
 	{
-		var token = Next();
+		var token = parser.Next();
 		switch ((TokenKind)token.kind)
 		{
 		case TokenKind.True:
@@ -236,26 +233,26 @@ public sealed class LangParser : Parser<Expression>
 		case TokenKind.IntegerNumber:
 			return new ValueExpression(
 				token,
-				int.Parse(source.Substring(token.index, token.length))
+				int.Parse(parser.source.Substring(token.index, token.length))
 			);
 		case TokenKind.RealNumber:
 			return new ValueExpression(
 				token,
-				float.Parse(source.Substring(token.index, token.length))
+				float.Parse(parser.source.Substring(token.index, token.length))
 			);
 		case TokenKind.String:
 			return new ValueExpression(
 				token,
-				source.Substring(token.index + 1, token.length - 2)
+				parser.source.Substring(token.index + 1, token.length - 2)
 			);
 		case TokenKind.Identifier:
 			return new VariableExpression(
 				token,
-				source.Substring(token.index, token.length)
+				parser.source.Substring(token.index, token.length)
 			);
 		case TokenKind.OpenParenthesis:
 			var exp = Expression();
-			Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
+			parser.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
 			return new GroupExpression { expression = exp };
 		default:
 			throw new ParseException("Invalid expression");

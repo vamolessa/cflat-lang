@@ -20,7 +20,7 @@ public sealed class ParserTest
 	[InlineData("assign = true or false")]
 	public void TestExpressions(string source)
 	{
-		var result = parser.Parse(source, tokenizer.scanners);
+		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
 		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
 	}
 
@@ -32,7 +32,7 @@ public sealed class ParserTest
 	[InlineData("if if true { false } { c = 4 }")]
 	public void TestComplexExpressions(string source)
 	{
-		var result = parser.Parse(source, tokenizer.scanners);
+		var result = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
 		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
 	}
 }

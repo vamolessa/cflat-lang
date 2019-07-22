@@ -19,18 +19,19 @@ public sealed class ParseException : System.Exception
 	}
 }
 
-public abstract class Parser<T>
+public sealed class Parser
 {
-	protected string source;
+	public string source;
+
 	private readonly List<Token> tokens = new List<Token>();
 	private readonly List<ParseError> errors = new List<ParseError>();
 	private int nextIndex;
 
-	public Result<T, List<ParseError>> Parse(string source, Scanner[] scanners)
+	public Result<T, List<ParseError>> Parse<T>(string source, Scanner[] scanners, System.Func<T> tryParse)
 	{
+		this.source = source;
 		tokens.Clear();
 		errors.Clear();
-		this.source = source;
 		nextIndex = 0;
 
 		var errorIndexes = new List<int>();
@@ -50,7 +51,7 @@ public abstract class Parser<T>
 
 		try
 		{
-			return Result.Ok(TryParse());
+			return Result.Ok(tryParse());
 		}
 		catch (ParseException e)
 		{
@@ -73,14 +74,12 @@ public abstract class Parser<T>
 		}
 	}
 
-	protected abstract T TryParse();
-
-	protected Token Peek()
+	public Token Peek()
 	{
 		return tokens[nextIndex];
 	}
 
-	protected bool Match(int tokenKind)
+	public bool Match(int tokenKind)
 	{
 		if (!Check(tokenKind))
 			return false;
@@ -89,12 +88,12 @@ public abstract class Parser<T>
 		return true;
 	}
 
-	protected bool Check(int tokenKind)
+	public bool Check(int tokenKind)
 	{
 		return tokens[nextIndex].kind == tokenKind;
 	}
 
-	protected bool CheckAny(int kindA, int kindB)
+	public bool CheckAny(int kindA, int kindB)
 	{
 		var tokenKind = Peek().kind;
 		return
@@ -102,7 +101,7 @@ public abstract class Parser<T>
 			tokenKind == kindB;
 	}
 
-	protected bool CheckAny(int kindA, int kindB, int kindC)
+	public bool CheckAny(int kindA, int kindB, int kindC)
 	{
 		var tokenKind = Peek().kind;
 		return
@@ -111,7 +110,7 @@ public abstract class Parser<T>
 			tokenKind == kindC;
 	}
 
-	protected bool CheckAny(int kindA, int kindB, int kindC, int kindD)
+	public bool CheckAny(int kindA, int kindB, int kindC, int kindD)
 	{
 		var tokenKind = Peek().kind;
 		return
@@ -121,12 +120,12 @@ public abstract class Parser<T>
 			tokenKind == kindD;
 	}
 
-	protected Token Next()
+	public Token Next()
 	{
 		return tokens[nextIndex++];
 	}
 
-	protected Token Consume(int tokenKind, string expectMessage)
+	public Token Consume(int tokenKind, string expectMessage)
 	{
 		if (Check(tokenKind))
 			return Next();

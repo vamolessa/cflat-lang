@@ -12,7 +12,7 @@ namespace interpreter_tools
 			var tokenizer = new LangTokenizer();
 			var parser = new LangParser();
 
-			var parseResult = parser.Parse(source, tokenizer.scanners);
+			var parseResult = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
 			if (parseResult.isOk)
 			{
 				System.Console.WriteLine("END SUCCESS");
