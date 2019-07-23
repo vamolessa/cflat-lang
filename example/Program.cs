@@ -18,10 +18,10 @@ namespace interpreter_tools
 				System.Console.WriteLine("END SUCCESS");
 				System.Console.WriteLine("\nNOW INTERPRETING...\n");
 
-				var environment = new Dictionary<string, Expression>();
+				var environment = new Dictionary<string, object>();
 				var evalResult = LangInterpreter.Eval(parseResult.ok, environment);
 				if (evalResult.isOk)
-					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.value.ToString());
+					System.Console.WriteLine("SUCCESS EVAL. RETURN\n{0}", evalResult.ok.ToString());
 				else
 					System.Console.WriteLine("DEU RUIM EVAL. ERROR\n{0}", evalResult.error);
 			}
