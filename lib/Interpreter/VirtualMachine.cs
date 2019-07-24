@@ -31,14 +31,24 @@ public sealed class VirtualMachine
 			}
 
 			var instruction = VirtualMachineHelper.NextInstruction(this);
+			Value value;
+
 			switch ((Instruction)instruction)
 			{
 			case Instruction.Return:
-				var value = PopValue();
+				value = PopValue();
 				System.Console.WriteLine(value.ToString());
 				return true;
 			case Instruction.LoadConstant:
 				PushValue(VirtualMachineHelper.ReadConstant(this));
+				break;
+			case Instruction.Negate:
+				value = PopValue();
+				if (value.type == Value.Type.IntegerNumber)
+					value = new Value(-value.data.asInteger);
+				else if (value.type == Value.Type.RealNumber)
+					value = new Value(-value.data.asFloat);
+				PushValue(value);
 				break;
 			default:
 				break;

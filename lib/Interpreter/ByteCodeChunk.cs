@@ -4,9 +4,9 @@ public sealed class ByteCodeChunk
 	public Buffer<LineAndColumn> positions = new Buffer<LineAndColumn>(256);
 	public Buffer<Value> constants = new Buffer<Value>(256);
 
-	public void Write(byte code, LineAndColumn position)
+	public void WriteInstruction(Instruction instruction, LineAndColumn position)
 	{
-		bytes.PushBack(code);
+		bytes.PushBack((byte)instruction);
 		positions.PushBack(position);
 	}
 
@@ -23,5 +23,6 @@ public sealed class ByteCodeChunk
 		}
 
 		bytes.PushBack((byte)index);
+		positions.PushBack(position);
 	}
 }

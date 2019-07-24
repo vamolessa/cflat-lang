@@ -7,6 +7,18 @@ namespace interpreter_tools
 	{
 		public static void Main(string[] args)
 		{
+			var chunk = new ByteCodeChunk();
+			chunk.WriteConstant(new Value(4), new LineAndColumn(123, 0));
+			chunk.WriteInstruction(Instruction.Negate, new LineAndColumn(453, 0));
+			chunk.WriteInstruction(Instruction.Return, new LineAndColumn(453, 0));
+
+			var vm = new VirtualMachine();
+			vm.Load(chunk);
+			vm.Run(true);
+		}
+
+		public static void Main2(string[] args)
+		{
 			var source = File.ReadAllText("script.txt");
 
 			var tokenizer = new LangTokenizer();
