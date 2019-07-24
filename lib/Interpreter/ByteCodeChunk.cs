@@ -4,25 +4,26 @@ public sealed class ByteCodeChunk
 	public Buffer<LineAndColumn> positions = new Buffer<LineAndColumn>(256);
 	public Buffer<Value> constants = new Buffer<Value>(256);
 
-	public void WriteInstruction(Instruction instruction, LineAndColumn position)
+	public int AddConstant(Value value)
 	{
-		bytes.PushBack((byte)instruction);
+		var index = constants.count;
+		constants.PushBack(value);
+		return index;
+	}
+
+	public void WriteByte(byte value, LineAndColumn position)
+	{
+		bytes.PushBack(value);
 		positions.PushBack(position);
 	}
 
-	public void WriteConstant(Value value, LineAndColumn position)
+	public void WriteInstruction(Instruction instruction, LineAndColumn position)
 	{
-		bytes.PushBack((byte)Instruction.LoadConstant);
-		positions.PushBack(position);
+		WriteByte((byte)instruction, position);
+	}
 
-		var index = System.Array.IndexOf(constants.buffer, value);
-		if (index < 0)
-		{
-			index = constants.count;
-			constants.PushBack(value);
-		}
-
-		bytes.PushBack((byte)index);
-		positions.PushBack(position);
+	public void WriteConstantIndex(int index, LineAndColumn position)
+	{
+		WriteByte((byte)index, position);
 	}
 }

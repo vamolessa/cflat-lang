@@ -1,4 +1,5 @@
 using System.Text;
+using Impl = VirtualMachineInstructions;
 
 public sealed class VirtualMachine
 {
@@ -31,25 +32,16 @@ public sealed class VirtualMachine
 			}
 
 			var instruction = VirtualMachineHelper.NextInstruction(this);
-			Value value;
 
 			switch ((Instruction)instruction)
 			{
-			case Instruction.Return:
-				value = PopValue();
-				System.Console.WriteLine(value.ToString());
-				return true;
-			case Instruction.LoadConstant:
-				PushValue(VirtualMachineHelper.ReadConstant(this));
-				break;
-			case Instruction.Negate:
-				value = PopValue();
-				if (value.type == Value.Type.IntegerNumber)
-					value = new Value(-value.data.asInteger);
-				else if (value.type == Value.Type.RealNumber)
-					value = new Value(-value.data.asFloat);
-				PushValue(value);
-				break;
+			case Instruction.Return: Impl.Return(this); return true;
+			case Instruction.LoadConstant: Impl.LoadConstant(this); break;
+			case Instruction.Negate: Impl.Negate(this); break;
+			case Instruction.Add: Impl.Add(this); break;
+			case Instruction.Subtract: Impl.Subtract(this); break;
+			case Instruction.Multiply: Impl.Multiply(this); break;
+			case Instruction.Divide: Impl.Divide(this); break;
 			default:
 				break;
 			}

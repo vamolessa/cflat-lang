@@ -24,10 +24,4 @@ internal static class VirtualMachineHelper
 		var index = vm.chunk.bytes.buffer[vm.programCount++];
 		return vm.chunk.constants.buffer[index];
 	}
-
-	public static void Return(VirtualMachine vm)
-	{
-		var value = vm.PopValue();
-		System.Console.WriteLine(value.ToString());
-	}
 }
