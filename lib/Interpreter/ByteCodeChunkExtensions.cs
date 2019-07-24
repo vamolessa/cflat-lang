@@ -8,25 +8,30 @@ public static class ByteCodeChunkExtensions
 		sb.Append(chunkName);
 		sb.Append(" ==");
 
-		for (var offset = 0; offset < self.instructions.count;)
-			offset = DisassembleInstruction(self, offset, sb);
+		for (var index = 0; index < self.bytes.count;)
+			index = DisassembleInstruction(self, index, sb);
 	}
 
-	private static int DisassembleInstruction(this ByteCodeChunk self, int offset, StringBuilder sb)
+	public static int DisassembleInstruction(this ByteCodeChunk self, int index, StringBuilder sb)
 	{
-		sb.AppendFormat("{0000:0}", offset);
+		sb.AppendFormat("{0000:0}", index);
+		if (index > 0 && self.positions.buffer[index].line == self.positions.buffer[index - 1].line)
+			sb.Append("   | ");
+		else
+			sb.AppendFormat("{####:0} ", self.positions.buffer[index].line);
 
-		var instructionCode = self.instructions.buffer[offset];
+		var instructionCode = self.bytes.buffer[index];
 		var instruction = (Instruction)instructionCode;
 
 		switch (instruction)
 		{
 		case Instruction.Return:
+			return SimpleInstruction(instruction, index, sb);
 		case Instruction.LoadConstant:
-			return SimpleInstruction(instruction, offset, sb);
+			return LoadConstantInstruction(self, instruction, index, sb);
 		default:
 			sb.AppendFormat("Unknown opcode {0}\n", instructionCode);
-			return offset + 1;
+			return index + 1;
 		}
 	}
 
@@ -34,5 +39,12 @@ public static class ByteCodeChunkExtensions
 	{
 		sb.AppendLine(instruction.ToString());
 		return offset + 1;
+	}
+
+	private static int LoadConstantInstruction(ByteCodeChunk chunk, Instruction instruction, int offset, StringBuilder sb)
+	{
+		var constant = chunk.constants.buffer[offset + 1];
+		sb.AppendFormat("{0} '{1}'\n", instruction, constant);
+		return offset + 2;
 	}
 }

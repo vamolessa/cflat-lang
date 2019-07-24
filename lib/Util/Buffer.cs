@@ -20,4 +20,9 @@ public struct Buffer<T>
 
 		buffer[count++] = element;
 	}
+
+	public T PopLast()
+	{
+		return buffer[--count];
+	}
 }

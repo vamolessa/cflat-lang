@@ -2,6 +2,11 @@ using System.Collections.Generic;
 
 public static class LangInterpreter
 {
+	private static bool ToBool(object value)
+	{
+		return !(value is null || value is false);
+	}
+
 	public static Result<object, string> Eval(Expression expression, Dictionary<string, object> environment)
 	{
 		switch (expression)
@@ -38,7 +43,7 @@ public static class LangInterpreter
 				return Result.Error("can only apply '-' operator to numbers");
 			}
 		case TokenKind.Bang:
-			return Result.Ok<object>(InterpreterHelper.ToBool(value));
+			return Result.Ok<object>(!ToBool(value));
 		default:
 			return Result.Error("invalid operator");
 		}
