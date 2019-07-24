@@ -27,10 +27,9 @@ namespace interpreter_tools
 		{
 			var source = File.ReadAllText("script.txt");
 
-			var tokenizer = new LangTokenizer();
 			var parser = new LangParser();
 
-			var parseResult = parser.parser.Parse(source, tokenizer.scanners, parser.Expression);
+			var parseResult = parser.parser.Parse(source, LangScanners.scanners, parser.Expression);
 			if (parseResult.isOk)
 			{
 				System.Console.WriteLine("END SUCCESS");

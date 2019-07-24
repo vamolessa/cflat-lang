@@ -7,7 +7,7 @@ public sealed class LangParser
 	public List<Expression> Functions()
 	{
 		var functions = new List<Expression>();
-		while (!parser.Check(Token.EndToken.kind))
+		while (!parser.Check(Token.EndKind))
 			functions.Add(Function());
 		return functions;
 	}

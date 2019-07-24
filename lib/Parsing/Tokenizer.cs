@@ -2,7 +2,8 @@
 
 public readonly struct Token
 {
-	public static readonly Token EndToken = new Token(-1, 0, 0);
+	public static readonly int EndKind = -1;
+	public static readonly int ErrorKind = -2;
 
 	public readonly int kind;
 	public readonly int index;
@@ -16,8 +17,45 @@ public readonly struct Token
 	}
 }
 
-public static class Tokenizer
+public sealed class Tokenizer
 {
+	private Scanner[] scanners;
+	private string source;
+	private int nextIndex;
+
+	public void Begin(Scanner[] scanners, string source)
+	{
+		this.scanners = scanners;
+		this.source = source;
+		nextIndex = 0;
+	}
+
+	public Token Next()
+	{
+		if (nextIndex >= source.Length)
+			return new Token(Token.EndKind, source.Length, 0);
+
+		var tokenLength = 0;
+		var tokenKind = Token.ErrorKind;
+		foreach (var scanner in scanners)
+		{
+			var length = scanner.Scan(source, nextIndex);
+			if (length > tokenLength)
+			{
+				tokenLength = length;
+				tokenKind = scanner.tokenKind;
+			}
+		}
+
+		if (tokenKind == Token.ErrorKind)
+			tokenLength = 1;
+
+		var token = new Token(tokenKind, nextIndex, tokenLength);
+		nextIndex += tokenLength;
+		
+		return token;
+	}
+
 	public static void Tokenize(string source, Scanner[] scanners, List<Token> tokens, List<int> errorIndexes)
 	{
 		var lastErrorIndex = int.MinValue;
@@ -51,6 +89,6 @@ public static class Tokenizer
 			index += tokenLength;
 		}
 
-		tokens.Add(Token.EndToken);
+		tokens.Add(new Token(Token.EndKind, 0, 0));
 	}
 }

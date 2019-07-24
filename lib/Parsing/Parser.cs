@@ -49,7 +49,7 @@ public sealed class Parser
 			return Result.Error(errors);
 		}
 
-		while (!Check(Token.EndToken.kind))
+		while (!Check(Token.EndKind))
 		{
 			try
 			{
