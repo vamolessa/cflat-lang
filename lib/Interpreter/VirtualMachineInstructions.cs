@@ -27,7 +27,8 @@ public static class VirtualMachineInstructions
 				else if (value.type == VT.RealNumber)
 					value = new Value(-value.data.asFloat);
 				else
-					return true;
+					return vm.Error("Operand must be a number");
+
 				vm.PushValue(value);
 				break;
 			}
@@ -45,7 +46,7 @@ public static class VirtualMachineInstructions
 				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
 					a = new Value(a.data.asFloat + b.data.asFloat);
 				else
-					return true;
+					return vm.Error("Operands must be a number");
 
 				vm.PushValue(a);
 				break;
@@ -64,7 +65,7 @@ public static class VirtualMachineInstructions
 				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
 					a = new Value(a.data.asFloat - b.data.asFloat);
 				else
-					return true;
+					return vm.Error("Operands must be a number");
 
 				vm.PushValue(a);
 				break;
@@ -83,7 +84,7 @@ public static class VirtualMachineInstructions
 				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
 					a = new Value(a.data.asFloat * b.data.asFloat);
 				else
-					return true;
+					return vm.Error("Operands must be a number");
 
 				vm.PushValue(a);
 				break;
@@ -102,7 +103,7 @@ public static class VirtualMachineInstructions
 				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
 					a = new Value(a.data.asFloat / b.data.asFloat);
 				else
-					return true;
+					return vm.Error("Operands must be a number");
 
 				vm.PushValue(a);
 				break;
