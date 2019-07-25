@@ -1,6 +1,6 @@
 using VT = Value.Type;
 
-public static class VirtualMachineInstructions
+internal static class VirtualMachineInstructions
 {
 	public static bool Tick(VirtualMachine vm)
 	{
@@ -13,9 +13,25 @@ public static class VirtualMachineInstructions
 				System.Console.WriteLine(value.ToString());
 				return true;
 			}
+		case Instruction.LoadNil:
+			{
+				vm.PushValue(new Value());
+				break;
+			}
+		case Instruction.LoadTrue:
+			{
+				vm.PushValue(new Value(true));
+				break;
+			}
+		case Instruction.LoadFalse:
+			{
+				vm.PushValue(new Value(false));
+				break;
+			}
 		case Instruction.LoadConstant:
 			{
-				var value = VirtualMachineHelper.ReadConstant(vm);
+				var index = vm.chunk.bytes.buffer[vm.programCount++];
+				var value = vm.chunk.constants.buffer[index];
 				vm.PushValue(value);
 				break;
 			}

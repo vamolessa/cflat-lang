@@ -37,6 +37,9 @@ public static class ByteCodeChunkExtensions
 
 		switch (instruction)
 		{
+		case Instruction.LoadNil:
+		case Instruction.LoadTrue:
+		case Instruction.LoadFalse:
 		case Instruction.Return:
 		case Instruction.Negate:
 		case Instruction.Add:

@@ -102,9 +102,9 @@ public sealed class Compiler
 			AddError(currentToken.index, errorMessage);
 	}
 
-	public T Convert<T>(System.Func<string, Token, T> converter)
+	public void Convert(System.Action<Compiler, string, Token> converter)
 	{
-		return tokenizer.Convert(previousToken, converter);
+		converter(this, tokenizer.Source, previousToken);
 	}
 
 	public void EmitByte(byte value)

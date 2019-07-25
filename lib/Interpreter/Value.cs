@@ -42,6 +42,12 @@ public readonly struct Value
 	public readonly Type type;
 	public readonly Data data;
 
+	public Value(bool value)
+	{
+		type = Type.Boolean;
+		data = new Data(value);
+	}
+
 	public Value(int value)
 	{
 		type = Type.IntegerNumber;
@@ -58,6 +64,10 @@ public readonly struct Value
 	{
 		switch (type)
 		{
+		case Type.Nil:
+			return "nil";
+		case Type.Boolean:
+			return data.asBool ? "true" : "false";
 		case Type.IntegerNumber:
 			return data.asInt.ToString();
 		case Type.RealNumber:

@@ -22,9 +22,9 @@
 
 public interface ITokenizer
 {
+	string Source { get; }
 	void Begin(Scanner[] scanners, string source);
 	Token Next();
-	T Convert<T>(Token token, System.Func<string, Token, T> converter);
 }
 
 public sealed class Tokenizer : ITokenizer
@@ -32,6 +32,11 @@ public sealed class Tokenizer : ITokenizer
 	private Scanner[] scanners;
 	private string source;
 	private int nextIndex;
+
+	public string Source
+	{
+		get { return source; }
+	}
 
 	public void Begin(Scanner[] scanners, string source)
 	{
@@ -71,10 +76,5 @@ public sealed class Tokenizer : ITokenizer
 		}
 
 		return new Token(Token.EndKind, source.Length, 0);
-	}
-
-	public T Convert<T>(Token token, System.Func<string, Token, T> converter)
-	{
-		return converter(source, token);
 	}
 }

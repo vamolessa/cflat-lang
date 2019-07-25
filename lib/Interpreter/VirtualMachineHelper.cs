@@ -14,12 +14,6 @@ public static class VirtualMachineHelper
 		sb.AppendLine();
 	}
 
-	public static Value ReadConstant(VirtualMachine vm)
-	{
-		var index = vm.chunk.bytes.buffer[vm.programCount++];
-		return vm.chunk.constants.buffer[index];
-	}
-
 	public static string FormatError(string source, RuntimeError error, int contextSize)
 	{
 		var sb = new StringBuilder();

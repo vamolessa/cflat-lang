@@ -2,6 +2,7 @@ using System.Collections.Generic;
 
 public sealed class LangCompiler
 {
+
 	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
 	{
 		var compiler = new Compiler();
@@ -32,17 +33,32 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
 	}
 
+	public static void Literal(Compiler compiler)
+	{
+		void Convert(Compiler c, string s, Token t)
+		{
+			if (t.kind == (int)TokenKind.Nil)
+				c.EmitInstruction(Instruction.LoadNil);
+			else if (t.kind == (int)TokenKind.True)
+				c.EmitInstruction(Instruction.LoadTrue);
+			else
+				c.EmitInstruction(Instruction.LoadFalse);
+		}
+
+		compiler.Convert(Convert);
+	}
+
 	public static void Number(Compiler compiler)
 	{
-		var value = compiler.Convert((s, t) =>
+		void Convert(Compiler c, string s, Token t)
 		{
 			if (t.kind == (int)TokenKind.IntegerNumber)
-				return new Value(CompilerHelper.ToInteger(s, t));
+				c.EmitLoadConstant(new Value(CompilerHelper.ToInteger(s, t)));
 			else
-				return new Value(CompilerHelper.ToFloat(s, t));
-		});
+				c.EmitLoadConstant(new Value(CompilerHelper.ToFloat(s, t)));
+		}
 
-		compiler.EmitLoadConstant(value);
+		compiler.Convert(Convert);
 	}
 
 	public static void Unary(Compiler compiler)
