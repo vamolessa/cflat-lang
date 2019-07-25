@@ -1,7 +1,16 @@
 public static class LangCompiler
 {
-	public static bool Compile(string source)
+	public static Result<ByteCodeChunk, string> Compile(string source, ITokenizer tokenizer)
 	{
-		return true;
+		tokenizer.Begin(LangScanners.scanners, source);
+		var chunk = new ByteCodeChunk();
+
+/*
+		Advance();
+		Expression();
+		Consume(Token.EndKind, "Expect end of expression.");
+ */
+
+		return Result.Ok(chunk);
 	}
 }

@@ -24,6 +24,7 @@ public readonly struct Token
 
 public interface ITokenizer
 {
+	void Begin(Scanner[] scanners, string source);
 	Token Next();
 }
 
