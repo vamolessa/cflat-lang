@@ -1,5 +1,4 @@
 using System.Text;
-using Impl = VirtualMachineInstructions;
 
 public sealed class VirtualMachine
 {
@@ -7,11 +6,13 @@ public sealed class VirtualMachine
 	internal ByteCodeChunk chunk;
 	internal int programCount;
 	internal Buffer<Value> stack = new Buffer<Value>(256);
+	private string errorMessage;
 
-	public bool Run(string source, ByteCodeChunk chunk)
+	public Result<None, string> Run(string source, ByteCodeChunk chunk)
 	{
 		this.source = source;
 		this.chunk = chunk;
+		errorMessage = null;
 
 		programCount = 0;
 		stack.count = 0;
@@ -25,30 +26,21 @@ public sealed class VirtualMachine
 			chunk.DisassembleInstruction(source, programCount, sb);
 			System.Console.Write(sb);
 
-			var done = Tick();
+			var done = VirtualMachineInstructions.Tick(this);
 			if (done)
-				return true;
+				break;
 		}
+
+		if (string.IsNullOrEmpty(errorMessage))
+			return Result.Ok(new None());
+
+		return Result.Error(errorMessage);
 	}
 
-	private bool Tick()
+	public bool Error(string message)
 	{
-		var instruction = VirtualMachineHelper.NextInstruction(this);
-
-		switch (instruction)
-		{
-		case Instruction.Return: Impl.Return(this); return true;
-		case Instruction.LoadConstant: Impl.LoadConstant(this); break;
-		case Instruction.Negate: Impl.Negate(this); break;
-		case Instruction.Add: Impl.Add(this); break;
-		case Instruction.Subtract: Impl.Subtract(this); break;
-		case Instruction.Multiply: Impl.Multiply(this); break;
-		case Instruction.Divide: Impl.Divide(this); break;
-		default:
-			break;
-		}
-
-		return false;
+		errorMessage = message;
+		return true;
 	}
 
 	public void PushValue(Value value)

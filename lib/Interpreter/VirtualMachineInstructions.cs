@@ -2,93 +2,115 @@ using VT = Value.Type;
 
 public static class VirtualMachineInstructions
 {
-	public static void Return(VirtualMachine vm)
+	public static bool Tick(VirtualMachine vm)
 	{
-		var value = vm.PopValue();
-		System.Console.WriteLine(value.ToString());
-	}
+		var nextInstruction = (Instruction)vm.chunk.bytes.buffer[vm.programCount++];
+		switch (nextInstruction)
+		{
+		case Instruction.Return:
+			{
+				var value = vm.PopValue();
+				System.Console.WriteLine(value.ToString());
+				return true;
+			}
+		case Instruction.LoadConstant:
+			{
+				var value = VirtualMachineHelper.ReadConstant(vm);
+				vm.PushValue(value);
+				break;
+			}
+		case Instruction.Negate:
+			{
+				var value = vm.PopValue();
+				if (value.type == VT.IntegerNumber)
+					value = new Value(-value.data.asInt);
+				else if (value.type == VT.RealNumber)
+					value = new Value(-value.data.asFloat);
+				else
+					return true;
+				vm.PushValue(value);
+				break;
+			}
+		case Instruction.Add:
+			{
+				var b = vm.PopValue();
+				var a = vm.PopValue();
 
-	public static void LoadConstant(VirtualMachine vm)
-	{
-		var value = VirtualMachineHelper.ReadConstant(vm);
-		vm.PushValue(value);
-	}
+				if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asInt + b.data.asInt);
+				else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asInt + b.data.asFloat);
+				else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asFloat + b.data.asInt);
+				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asFloat + b.data.asFloat);
+				else
+					return true;
 
-	public static void Negate(VirtualMachine vm)
-	{
-		var value = vm.PopValue();
-		if (value.type == VT.IntegerNumber)
-			value = new Value(-value.data.asInteger);
-		else if (value.type == VT.RealNumber)
-			value = new Value(-value.data.asFloat);
-		vm.PushValue(value);
-	}
+				vm.PushValue(a);
+				break;
+			}
+		case Instruction.Subtract:
+			{
+				var b = vm.PopValue();
+				var a = vm.PopValue();
 
-	public static void Add(VirtualMachine vm)
-	{
-		var b = vm.PopValue();
-		var a = vm.PopValue();
+				if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asInt - b.data.asInt);
+				else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asInt - b.data.asFloat);
+				else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asFloat - b.data.asInt);
+				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asFloat - b.data.asFloat);
+				else
+					return true;
 
-		if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asInteger + b.data.asInteger);
-		else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asInteger + b.data.asFloat);
-		else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asFloat + b.data.asInteger);
-		else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asFloat + b.data.asFloat);
+				vm.PushValue(a);
+				break;
+			}
+		case Instruction.Multiply:
+			{
+				var b = vm.PopValue();
+				var a = vm.PopValue();
 
-		vm.PushValue(a);
-	}
+				if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asInt * b.data.asInt);
+				else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asInt * b.data.asFloat);
+				else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asFloat * b.data.asInt);
+				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asFloat * b.data.asFloat);
+				else
+					return true;
 
-	public static void Subtract(VirtualMachine vm)
-	{
-		var b = vm.PopValue();
-		var a = vm.PopValue();
+				vm.PushValue(a);
+				break;
+			}
+		case Instruction.Divide:
+			{
+				var b = vm.PopValue();
+				var a = vm.PopValue();
 
-		if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asInteger - b.data.asInteger);
-		else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asInteger - b.data.asFloat);
-		else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asFloat - b.data.asInteger);
-		else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asFloat - b.data.asFloat);
+				if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asInt / b.data.asInt);
+				else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asInt / b.data.asFloat);
+				else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
+					a = new Value(a.data.asFloat / b.data.asInt);
+				else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
+					a = new Value(a.data.asFloat / b.data.asFloat);
+				else
+					return true;
 
-		vm.PushValue(a);
-	}
+				vm.PushValue(a);
+				break;
+			}
+		default:
+			break;
+		}
 
-	public static void Multiply(VirtualMachine vm)
-	{
-		var b = vm.PopValue();
-		var a = vm.PopValue();
-
-		if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asInteger * b.data.asInteger);
-		else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asInteger * b.data.asFloat);
-		else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asFloat * b.data.asInteger);
-		else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asFloat * b.data.asFloat);
-
-		vm.PushValue(a);
-	}
-
-	public static void Divide(VirtualMachine vm)
-	{
-		var b = vm.PopValue();
-		var a = vm.PopValue();
-
-		if (a.type == VT.IntegerNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asInteger / b.data.asInteger);
-		else if (a.type == VT.IntegerNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asInteger / b.data.asFloat);
-		else if (a.type == VT.RealNumber && b.type == VT.IntegerNumber)
-			a = new Value(a.data.asFloat / b.data.asInteger);
-		else if (a.type == VT.RealNumber && b.type == VT.RealNumber)
-			a = new Value(a.data.asFloat / b.data.asFloat);
-
-		vm.PushValue(a);
+		return false;
 	}
 }

@@ -14,11 +14,6 @@ internal static class VirtualMachineHelper
 		sb.AppendLine();
 	}
 
-	public static Instruction NextInstruction(VirtualMachine vm)
-	{
-		return (Instruction)vm.chunk.bytes.buffer[vm.programCount++];
-	}
-
 	public static Value ReadConstant(VirtualMachine vm)
 	{
 		var index = vm.chunk.bytes.buffer[vm.programCount++];

@@ -4,6 +4,8 @@ public readonly struct Value
 {
 	public enum Type
 	{
+		Nil,
+		Boolean,
 		IntegerNumber,
 		RealNumber,
 	}
@@ -12,19 +14,27 @@ public readonly struct Value
 	public readonly struct Data
 	{
 		[FieldOffset(0)]
-		public readonly int asInteger;
+		public readonly bool asBool;
+		[FieldOffset(0)]
+		public readonly int asInt;
 		[FieldOffset(0)]
 		public readonly float asFloat;
 
+		public Data(bool value)
+		{
+			this = default(Data);
+			asBool = value;
+		}
+
 		public Data(int value)
 		{
-			asFloat = 0.0f;
-			asInteger = value;
+			this = default(Data);
+			asInt = value;
 		}
 
 		public Data(float value)
 		{
-			asInteger = 0;
+			this = default(Data);
 			asFloat = value;
 		}
 	}
@@ -49,7 +59,7 @@ public readonly struct Value
 		switch (type)
 		{
 		case Type.IntegerNumber:
-			return data.asInteger.ToString();
+			return data.asInt.ToString();
 		case Type.RealNumber:
 			return data.asFloat.ToString();
 		default:
