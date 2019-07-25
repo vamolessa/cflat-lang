@@ -1,18 +1,32 @@
 using System.Text;
 
+public readonly struct RuntimeError
+{
+	public readonly int instructionIndex;
+	public readonly int sourceIndex;
+	public readonly string message;
+
+	public RuntimeError(int instructionIndex, int sourceIndex, string message)
+	{
+		this.instructionIndex = instructionIndex;
+		this.sourceIndex = sourceIndex;
+		this.message = message;
+	}
+}
+
 public sealed class VirtualMachine
 {
 	internal string source;
 	internal ByteCodeChunk chunk;
 	internal int programCount;
 	internal Buffer<Value> stack = new Buffer<Value>(256);
-	private string errorMessage;
+	private Option<RuntimeError> maybeError;
 
-	public Result<None, string> Run(string source, ByteCodeChunk chunk)
+	public Result<None, RuntimeError> Run(string source, ByteCodeChunk chunk)
 	{
 		this.source = source;
 		this.chunk = chunk;
-		errorMessage = null;
+		maybeError = Option.None;
 
 		programCount = 0;
 		stack.count = 0;
@@ -31,15 +45,19 @@ public sealed class VirtualMachine
 				break;
 		}
 
-		if (string.IsNullOrEmpty(errorMessage))
-			return Result.Ok(new None());
+		if (maybeError.isSome)
+			return Result.Error(maybeError.value);
 
-		return Result.Error(errorMessage);
+		return Result.Ok(new None());
 	}
 
 	public bool Error(string message)
 	{
-		errorMessage = message;
+		maybeError = Option.Some(new RuntimeError(
+			programCount,
+			chunk.sourceIndexes.buffer[programCount],
+			message
+		));
 		return true;
 	}
 

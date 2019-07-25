@@ -1,6 +1,6 @@
 using Xunit;
 
-public sealed class ParserHelperTests
+public sealed class CompilerHelperTests
 {
 	[Theory]
 	[InlineData("a", 0, 0, "a")]
