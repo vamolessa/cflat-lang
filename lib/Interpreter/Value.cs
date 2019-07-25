@@ -5,9 +5,9 @@ public readonly struct Value
 	public enum Type
 	{
 		Nil,
-		Boolean,
-		IntegerNumber,
-		RealNumber,
+		Bool,
+		Int,
+		Float,
 	}
 
 	[StructLayout(LayoutKind.Explicit)]
@@ -44,20 +44,44 @@ public readonly struct Value
 
 	public Value(bool value)
 	{
-		type = Type.Boolean;
+		type = Type.Bool;
 		data = new Data(value);
 	}
 
 	public Value(int value)
 	{
-		type = Type.IntegerNumber;
+		type = Type.Int;
 		data = new Data(value);
 	}
 
 	public Value(float value)
 	{
-		type = Type.IntegerNumber;
+		type = Type.Int;
 		data = new Data(value);
+	}
+
+	public static bool AreEqual(Value a, Value b)
+	{
+		if (a.type != b.type)
+			return false;
+
+		switch (a.type)
+		{
+		case Type.Bool: return a.data.asBool == b.data.asBool;
+		case Type.Int: return a.data.asInt == b.data.asInt;
+		case Type.Float: return a.data.asFloat == b.data.asFloat;
+		default: return false;
+		}
+	}
+
+	public bool IsTruthy()
+	{
+		return type != Type.Nil && (type != Type.Bool || data.asBool);
+	}
+
+	public bool IsFalsey()
+	{
+		return type == Type.Nil || (type == Type.Bool && !data.asBool);
 	}
 
 	public override string ToString()
@@ -66,11 +90,11 @@ public readonly struct Value
 		{
 		case Type.Nil:
 			return "nil";
-		case Type.Boolean:
+		case Type.Bool:
 			return data.asBool ? "true" : "false";
-		case Type.IntegerNumber:
+		case Type.Int:
 			return data.asInt.ToString();
-		case Type.RealNumber:
+		case Type.Float:
 			return data.asFloat.ToString();
 		default:
 			return "<invalid value>";

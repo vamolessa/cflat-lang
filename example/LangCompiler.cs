@@ -72,6 +72,9 @@ public sealed class LangCompiler
 		case TokenKind.Minus:
 			compiler.EmitInstruction(Instruction.Negate);
 			break;
+		case TokenKind.Bang:
+			compiler.EmitInstruction(Instruction.Not);
+			break;
 		default:
 			break;
 		}

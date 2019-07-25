@@ -46,6 +46,10 @@ public static class ByteCodeChunkExtensions
 		case Instruction.Subtract:
 		case Instruction.Multiply:
 		case Instruction.Divide:
+		case Instruction.Not:
+		case Instruction.Equal:
+		case Instruction.Greater:
+		case Instruction.Less:
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.LoadConstant:
 			return LoadConstantInstruction(self, instruction, index, sb);

@@ -9,5 +9,9 @@ public enum Instruction
 	Add,
 	Subtract,
 	Multiply,
-	Divide
+	Divide,
+	Not,
+	Equal,
+	Greater,
+	Less
 }

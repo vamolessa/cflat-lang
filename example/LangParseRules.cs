@@ -15,7 +15,7 @@ public static class LangParseRules
 		Set(TokenKind.Semicolon, null, null, Precedence.None);
 		Set(TokenKind.Slash, null, LangCompiler.Binary, Precedence.Factor);
 		Set(TokenKind.Asterisk, null, LangCompiler.Binary, Precedence.Factor);
-		Set(TokenKind.Bang, null, null, Precedence.None);
+		Set(TokenKind.Bang, LangCompiler.Unary, null, Precedence.None);
 		Set(TokenKind.BangEqual, null, null, Precedence.Equality);
 		Set(TokenKind.Equal, null, null, Precedence.None);
 		Set(TokenKind.EqualEqual, null, null, Precedence.Equality);
