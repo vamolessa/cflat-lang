@@ -1,14 +1,31 @@
 public enum TokenKind
 {
 	IntegerNumber, RealNumber, String, True, False, Nil, Identifier,
-	Function, For, If, Else, While, Return, Break,
+	Function, For, If, Else, While, Return, Break, Let,
 	And, Or, Dot, Comma, Semicolon,
 
 	OpenParenthesis, CloseParenthesis, OpenCurlyBrackets, CloseCurlyBrackets,
 
-	Sum, Minus, Asterisk, Slash,
+	Plus, Minus, Asterisk, Slash,
 	Equal, EqualEqual, BangEqual, Bang,
-	Lesser, Greater, LesserEqual, GreaterEqual,
+	Less, Greater, LessEqual, GreaterEqual,
+
+	COUNT
+}
+
+public enum Precedence
+{
+	None,
+	Assignment, // =
+	Or, // or
+	And, // and
+	Equality, // == !=
+	Comparison, // < > <= >=
+	Term,// + -
+	Factor, // * /
+	Unary, // ! -
+	Call, // . () []
+	Primary
 }
 
 public static class LangScanners
@@ -20,6 +37,8 @@ public static class LangScanners
 		new ExactScanner("else").ForToken((int)TokenKind.Else),
 		new ExactScanner("while").ForToken((int)TokenKind.While),
 		new ExactScanner("return").ForToken((int)TokenKind.Return),
+		new ExactScanner("break").ForToken((int)TokenKind.Break),
+		new ExactScanner("let").ForToken((int)TokenKind.Let),
 
 		new ExactScanner("and").ForToken((int)TokenKind.And),
 		new ExactScanner("or").ForToken((int)TokenKind.Or),
@@ -32,7 +51,7 @@ public static class LangScanners
 		new CharScanner('{').ForToken((int)TokenKind.OpenCurlyBrackets),
 		new CharScanner('}').ForToken((int)TokenKind.CloseCurlyBrackets),
 
-		new CharScanner('+').ForToken((int)TokenKind.Sum),
+		new CharScanner('+').ForToken((int)TokenKind.Plus),
 		new CharScanner('-').ForToken((int)TokenKind.Minus),
 		new CharScanner('*').ForToken((int)TokenKind.Asterisk),
 		new CharScanner('/').ForToken((int)TokenKind.Slash),
@@ -42,9 +61,9 @@ public static class LangScanners
 		new ExactScanner("!=").ForToken((int)TokenKind.BangEqual),
 		new ExactScanner("!").ForToken((int)TokenKind.Bang),
 
-		new CharScanner('<').ForToken((int)TokenKind.Lesser),
+		new CharScanner('<').ForToken((int)TokenKind.Less),
 		new CharScanner('>').ForToken((int)TokenKind.Greater),
-		new ExactScanner("<=").ForToken((int)TokenKind.LesserEqual),
+		new ExactScanner("<=").ForToken((int)TokenKind.LessEqual),
 		new ExactScanner(">=").ForToken((int)TokenKind.GreaterEqual),
 
 		new IntegerNumberScanner().ForToken((int)TokenKind.IntegerNumber),

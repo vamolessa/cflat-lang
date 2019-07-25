@@ -2,16 +2,16 @@ using System.Collections.Generic;
 
 public sealed class LangCompiler
 {
-	private readonly Compiler compiler = new Compiler();
-
 	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
 	{
+		var compiler = new Compiler();
+
 		tokenizer.Begin(LangScanners.scanners, source);
 		compiler.Begin(tokenizer);
 
 		compiler.Next();
-		Expression();
-		compiler.Consume(Token.EndKind, "Expect end of expression.");
+		Expression(compiler);
+		compiler.Consume(Token.EndKind, "Expected end of expression.");
 
 		// end compiler
 		compiler.EmitInstruction(Instruction.Return);
@@ -21,18 +21,23 @@ public sealed class LangCompiler
 		return Result.Ok(compiler.GetByteCodeChunk());
 	}
 
-	private void Expression()
+	private static void ParsePrecedence(Compiler compiler, int precedence)
 	{
 
 	}
 
-	private void Grouping()
+	public static void Expression(Compiler compiler)
 	{
-		Expression();
-		compiler.Consume((int)TokenKind.CloseParenthesis, "Expect ')' after expression.");
+		ParsePrecedence(compiler, (int)Precedence.Assignment);
 	}
 
-	private void Number()
+	public static void Grouping(Compiler compiler)
+	{
+		Expression(compiler);
+		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
+	}
+
+	public static void Number(Compiler compiler)
 	{
 		var value = compiler.Convert((s, t) =>
 		{
@@ -43,5 +48,47 @@ public sealed class LangCompiler
 		});
 
 		compiler.EmitLoadConstant(value);
+	}
+
+	public static void Unary(Compiler compiler)
+	{
+		var opKind = (TokenKind)compiler.previousToken.kind;
+
+		ParsePrecedence(compiler, (int)Precedence.Unary);
+
+		switch (opKind)
+		{
+		case TokenKind.Minus:
+			compiler.EmitInstruction(Instruction.Negate);
+			break;
+		default:
+			break;
+		}
+	}
+
+	public static void Binary(Compiler compiler)
+	{
+		var opKind = compiler.previousToken.kind;
+
+		var opPrecedence = LangParseRules.rules[opKind].precedence;
+		ParsePrecedence(compiler, opPrecedence + 1);
+
+		switch ((TokenKind)opKind)
+		{
+		case TokenKind.Plus:
+			compiler.EmitInstruction(Instruction.Add);
+			break;
+		case TokenKind.Minus:
+			compiler.EmitInstruction(Instruction.Subtract);
+			break;
+		case TokenKind.Asterisk:
+			compiler.EmitInstruction(Instruction.Multiply);
+			break;
+		case TokenKind.Slash:
+			compiler.EmitInstruction(Instruction.Divide);
+			break;
+		default:
+			return;
+		}
 	}
 }

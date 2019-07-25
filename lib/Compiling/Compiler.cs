@@ -15,8 +15,8 @@ public readonly struct CompileError
 public sealed class Compiler
 {
 	public readonly List<CompileError> errors = new List<CompileError>();
-	private Token previousToken;
-	private Token currentToken;
+	public Token previousToken;
+	public Token currentToken;
 
 	private ITokenizer tokenizer;
 	private bool panicMode;
