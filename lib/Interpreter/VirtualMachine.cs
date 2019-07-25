@@ -3,12 +3,14 @@ using Impl = VirtualMachineInstructions;
 
 public sealed class VirtualMachine
 {
+	internal string source;
 	internal ByteCodeChunk chunk;
 	internal int programCount;
 	internal Buffer<Value> stack = new Buffer<Value>(256);
 
-	public void Load(ByteCodeChunk chunk)
+	public void Load(string source, ByteCodeChunk chunk)
 	{
+		this.source = source;
 		this.chunk = chunk;
 	}
 
@@ -27,7 +29,7 @@ public sealed class VirtualMachine
 			{
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
-				chunk.DisassembleInstruction(programCount, sb);
+				chunk.DisassembleInstruction(source, programCount, sb);
 				System.Console.Write(sb);
 			}
 

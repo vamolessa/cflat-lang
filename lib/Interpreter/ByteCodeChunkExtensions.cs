@@ -2,7 +2,7 @@ using System.Text;
 
 public static class ByteCodeChunkExtensions
 {
-	public static void Disassemble(this ByteCodeChunk self, string chunkName, StringBuilder sb)
+	public static void Disassemble(this ByteCodeChunk self, string source, string chunkName, StringBuilder sb)
 	{
 		sb.Append("== ");
 		sb.Append(chunkName);
@@ -11,16 +11,22 @@ public static class ByteCodeChunkExtensions
 		sb.AppendLine(" bytes] ==");
 
 		for (var index = 0; index < self.bytes.count;)
-			index = DisassembleInstruction(self, index, sb);
+			index = DisassembleInstruction(self, source, index, sb);
 	}
 
-	public static int DisassembleInstruction(this ByteCodeChunk self, int index, StringBuilder sb)
+	public static int DisassembleInstruction(this ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
 		sb.AppendFormat("{0:0000} ", index);
-		if (index > 0 && self.positions.buffer[index].line == self.positions.buffer[index - 1].line)
+		if (index > 0 && self.sourceIndexes.buffer[index] == self.sourceIndexes.buffer[index - 1])
+		{
 			sb.Append("   | ");
+		}
 		else
-			sb.AppendFormat("{0,4} ", self.positions.buffer[index].line);
+		{
+			var sourceIndex = self.sourceIndexes.buffer[index];
+			var position = ParserHelper.GetLineAndColumn(source, sourceIndex);
+			sb.AppendFormat("{0,4} ", position);
+		}
 
 		var instructionCode = self.bytes.buffer[index];
 		var instruction = (Instruction)instructionCode;

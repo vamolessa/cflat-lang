@@ -20,6 +20,18 @@ public readonly struct LineAndColumn
 
 public static class ParserHelper
 {
+	public static int ToInteger(string source, Token token)
+	{
+		var sub = source.Substring(token.index, token.length);
+		return int.Parse(sub);
+	}
+
+	public static float ToFloat(string source, Token token)
+	{
+		var sub = source.Substring(token.index, token.length);
+		return float.Parse(sub);
+	}
+
 	public static LineAndColumn GetLineAndColumn(string source, int index)
 	{
 		var line = 1;

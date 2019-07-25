@@ -1,14 +1,43 @@
-public static class LangCompiler
+using System.Collections.Generic;
+
+public sealed class LangCompiler
 {
-	public static Result<ByteCodeChunk, string> Compile(string source, ITokenizer tokenizer)
+	private readonly Parser parser = new Parser();
+
+	public Result<ByteCodeChunk, List<ParseError>> Compile(string source, ITokenizer tokenizer)
 	{
-		tokenizer.Begin(LangScanners.scanners, source);
 		var chunk = new ByteCodeChunk();
 
-		// Advance();
-		// Expression();
-		// Consume(Token.EndKind, "Expect end of expression.");
+		tokenizer.Begin(LangScanners.scanners, source);
+		parser.Begin(tokenizer);
 
+		parser.Next();
+		Expression(chunk);
+		parser.Consume(Token.EndKind, "Expect end of expression.");
+
+		// end compiler
+		chunk.EmitInstruction(parser, Instruction.Return);
+
+		if (parser.errors.Count > 0)
+			return Result.Error(parser.errors);
 		return Result.Ok(chunk);
+	}
+
+	private void Expression(ByteCodeChunk chunk)
+	{
+
+	}
+
+	private void Number(ByteCodeChunk chunk)
+	{
+		var value = parser.Convert((s, t) =>
+		{
+			if (t.kind == (int)TokenKind.IntegerNumber)
+				return new Value(ParserHelper.ToInteger(s, t));
+			else
+				return new Value(ParserHelper.ToFloat(s, t));
+		});
+
+		chunk.EmitLoadConstant(parser, value);
 	}
 }
