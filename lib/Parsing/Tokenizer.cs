@@ -15,9 +15,19 @@ public readonly struct Token
 		this.index = index;
 		this.length = length;
 	}
+
+	public bool IsValid()
+	{
+		return kind >= 0;
+	}
 }
 
-public sealed class Tokenizer
+public interface ITokenizer
+{
+	Token Next();
+}
+
+public sealed class Tokenizer : ITokenizer
 {
 	private Scanner[] scanners;
 	private string source;
@@ -40,11 +50,11 @@ public sealed class Tokenizer
 		foreach (var scanner in scanners)
 		{
 			var length = scanner.Scan(source, nextIndex);
-			if (length > tokenLength)
-			{
-				tokenLength = length;
-				tokenKind = scanner.tokenKind;
-			}
+			if (tokenLength >= length)
+				continue;
+
+			tokenLength = length;
+			tokenKind = scanner.tokenKind;
 		}
 
 		if (tokenKind == Token.ErrorKind)
@@ -52,7 +62,7 @@ public sealed class Tokenizer
 
 		var token = new Token(tokenKind, nextIndex, tokenLength);
 		nextIndex += tokenLength;
-		
+
 		return token;
 	}
 
