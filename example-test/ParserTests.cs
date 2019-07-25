@@ -1,3 +1,4 @@
+/*
 using Xunit;
 
 public sealed class ParserTest
@@ -58,3 +59,4 @@ public sealed class ParserTest
 		Assert.True(result.isOk, ParserHelper.FormatError(source, result.error, 2));
 	}
 }
+*/

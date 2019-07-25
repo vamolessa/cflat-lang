@@ -71,20 +71,22 @@ public static class ParserHelper
 
 		foreach (var e in errors)
 		{
+			var position = GetLineAndColumn(source, e.sourceIndex);
+
 			sb.Append(e.message);
 			sb.Append(" (line: ");
-			sb.Append(e.position.line);
+			sb.Append(position.line);
 			sb.Append(", column: ");
-			sb.Append(e.position.column);
+			sb.Append(position.column);
 			sb.AppendLine(")");
 
 			sb.Append(ParserHelper.GetLines(
 				source,
-				System.Math.Max(e.position.line - 1 - contextSize, 0),
-				System.Math.Max(e.position.line - 1, 0)
+				System.Math.Max(position.line - 1 - contextSize, 0),
+				System.Math.Max(position.line - 1, 0)
 			));
 			sb.AppendLine();
-			sb.Append(' ', e.position.column - 1);
+			sb.Append(' ', position.column - 1);
 			sb.Append("^ here\n");
 		}
 

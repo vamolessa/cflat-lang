@@ -5,11 +5,9 @@ public static class LangCompiler
 		tokenizer.Begin(LangScanners.scanners, source);
 		var chunk = new ByteCodeChunk();
 
-/*
-		Advance();
-		Expression();
-		Consume(Token.EndKind, "Expect end of expression.");
- */
+		// Advance();
+		// Expression();
+		// Consume(Token.EndKind, "Expect end of expression.");
 
 		return Result.Ok(chunk);
 	}

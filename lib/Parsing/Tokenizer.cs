@@ -24,6 +24,7 @@ public readonly struct Token
 
 public interface ITokenizer
 {
+	string GetSource();
 	void Begin(Scanner[] scanners, string source);
 	Token Next();
 }
@@ -33,6 +34,11 @@ public sealed class Tokenizer : ITokenizer
 	private Scanner[] scanners;
 	private string source;
 	private int nextIndex;
+
+	public string GetSource()
+	{
+		return source;
+	}
 
 	public void Begin(Scanner[] scanners, string source)
 	{
