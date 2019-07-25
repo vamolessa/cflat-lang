@@ -67,6 +67,7 @@ public readonly struct Value
 
 		switch (a.type)
 		{
+		case Type.Nil: return true;
 		case Type.Bool: return a.data.asBool == b.data.asBool;
 		case Type.Int: return a.data.asInt == b.data.asInt;
 		case Type.Float: return a.data.asFloat == b.data.asFloat;

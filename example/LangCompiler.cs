@@ -101,6 +101,27 @@ public sealed class LangCompiler
 		case TokenKind.Slash:
 			compiler.EmitInstruction(Instruction.Divide);
 			break;
+		case TokenKind.EqualEqual:
+			compiler.EmitInstruction(Instruction.Equal);
+			break;
+		case TokenKind.BangEqual:
+			compiler.EmitInstruction(Instruction.Equal);
+			compiler.EmitInstruction(Instruction.Not);
+			break;
+		case TokenKind.Greater:
+			compiler.EmitInstruction(Instruction.Greater);
+			break;
+		case TokenKind.GreaterEqual:
+			compiler.EmitInstruction(Instruction.Less);
+			compiler.EmitInstruction(Instruction.Not);
+			break;
+		case TokenKind.Less:
+			compiler.EmitInstruction(Instruction.Less);
+			break;
+		case TokenKind.LessEqual:
+			compiler.EmitInstruction(Instruction.Greater);
+			compiler.EmitInstruction(Instruction.Not);
+			break;
 		default:
 			return;
 		}
