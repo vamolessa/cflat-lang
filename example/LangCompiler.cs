@@ -7,7 +7,7 @@ public sealed class LangCompiler
 		var compiler = new Compiler();
 
 		tokenizer.Begin(LangScanners.scanners, source);
-		compiler.Begin(tokenizer);
+		compiler.Begin(tokenizer, LangParseRules.rules);
 
 		compiler.Next();
 		Expression(compiler);
@@ -21,14 +21,9 @@ public sealed class LangCompiler
 		return Result.Ok(compiler.GetByteCodeChunk());
 	}
 
-	private static void ParsePrecedence(Compiler compiler, int precedence)
-	{
-
-	}
-
 	public static void Expression(Compiler compiler)
 	{
-		ParsePrecedence(compiler, (int)Precedence.Assignment);
+		compiler.ParseWithPrecedence((int)Precedence.Assignment);
 	}
 
 	public static void Grouping(Compiler compiler)
@@ -54,7 +49,7 @@ public sealed class LangCompiler
 	{
 		var opKind = (TokenKind)compiler.previousToken.kind;
 
-		ParsePrecedence(compiler, (int)Precedence.Unary);
+		compiler.ParseWithPrecedence((int)Precedence.Unary);
 
 		switch (opKind)
 		{
@@ -70,8 +65,8 @@ public sealed class LangCompiler
 	{
 		var opKind = compiler.previousToken.kind;
 
-		var opPrecedence = LangParseRules.rules[opKind].precedence;
-		ParsePrecedence(compiler, opPrecedence + 1);
+		var opPrecedence = compiler.GetTokenPrecedence(opKind);
+		compiler.ParseWithPrecedence(opPrecedence + 1);
 
 		switch ((TokenKind)opKind)
 		{

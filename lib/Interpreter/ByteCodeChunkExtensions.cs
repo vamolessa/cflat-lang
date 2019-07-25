@@ -12,6 +12,10 @@ public static class ByteCodeChunkExtensions
 
 		for (var index = 0; index < self.bytes.count;)
 			index = DisassembleInstruction(self, source, index, sb);
+
+		sb.Append("== ");
+		sb.Append(chunkName);
+		sb.AppendLine(" end ==");
 	}
 
 	public static int DisassembleInstruction(this ByteCodeChunk self, string source, int index, StringBuilder sb)
@@ -19,13 +23,13 @@ public static class ByteCodeChunkExtensions
 		sb.AppendFormat("{0:0000} ", index);
 		if (index > 0 && self.sourceIndexes.buffer[index] == self.sourceIndexes.buffer[index - 1])
 		{
-			sb.Append("   | ");
+			sb.Append("          | ");
 		}
 		else
 		{
 			var sourceIndex = self.sourceIndexes.buffer[index];
 			var position = CompilerHelper.GetLineAndColumn(source, sourceIndex);
-			sb.AppendFormat("{0,4} ", position);
+			sb.AppendFormat("({0,4},{1,4}) ", position.line, position.column);
 		}
 
 		var instructionCode = self.bytes.buffer[index];

@@ -27,7 +27,7 @@
 
 	public Scanner Ignore()
 	{
-		this.tokenKind = -1;
+		this.tokenKind = Token.EndKind;
 		return this;
 	}
 }

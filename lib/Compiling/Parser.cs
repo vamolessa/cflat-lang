@@ -2,14 +2,14 @@ public delegate void ParseFunction(Compiler compiler);
 
 public readonly struct ParseRule
 {
-	public readonly ParseFunction prefix;
-	public readonly ParseFunction infix;
+	public readonly ParseFunction prefixRule;
+	public readonly ParseFunction infixRule;
 	public readonly int precedence;
 
-	public ParseRule(ParseFunction prefix, ParseFunction infix, int precedence)
+	public ParseRule(ParseFunction prefixRule, ParseFunction infixRule, int precedence)
 	{
-		this.prefix = prefix;
-		this.infix = infix;
+		this.prefixRule = prefixRule;
+		this.infixRule = infixRule;
 		this.precedence = precedence;
 	}
 }

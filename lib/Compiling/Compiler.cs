@@ -19,13 +19,15 @@ public sealed class Compiler
 	public Token currentToken;
 
 	private ITokenizer tokenizer;
+	private ParseRule[] parseRules;
 	private bool panicMode;
 	private ByteCodeChunk chunk;
 
-	public void Begin(ITokenizer tokenizer)
+	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules)
 	{
 		errors.Clear();
 		this.tokenizer = tokenizer;
+		this.parseRules = parseRules;
 		previousToken = new Token(Token.EndKind, 0, 0);
 		currentToken = new Token(Token.EndKind, 0, 0);
 		panicMode = false;
@@ -46,6 +48,36 @@ public sealed class Compiler
 		var c = chunk;
 		chunk = null;
 		return c;
+	}
+
+	public int GetTokenPrecedence(int tokenKind)
+	{
+		return parseRules[tokenKind].precedence;
+	}
+
+	public void ParseWithPrecedence(int precedence)
+	{
+		Next();
+		if (previousToken.kind == Token.EndKind)
+			return;
+
+		var prefixRule = parseRules[previousToken.kind].prefixRule;
+		if (prefixRule == null)
+		{
+			AddError(previousToken.index, "Expected expression");
+			return;
+		}
+		prefixRule(this);
+
+		while (
+			currentToken.kind != Token.EndKind &&
+			precedence <= parseRules[currentToken.kind].precedence
+		)
+		{
+			Next();
+			var infixRule = parseRules[previousToken.kind].infixRule;
+			infixRule(this);
+		}
 	}
 
 	public void Next()

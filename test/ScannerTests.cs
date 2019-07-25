@@ -4,6 +4,7 @@ using Xunit;
 public sealed class ScannerTests
 {
 	private readonly Scanner[] scanners = new Scanner[] {
+		new WhiteSpaceScanner().Ignore(),
 		new IntegerNumberScanner().ForToken(0),
 		new CharScanner('+').ForToken(1),
 		new CharScanner('-').ForToken(2)
@@ -79,9 +80,13 @@ public sealed class ScannerTests
 	[Theory]
 	[InlineData("1", new int[] { 0 })]
 	[InlineData("123", new int[] { 0 })]
+	[InlineData("  123", new int[] { 0 })]
+	[InlineData("123  ", new int[] { 0 })]
+	[InlineData("  123  ", new int[] { 0 })]
 	[InlineData("-12", new int[] { 2, 0 })]
 	[InlineData("12+34", new int[] { 0, 1, 0 })]
 	[InlineData("12+-34", new int[] { 0, 1, 2, 0 })]
+	[InlineData(" 12 + - 34 ", new int[] { 0, 1, 2, 0 })]
 	public void TokenizerTest(string input, int[] expectedTokenKinds)
 	{
 		var tokenizer = new Tokenizer();

@@ -42,28 +42,35 @@ public sealed class Tokenizer : ITokenizer
 
 	public Token Next()
 	{
-		if (nextIndex >= source.Length)
-			return new Token(Token.EndKind, source.Length, 0);
-
-		var tokenLength = 0;
-		var tokenKind = Token.ErrorKind;
-		foreach (var scanner in scanners)
+		while (nextIndex < source.Length)
 		{
-			var length = scanner.Scan(source, nextIndex);
-			if (tokenLength >= length)
-				continue;
+			var tokenLength = 0;
+			var tokenKind = Token.ErrorKind;
+			foreach (var scanner in scanners)
+			{
+				var length = scanner.Scan(source, nextIndex);
+				if (tokenLength >= length)
+					continue;
 
-			tokenLength = length;
-			tokenKind = scanner.tokenKind;
+				tokenLength = length;
+				tokenKind = scanner.tokenKind;
+			}
+
+			if (tokenKind == Token.EndKind)
+			{
+				nextIndex += tokenLength;
+				continue;
+			}
+
+			if (tokenLength == 0)
+				tokenLength = 1;
+
+			var token = new Token(tokenKind, nextIndex, tokenLength);
+			nextIndex += tokenLength;
+			return token;
 		}
 
-		if (tokenKind == Token.ErrorKind)
-			tokenLength = 1;
-
-		var token = new Token(tokenKind, nextIndex, tokenLength);
-		nextIndex += tokenLength;
-
-		return token;
+		return new Token(Token.EndKind, source.Length, 0);
 	}
 
 	public T Convert<T>(Token token, System.Func<string, Token, T> converter)

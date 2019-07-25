@@ -4,7 +4,7 @@ internal static class VirtualMachineHelper
 {
 	public static void TraceStack(VirtualMachine vm, StringBuilder sb)
 	{
-		sb.Append("          ");
+		sb.Append("                 ");
 		for (var i = 0; i < vm.stack.count; i++)
 		{
 			sb.Append("[");
