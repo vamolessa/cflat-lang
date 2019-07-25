@@ -18,7 +18,7 @@ public readonly struct LineAndColumn
 	}
 }
 
-public static class ParserHelper
+public static class CompilerHelper
 {
 	public static int ToInteger(string source, Token token)
 	{
@@ -74,7 +74,7 @@ public static class ParserHelper
 		return "";
 	}
 
-	public static string FormatError(string source, List<ParseError> errors, int contextSize)
+	public static string FormatError(string source, List<CompileError> errors, int contextSize)
 	{
 		if (errors == null)
 			return "";
@@ -92,7 +92,7 @@ public static class ParserHelper
 			sb.Append(position.column);
 			sb.AppendLine(")");
 
-			sb.Append(ParserHelper.GetLines(
+			sb.Append(CompilerHelper.GetLines(
 				source,
 				System.Math.Max(position.line - 1 - contextSize, 0),
 				System.Math.Max(position.line - 1, 0)

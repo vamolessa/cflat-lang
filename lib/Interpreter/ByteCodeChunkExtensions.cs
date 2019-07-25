@@ -24,7 +24,7 @@ public static class ByteCodeChunkExtensions
 		else
 		{
 			var sourceIndex = self.sourceIndexes.buffer[index];
-			var position = ParserHelper.GetLineAndColumn(source, sourceIndex);
+			var position = CompilerHelper.GetLineAndColumn(source, sourceIndex);
 			sb.AppendFormat("{0,4} ", position);
 		}
 

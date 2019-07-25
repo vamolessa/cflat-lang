@@ -11,7 +11,7 @@ public sealed class ParserHelperTests
 	[InlineData("a\na", 0, 1, "a\na")]
 	public void GetLines(string text, int startLine, int endLine, string result)
 	{
-		var lines = ParserHelper.GetLines(text, startLine, endLine);
+		var lines = CompilerHelper.GetLines(text, startLine, endLine);
 		Assert.Equal(result, lines);
 	}
 }

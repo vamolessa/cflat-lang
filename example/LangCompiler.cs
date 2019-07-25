@@ -2,42 +2,46 @@ using System.Collections.Generic;
 
 public sealed class LangCompiler
 {
-	private readonly Parser parser = new Parser();
+	private readonly Compiler compiler = new Compiler();
 
-	public Result<ByteCodeChunk, List<ParseError>> Compile(string source, ITokenizer tokenizer)
+	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
 	{
-		var chunk = new ByteCodeChunk();
-
 		tokenizer.Begin(LangScanners.scanners, source);
-		parser.Begin(tokenizer);
+		compiler.Begin(tokenizer);
 
-		parser.Next();
-		Expression(chunk);
-		parser.Consume(Token.EndKind, "Expect end of expression.");
+		compiler.Next();
+		Expression();
+		compiler.Consume(Token.EndKind, "Expect end of expression.");
 
 		// end compiler
-		chunk.EmitInstruction(parser, Instruction.Return);
+		compiler.EmitInstruction(Instruction.Return);
 
-		if (parser.errors.Count > 0)
-			return Result.Error(parser.errors);
-		return Result.Ok(chunk);
+		if (compiler.errors.Count > 0)
+			return Result.Error(compiler.errors);
+		return Result.Ok(compiler.GetByteCodeChunk());
 	}
 
-	private void Expression(ByteCodeChunk chunk)
+	private void Expression()
 	{
 
 	}
 
-	private void Number(ByteCodeChunk chunk)
+	private void Grouping()
 	{
-		var value = parser.Convert((s, t) =>
+		Expression();
+		compiler.Consume((int)TokenKind.CloseParenthesis, "Expect ')' after expression.");
+	}
+
+	private void Number()
+	{
+		var value = compiler.Convert((s, t) =>
 		{
 			if (t.kind == (int)TokenKind.IntegerNumber)
-				return new Value(ParserHelper.ToInteger(s, t));
+				return new Value(CompilerHelper.ToInteger(s, t));
 			else
-				return new Value(ParserHelper.ToFloat(s, t));
+				return new Value(CompilerHelper.ToFloat(s, t));
 		});
 
-		chunk.EmitLoadConstant(parser, value);
+		compiler.EmitLoadConstant(value);
 	}
 }
