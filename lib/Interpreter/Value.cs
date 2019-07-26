@@ -8,6 +8,7 @@ public readonly struct Value
 		Bool,
 		Int,
 		Float,
+		Object,
 	}
 
 	[StructLayout(LayoutKind.Explicit)]
@@ -19,6 +20,8 @@ public readonly struct Value
 		public readonly int asInt;
 		[FieldOffset(0)]
 		public readonly float asFloat;
+		[FieldOffset(0)]
+		public readonly object asObject;
 
 		public Data(bool value)
 		{
@@ -36,6 +39,12 @@ public readonly struct Value
 		{
 			this = default(Data);
 			asFloat = value;
+		}
+
+		public Data(object value)
+		{
+			this = default(Data);
+			asObject = value;
 		}
 	}
 
@@ -60,6 +69,20 @@ public readonly struct Value
 		data = new Data(value);
 	}
 
+	public Value(object value)
+	{
+		if (value != null)
+		{
+			type = Type.Object;
+			data = new Data(value);
+		}
+		else
+		{
+			type = Type.Nil;
+			data = default(Data);
+		}
+	}
+
 	public static bool AreEqual(Value a, Value b)
 	{
 		if (a.type != b.type)
@@ -71,6 +94,7 @@ public readonly struct Value
 		case Type.Bool: return a.data.asBool == b.data.asBool;
 		case Type.Int: return a.data.asInt == b.data.asInt;
 		case Type.Float: return a.data.asFloat == b.data.asFloat;
+		case Type.Object: return a.data.asObject == b.data.asObject;
 		default: return false;
 		}
 	}
@@ -78,11 +102,6 @@ public readonly struct Value
 	public bool IsTruthy()
 	{
 		return type != Type.Nil && (type != Type.Bool || data.asBool);
-	}
-
-	public bool IsFalsey()
-	{
-		return type == Type.Nil || (type == Type.Bool && !data.asBool);
 	}
 
 	public override string ToString()

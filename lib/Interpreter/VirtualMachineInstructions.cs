@@ -103,7 +103,7 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.Not:
-			vm.PushValue(new Value(vm.PopValue().IsFalsey()));
+			vm.PushValue(new Value(!vm.PopValue().IsTruthy()));
 			break;
 		case Instruction.Equal:
 			vm.PushValue(new Value(Value.AreEqual(vm.PopValue(), vm.PopValue())));
