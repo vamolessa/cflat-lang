@@ -34,6 +34,7 @@ public sealed class Compiler
 	private ParseRule[] parseRules;
 	private bool panicMode;
 	private ByteCodeChunk chunk;
+	private Buffer<int> typeStack = new Buffer<int>(256);
 
 	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules)
 	{
@@ -44,9 +45,15 @@ public sealed class Compiler
 		currentToken = new Token(Token.EndKind, 0, 0);
 		panicMode = false;
 		chunk = new ByteCodeChunk();
+		typeStack.count = 0;
 	}
 
-	public void AddError(int sourceIndex, string message)
+	public void AddSoftError(int sourceIndex, string message)
+	{
+		errors.Add(new CompileError(sourceIndex, message));
+	}
+
+	public void AddHardError(int sourceIndex, string message)
 	{
 		if (panicMode)
 			return;
@@ -76,7 +83,7 @@ public sealed class Compiler
 		var prefixRule = parseRules[previousToken.kind].prefixRule;
 		if (prefixRule == null)
 		{
-			AddError(previousToken.index, "Expected expression");
+			AddHardError(previousToken.index, "Expected expression");
 			return;
 		}
 		prefixRule(this);
@@ -102,7 +109,7 @@ public sealed class Compiler
 			if (currentToken.kind != Token.ErrorKind)
 				break;
 
-			AddError(currentToken.index, "Invalid char");
+			AddHardError(currentToken.index, "Invalid char");
 		}
 	}
 
@@ -111,7 +118,17 @@ public sealed class Compiler
 		if (currentToken.kind == tokenKind)
 			Next();
 		else
-			AddError(currentToken.index, errorMessage);
+			AddHardError(currentToken.index, errorMessage);
+	}
+
+	public void PushType(int type)
+	{
+		typeStack.PushBack(type);
+	}
+
+	public int PopType()
+	{
+		return typeStack.PopLast();
 	}
 
 	public Convertible Convert()

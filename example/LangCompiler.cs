@@ -39,40 +39,63 @@ public sealed class LangCompiler
 		{
 		case TokenKind.Nil:
 			compiler.EmitInstruction(Instruction.LoadNil);
+			compiler.PushType((int)Value.Type.Nil);
 			break;
 		case TokenKind.True:
 			compiler.EmitInstruction(Instruction.LoadTrue);
+			compiler.PushType((int)Value.Type.Bool);
 			break;
 		case TokenKind.False:
 			compiler.EmitInstruction(Instruction.LoadFalse);
+			compiler.PushType((int)Value.Type.Bool);
 			break;
 		case TokenKind.IntegerNumber:
 			compiler.EmitLoadConstant(new Value(CompilerHelper.ParseInt(compiler)));
+			compiler.PushType((int)Value.Type.Int);
 			break;
 		case TokenKind.RealNumber:
 			compiler.EmitLoadConstant(new Value(CompilerHelper.ParseFloat(compiler)));
+			compiler.PushType((int)Value.Type.Float);
 			break;
 		case TokenKind.String:
 			compiler.EmitLoadStringLiteral(CompilerHelper.ParseString(compiler));
+			compiler.PushType((int)Value.Type.Object);
 			break;
 		default:
+			compiler.AddHardError(
+				compiler.previousToken.index,
+				string.Format("Invalid token kind {0}", compiler.previousToken.kind)
+			);
 			break;
 		}
 	}
 
 	public static void Unary(Compiler compiler)
 	{
-		var opKind = (TokenKind)compiler.previousToken.kind;
+		var opKind = compiler.previousToken.kind;
+		var opToken = compiler.previousToken;
 
 		compiler.ParseWithPrecedence((int)Precedence.Unary);
 
-		switch (opKind)
+		switch ((TokenKind)opKind)
 		{
 		case TokenKind.Minus:
-			compiler.EmitInstruction(Instruction.Negate);
-			break;
+			{
+				compiler.EmitInstruction(Instruction.Negate);
+				var type = (Value.Type)compiler.PopType();
+				if (type != Value.Type.Int && type != Value.Type.Float)
+					compiler.AddSoftError(opToken.index, "Unary minus operator can only be applied to numbers");
+				compiler.PushType((int)Value.Type.Int);
+				break;
+			}
 		case TokenKind.Bang:
-			compiler.EmitInstruction(Instruction.Not);
+			{
+				compiler.EmitInstruction(Instruction.Not);
+				var type = (Value.Type)compiler.PopType();
+				if (type != Value.Type.Bool)
+					compiler.AddSoftError(opToken.index, "Not operator can only be applied to booleans");
+				compiler.PushType((int)Value.Type.Bool);
+			}
 			break;
 		default:
 			break;
@@ -82,6 +105,7 @@ public sealed class LangCompiler
 	public static void Binary(Compiler compiler)
 	{
 		var opKind = compiler.previousToken.kind;
+		var opToken = compiler.previousToken;
 
 		var opPrecedence = compiler.GetTokenPrecedence(opKind);
 		compiler.ParseWithPrecedence(opPrecedence + 1);
@@ -89,8 +113,15 @@ public sealed class LangCompiler
 		switch ((TokenKind)opKind)
 		{
 		case TokenKind.Plus:
-			compiler.EmitInstruction(Instruction.Add);
-			break;
+			{
+				compiler.EmitInstruction(Instruction.Add);
+				var aType = (Value.Type)compiler.PopType();
+				var bType = (Value.Type)compiler.PopType();
+				if (aType != Value.Type.Int || bType != Value.Type.Int)
+					compiler.AddSoftError(opToken.index, "Plus operator can only be applied to numbers");
+				compiler.PushType((int)Value.Type.Int);
+				break;
+			}
 		case TokenKind.Minus:
 			compiler.EmitInstruction(Instruction.Subtract);
 			break;
