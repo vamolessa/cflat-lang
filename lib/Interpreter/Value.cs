@@ -94,7 +94,7 @@ public readonly struct Value
 		case Type.Bool: return a.data.asBool == b.data.asBool;
 		case Type.Int: return a.data.asInt == b.data.asInt;
 		case Type.Float: return a.data.asFloat == b.data.asFloat;
-		case Type.Object: return a.data.asObject == b.data.asObject;
+		case Type.Object: return a.data.asObject.Equals(b.data.asObject);
 		default: return false;
 		}
 	}
