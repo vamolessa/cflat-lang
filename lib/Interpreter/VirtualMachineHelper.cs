@@ -8,7 +8,7 @@ public static class VirtualMachineHelper
 		for (var i = 0; i < vm.stack.count; i++)
 		{
 			sb.Append("[");
-			sb.Append(vm.stack.buffer[i].ToString());
+			sb.Append(vm.stack.buffer[i].AsString(vm.heap.buffer));
 			sb.Append("]");
 		}
 		sb.AppendLine();

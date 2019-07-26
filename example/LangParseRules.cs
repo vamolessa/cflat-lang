@@ -24,8 +24,8 @@ public static class LangParseRules
 		Set(TokenKind.Less, null, LangCompiler.Binary, Precedence.Comparison);
 		Set(TokenKind.LessEqual, null, LangCompiler.Binary, Precedence.Comparison);
 		Set(TokenKind.Identifier, null, null, Precedence.None);
-		Set(TokenKind.String, null, null, Precedence.None);
-		Set(TokenKind.IntegerNumber, LangCompiler.Number, null, Precedence.None);
+		Set(TokenKind.String, LangCompiler.Literal, null, Precedence.None);
+		Set(TokenKind.IntegerNumber, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.And, null, null, Precedence.And);
 		Set(TokenKind.Else, null, null, Precedence.None);
 		Set(TokenKind.False, LangCompiler.Literal, null, Precedence.None);
@@ -34,7 +34,7 @@ public static class LangParseRules
 		Set(TokenKind.If, null, null, Precedence.None);
 		Set(TokenKind.Nil, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Or, null, null, Precedence.Or);
-		Set(TokenKind.RealNumber, LangCompiler.Number, null, Precedence.None);
+		Set(TokenKind.RealNumber, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Return, null, null, Precedence.None);
 		Set(TokenKind.True, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Let, null, null, Precedence.None);

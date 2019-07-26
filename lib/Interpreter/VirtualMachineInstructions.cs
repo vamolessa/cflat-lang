@@ -8,7 +8,7 @@ internal static class VirtualMachineInstructions
 		switch (nextInstruction)
 		{
 		case Instruction.Return:
-			System.Console.WriteLine(vm.PopValue().ToString());
+			System.Console.WriteLine(vm.PopValue().AsString(vm.heap.buffer));
 			return true;
 		case Instruction.LoadNil:
 			vm.PushValue(new Value());
@@ -106,7 +106,7 @@ internal static class VirtualMachineInstructions
 			vm.PushValue(new Value(!vm.PopValue().IsTruthy()));
 			break;
 		case Instruction.Equal:
-			vm.PushValue(new Value(Value.AreEqual(vm.PopValue(), vm.PopValue())));
+			vm.PushValue(new Value(Value.AreEqual(vm.heap.buffer, vm.PopValue(), vm.PopValue())));
 			break;
 		case Instruction.Greater:
 			{

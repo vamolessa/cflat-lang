@@ -14,11 +14,23 @@ public readonly struct CompileError
 
 public sealed class Compiler
 {
+	public readonly struct Convertible
+	{
+		public readonly string source;
+		public readonly Token token;
+
+		public Convertible(string source, Token token)
+		{
+			this.source = source;
+			this.token = token;
+		}
+	}
+
 	public readonly List<CompileError> errors = new List<CompileError>();
 	public Token previousToken;
-	public Token currentToken;
+	private Token currentToken;
 
-	private ITokenizer tokenizer;
+	internal ITokenizer tokenizer;
 	private ParseRule[] parseRules;
 	private bool panicMode;
 	private ByteCodeChunk chunk;
@@ -102,9 +114,9 @@ public sealed class Compiler
 			AddError(currentToken.index, errorMessage);
 	}
 
-	public void Convert(System.Action<Compiler, string, Token> converter)
+	public Convertible Convert()
 	{
-		converter(this, tokenizer.Source, previousToken);
+		return new Convertible(tokenizer.Source, previousToken);
 	}
 
 	public void EmitByte(byte value)
@@ -125,5 +137,20 @@ public sealed class Compiler
 
 		EmitInstruction(Instruction.LoadConstant);
 		EmitByte((byte)index);
+	}
+
+	public void EmitLoadStringLiteral(string value)
+	{
+		var stringIndex = System.Array.IndexOf(chunk.stringLiterals.buffer, value);
+
+		var constantIndex = stringIndex < 0 ?
+			chunk.AddStringLiteral(value) :
+			System.Array.IndexOf(
+				chunk.constants.buffer,
+				new Value(Value.Type.Object, new Value.Data(stringIndex))
+			);
+
+		EmitInstruction(Instruction.LoadConstant);
+		EmitByte((byte)constantIndex);
 	}
 }

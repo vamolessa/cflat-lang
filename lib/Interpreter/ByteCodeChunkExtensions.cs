@@ -69,7 +69,7 @@ public static class ByteCodeChunkExtensions
 	{
 		var constantIndex = chunk.bytes.buffer[index + 1];
 		var constant = chunk.constants.buffer[constantIndex];
-		sb.AppendFormat("{0} '{1}'\n", instruction, constant);
+		sb.AppendFormat("{0} '{1}'\n", instruction, constant.AsString(chunk.stringLiterals.buffer));
 		return index + 2;
 	}
 }

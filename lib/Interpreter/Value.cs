@@ -20,8 +20,6 @@ public readonly struct Value
 		public readonly int asInt;
 		[FieldOffset(0)]
 		public readonly float asFloat;
-		[FieldOffset(0)]
-		public readonly object asObject;
 
 		public Data(bool value)
 		{
@@ -40,16 +38,16 @@ public readonly struct Value
 			this = default(Data);
 			asFloat = value;
 		}
-
-		public Data(object value)
-		{
-			this = default(Data);
-			asObject = value;
-		}
 	}
 
-	public readonly Type type;
 	public readonly Data data;
+	public readonly Type type;
+
+	public Value(Type type, Data data)
+	{
+		this.type = type;
+		this.data = data;
+	}
 
 	public Value(bool value)
 	{
@@ -69,21 +67,7 @@ public readonly struct Value
 		data = new Data(value);
 	}
 
-	public Value(object value)
-	{
-		if (value != null)
-		{
-			type = Type.Object;
-			data = new Data(value);
-		}
-		else
-		{
-			type = Type.Nil;
-			data = default(Data);
-		}
-	}
-
-	public static bool AreEqual(Value a, Value b)
+	public static bool AreEqual(object[] objs, Value a, Value b)
 	{
 		if (a.type != b.type)
 			return false;
@@ -94,7 +78,7 @@ public readonly struct Value
 		case Type.Bool: return a.data.asBool == b.data.asBool;
 		case Type.Int: return a.data.asInt == b.data.asInt;
 		case Type.Float: return a.data.asFloat == b.data.asFloat;
-		case Type.Object: return a.data.asObject.Equals(b.data.asObject);
+		case Type.Object: return objs[a.data.asInt].Equals(objs[b.data.asInt]);
 		default: return false;
 		}
 	}
@@ -104,7 +88,7 @@ public readonly struct Value
 		return type != Type.Nil && (type != Type.Bool || data.asBool);
 	}
 
-	public override string ToString()
+	public string AsString(object[] objs)
 	{
 		switch (type)
 		{
@@ -116,8 +100,15 @@ public readonly struct Value
 			return data.asInt.ToString();
 		case Type.Float:
 			return data.asFloat.ToString();
+		case Type.Object:
+			return objs[data.asInt].ToString();
 		default:
 			return "<invalid value>";
 		}
+	}
+
+	public override string ToString()
+	{
+		return "'Called ToString() on a Value. Please use AsString() instead'";
 	}
 }

@@ -35,30 +35,29 @@ public sealed class LangCompiler
 
 	public static void Literal(Compiler compiler)
 	{
-		void Convert(Compiler c, string s, Token t)
+		switch ((TokenKind)compiler.previousToken.kind)
 		{
-			if (t.kind == (int)TokenKind.Nil)
-				c.EmitInstruction(Instruction.LoadNil);
-			else if (t.kind == (int)TokenKind.True)
-				c.EmitInstruction(Instruction.LoadTrue);
-			else
-				c.EmitInstruction(Instruction.LoadFalse);
+		case TokenKind.Nil:
+			compiler.EmitInstruction(Instruction.LoadNil);
+			break;
+		case TokenKind.True:
+			compiler.EmitInstruction(Instruction.LoadTrue);
+			break;
+		case TokenKind.False:
+			compiler.EmitInstruction(Instruction.LoadFalse);
+			break;
+		case TokenKind.IntegerNumber:
+			compiler.EmitLoadConstant(new Value(CompilerHelper.ParseInt(compiler)));
+			break;
+		case TokenKind.RealNumber:
+			compiler.EmitLoadConstant(new Value(CompilerHelper.ParseFloat(compiler)));
+			break;
+		case TokenKind.String:
+			compiler.EmitLoadStringLiteral(CompilerHelper.ParseString(compiler));
+			break;
+		default:
+			break;
 		}
-
-		compiler.Convert(Convert);
-	}
-
-	public static void Number(Compiler compiler)
-	{
-		void Convert(Compiler c, string s, Token t)
-		{
-			if (t.kind == (int)TokenKind.IntegerNumber)
-				c.EmitLoadConstant(new Value(CompilerHelper.ToInteger(s, t)));
-			else
-				c.EmitLoadConstant(new Value(CompilerHelper.ToFloat(s, t)));
-		}
-
-		compiler.Convert(Convert);
 	}
 
 	public static void Unary(Compiler compiler)

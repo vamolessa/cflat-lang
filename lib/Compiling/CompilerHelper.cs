@@ -20,16 +20,33 @@ public readonly struct LineAndColumn
 
 public static class CompilerHelper
 {
-	public static int ToInteger(string source, Token token)
+	public static int ParseInt(Compiler compiler)
 	{
-		var sub = source.Substring(token.index, token.length);
+		var source = compiler.tokenizer.Source;
+		var sub = source.Substring(
+			compiler.previousToken.index,
+			compiler.previousToken.length
+		);
 		return int.Parse(sub);
 	}
 
-	public static float ToFloat(string source, Token token)
+	public static float ParseFloat(Compiler compiler)
 	{
-		var sub = source.Substring(token.index, token.length);
+		var source = compiler.tokenizer.Source;
+		var sub = source.Substring(
+			compiler.previousToken.index,
+			compiler.previousToken.length
+		);
 		return float.Parse(sub);
+	}
+
+	public static string ParseString(Compiler compiler)
+	{
+		var source = compiler.tokenizer.Source;
+		return source.Substring(
+			compiler.previousToken.index + 1,
+			compiler.previousToken.length - 2
+		);
 	}
 
 	public static LineAndColumn GetLineAndColumn(string source, int index)

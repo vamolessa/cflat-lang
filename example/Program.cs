@@ -3,7 +3,7 @@
 public sealed class Program
 {
 	private static readonly bool DEBUG = true;
-
+	
 	public static void Main(string[] args)
 	{
 		LangParseRules.InitRules();

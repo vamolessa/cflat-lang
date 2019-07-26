@@ -20,6 +20,7 @@ public sealed class VirtualMachine
 	internal ByteCodeChunk chunk;
 	internal int programCount;
 	internal Buffer<Value> stack = new Buffer<Value>(256);
+	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
 	public Result<None, RuntimeError> Run(string source, ByteCodeChunk chunk)
@@ -30,6 +31,12 @@ public sealed class VirtualMachine
 
 		programCount = 0;
 		stack.count = 0;
+
+		heap = new Buffer<object>
+		{
+			buffer = chunk.stringLiterals.buffer,
+			count = chunk.stringLiterals.count
+		};
 
 		var sb = new StringBuilder();
 
