@@ -5,13 +5,13 @@ public sealed class Ast
 
 public readonly struct AstNode
 {
-	public readonly int kind;
+	public readonly Token token;
 	public readonly int childCount;
 	public readonly int returnType;
 
-	public AstNode(int kind, int childCount, int returnType)
+	public AstNode(Token token, int childCount, int returnType)
 	{
-		this.kind = kind;
+		this.token = token;
 		this.childCount = childCount;
 		this.returnType = returnType;
 	}
