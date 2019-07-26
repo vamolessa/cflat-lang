@@ -4,6 +4,8 @@ internal static class VirtualMachineInstructions
 {
 	public static bool Tick(VirtualMachine vm)
 	{
+		return false;
+		/*
 		var nextInstruction = (Instruction)vm.chunk.bytes.buffer[vm.programCount++];
 		switch (nextInstruction)
 		{
@@ -150,5 +152,6 @@ internal static class VirtualMachineInstructions
 		}
 
 		return false;
+		*/
 	}
 }
