@@ -146,13 +146,13 @@ public sealed class Compiler
 		EmitByte((byte)instruction);
 	}
 
-	public void EmitLoadConstant(Value value)
+	public void EmitLoadLiteral(ValueData value, ValueType type)
 	{
-		var index = System.Array.IndexOf(chunk.constants.buffer, value);
+		var index = System.Array.IndexOf(chunk.literalData.buffer, value);
 		if (index < 0)
-			index = chunk.AddConstant(value);
+			index = chunk.AddValueLiteral(value, type);
 
-		EmitInstruction(Instruction.LoadConstant);
+		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)index);
 	}
 
@@ -163,11 +163,11 @@ public sealed class Compiler
 		var constantIndex = stringIndex < 0 ?
 			chunk.AddStringLiteral(value) :
 			System.Array.IndexOf(
-				chunk.constants.buffer,
-				new Value(Value.Type.Object, new Value.Data(stringIndex))
+				chunk.literalData.buffer,
+				new ValueData(stringIndex)
 			);
 
-		EmitInstruction(Instruction.LoadConstant);
+		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)constantIndex);
 	}
 }

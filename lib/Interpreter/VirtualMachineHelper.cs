@@ -2,13 +2,27 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
+	public static string PopToString(VirtualMachine vm)
+	{
+		var data = vm.valueStack.buffer[vm.valueStack.count - 1];
+		var type = vm.typeStack.buffer[vm.typeStack.count - 1];
+		var str = Value.AsString(vm.heap.buffer, data, type);
+		vm.PopValue();
+
+		return str;
+	}
+
 	public static void TraceStack(VirtualMachine vm, StringBuilder sb)
 	{
-		sb.Append("                 ");
-		for (var i = 0; i < vm.stack.count; i++)
+		sb.Append("          ");
+		for (var i = 0; i < vm.valueStack.count; i++)
 		{
 			sb.Append("[");
-			sb.Append(vm.stack.buffer[i].AsString(vm.heap.buffer));
+			sb.Append(Value.AsString(
+				vm.heap.buffer,
+				vm.valueStack.buffer[i],
+				vm.typeStack.buffer[i]
+			));
 			sb.Append("]");
 		}
 		sb.AppendLine();

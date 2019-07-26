@@ -19,7 +19,8 @@ public sealed class VirtualMachine
 	internal string source;
 	internal ByteCodeChunk chunk;
 	internal int programCount;
-	internal Buffer<Value> stack = new Buffer<Value>(256);
+	internal Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
+	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
@@ -30,7 +31,8 @@ public sealed class VirtualMachine
 		maybeError = Option.None;
 
 		programCount = 0;
-		stack.count = 0;
+		typeStack.count = 0;
+		valueStack.count = 0;
 
 		heap = new Buffer<object>
 		{
@@ -68,13 +70,25 @@ public sealed class VirtualMachine
 		return true;
 	}
 
-	public void PushValue(Value value)
+	public void PushValue(ValueData value, ValueType type)
 	{
-		stack.PushBack(value);
+		typeStack.PushBack(type);
+		valueStack.PushBack(value);
 	}
 
-	public Value PopValue()
+	public ValueData PopValue()
 	{
-		return stack.PopLast();
+		typeStack.count -= 1;
+		return valueStack.PopLast();
+	}
+
+	public ref ValueData Peek()
+	{
+		return ref valueStack.buffer[valueStack.count - 1];
+	}
+
+	public ref ValueData PeekBefore()
+	{
+		return ref valueStack.buffer[valueStack.count - 2];
 	}
 }

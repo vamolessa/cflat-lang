@@ -1,4 +1,4 @@
-using VT = Value.Type;
+using VT = ValueType;
 
 internal static class VirtualMachineInstructions
 {
@@ -8,32 +8,35 @@ internal static class VirtualMachineInstructions
 		switch (nextInstruction)
 		{
 		case Instruction.Return:
-			System.Console.WriteLine(vm.PopValue().AsString(vm.heap.buffer));
+			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
 			return true;
 		case Instruction.LoadNil:
-			vm.PushValue(new Value());
+			vm.PushValue(new ValueData(), ValueType.Nil);
 			break;
 		case Instruction.LoadTrue:
-			vm.PushValue(new Value(true));
+			vm.PushValue(new ValueData(true), ValueType.Bool);
 			break;
 		case Instruction.LoadFalse:
-			vm.PushValue(new Value(false));
+			vm.PushValue(new ValueData(false), ValueType.Bool);
 			break;
-		case Instruction.LoadConstant:
-			var index = vm.chunk.bytes.buffer[vm.programCount++];
-			vm.PushValue(vm.chunk.constants.buffer[index]);
-			break;
-		case Instruction.Negate:
+		case Instruction.LoadLiteral:
 			{
-				var value = vm.PopValue();
-				if (value.type == VT.Int)
-					vm.PushValue(new Value(-value.data.asInt));
-				else if (value.type == VT.Float)
-					vm.PushValue(new Value(-value.data.asFloat));
-				else
-					return vm.Error("Operand must be a number");
+				var index = vm.chunk.bytes.buffer[vm.programCount++];
+				vm.PushValue(
+					vm.chunk.literalData.buffer[index],
+					vm.chunk.literalTypes.buffer[index]
+				);
 				break;
 			}
+		case Instruction.NegateInt:
+			vm.Peek().asInt = -vm.Peek().asInt;
+			break;
+		case Instruction.NegateFloat:
+			vm.Peek().asFloat = -vm.Peek().asFloat;
+			break;
+		case Instruction.AddInt:
+			vm.PeekBefore().asInt += vm.PopValue().asInt;
+			break;
 		case Instruction.Add:
 			{
 				var b = vm.PopValue();

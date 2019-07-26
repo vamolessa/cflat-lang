@@ -18,11 +18,17 @@ public struct Buffer<T>
 			buffer = temp;
 		}
 
-		buffer[count++] = element;
+		unchecked
+		{
+			buffer[count++] = element;
+		}
 	}
 
 	public T PopLast()
 	{
-		return buffer[--count];
+		unchecked
+		{
+			return buffer[--count];
+		}
 	}
 }

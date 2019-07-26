@@ -39,27 +39,27 @@ public sealed class LangCompiler
 		{
 		case TokenKind.Nil:
 			compiler.EmitInstruction(Instruction.LoadNil);
-			compiler.PushType((int)Value.Type.Nil);
+			compiler.PushType((int)Value.ValueType.Nil);
 			break;
 		case TokenKind.True:
 			compiler.EmitInstruction(Instruction.LoadTrue);
-			compiler.PushType((int)Value.Type.Bool);
+			compiler.PushType((int)Value.ValueType.Bool);
 			break;
 		case TokenKind.False:
 			compiler.EmitInstruction(Instruction.LoadFalse);
-			compiler.PushType((int)Value.Type.Bool);
+			compiler.PushType((int)Value.ValueType.Bool);
 			break;
 		case TokenKind.IntegerNumber:
-			compiler.EmitLoadConstant(new Value(CompilerHelper.ParseInt(compiler)));
-			compiler.PushType((int)Value.Type.Int);
+			compiler.EmitLoadLiteral(new Value(CompilerHelper.ParseInt(compiler)));
+			compiler.PushType((int)Value.ValueType.Int);
 			break;
 		case TokenKind.RealNumber:
-			compiler.EmitLoadConstant(new Value(CompilerHelper.ParseFloat(compiler)));
-			compiler.PushType((int)Value.Type.Float);
+			compiler.EmitLoadLiteral(new Value(CompilerHelper.ParseFloat(compiler)));
+			compiler.PushType((int)Value.ValueType.Float);
 			break;
 		case TokenKind.String:
 			compiler.EmitLoadStringLiteral(CompilerHelper.ParseString(compiler));
-			compiler.PushType((int)Value.Type.Object);
+			compiler.PushType((int)Value.ValueType.Object);
 			break;
 		default:
 			compiler.AddHardError(
@@ -82,19 +82,19 @@ public sealed class LangCompiler
 		case TokenKind.Minus:
 			{
 				compiler.EmitInstruction(Instruction.Negate);
-				var type = (Value.Type)compiler.PopType();
-				if (type != Value.Type.Int && type != Value.Type.Float)
+				var type = (Value.ValueType)compiler.PopType();
+				if (type != Value.ValueType.Int && type != Value.ValueType.Float)
 					compiler.AddSoftError(opToken.index, "Unary minus operator can only be applied to numbers");
-				compiler.PushType((int)Value.Type.Int);
+				compiler.PushType((int)Value.ValueType.Int);
 				break;
 			}
 		case TokenKind.Bang:
 			{
 				compiler.EmitInstruction(Instruction.Not);
-				var type = (Value.Type)compiler.PopType();
-				if (type != Value.Type.Bool)
+				var type = (Value.ValueType)compiler.PopType();
+				if (type != Value.ValueType.Bool)
 					compiler.AddSoftError(opToken.index, "Not operator can only be applied to booleans");
-				compiler.PushType((int)Value.Type.Bool);
+				compiler.PushType((int)Value.ValueType.Bool);
 			}
 			break;
 		default:
@@ -115,11 +115,11 @@ public sealed class LangCompiler
 		case TokenKind.Plus:
 			{
 				compiler.EmitInstruction(Instruction.Add);
-				var aType = (Value.Type)compiler.PopType();
-				var bType = (Value.Type)compiler.PopType();
-				if (aType != Value.Type.Int || bType != Value.Type.Int)
+				var aType = (Value.ValueType)compiler.PopType();
+				var bType = (Value.ValueType)compiler.PopType();
+				if (aType != Value.ValueType.Int || bType != Value.ValueType.Int)
 					compiler.AddSoftError(opToken.index, "Plus operator can only be applied to numbers");
-				compiler.PushType((int)Value.Type.Int);
+				compiler.PushType((int)Value.ValueType.Int);
 				break;
 			}
 		case TokenKind.Minus:

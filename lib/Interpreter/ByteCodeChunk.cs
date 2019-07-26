@@ -2,23 +2,23 @@ public sealed class ByteCodeChunk
 {
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<int> sourceIndexes = new Buffer<int>(256);
-	public Buffer<Value> constants = new Buffer<Value>(64);
+	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
+	public Buffer<ValueType> literalTypes = new Buffer<ValueType>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
 
-	public int AddConstant(Value value)
+	public int AddValueLiteral(ValueData data, ValueType type)
 	{
-		var index = constants.count;
-		constants.PushBack(value);
+		var index = literalData.count;
+		literalData.PushBack(data);
+		literalTypes.PushBack(type);
 		return index;
 	}
 
 	public int AddStringLiteral(string literal)
 	{
-		var constantIndex = constants.count;
 		var stringIndex = stringLiterals.count;
 		stringLiterals.PushBack(literal);
-		constants.PushBack(new Value(Value.Type.Object, new Value.Data(stringIndex)));
-		return constantIndex;
+		return AddValueLiteral(new ValueData(stringIndex), ValueType.String);
 	}
 
 	public void WriteByte(byte value, int sourceIndex)
