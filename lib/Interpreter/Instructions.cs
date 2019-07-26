@@ -2,9 +2,9 @@ public enum Instruction
 {
 	Return,
 	LoadNil,
-	LoadConstant,
 	LoadTrue,
 	LoadFalse,
+	LoadConstant,
 	Negate,
 	Add,
 	Subtract,
