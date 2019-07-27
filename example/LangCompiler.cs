@@ -183,18 +183,48 @@ public sealed class LangCompiler
 			compiler.EmitInstruction(Instruction.Not);
 			break;
 		case TokenKind.Greater:
-			compiler.EmitInstruction(Instruction.Greater);
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler.EmitInstruction(Instruction.GreaterInt).PushType(ValueType.Bool);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler.EmitInstruction(Instruction.GreaterFloat).PushType(ValueType.Bool);
+			else
+				compiler.AddSoftError(opToken.index, "Greater operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.GreaterEqual:
-			compiler.EmitInstruction(Instruction.Less);
-			compiler.EmitInstruction(Instruction.Not);
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler
+					.EmitInstruction(Instruction.LessInt)
+					.EmitInstruction(Instruction.Not)
+					.PushType(ValueType.Bool);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler
+					.EmitInstruction(Instruction.LessFloat)
+					.EmitInstruction(Instruction.Not)
+					.PushType(ValueType.Bool);
+			else
+				compiler.AddSoftError(opToken.index, "GreaterOrEqual operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.Less:
-			compiler.EmitInstruction(Instruction.Less);
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler.EmitInstruction(Instruction.LessInt).PushType(ValueType.Bool);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler.EmitInstruction(Instruction.LessFloat).PushType(ValueType.Bool);
+			else
+				compiler.AddSoftError(opToken.index, "Less operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.LessEqual:
-			compiler.EmitInstruction(Instruction.Greater);
-			compiler.EmitInstruction(Instruction.Not);
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler
+					.EmitInstruction(Instruction.GreaterInt)
+					.EmitInstruction(Instruction.Not)
+					.PushType(ValueType.Bool);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler
+					.EmitInstruction(Instruction.GreaterFloat)
+					.EmitInstruction(Instruction.Not)
+					.PushType(ValueType.Bool);
+			else
+				compiler.AddSoftError(opToken.index, "LessOrEqual operator can only be applied to ints or floats").PushType(aType);
 			break;
 		default:
 			return;
