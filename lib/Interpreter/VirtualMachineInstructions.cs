@@ -88,7 +88,10 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.EqualString:
 			vm.PushValue(
-				new ValueData(vm.PopValue().asInt == vm.PopValue().asInt),
+				new ValueData(
+					(vm.heap.buffer[vm.PopValue().asInt] as string).Equals(
+					vm.heap.buffer[vm.PopValue().asInt] as string)
+				),
 				ValueType.Bool
 			);
 			break;
