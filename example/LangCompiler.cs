@@ -176,55 +176,114 @@ public sealed class LangCompiler
 				compiler.AddSoftError(opToken.index, "Divide operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.EqualEqual:
-			compiler.EmitInstruction(Instruction.Equal);
+			if (aType != bType)
+			{
+				compiler.AddSoftError(opToken.index, "Equal operator can only be applied to same type values");
+				compiler.PushType(ValueType.Bool);
+				break;
+			}
+
+			switch (aType)
+			{
+			case ValueType.Nil:
+				compiler.EmitInstruction(Instruction.Pop);
+				compiler.EmitInstruction(Instruction.Pop);
+				compiler.EmitInstruction(Instruction.LoadTrue);
+				break;
+			case ValueType.Bool:
+				compiler.EmitInstruction(Instruction.EqualBool);
+				break;
+			case ValueType.Int:
+				compiler.EmitInstruction(Instruction.EqualInt);
+				break;
+			case ValueType.Float:
+				compiler.EmitInstruction(Instruction.EqualFloat);
+				break;
+			case ValueType.String:
+				compiler.EmitInstruction(Instruction.EqualString);
+				break;
+			default:
+				compiler.AddSoftError(opToken.index, "Equal operator can only be applied to nil, bools, ints and floats");
+				break;
+			}
+			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.BangEqual:
-			compiler.EmitInstruction(Instruction.Equal);
+			if (aType != bType)
+			{
+				compiler.AddSoftError(opToken.index, "NotEqual operator can only be applied to same type values");
+				compiler.PushType(ValueType.Bool);
+				break;
+			}
+
+			switch (aType)
+			{
+			case ValueType.Nil:
+				compiler.EmitInstruction(Instruction.Pop);
+				compiler.EmitInstruction(Instruction.LoadFalse);
+				break;
+			case ValueType.Bool:
+				compiler.EmitInstruction(Instruction.EqualBool);
+				break;
+			case ValueType.Int:
+				compiler.EmitInstruction(Instruction.EqualInt);
+				break;
+			case ValueType.Float:
+				compiler.EmitInstruction(Instruction.EqualFloat);
+				break;
+			case ValueType.String:
+				compiler.EmitInstruction(Instruction.EqualString);
+				break;
+			default:
+				compiler.AddSoftError(opToken.index, "NotEqual operator can only be applied to nil, bools, ints and floats");
+				break;
+			}
 			compiler.EmitInstruction(Instruction.Not);
+			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.Greater:
 			if (aType == ValueType.Int && bType == ValueType.Int)
-				compiler.EmitInstruction(Instruction.GreaterInt).PushType(ValueType.Bool);
+				compiler.EmitInstruction(Instruction.GreaterInt);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
-				compiler.EmitInstruction(Instruction.GreaterFloat).PushType(ValueType.Bool);
+				compiler.EmitInstruction(Instruction.GreaterFloat);
 			else
-				compiler.AddSoftError(opToken.index, "Greater operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.index, "Greater operator can only be applied to ints or floats");
+			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.GreaterEqual:
 			if (aType == ValueType.Int && bType == ValueType.Int)
 				compiler
 					.EmitInstruction(Instruction.LessInt)
-					.EmitInstruction(Instruction.Not)
-					.PushType(ValueType.Bool);
+					.EmitInstruction(Instruction.Not);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler
 					.EmitInstruction(Instruction.LessFloat)
-					.EmitInstruction(Instruction.Not)
-					.PushType(ValueType.Bool);
+					.EmitInstruction(Instruction.Not);
 			else
-				compiler.AddSoftError(opToken.index, "GreaterOrEqual operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.index, "GreaterOrEqual operator can only be applied to ints or floats");
+			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.Less:
 			if (aType == ValueType.Int && bType == ValueType.Int)
-				compiler.EmitInstruction(Instruction.LessInt).PushType(ValueType.Bool);
+				compiler.EmitInstruction(Instruction.LessInt);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
-				compiler.EmitInstruction(Instruction.LessFloat).PushType(ValueType.Bool);
+				compiler.EmitInstruction(Instruction.LessFloat);
 			else
-				compiler.AddSoftError(opToken.index, "Less operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.index, "Less operator can only be applied to ints or floats");
+			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.LessEqual:
 			if (aType == ValueType.Int && bType == ValueType.Int)
 				compiler
 					.EmitInstruction(Instruction.GreaterInt)
-					.EmitInstruction(Instruction.Not)
-					.PushType(ValueType.Bool);
+					.EmitInstruction(Instruction.Not);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler
 					.EmitInstruction(Instruction.GreaterFloat)
-					.EmitInstruction(Instruction.Not)
-					.PushType(ValueType.Bool);
+					.EmitInstruction(Instruction.Not);
 			else
-				compiler.AddSoftError(opToken.index, "LessOrEqual operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.index, "LessOrEqual operator can only be applied to ints or floats");
+			compiler.PushType(ValueType.Bool);
 			break;
 		default:
 			return;

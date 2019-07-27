@@ -68,9 +68,29 @@ internal static class VirtualMachineInstructions
 		case Instruction.Not:
 			vm.Peek().asBool = !vm.Peek().asBool;
 			break;
-		case Instruction.Equal:
-			vm.PopValue();
-			vm.PushValue(new ValueData(false), ValueType.Bool);
+		case Instruction.EqualBool:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asBool == vm.PopValue().asBool),
+				ValueType.Bool
+			);
+			break;
+		case Instruction.EqualInt:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asInt == vm.PopValue().asInt),
+				ValueType.Bool
+			);
+			break;
+		case Instruction.EqualFloat:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asFloat == vm.PopValue().asFloat),
+				ValueType.Bool
+			);
+			break;
+		case Instruction.EqualString:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asInt == vm.PopValue().asInt),
+				ValueType.Bool
+			);
 			break;
 		case Instruction.GreaterInt:
 			vm.PushValue(

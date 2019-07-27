@@ -55,7 +55,10 @@ public static class ByteCodeChunkExtensions
 		case Instruction.DivideInt:
 		case Instruction.DivideFloat:
 		case Instruction.Not:
-		case Instruction.Equal:
+		case Instruction.EqualBool:
+		case Instruction.EqualInt:
+		case Instruction.EqualFloat:
+		case Instruction.EqualString:
 		case Instruction.GreaterInt:
 		case Instruction.GreaterFloat:
 		case Instruction.LessInt:
