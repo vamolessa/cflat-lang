@@ -2,159 +2,202 @@ using System.Collections.Generic;
 
 public sealed class LangCompiler
 {
-	/*
-		public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
+	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
+	{
+		var compiler = new Compiler();
+
+		tokenizer.Begin(LangScanners.scanners, source);
+		compiler.Begin(tokenizer, LangParseRules.rules);
+
+		compiler.Next();
+		Expression(compiler);
+		compiler.Consume(Token.EndKind, "Expected end of expression.");
+
+		// end compiler
+		compiler.EmitInstruction(Instruction.Return);
+
+		if (compiler.errors.Count > 0)
+			return Result.Error(compiler.errors);
+		return Result.Ok(compiler.GetByteCodeChunk());
+	}
+
+	public static void Expression(Compiler compiler)
+	{
+		compiler.ParseWithPrecedence((int)Precedence.Assignment);
+	}
+
+	public static void Grouping(Compiler compiler)
+	{
+		Expression(compiler);
+		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
+	}
+
+	public static void Literal(Compiler compiler)
+	{
+		switch ((TokenKind)compiler.previousToken.kind)
 		{
-			var compiler = new Compiler();
-
-			tokenizer.Begin(LangScanners.scanners, source);
-			compiler.Begin(tokenizer, LangParseRules.rules);
-
-			compiler.Next();
-			Expression(compiler);
-			compiler.Consume(Token.EndKind, "Expected end of expression.");
-
-			// end compiler
-			compiler.EmitInstruction(Instruction.Return);
-
-			if (compiler.errors.Count > 0)
-				return Result.Error(compiler.errors);
-			return Result.Ok(compiler.GetByteCodeChunk());
+		case TokenKind.Nil:
+			compiler.EmitInstruction(Instruction.LoadNil);
+			compiler.PushType(ValueType.Nil);
+			break;
+		case TokenKind.True:
+			compiler.EmitInstruction(Instruction.LoadTrue);
+			compiler.PushType(ValueType.Bool);
+			break;
+		case TokenKind.False:
+			compiler.EmitInstruction(Instruction.LoadFalse);
+			compiler.PushType(ValueType.Bool);
+			break;
+		case TokenKind.IntegerNumber:
+			compiler.EmitLoadLiteral(
+				new ValueData(CompilerHelper.ParseInt(compiler)),
+				ValueType.Int
+			);
+			compiler.PushType(ValueType.Int);
+			break;
+		case TokenKind.RealNumber:
+			compiler.EmitLoadLiteral(
+				new ValueData(CompilerHelper.ParseFloat(compiler)),
+				ValueType.Float
+			);
+			compiler.PushType(ValueType.Float);
+			break;
+		case TokenKind.String:
+			compiler.EmitLoadStringLiteral(CompilerHelper.ParseString(compiler));
+			compiler.PushType(ValueType.String);
+			break;
+		default:
+			compiler.AddHardError(
+				compiler.previousToken.index,
+				string.Format("Expected literal. Got {0}", compiler.previousToken.kind)
+			);
+			break;
 		}
+	}
 
-		public static void Expression(Compiler compiler)
-		{
-			compiler.ParseWithPrecedence((int)Precedence.Assignment);
-		}
+	public static void Unary(Compiler compiler)
+	{
+		var opToken = compiler.previousToken;
 
-		public static void Grouping(Compiler compiler)
-		{
-			Expression(compiler);
-			compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
-		}
+		compiler.ParseWithPrecedence((int)Precedence.Unary);
+		var type = compiler.PopType();
 
-		public static void Literal(Compiler compiler)
+		switch ((TokenKind)opToken.kind)
 		{
-			switch ((TokenKind)compiler.previousToken.kind)
+		case TokenKind.Minus:
+			switch (type)
 			{
-			case TokenKind.Nil:
-				compiler.EmitInstruction(Instruction.LoadNil);
-				compiler.PushType((int)Value.ValueType.Nil);
+			case ValueType.Int:
+				compiler.EmitInstruction(Instruction.NegateInt);
+				compiler.PushType(ValueType.Int);
 				break;
-			case TokenKind.True:
+			case ValueType.Float:
+				compiler.EmitInstruction(Instruction.NegateFloat);
+				compiler.PushType(ValueType.Float);
+				break;
+			default:
+				compiler.AddSoftError(opToken.index, "Unary minus operator can only be applied to ints or floats");
+				compiler.PushType(type);
+				break;
+			}
+			break;
+		case TokenKind.Bang:
+			switch (type)
+			{
+			case ValueType.Nil:
+				compiler.EmitInstruction(Instruction.Pop);
 				compiler.EmitInstruction(Instruction.LoadTrue);
-				compiler.PushType((int)Value.ValueType.Bool);
 				break;
-			case TokenKind.False:
+			case ValueType.Bool:
+				compiler.EmitInstruction(Instruction.Not);
+				break;
+			case ValueType.Int:
+			case ValueType.Float:
+			case ValueType.String:
+				compiler.EmitInstruction(Instruction.Pop);
 				compiler.EmitInstruction(Instruction.LoadFalse);
-				compiler.PushType((int)Value.ValueType.Bool);
-				break;
-			case TokenKind.IntegerNumber:
-				compiler.EmitLoadLiteral(new Value(CompilerHelper.ParseInt(compiler)));
-				compiler.PushType((int)Value.ValueType.Int);
-				break;
-			case TokenKind.RealNumber:
-				compiler.EmitLoadLiteral(new Value(CompilerHelper.ParseFloat(compiler)));
-				compiler.PushType((int)Value.ValueType.Float);
-				break;
-			case TokenKind.String:
-				compiler.EmitLoadStringLiteral(CompilerHelper.ParseString(compiler));
-				compiler.PushType((int)Value.ValueType.Object);
 				break;
 			default:
-				compiler.AddHardError(
-					compiler.previousToken.index,
-					string.Format("Invalid token kind {0}", compiler.previousToken.kind)
+				compiler.AddSoftError(opToken.index, "Not operator can only be applied to nil, bools, ints, floats or strings");
+				break;
+			}
+			break;
+		default:
+			compiler.AddHardError(
+					opToken.index,
+					string.Format("Expected unary operator. Got {0}", opToken.kind)
 				);
-				break;
-			}
+			break;
 		}
+	}
 
-		public static void Unary(Compiler compiler)
+	public static void Binary(Compiler compiler)
+	{
+		var opToken = compiler.previousToken;
+
+		var opPrecedence = compiler.GetTokenPrecedence(opToken.kind);
+		compiler.ParseWithPrecedence(opPrecedence + 1);
+
+		var bType = compiler.PopType();
+		var aType = compiler.PopType();
+
+		switch ((TokenKind)opToken.kind)
 		{
-			var opKind = compiler.previousToken.kind;
-			var opToken = compiler.previousToken;
-
-			compiler.ParseWithPrecedence((int)Precedence.Unary);
-
-			switch ((TokenKind)opKind)
-			{
-			case TokenKind.Minus:
-				{
-					compiler.EmitInstruction(Instruction.Negate);
-					var type = (Value.ValueType)compiler.PopType();
-					if (type != Value.ValueType.Int && type != Value.ValueType.Float)
-						compiler.AddSoftError(opToken.index, "Unary minus operator can only be applied to numbers");
-					compiler.PushType((int)Value.ValueType.Int);
-					break;
-				}
-			case TokenKind.Bang:
-				{
-					compiler.EmitInstruction(Instruction.Not);
-					var type = (Value.ValueType)compiler.PopType();
-					if (type != Value.ValueType.Bool)
-						compiler.AddSoftError(opToken.index, "Not operator can only be applied to booleans");
-					compiler.PushType((int)Value.ValueType.Bool);
-				}
-				break;
-			default:
-				break;
-			}
+		case TokenKind.Plus:
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler.EmitInstruction(Instruction.AddInt).PushType(ValueType.Int);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler.EmitInstruction(Instruction.AddFloat).PushType(ValueType.Float);
+			else
+				compiler.AddSoftError(opToken.index, "Plus operator can only be applied to ints or floats").PushType(aType);
+			break;
+		case TokenKind.Minus:
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler.EmitInstruction(Instruction.SubtractInt).PushType(ValueType.Int);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler.EmitInstruction(Instruction.SubtractFloat).PushType(ValueType.Float);
+			else
+				compiler.AddSoftError(opToken.index, "Minus operator can only be applied to ints or floats").PushType(aType);
+			break;
+		case TokenKind.Asterisk:
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler.EmitInstruction(Instruction.MultiplyInt).PushType(ValueType.Int);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler.EmitInstruction(Instruction.MultiplyFloat).PushType(ValueType.Float);
+			else
+				compiler.AddSoftError(opToken.index, "Multiply operator can only be applied to ints or floats").PushType(aType);
+			break;
+		case TokenKind.Slash:
+			if (aType == ValueType.Int && bType == ValueType.Int)
+				compiler.EmitInstruction(Instruction.DivideInt).PushType(ValueType.Int);
+			else if (aType == ValueType.Float && bType == ValueType.Float)
+				compiler.EmitInstruction(Instruction.DivideFloat).PushType(ValueType.Float);
+			else
+				compiler.AddSoftError(opToken.index, "Divide operator can only be applied to ints or floats").PushType(aType);
+			break;
+		case TokenKind.EqualEqual:
+			compiler.EmitInstruction(Instruction.Equal);
+			break;
+		case TokenKind.BangEqual:
+			compiler.EmitInstruction(Instruction.Equal);
+			compiler.EmitInstruction(Instruction.Not);
+			break;
+		case TokenKind.Greater:
+			compiler.EmitInstruction(Instruction.Greater);
+			break;
+		case TokenKind.GreaterEqual:
+			compiler.EmitInstruction(Instruction.Less);
+			compiler.EmitInstruction(Instruction.Not);
+			break;
+		case TokenKind.Less:
+			compiler.EmitInstruction(Instruction.Less);
+			break;
+		case TokenKind.LessEqual:
+			compiler.EmitInstruction(Instruction.Greater);
+			compiler.EmitInstruction(Instruction.Not);
+			break;
+		default:
+			return;
 		}
-
-		public static void Binary(Compiler compiler)
-		{
-			var opKind = compiler.previousToken.kind;
-			var opToken = compiler.previousToken;
-
-			var opPrecedence = compiler.GetTokenPrecedence(opKind);
-			compiler.ParseWithPrecedence(opPrecedence + 1);
-
-			switch ((TokenKind)opKind)
-			{
-			case TokenKind.Plus:
-				{
-					compiler.EmitInstruction(Instruction.Add);
-					var aType = (Value.ValueType)compiler.PopType();
-					var bType = (Value.ValueType)compiler.PopType();
-					if (aType != Value.ValueType.Int || bType != Value.ValueType.Int)
-						compiler.AddSoftError(opToken.index, "Plus operator can only be applied to numbers");
-					compiler.PushType((int)Value.ValueType.Int);
-					break;
-				}
-			case TokenKind.Minus:
-				compiler.EmitInstruction(Instruction.Subtract);
-				break;
-			case TokenKind.Asterisk:
-				compiler.EmitInstruction(Instruction.Multiply);
-				break;
-			case TokenKind.Slash:
-				compiler.EmitInstruction(Instruction.Divide);
-				break;
-			case TokenKind.EqualEqual:
-				compiler.EmitInstruction(Instruction.Equal);
-				break;
-			case TokenKind.BangEqual:
-				compiler.EmitInstruction(Instruction.Equal);
-				compiler.EmitInstruction(Instruction.Not);
-				break;
-			case TokenKind.Greater:
-				compiler.EmitInstruction(Instruction.Greater);
-				break;
-			case TokenKind.GreaterEqual:
-				compiler.EmitInstruction(Instruction.Less);
-				compiler.EmitInstruction(Instruction.Not);
-				break;
-			case TokenKind.Less:
-				compiler.EmitInstruction(Instruction.Less);
-				break;
-			case TokenKind.LessEqual:
-				compiler.EmitInstruction(Instruction.Greater);
-				compiler.EmitInstruction(Instruction.Not);
-				break;
-			default:
-				return;
-			}
-		}
-		*/
+	}
 }

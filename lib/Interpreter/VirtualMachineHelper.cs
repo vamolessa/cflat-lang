@@ -2,11 +2,30 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
+	public static string ValueToString(object[] objs, ValueData data, ValueType type)
+	{
+		switch (type)
+		{
+		case ValueType.Nil:
+			return "nil";
+		case ValueType.Bool:
+			return data.asBool ? "true" : "false";
+		case ValueType.Int:
+			return data.asInt.ToString();
+		case ValueType.Float:
+			return data.asFloat.ToString();
+		case ValueType.String:
+			return objs[data.asInt].ToString();
+		default:
+			return "<invalid value>";
+		}
+	}
+
 	public static string PopToString(VirtualMachine vm)
 	{
 		var data = vm.valueStack.buffer[vm.valueStack.count - 1];
 		var type = vm.typeStack.buffer[vm.typeStack.count - 1];
-		var str = Value.AsString(vm.heap.buffer, data, type);
+		var str = ValueToString(vm.heap.buffer, data, type);
 		vm.PopValue();
 
 		return str;
@@ -18,7 +37,7 @@ public static class VirtualMachineHelper
 		for (var i = 0; i < vm.valueStack.count; i++)
 		{
 			sb.Append("[");
-			sb.Append(Value.AsString(
+			sb.Append(ValueToString(
 				vm.heap.buffer,
 				vm.valueStack.buffer[i],
 				vm.typeStack.buffer[i]

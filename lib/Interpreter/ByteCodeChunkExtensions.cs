@@ -37,10 +37,13 @@ public static class ByteCodeChunkExtensions
 
 		switch (instruction)
 		{
+		case Instruction.Return:
+		case Instruction.Pop:
 		case Instruction.LoadNil:
 		case Instruction.LoadTrue:
 		case Instruction.LoadFalse:
-		case Instruction.Return:
+		case Instruction.IntToFloat:
+		case Instruction.FloatToInt:
 		case Instruction.NegateInt:
 		case Instruction.NegateFloat:
 		case Instruction.AddInt:
@@ -88,7 +91,7 @@ public static class ByteCodeChunkExtensions
 			sb.AppendFormat(" {0}", value.asFloat);
 			break;
 		case ValueType.String:
-			sb.AppendFormat(" {0}", chunk.stringLiterals.buffer[(uint)value.asInt]);
+			sb.AppendFormat(" {0}", chunk.stringLiterals.buffer[value.asInt]);
 			break;
 		}
 

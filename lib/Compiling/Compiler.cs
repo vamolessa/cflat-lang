@@ -34,7 +34,7 @@ public sealed class Compiler
 	private ParseRule[] parseRules;
 	private bool panicMode;
 	private ByteCodeChunk chunk;
-	private Buffer<int> typeStack = new Buffer<int>(256);
+	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 
 	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules)
 	{
@@ -48,18 +48,21 @@ public sealed class Compiler
 		typeStack.count = 0;
 	}
 
-	public void AddSoftError(int sourceIndex, string message)
+	public Compiler AddSoftError(int sourceIndex, string message)
 	{
 		errors.Add(new CompileError(sourceIndex, message));
+		return this;
 	}
 
-	public void AddHardError(int sourceIndex, string message)
+	public Compiler AddHardError(int sourceIndex, string message)
 	{
 		if (panicMode)
-			return;
+			return this;
 
 		panicMode = true;
 		errors.Add(new CompileError(sourceIndex, message));
+
+		return this;
 	}
 
 	public ByteCodeChunk GetByteCodeChunk()
@@ -121,12 +124,12 @@ public sealed class Compiler
 			AddHardError(currentToken.index, errorMessage);
 	}
 
-	public void PushType(int type)
+	public void PushType(ValueType type)
 	{
 		typeStack.PushBack(type);
 	}
 
-	public int PopType()
+	public ValueType PopType()
 	{
 		return typeStack.PopLast();
 	}
@@ -136,17 +139,19 @@ public sealed class Compiler
 		return new Convertible(tokenizer.Source, previousToken);
 	}
 
-	public void EmitByte(byte value)
+	public Compiler EmitByte(byte value)
 	{
 		chunk.WriteByte(value, previousToken.index);
+		return this;
 	}
 
-	public void EmitInstruction(Instruction instruction)
+	public Compiler EmitInstruction(Instruction instruction)
 	{
 		EmitByte((byte)instruction);
+		return this;
 	}
 
-	public void EmitLoadLiteral(ValueData value, ValueType type)
+	public Compiler EmitLoadLiteral(ValueData value, ValueType type)
 	{
 		var index = System.Array.IndexOf(chunk.literalData.buffer, value);
 		if (index < 0)
@@ -154,9 +159,11 @@ public sealed class Compiler
 
 		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)index);
+
+		return this;
 	}
 
-	public void EmitLoadStringLiteral(string value)
+	public Compiler EmitLoadStringLiteral(string value)
 	{
 		var stringIndex = System.Array.IndexOf(chunk.stringLiterals.buffer, value);
 
@@ -169,5 +176,7 @@ public sealed class Compiler
 
 		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)constantIndex);
+
+		return this;
 	}
 }

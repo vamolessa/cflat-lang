@@ -1,10 +1,13 @@
 public enum Instruction
 {
 	Return,
+	Pop,
 	LoadNil,
 	LoadTrue,
 	LoadFalse,
 	LoadLiteral,
+	IntToFloat,
+	FloatToInt,
 	NegateInt,
 	NegateFloat,
 	AddInt,

@@ -1,17 +1,16 @@
-using VT = ValueType;
-
 internal static class VirtualMachineInstructions
 {
 	public static bool Tick(VirtualMachine vm)
 	{
-		return false;
-		/*
 		var nextInstruction = (Instruction)vm.chunk.bytes.buffer[vm.programCount++];
 		switch (nextInstruction)
 		{
 		case Instruction.Return:
 			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
 			return true;
+		case Instruction.Pop:
+			vm.PopValue();
+			break;
 		case Instruction.LoadNil:
 			vm.PushValue(new ValueData(), ValueType.Nil);
 			break;
@@ -30,6 +29,12 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.IntToFloat:
+			vm.PushValue(new ValueData((float)vm.PopValue().asInt), ValueType.Float);
+			break;
+		case Instruction.FloatToInt:
+			vm.PushValue(new ValueData((int)vm.PopValue().asFloat), ValueType.Int);
+			break;
 		case Instruction.NegateInt:
 			vm.Peek().asInt = -vm.Peek().asInt;
 			break;
@@ -39,119 +44,62 @@ internal static class VirtualMachineInstructions
 		case Instruction.AddInt:
 			vm.PeekBefore().asInt += vm.PopValue().asInt;
 			break;
-		case Instruction.Add:
-			{
-				var b = vm.PopValue();
-				var a = vm.PopValue();
-
-				if (a.type == VT.Int && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asInt + b.data.asInt));
-				else if (a.type == VT.Int && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asInt + b.data.asFloat));
-				else if (a.type == VT.Float && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asFloat + b.data.asInt));
-				else if (a.type == VT.Float && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asFloat + b.data.asFloat));
-				else
-					return vm.Error("Operands must be a number");
-				break;
-			}
-		case Instruction.Subtract:
-			{
-				var b = vm.PopValue();
-				var a = vm.PopValue();
-
-				if (a.type == VT.Int && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asInt - b.data.asInt));
-				else if (a.type == VT.Int && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asInt - b.data.asFloat));
-				else if (a.type == VT.Float && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asFloat - b.data.asInt));
-				else if (a.type == VT.Float && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asFloat - b.data.asFloat));
-				else
-					return vm.Error("Operands must be a number");
-				break;
-			}
-		case Instruction.Multiply:
-			{
-				var b = vm.PopValue();
-				var a = vm.PopValue();
-
-				if (a.type == VT.Int && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asInt * b.data.asInt));
-				else if (a.type == VT.Int && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asInt * b.data.asFloat));
-				else if (a.type == VT.Float && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asFloat * b.data.asInt));
-				else if (a.type == VT.Float && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asFloat * b.data.asFloat));
-				else
-					return vm.Error("Operands must be a number");
-				break;
-			}
-		case Instruction.Divide:
-			{
-				var b = vm.PopValue();
-				var a = vm.PopValue();
-
-				if (a.type == VT.Int && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asInt / b.data.asInt));
-				else if (a.type == VT.Int && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asInt / b.data.asFloat));
-				else if (a.type == VT.Float && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asFloat / b.data.asInt));
-				else if (a.type == VT.Float && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asFloat / b.data.asFloat));
-				else
-					return vm.Error("Operands must be a number");
-				break;
-			}
+		case Instruction.AddFloat:
+			vm.PeekBefore().asFloat += vm.PopValue().asFloat;
+			break;
+		case Instruction.SubtractInt:
+			vm.PeekBefore().asInt -= vm.PopValue().asInt;
+			break;
+		case Instruction.SubtractFloat:
+			vm.PeekBefore().asFloat -= vm.PopValue().asFloat;
+			break;
+		case Instruction.MultiplyInt:
+			vm.PeekBefore().asInt *= vm.PopValue().asInt;
+			break;
+		case Instruction.MultiplyFloat:
+			vm.PeekBefore().asFloat *= vm.PopValue().asFloat;
+			break;
+		case Instruction.DivideInt:
+			vm.PeekBefore().asInt /= vm.PopValue().asInt;
+			break;
+		case Instruction.DivideFloat:
+			vm.PeekBefore().asFloat /= vm.PopValue().asFloat;
+			break;
 		case Instruction.Not:
-			vm.PushValue(new Value(!vm.PopValue().IsTruthy()));
+			vm.Peek().asBool = !vm.Peek().asBool;
 			break;
 		case Instruction.Equal:
-			vm.PushValue(new Value(Value.AreEqual(vm.heap.buffer, vm.PopValue(), vm.PopValue())));
+			vm.PopValue();
+			vm.PushValue(new ValueData(false), ValueType.Bool);
 			break;
-		case Instruction.Greater:
-			{
-				var b = vm.PopValue();
-				var a = vm.PopValue();
-
-				if (a.type == VT.Int && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asInt > b.data.asInt));
-				else if (a.type == VT.Int && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asInt > b.data.asFloat));
-				else if (a.type == VT.Float && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asFloat > b.data.asInt));
-				else if (a.type == VT.Float && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asFloat > b.data.asFloat));
-				else
-					return vm.Error("Operands must be a number");
-				break;
-			}
-		case Instruction.Less:
-			{
-				var b = vm.PopValue();
-				var a = vm.PopValue();
-
-				if (a.type == VT.Int && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asInt < b.data.asInt));
-				else if (a.type == VT.Int && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asInt < b.data.asFloat));
-				else if (a.type == VT.Float && b.type == VT.Int)
-					vm.PushValue(new Value(a.data.asFloat < b.data.asInt));
-				else if (a.type == VT.Float && b.type == VT.Float)
-					vm.PushValue(new Value(a.data.asFloat < b.data.asFloat));
-				else
-					return vm.Error("Operands must be a number");
-				break;
-			}
+		case Instruction.GreaterInt:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asInt < vm.PopValue().asInt),
+				ValueType.Bool
+			);
+			break;
+		case Instruction.GreaterFloat:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asFloat < vm.PopValue().asFloat),
+				ValueType.Bool
+			);
+			break;
+		case Instruction.LessInt:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asInt > vm.PopValue().asInt),
+				ValueType.Bool
+			);
+			break;
+		case Instruction.LessFloat:
+			vm.PushValue(
+				new ValueData(vm.PopValue().asFloat > vm.PopValue().asFloat),
+				ValueType.Bool
+			);
+			break;
 		default:
 			break;
 		}
 
 		return false;
-		*/
 	}
 }
