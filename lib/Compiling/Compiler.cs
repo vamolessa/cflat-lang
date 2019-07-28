@@ -14,15 +14,17 @@ public readonly struct CompileError
 
 public sealed class Compiler
 {
-	public readonly struct Convertible
+	public readonly struct LocalVariable
 	{
-		public readonly string source;
 		public readonly Token token;
+		public readonly int depth;
+		public readonly ValueType type;
 
-		public Convertible(string source, Token token)
+		public LocalVariable(Token token, int depth, ValueType type)
 		{
-			this.source = source;
 			this.token = token;
+			this.depth = depth;
+			this.type = type;
 		}
 	}
 
@@ -35,6 +37,8 @@ public sealed class Compiler
 	private bool panicMode;
 	private ByteCodeChunk chunk;
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
+	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(byte.MaxValue);
+	private int scopeDepth;
 
 	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules)
 	{
@@ -46,6 +50,8 @@ public sealed class Compiler
 		panicMode = false;
 		chunk = new ByteCodeChunk();
 		typeStack.count = 0;
+		localVariables.count = 0;
+		scopeDepth = 0;
 	}
 
 	public Compiler AddSoftError(int sourceIndex, string message)
@@ -70,6 +76,47 @@ public sealed class Compiler
 		var c = chunk;
 		chunk = null;
 		return c;
+	}
+
+	public void BeginScope()
+	{
+		scopeDepth += 1;
+	}
+
+	public void EndScope()
+	{
+		scopeDepth -= 1;
+
+		var localCount = 0;
+		while (
+			localVariables.count > 0 &&
+			localVariables.buffer[localVariables.count - 1].depth > scopeDepth
+		)
+		{
+			localCount += 1;
+		}
+
+		if (localCount > 0)
+		{
+			EmitInstruction(Instruction.PopLocals);
+			EmitByte((byte)localCount);
+			localVariables.count -= localCount;
+		}
+	}
+
+	public void DeclareLocalVariable(Token token)
+	{
+		if (localVariables.count >= localVariables.buffer.Length)
+		{
+			AddSoftError(previousToken.index, "Too many local variables in function");
+			return;
+		}
+
+		localVariables.PushBack(new LocalVariable(
+			token,
+			scopeDepth,
+			typeStack.buffer[typeStack.count - 1]
+		));
 	}
 
 	public int GetTokenPrecedence(int tokenKind)
@@ -116,6 +163,11 @@ public sealed class Compiler
 		}
 	}
 
+	public bool Check(int tokenKind)
+	{
+		return currentToken.kind == tokenKind;
+	}
+
 	public bool Match(int tokenKind)
 	{
 		if (currentToken.kind != tokenKind)
@@ -141,11 +193,6 @@ public sealed class Compiler
 	public ValueType PopType()
 	{
 		return typeStack.PopLast();
-	}
-
-	public Convertible Convert()
-	{
-		return new Convertible(tokenizer.Source, previousToken);
 	}
 
 	public Compiler EmitByte(byte value)

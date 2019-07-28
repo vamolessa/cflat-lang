@@ -12,7 +12,7 @@ public sealed class LangCompiler
 		compiler.Next();
 
 		while (!compiler.Match(Token.EndKind))
-			Declaration(compiler);
+			Block(compiler);
 
 		// end compiler
 		compiler.EmitInstruction(Instruction.Return);
@@ -22,42 +22,52 @@ public sealed class LangCompiler
 		return Result.Ok(compiler.GetByteCodeChunk());
 	}
 
-	public static void Declaration(Compiler compiler)
+	public static void Expression(Compiler compiler)
 	{
 		if (compiler.Match((int)TokenKind.Let))
 			VarDeclaration(compiler);
 		else
-			Statement(compiler);
+			compiler.ParseWithPrecedence((int)Precedence.Assignment);
 
 		// sync here (global variables)
-	}
-
-	public static void Statement(Compiler compiler)
-	{
-		Expression(compiler);
-		compiler.EmitInstruction(Instruction.Pop);
 	}
 
 	private static void VarDeclaration(Compiler compiler)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
-		var name = CompilerHelper.GetString(compiler);
+		var token = compiler.previousToken;
 
 		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
 		Expression(compiler);
 
-		compiler.EmitInstruction(Instruction.Pop);
+		compiler.DeclareLocalVariable(token);
+		compiler.EmitInstruction(Instruction.LoadNil);
 	}
 
-	public static void ExpressionStatement(Compiler compiler)
+	public static void Block(Compiler compiler)
 	{
-		Expression(compiler);
-		compiler.EmitInstruction(Instruction.Pop);
-	}
+		compiler.BeginScope();
 
-	public static void Expression(Compiler compiler)
-	{
-		compiler.ParseWithPrecedence((int)Precedence.Assignment);
+		if (
+			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(Token.EndKind)
+		)
+			Expression(compiler);
+
+		do
+		{
+			compiler.EmitInstruction(Instruction.Pop);
+			compiler.PopType();
+
+			Expression(compiler);
+		} while (
+			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(Token.EndKind)
+		);
+
+		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
+
+		compiler.EndScope();
 	}
 
 	public static void Grouping(Compiler compiler)
@@ -111,7 +121,8 @@ public sealed class LangCompiler
 
 	public static void Variable(Compiler compiler)
 	{
-		var name = compiler.previousToken;
+		var name = CompilerHelper.GetString(compiler);
+		System.Console.WriteLine("VAR {0}", name);
 	}
 
 	public static void Unary(Compiler compiler)

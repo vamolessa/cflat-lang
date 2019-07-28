@@ -66,8 +66,9 @@ public static class ByteCodeChunkExtensions
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
-		case Instruction.LoadVar:
-		case Instruction.AssignVar:
+		case Instruction.PopLocals:
+		case Instruction.LoadLocal:
+		case Instruction.AssignLocal:
 			sb.AppendFormat("VAR '{0}'\n", instructionCode);
 			return index + 1;
 		default:

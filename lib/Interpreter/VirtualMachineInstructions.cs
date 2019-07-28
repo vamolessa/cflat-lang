@@ -1,8 +1,13 @@
 internal static class VirtualMachineInstructions
 {
+	public static byte NextByte(VirtualMachine vm)
+	{
+		return vm.chunk.bytes.buffer[vm.programCount++];
+	}
+
 	public static bool Tick(VirtualMachine vm)
 	{
-		var nextInstruction = (Instruction)vm.chunk.bytes.buffer[vm.programCount++];
+		var nextInstruction = (Instruction)NextByte(vm);
 		switch (nextInstruction)
 		{
 		case Instruction.Return:
@@ -10,6 +15,19 @@ internal static class VirtualMachineInstructions
 			return true;
 		case Instruction.Pop:
 			vm.PopValue();
+			break;
+		case Instruction.PopLocals:
+			{
+				var localCount = NextByte(vm);
+
+				vm.valueStack.buffer[vm.valueStack.count - 1 - localCount] =
+					vm.valueStack.buffer[vm.valueStack.count - 1];
+				vm.typeStack.buffer[vm.typeStack.count - 1 - localCount] =
+					vm.typeStack.buffer[vm.typeStack.count - 1];
+
+				vm.valueStack.count -= localCount;
+				vm.typeStack.count -= localCount;
+			}
 			break;
 		case Instruction.LoadNil:
 			vm.PushValue(new ValueData(), ValueType.Nil);
@@ -22,17 +40,17 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.LoadLiteral:
 			{
-				var index = vm.chunk.bytes.buffer[vm.programCount++];
+				var index = NextByte(vm);
 				vm.PushValue(
 					vm.chunk.literalData.buffer[index],
 					vm.chunk.literalTypes.buffer[index]
 				);
 				break;
 			}
-		case Instruction.LoadVar:
+		case Instruction.LoadLocal:
 			vm.PushValue(new ValueData(), ValueType.Nil);
 			break;
-		case Instruction.AssignVar:
+		case Instruction.AssignLocal:
 			vm.PopValue();
 			break;
 		case Instruction.IntToFloat:

@@ -20,6 +20,13 @@ public readonly struct LineAndColumn
 
 public static class CompilerHelper
 {
+	public static bool AreEqual(string source, Token a, Token b)
+	{
+		return
+			a.length == b.length &&
+			string.Compare(source, a.index, source, b.index, a.length) == 0;
+	}
+
 	public static int GetInt(Compiler compiler)
 	{
 		var source = compiler.tokenizer.Source;
