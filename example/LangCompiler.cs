@@ -39,8 +39,10 @@ public sealed class LangCompiler
 	private static void VarDeclaration(Compiler compiler)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
-		CompilerHelper.GetString(compiler);
-		compiler.previousToken.
+		var name = CompilerHelper.GetString(compiler);
+
+		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
+		Expression(compiler);
 	}
 
 	public static void ExpressionStatement(Compiler compiler)
