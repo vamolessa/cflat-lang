@@ -10,8 +10,9 @@ public sealed class LangCompiler
 		compiler.Begin(tokenizer, LangParseRules.rules);
 
 		compiler.Next();
-		Expression(compiler);
-		compiler.Consume(Token.EndKind, "Expected end of expression.");
+
+		while (!compiler.Match(Token.EndKind))
+			Declaration(compiler);
 
 		// end compiler
 		compiler.EmitInstruction(Instruction.Return);
@@ -19,6 +20,33 @@ public sealed class LangCompiler
 		if (compiler.errors.Count > 0)
 			return Result.Error(compiler.errors);
 		return Result.Ok(compiler.GetByteCodeChunk());
+	}
+
+	public static void Declaration(Compiler compiler)
+	{
+		if (compiler.Match((int)TokenKind.Let))
+			VarDeclaration(compiler);
+		else
+			Statement(compiler);
+
+		// sync here (global variables)
+	}
+
+	public static void Statement(Compiler compiler)
+	{
+	}
+
+	private static void VarDeclaration(Compiler compiler)
+	{
+		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
+		CompilerHelper.GetString(compiler);
+		compiler.previousToken.
+	}
+
+	public static void ExpressionStatement(Compiler compiler)
+	{
+		Expression(compiler);
+		compiler.EmitInstruction(Instruction.Pop);
 	}
 
 	public static void Expression(Compiler compiler)
@@ -50,20 +78,20 @@ public sealed class LangCompiler
 			break;
 		case TokenKind.IntegerNumber:
 			compiler.EmitLoadLiteral(
-				new ValueData(CompilerHelper.ParseInt(compiler)),
+				new ValueData(CompilerHelper.GetInt(compiler)),
 				ValueType.Int
 			);
 			compiler.PushType(ValueType.Int);
 			break;
 		case TokenKind.RealNumber:
 			compiler.EmitLoadLiteral(
-				new ValueData(CompilerHelper.ParseFloat(compiler)),
+				new ValueData(CompilerHelper.GetFloat(compiler)),
 				ValueType.Float
 			);
 			compiler.PushType(ValueType.Float);
 			break;
 		case TokenKind.String:
-			compiler.EmitLoadStringLiteral(CompilerHelper.ParseString(compiler));
+			compiler.EmitLoadStringLiteral(CompilerHelper.GetString(compiler));
 			compiler.PushType(ValueType.String);
 			break;
 		default:

@@ -20,7 +20,7 @@ public readonly struct LineAndColumn
 
 public static class CompilerHelper
 {
-	public static int ParseInt(Compiler compiler)
+	public static int GetInt(Compiler compiler)
 	{
 		var source = compiler.tokenizer.Source;
 		var sub = source.Substring(
@@ -30,7 +30,7 @@ public static class CompilerHelper
 		return int.Parse(sub);
 	}
 
-	public static float ParseFloat(Compiler compiler)
+	public static float GetFloat(Compiler compiler)
 	{
 		var source = compiler.tokenizer.Source;
 		var sub = source.Substring(
@@ -40,7 +40,7 @@ public static class CompilerHelper
 		return float.Parse(sub);
 	}
 
-	public static string ParseString(Compiler compiler)
+	public static string GetString(Compiler compiler)
 	{
 		var source = compiler.tokenizer.Source;
 		return source.Substring(

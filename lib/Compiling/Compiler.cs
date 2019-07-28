@@ -116,6 +116,15 @@ public sealed class Compiler
 		}
 	}
 
+	public bool Match(int tokenKind)
+	{
+		if (currentToken.kind != tokenKind)
+			return false;
+
+		Next();
+		return true;
+	}
+
 	public void Consume(int tokenKind, string errorMessage)
 	{
 		if (currentToken.kind == tokenKind)
