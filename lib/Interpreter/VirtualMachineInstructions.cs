@@ -29,6 +29,12 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.LoadVar:
+			vm.PushValue(new ValueData(), ValueType.Nil);
+			break;
+		case Instruction.AssignVar:
+			vm.PopValue();
+			break;
 		case Instruction.IntToFloat:
 			vm.PushValue(new ValueData((float)vm.PopValue().asInt), ValueType.Float);
 			break;

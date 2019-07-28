@@ -34,6 +34,8 @@ public sealed class LangCompiler
 
 	public static void Statement(Compiler compiler)
 	{
+		Expression(compiler);
+		compiler.EmitInstruction(Instruction.Pop);
 	}
 
 	private static void VarDeclaration(Compiler compiler)
@@ -43,6 +45,8 @@ public sealed class LangCompiler
 
 		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
 		Expression(compiler);
+
+		compiler.EmitInstruction(Instruction.Pop);
 	}
 
 	public static void ExpressionStatement(Compiler compiler)
@@ -103,6 +107,11 @@ public sealed class LangCompiler
 			);
 			break;
 		}
+	}
+
+	public static void Variable(Compiler compiler)
+	{
+		var name = compiler.previousToken;
 	}
 
 	public static void Unary(Compiler compiler)

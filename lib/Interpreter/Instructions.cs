@@ -6,6 +6,8 @@ public enum Instruction
 	LoadTrue,
 	LoadFalse,
 	LoadLiteral,
+	LoadVar,
+	AssignVar,
 	IntToFloat,
 	FloatToInt,
 	NegateInt,
