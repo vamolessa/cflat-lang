@@ -69,13 +69,12 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LessInt:
 		case Instruction.LessFloat:
 			return SimpleInstruction(instruction, index, sb);
-		case Instruction.PopMultiple:
+		case Instruction.AssignLocal:
+		case Instruction.LoadLocal:
+		case Instruction.RemoveLocals:
 			return WithArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
-		case Instruction.LoadLocal:
-		case Instruction.AssignLocal:
-			return LocalVariableInstruction(self, instruction, index, sb);
 		default:
 			sb.AppendFormat("Unknown instruction '{0}'\n", instruction.ToString());
 			return index + 1;
@@ -117,16 +116,6 @@ public static class ByteCodeChunkExtensions
 			break;
 		}
 
-		return index + 2;
-	}
-
-	private static int LocalVariableInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
-	{
-		var localIndex = chunk.bytes.buffer[index + 1];
-
-		sb.Append(instruction.ToString());
-		sb.Append(' ');
-		sb.Append(localIndex);
 		return index + 2;
 	}
 }

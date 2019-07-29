@@ -6,7 +6,7 @@ public static class LangParseRules
 	{
 		Set(TokenKind.OpenParenthesis, LangCompiler.Grouping, null, Precedence.Primary);
 		Set(TokenKind.CloseParenthesis, null, null, Precedence.None);
-		Set(TokenKind.OpenCurlyBrackets, null, null, Precedence.None);
+		Set(TokenKind.OpenCurlyBrackets, LangCompiler.Block, null, Precedence.None);
 		Set(TokenKind.CloseCurlyBrackets, null, null, Precedence.None);
 		Set(TokenKind.Comma, null, null, Precedence.None);
 		Set(TokenKind.Dot, null, null, Precedence.Call);
@@ -31,7 +31,7 @@ public static class LangParseRules
 		Set(TokenKind.False, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.For, null, null, Precedence.None);
 		Set(TokenKind.Function, null, null, Precedence.None);
-		Set(TokenKind.If, null, null, Precedence.None);
+		Set(TokenKind.If, LangCompiler.If, null, Precedence.None);
 		Set(TokenKind.Nil, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Or, null, null, Precedence.Or);
 		Set(TokenKind.RealNumber, LangCompiler.Literal, null, Precedence.None);

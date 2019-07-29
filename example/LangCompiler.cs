@@ -14,7 +14,9 @@ public sealed class LangCompiler
 		while (!compiler.Match(Token.EndKind))
 		{
 			compiler.Consume((int)TokenKind.OpenCurlyBrackets, "");
-			BlockStatement(compiler, (int)Precedence.Primary);
+			Block(compiler, (int)Precedence.Primary);
+			compiler.EmitInstruction(Instruction.Pop);
+			compiler.PopType();
 		}
 
 		// end compiler
@@ -35,25 +37,34 @@ public sealed class LangCompiler
 		}
 	}
 
-	public static void Statement(Compiler compiler, int precedence)
+	public static Option<ValueType> Statement(Compiler compiler, int precedence)
 	{
-		if (compiler.Match((int)TokenKind.OpenCurlyBrackets))
-			BlockStatement(compiler, precedence);
-		else if (compiler.Match((int)TokenKind.Let))
+		if (compiler.Match((int)TokenKind.Let))
+		{
 			VariableDeclaration(compiler, precedence);
+			return Option.None;
+		}
 		else if (compiler.Match((int)TokenKind.Print))
+		{
 			PrintStatement(compiler, precedence);
+			return Option.None;
+		}
 		else
-			ExpressionStatement(compiler, precedence);
+		{
+			var type = ExpressionStatement(compiler, precedence);
+			return Option.Some(type);
+		}
 	}
 
-	public static void ExpressionStatement(Compiler compiler, int precedence)
+	public static ValueType ExpressionStatement(Compiler compiler, int precedence)
 	{
 		Expression(compiler, precedence);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.PopType();
+		var type = compiler.PopType();
 
 		// sync here (global variables)
+
+		return type;
 	}
 
 	private static void VariableDeclaration(Compiler compiler, int precedence)
@@ -74,23 +85,6 @@ public sealed class LangCompiler
 		compiler.PopType();
 	}
 
-	public static void BlockStatement(Compiler compiler, int precedence)
-	{
-		compiler.BeginScope();
-
-		while (
-			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
-			!compiler.Check(Token.EndKind)
-		)
-		{
-			Statement(compiler, precedence);
-		}
-
-		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
-
-		compiler.EndScope();
-	}
-
 	public static void Expression(Compiler compiler, int precedence)
 	{
 		compiler.ParseWithPrecedence((int)Precedence.Assignment);
@@ -100,6 +94,42 @@ public sealed class LangCompiler
 	{
 		Expression(compiler, precedence);
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
+	}
+
+	public static void Block(Compiler compiler, int precedence)
+	{
+		compiler.BeginScope();
+		var maybeType = new Option<ValueType>();
+
+		while (
+			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(Token.EndKind)
+		)
+		{
+			maybeType = Statement(compiler, precedence);
+		}
+
+		if (maybeType.isSome)
+		{
+			compiler.RemoveLastEmittedByte();
+			compiler.PushType(maybeType.value);
+		}
+		else
+		{
+			compiler.EmitInstruction(Instruction.LoadNil);
+			compiler.PushType(ValueType.Nil);
+		}
+
+		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
+
+		compiler.EndScope();
+	}
+
+	public static void If(Compiler compiler, int precedence)
+	{
+		Expression(compiler, precedence);
+		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
+		Block(compiler, precedence);
 	}
 
 	public static void Literal(Compiler compiler, int precedence)

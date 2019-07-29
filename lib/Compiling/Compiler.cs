@@ -107,7 +107,7 @@ public sealed class Compiler
 
 		if (localCount > 0)
 		{
-			EmitInstruction(Instruction.PopMultiple);
+			EmitInstruction(Instruction.RemoveLocals);
 			EmitByte((byte)localCount);
 
 			typeStack.count -= localCount;
@@ -276,6 +276,12 @@ public sealed class Compiler
 		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)constantIndex);
 
+		return this;
+	}
+
+	public Compiler RemoveLastEmittedByte()
+	{
+		chunk.bytes.count -= 1;
 		return this;
 	}
 }

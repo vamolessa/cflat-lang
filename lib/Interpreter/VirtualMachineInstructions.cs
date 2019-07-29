@@ -23,13 +23,6 @@ internal static class VirtualMachineInstructions
 			vm.valueStack.count -= 1;
 			vm.typeStack.count -= 1;
 			break;
-		case Instruction.PopMultiple:
-			{
-				var count = NextByte(vm);
-				vm.valueStack.count -= count;
-				vm.typeStack.count -= count;
-			}
-			break;
 		case Instruction.LoadNil:
 			vm.PushValue(new ValueData(), ValueType.Nil);
 			break;
@@ -48,6 +41,9 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.AssignLocal:
+			vm.valueStack.buffer[NextByte(vm)] = vm.PopValue();
+			break;
 		case Instruction.LoadLocal:
 			{
 				var index = NextByte(vm);
@@ -57,8 +53,17 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
-		case Instruction.AssignLocal:
-			vm.valueStack.buffer[NextByte(vm)] = vm.PopValue();
+		case Instruction.RemoveLocals:
+			{
+				var count = NextByte(vm);
+				var last = vm.valueStack.count - 1;
+
+				vm.valueStack.buffer[last - count] = vm.valueStack.buffer[last];
+				vm.typeStack.buffer[last - count] = vm.typeStack.buffer[last];
+
+				vm.valueStack.count -= count;
+				vm.typeStack.count -= count;
+			}
 			break;
 		case Instruction.IntToFloat:
 			vm.PushValue(new ValueData((float)vm.PopValue().asInt), ValueType.Float);

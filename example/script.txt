@@ -1,4 +1,7 @@
 {
-	let myvar = 3
-	print myvar
+	//let myvar = 3
+	print {
+		let a = 3
+		a + 2
+	}
 }
