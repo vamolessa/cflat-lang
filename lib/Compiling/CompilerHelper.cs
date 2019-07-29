@@ -105,6 +105,14 @@ public static class CompilerHelper
 		return "";
 	}
 
+	public static int LengthUntilIndex(string source, int index)
+	{
+		var count = 0;
+		for (var i = 0; i < index; i++)
+			count += source[i] == '\t' ? 4 : 1;
+		return count;
+	}
+
 	public static string FormatError(string source, List<CompileError> errors, int contextSize)
 	{
 		if (errors == null)
@@ -115,6 +123,16 @@ public static class CompilerHelper
 		foreach (var e in errors)
 		{
 			var position = GetLineAndColumn(source, e.token.index);
+			var lines = GetLines(
+				source,
+				System.Math.Max(position.line - 1 - contextSize, 0),
+				System.Math.Max(position.line - 1, 0)
+			);
+			var line = GetLines(
+				source,
+				System.Math.Max(position.line - 1, 0),
+				System.Math.Max(position.line - 1, 0)
+			);
 
 			sb.Append(e.message);
 			sb.Append(" (line: ");
@@ -123,15 +141,12 @@ public static class CompilerHelper
 			sb.Append(position.column);
 			sb.AppendLine(")");
 
-			sb.Append(CompilerHelper.GetLines(
-				source,
-				System.Math.Max(position.line - 1 - contextSize, 0),
-				System.Math.Max(position.line - 1, 0)
-			));
-			sb.AppendLine();
-			sb.Append(' ', position.column - 2);
+			sb.AppendLine(lines);
+			sb.Append(' ', LengthUntilIndex(source, position.column - 2));
 			sb.Append('^', e.token.length > 0 ? e.token.length : 1);
-			sb.AppendLine(" here");
+			sb.Append(" here ");
+			sb.Append(e.token.index);
+			sb.Append("\n\n");
 		}
 
 		return sb.ToString();

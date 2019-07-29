@@ -1,13 +1,13 @@
 {
-	let a = 3
+  let myvar = 3
 
-	{
-		let a = "str"
-		print a
-	}
+  {
+    let myvar = "str"
+    print myvar
+  }
 
-	print a
+  print myvar
 
-	let b = a * 2
-	print b
+  let b = myvar * 2
+  print b
 }
