@@ -3,6 +3,7 @@
 public sealed class Program
 {
 	private static readonly bool DEBUG = true;
+	private const int TabSize = 8;
 
 	public static void Main(string[] args)
 	{
@@ -15,7 +16,7 @@ public sealed class Program
 		var compileResult = compiler.Compile(source, tokenizer);
 		if (!compileResult.isOk)
 		{
-			var error = CompilerHelper.FormatError(source, compileResult.error, 2);
+			var error = CompilerHelper.FormatError(source, compileResult.error, 2, TabSize);
 			System.Console.WriteLine("COMPILE ERROR");
 			System.Console.WriteLine(error);
 			return;
@@ -32,7 +33,7 @@ public sealed class Program
 		var runResult = vm.Run(source, compileResult.ok);
 		if (!runResult.isOk)
 		{
-			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2);
+			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2, TabSize);
 			System.Console.WriteLine("RUNTIME ERROR");
 			System.Console.WriteLine(error);
 		}

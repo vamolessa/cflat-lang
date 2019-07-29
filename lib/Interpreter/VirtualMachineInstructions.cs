@@ -7,6 +7,7 @@ internal static class VirtualMachineInstructions
 
 	public static bool Tick(VirtualMachine vm)
 	{
+		vm.previousProgramCount = vm.programCount;
 		var nextInstruction = (Instruction)NextByte(vm);
 		switch (nextInstruction)
 		{

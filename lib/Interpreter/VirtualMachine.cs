@@ -3,13 +3,13 @@ using System.Text;
 public readonly struct RuntimeError
 {
 	public readonly int instructionIndex;
-	public readonly int sourceIndex;
+	public readonly Token token;
 	public readonly string message;
 
-	public RuntimeError(int instructionIndex, int sourceIndex, string message)
+	public RuntimeError(int instructionIndex, Token token, string message)
 	{
 		this.instructionIndex = instructionIndex;
-		this.sourceIndex = sourceIndex;
+		this.token = token;
 		this.message = message;
 	}
 }
@@ -19,6 +19,7 @@ public sealed class VirtualMachine
 	internal string source;
 	internal ByteCodeChunk chunk;
 	internal int programCount;
+	internal int previousProgramCount;
 	internal Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<object> heap;
@@ -31,6 +32,7 @@ public sealed class VirtualMachine
 		maybeError = Option.None;
 
 		programCount = 0;
+		previousProgramCount = 0;
 		typeStack.count = 0;
 		valueStack.count = 0;
 
@@ -63,8 +65,8 @@ public sealed class VirtualMachine
 	public bool Error(string message)
 	{
 		maybeError = Option.Some(new RuntimeError(
-			programCount,
-			chunk.sourceIndexes.buffer[programCount],
+			previousProgramCount,
+			chunk.tokens.buffer[previousProgramCount],
 			message
 		));
 		return true;

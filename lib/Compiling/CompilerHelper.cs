@@ -63,21 +63,23 @@ public static class CompilerHelper
 		);
 	}
 
-	public static LineAndColumn GetLineAndColumn(string source, int index)
+	public static LineAndColumn GetLineAndColumn(string source, int index, int tabSize)
 	{
 		var line = 1;
-		var lastNewLineIndex = 0;
+		var column = 1;
 
 		for (var i = 0; i < index; i++)
 		{
+			column += source[i] == '\t' ? tabSize : 1;
+
 			if (source[i] == '\n')
 			{
-				lastNewLineIndex = i;
 				line += 1;
+				column = 1;
 			}
 		}
 
-		return new LineAndColumn(line, index - lastNewLineIndex + 1);
+		return new LineAndColumn(line, column);
 	}
 
 	public static string GetLines(string source, int startLine, int endLine)
@@ -105,7 +107,7 @@ public static class CompilerHelper
 		return "";
 	}
 
-	public static string FormatError(string source, List<CompileError> errors, int contextSize)
+	public static string FormatError(string source, List<CompileError> errors, int contextSize, int tabSize)
 	{
 		if (errors == null)
 			return "";
@@ -114,7 +116,7 @@ public static class CompilerHelper
 
 		foreach (var e in errors)
 		{
-			var position = GetLineAndColumn(source, e.token.index);
+			var position = GetLineAndColumn(source, e.token.index, tabSize);
 			var lines = GetLines(
 				source,
 				System.Math.Max(position.line - contextSize, 0),
@@ -129,11 +131,11 @@ public static class CompilerHelper
 			sb.AppendLine(")");
 
 			sb.AppendLine(lines);
-			sb.Append(' ', position.column - 2);
+			sb.Append(' ', position.column - 1);
 			sb.Append('^', e.token.length > 0 ? e.token.length : 1);
 			sb.Append(" here\n\n");
 		}
 
-		return sb.Replace('\t', ' ').ToString();
+		return sb.ToString();
 	}
 }

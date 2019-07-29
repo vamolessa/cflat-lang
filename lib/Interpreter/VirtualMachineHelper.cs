@@ -47,11 +47,11 @@ public static class VirtualMachineHelper
 		sb.AppendLine();
 	}
 
-	public static string FormatError(string source, RuntimeError error, int contextSize)
+	public static string FormatError(string source, RuntimeError error, int contextSize, int tabSize)
 	{
 		var sb = new StringBuilder();
 
-		var position = CompilerHelper.GetLineAndColumn(source, error.sourceIndex);
+		var position = CompilerHelper.GetLineAndColumn(source, error.token.index, tabSize);
 
 		sb.Append(error.message);
 		sb.Append(" (line: ");
@@ -64,12 +64,13 @@ public static class VirtualMachineHelper
 
 		sb.Append(CompilerHelper.GetLines(
 			source,
-			System.Math.Max(position.line - 1 - contextSize, 0),
+			System.Math.Max(position.line - contextSize, 0),
 			System.Math.Max(position.line - 1, 0)
 		));
 		sb.AppendLine();
 		sb.Append(' ', position.column - 1);
-		sb.Append("^ here\n");
+		sb.Append('^', error.token.length > 0 ? error.token.length : 1);
+		sb.Append(" here\n\n");
 
 		return sb.ToString();
 	}

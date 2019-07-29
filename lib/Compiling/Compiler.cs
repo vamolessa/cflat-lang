@@ -226,7 +226,7 @@ public sealed class Compiler
 
 	public Compiler EmitByte(byte value)
 	{
-		chunk.WriteByte(value, previousToken.index);
+		chunk.WriteByte(value, previousToken);
 		return this;
 	}
 

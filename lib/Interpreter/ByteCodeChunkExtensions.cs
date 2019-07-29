@@ -20,13 +20,13 @@ public static class ByteCodeChunkExtensions
 
 	public static int DisassembleInstruction(this ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
-		var currentSourceIndex = self.sourceIndexes.buffer[index];
-		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex);
+		var currentSourceIndex = self.tokens.buffer[index].index;
+		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex, 1);
 		var lastLine = -1;
 		if (index > 0)
 		{
-			var lastSourceIndex = self.sourceIndexes.buffer[index - 1];
-			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex).line;
+			var lastSourceIndex = self.tokens.buffer[index - 1].index;
+			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
 		}
 
 		sb.AppendFormat("{0:0000} ", index);
