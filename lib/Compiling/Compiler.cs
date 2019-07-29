@@ -97,8 +97,8 @@ public sealed class Compiler
 
 		var localCount = 0;
 		while (
-			localVariables.count > 0 &&
-			localVariables.buffer[--localVariables.count].depth > scopeDepth
+			localVariables.count - localCount > 0 &&
+			localVariables.buffer[localVariables.count - localCount - 1].depth > scopeDepth
 		)
 		{
 			localCount += 1;
@@ -106,9 +106,11 @@ public sealed class Compiler
 
 		if (localCount > 0)
 		{
+			System.Console.WriteLine("END SCOPE {0}", localCount);
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
 
+			localVariables.count -= localCount;
 			typeStack.count -= localCount;
 		}
 	}
@@ -130,8 +132,6 @@ public sealed class Compiler
 			scopeDepth,
 			type
 		));
-
-		chunk.localVariables.PushBack(token);
 	}
 
 	public int ResolveToLocalVariableIndex()

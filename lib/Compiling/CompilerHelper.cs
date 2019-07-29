@@ -105,15 +105,7 @@ public static class CompilerHelper
 		return "";
 	}
 
-	public static int LengthUntilIndex(string source, int index, int tabSize)
-	{
-		var count = 0;
-		for (var i = 0; i < index; i++)
-			count += source[i] == '\t' ? tabSize : 1;
-		return count;
-	}
-
-	public static string FormatError(string source, List<CompileError> errors, int contextSize, int tabSize)
+	public static string FormatError(string source, List<CompileError> errors, int contextSize)
 	{
 		if (errors == null)
 			return "";
@@ -125,12 +117,7 @@ public static class CompilerHelper
 			var position = GetLineAndColumn(source, e.token.index);
 			var lines = GetLines(
 				source,
-				System.Math.Max(position.line - 1 - contextSize, 0),
-				System.Math.Max(position.line - 1, 0)
-			);
-			var line = GetLines(
-				source,
-				System.Math.Max(position.line - 1, 0),
+				System.Math.Max(position.line - contextSize, 0),
 				System.Math.Max(position.line - 1, 0)
 			);
 
@@ -142,13 +129,11 @@ public static class CompilerHelper
 			sb.AppendLine(")");
 
 			sb.AppendLine(lines);
-			sb.Append(' ', LengthUntilIndex(source, position.column - 2, tabSize));
+			sb.Append(' ', position.column - 2);
 			sb.Append('^', e.token.length > 0 ? e.token.length : 1);
-			sb.Append(" here ");
-			sb.Append(e.token.index);
-			sb.Append("\n\n");
+			sb.Append(" here\n\n");
 		}
 
-		return sb.ToString();
+		return sb.Replace('\t', ' ').ToString();
 	}
 }

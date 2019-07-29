@@ -5,9 +5,7 @@
 		let myvar = "str"
 		print myvar
 	}
-
 	print myvar
-
 	let b = myvar * 2
 	print b
 }

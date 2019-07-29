@@ -5,7 +5,6 @@ public sealed class ByteCodeChunk
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
 	public Buffer<ValueType> literalTypes = new Buffer<ValueType>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
-	public Buffer<Token> localVariables = new Buffer<Token>(256);
 
 	public int AddValueLiteral(ValueData data, ValueType type)
 	{

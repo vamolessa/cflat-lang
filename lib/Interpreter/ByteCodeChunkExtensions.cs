@@ -25,7 +25,7 @@ public static class ByteCodeChunkExtensions
 		var lastLine = -1;
 		if (index > 0)
 		{
-			var lastSourceIndex = self.sourceIndexes.buffer[index];
+			var lastSourceIndex = self.sourceIndexes.buffer[index - 1];
 			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex).line;
 		}
 
@@ -75,7 +75,7 @@ public static class ByteCodeChunkExtensions
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadLocal:
 		case Instruction.AssignLocal:
-			return LocalVariableInstruction(self, source, instruction, index, sb);
+			return LocalVariableInstruction(self, instruction, index, sb);
 		default:
 			sb.AppendFormat("Unknown instruction '{0}'\n", instruction.ToString());
 			return index + 1;
@@ -120,23 +120,13 @@ public static class ByteCodeChunkExtensions
 		return index + 2;
 	}
 
-	private static int LocalVariableInstruction(ByteCodeChunk chunk, string source, Instruction instruction, int index, StringBuilder sb)
+	private static int LocalVariableInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		var localIndex = chunk.bytes.buffer[index + 1];
-		var localName = "<undefined>";
-
-		if (localIndex >= 0)
-		{
-			var token = chunk.localVariables.buffer[localIndex];
-			localName = source.Substring(token.index, token.length);
-		}
 
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
-		sb.Append(localName);
-		sb.Append(" [");
 		sb.Append(localIndex);
-		sb.AppendLine("]");
 		return index + 2;
 	}
 }
