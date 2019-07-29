@@ -22,9 +22,16 @@ public static class CompilerHelper
 {
 	public static bool AreEqual(string source, Token a, Token b)
 	{
-		return
-			a.length == b.length &&
-			string.Compare(source, a.index, source, b.index, a.length) == 0;
+		if (a.length != b.length)
+			return false;
+
+		for (var i = 0; i < a.length; i++)
+		{
+			if (source[a.index + i] != source[b.index + i])
+				return false;
+		}
+
+		return true;
 	}
 
 	public static int GetInt(Compiler compiler)

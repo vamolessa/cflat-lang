@@ -90,7 +90,7 @@ public sealed class Compiler
 		var localCount = 0;
 		while (
 			localVariables.count > 0 &&
-			localVariables.buffer[localVariables.count - 1].depth > scopeDepth
+			localVariables.buffer[--localVariables.count].depth > scopeDepth
 		)
 		{
 			localCount += 1;
@@ -98,9 +98,10 @@ public sealed class Compiler
 
 		if (localCount > 0)
 		{
-			EmitInstruction(Instruction.PopLocals);
+			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
-			localVariables.count -= localCount;
+			
+			typeStack.count -= localCount;
 		}
 	}
 

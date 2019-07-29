@@ -2,7 +2,7 @@ public enum Instruction
 {
 	Return,
 	Pop,
-	PopLocals,
+	PopMultiple,
 	LoadNil,
 	LoadTrue,
 	LoadFalse,

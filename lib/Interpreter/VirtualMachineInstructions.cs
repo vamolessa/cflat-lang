@@ -14,19 +14,14 @@ internal static class VirtualMachineInstructions
 			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
 			return true;
 		case Instruction.Pop:
-			vm.PopValue();
+			vm.valueStack.count -= 1;
+			vm.typeStack.count -= 1;
 			break;
-		case Instruction.PopLocals:
+		case Instruction.PopMultiple:
 			{
-				var localCount = NextByte(vm);
-
-				vm.valueStack.buffer[vm.valueStack.count - 1 - localCount] =
-					vm.valueStack.buffer[vm.valueStack.count - 1];
-				vm.typeStack.buffer[vm.typeStack.count - 1 - localCount] =
-					vm.typeStack.buffer[vm.typeStack.count - 1];
-
-				vm.valueStack.count -= localCount;
-				vm.typeStack.count -= localCount;
+				var count = NextByte(vm);
+				vm.valueStack.count -= count;
+				vm.typeStack.count -= count;
 			}
 			break;
 		case Instruction.LoadNil:
