@@ -14,7 +14,7 @@ public sealed class LangCompiler
 		while (!compiler.Match(Token.EndKind))
 		{
 			compiler.Consume((int)TokenKind.OpenCurlyBrackets, "");
-			BlockStatement(compiler);
+			BlockStatement(compiler, (int)Precedence.Primary);
 		}
 
 		// end compiler
@@ -25,56 +25,56 @@ public sealed class LangCompiler
 		return Result.Ok(compiler.GetByteCodeChunk());
 	}
 
-	public static void OnParseWithPrecedence(Compiler compiler)
+	public static void OnParseWithPrecedence(Compiler compiler, int precedence)
 	{
-		var canAssign = compiler.CurrentPrecedence <= (int)Precedence.Assignment;
+		var canAssign = precedence <= (int)Precedence.Assignment;
 		if (canAssign && compiler.Match((int)TokenKind.Equal))
 		{
 			compiler.AddHardError(compiler.previousToken, "Invalid assignment target");
-			Expression(compiler);
+			Expression(compiler, precedence);
 		}
 	}
 
-	public static void Statement(Compiler compiler)
+	public static void Statement(Compiler compiler, int precedence)
 	{
 		if (compiler.Match((int)TokenKind.OpenCurlyBrackets))
-			BlockStatement(compiler);
+			BlockStatement(compiler, precedence);
 		else if (compiler.Match((int)TokenKind.Let))
-			VariableDeclaration(compiler);
+			VariableDeclaration(compiler, precedence);
 		else if (compiler.Match((int)TokenKind.Print))
-			PrintStatement(compiler);
+			PrintStatement(compiler, precedence);
 		else
-			ExpressionStatement(compiler);
+			ExpressionStatement(compiler, precedence);
 	}
 
-	public static void ExpressionStatement(Compiler compiler)
+	public static void ExpressionStatement(Compiler compiler, int precedence)
 	{
-		Expression(compiler);
+		Expression(compiler, precedence);
 		compiler.EmitInstruction(Instruction.Pop);
 		compiler.PopType();
 
 		// sync here (global variables)
 	}
 
-	private static void VariableDeclaration(Compiler compiler)
+	private static void VariableDeclaration(Compiler compiler, int precedence)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
 		var token = compiler.previousToken;
 
 		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
-		Expression(compiler);
+		Expression(compiler, precedence);
 
 		compiler.DeclareLocalVariable(token);
 	}
 
-	private static void PrintStatement(Compiler compiler)
+	private static void PrintStatement(Compiler compiler, int precedence)
 	{
-		Expression(compiler);
+		Expression(compiler, precedence);
 		compiler.EmitInstruction(Instruction.Print);
 		compiler.PopType();
 	}
 
-	public static void BlockStatement(Compiler compiler)
+	public static void BlockStatement(Compiler compiler, int precedence)
 	{
 		compiler.BeginScope();
 
@@ -83,7 +83,7 @@ public sealed class LangCompiler
 			!compiler.Check(Token.EndKind)
 		)
 		{
-			Statement(compiler);
+			Statement(compiler, precedence);
 		}
 
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
@@ -91,18 +91,18 @@ public sealed class LangCompiler
 		compiler.EndScope();
 	}
 
-	public static void Expression(Compiler compiler)
+	public static void Expression(Compiler compiler, int precedence)
 	{
 		compiler.ParseWithPrecedence((int)Precedence.Assignment);
 	}
 
-	public static void Grouping(Compiler compiler)
+	public static void Grouping(Compiler compiler, int precedence)
 	{
-		Expression(compiler);
+		Expression(compiler, precedence);
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
 	}
 
-	public static void Literal(Compiler compiler)
+	public static void Literal(Compiler compiler, int precedence)
 	{
 		switch ((TokenKind)compiler.previousToken.kind)
 		{
@@ -146,15 +146,15 @@ public sealed class LangCompiler
 		}
 	}
 
-	public static void Variable(Compiler compiler)
+	public static void Variable(Compiler compiler, int precedence)
 	{
 		var token = compiler.previousToken;
 		var index = compiler.ResolveToLocalVariableIndex();
 
-		var canAssign = compiler.CurrentPrecedence <= (int)Precedence.Assignment;
+		var canAssign = precedence <= (int)Precedence.Assignment;
 		if (canAssign && compiler.Match((int)TokenKind.Equal))
 		{
-			Expression(compiler);
+			Expression(compiler, precedence);
 
 			if (index < 0)
 			{
@@ -184,7 +184,7 @@ public sealed class LangCompiler
 		}
 	}
 
-	public static void Unary(Compiler compiler)
+	public static void Unary(Compiler compiler, int precedence)
 	{
 		var opToken = compiler.previousToken;
 
@@ -245,7 +245,7 @@ public sealed class LangCompiler
 		}
 	}
 
-	public static void Binary(Compiler compiler)
+	public static void Binary(Compiler compiler, int precedence)
 	{
 		var opToken = compiler.previousToken;
 

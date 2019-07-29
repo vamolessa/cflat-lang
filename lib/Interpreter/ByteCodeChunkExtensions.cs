@@ -113,7 +113,7 @@ public static class ByteCodeChunkExtensions
 			sb.AppendFormat(" {0}\n", value.asFloat);
 			break;
 		case ValueType.String:
-			sb.AppendFormat(" {0}\n", chunk.stringLiterals.buffer[value.asInt]);
+			sb.AppendFormat(" \"{0}\"\n", chunk.stringLiterals.buffer[value.asInt]);
 			break;
 		}
 

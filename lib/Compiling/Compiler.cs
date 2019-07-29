@@ -40,12 +40,6 @@ public sealed class Compiler
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	private int scopeDepth;
-	private int currentPrecedence;
-
-	public int CurrentPrecedence
-	{
-		get { return currentPrecedence; }
-	}
 
 	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
 	{
@@ -106,7 +100,6 @@ public sealed class Compiler
 
 		if (localCount > 0)
 		{
-			System.Console.WriteLine("END SCOPE {0}", localCount);
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
 
@@ -160,8 +153,6 @@ public sealed class Compiler
 
 	public void ParseWithPrecedence(int precedence)
 	{
-		currentPrecedence = precedence;
-
 		Next();
 		if (previousToken.kind == Token.EndKind)
 			return;
@@ -172,7 +163,7 @@ public sealed class Compiler
 			AddHardError(previousToken, "Expected expression");
 			return;
 		}
-		prefixRule(this);
+		prefixRule(this, precedence);
 
 		while (
 			currentToken.kind != Token.EndKind &&
@@ -181,10 +172,10 @@ public sealed class Compiler
 		{
 			Next();
 			var infixRule = parseRules[previousToken.kind].infixRule;
-			infixRule(this);
+			infixRule(this, precedence);
 		}
 
-		onParseWithPrecedence(this);
+		onParseWithPrecedence(this, precedence);
 	}
 
 	public void Next()
