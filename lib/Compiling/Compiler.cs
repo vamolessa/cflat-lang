@@ -121,10 +121,14 @@ public sealed class Compiler
 			return;
 		}
 
+		var type = ValueType.Nil;
+		if (typeStack.count > 0)
+			type = typeStack.buffer[typeStack.count - 1];
+
 		localVariables.PushBack(new LocalVariable(
 			token,
 			scopeDepth,
-			typeStack.buffer[typeStack.count - 1]
+			type
 		));
 
 		chunk.localVariables.PushBack(token);

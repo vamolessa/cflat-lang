@@ -1,3 +1,13 @@
 {
 	let a = 3
+
+	{
+		let a = "str"
+		print a
+	}
+
+	print a
+
+	let b = a * 2
+	print b
 }

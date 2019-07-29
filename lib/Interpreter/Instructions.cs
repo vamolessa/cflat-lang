@@ -1,6 +1,8 @@
 public enum Instruction
 {
+	Halt,
 	Return,
+	Print,
 	Pop,
 	PopMultiple,
 	LoadNil,

@@ -129,9 +129,9 @@ public static class CompilerHelper
 				System.Math.Max(position.line - 1, 0)
 			));
 			sb.AppendLine();
-			sb.Append(' ', position.column - 1);
+			sb.Append(' ', position.column - 2);
 			sb.Append('^', e.token.length > 0 ? e.token.length : 1);
-			sb.Append(" here\n");
+			sb.AppendLine(" here");
 		}
 
 		return sb.ToString();

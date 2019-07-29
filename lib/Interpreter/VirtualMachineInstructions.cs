@@ -10,9 +10,14 @@ internal static class VirtualMachineInstructions
 		var nextInstruction = (Instruction)NextByte(vm);
 		switch (nextInstruction)
 		{
+		case Instruction.Halt:
+			return true;
 		case Instruction.Return:
 			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
 			return true;
+		case Instruction.Print:
+			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
+			break;
 		case Instruction.Pop:
 			vm.valueStack.count -= 1;
 			vm.typeStack.count -= 1;

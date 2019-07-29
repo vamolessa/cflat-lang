@@ -12,10 +12,13 @@ public sealed class LangCompiler
 		compiler.Next();
 
 		while (!compiler.Match(Token.EndKind))
+		{
+			compiler.Consume((int)TokenKind.OpenCurlyBrackets, "");
 			BlockStatement(compiler);
+		}
 
 		// end compiler
-		compiler.EmitInstruction(Instruction.Return);
+		compiler.EmitInstruction(Instruction.Halt);
 
 		if (compiler.errors.Count > 0)
 			return Result.Error(compiler.errors);
@@ -38,6 +41,8 @@ public sealed class LangCompiler
 			BlockStatement(compiler);
 		else if (compiler.Match((int)TokenKind.Let))
 			VariableDeclaration(compiler);
+		else if (compiler.Match((int)TokenKind.Print))
+			PrintStatement(compiler);
 		else
 			ExpressionStatement(compiler);
 	}
@@ -51,11 +56,6 @@ public sealed class LangCompiler
 		// sync here (global variables)
 	}
 
-	public static void Expression(Compiler compiler)
-	{
-		compiler.ParseWithPrecedence((int)Precedence.Assignment);
-	}
-
 	private static void VariableDeclaration(Compiler compiler)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
@@ -65,6 +65,13 @@ public sealed class LangCompiler
 		Expression(compiler);
 
 		compiler.DeclareLocalVariable(token);
+	}
+
+	private static void PrintStatement(Compiler compiler)
+	{
+		Expression(compiler);
+		compiler.EmitInstruction(Instruction.Print);
+		compiler.PopType();
 	}
 
 	public static void BlockStatement(Compiler compiler)
@@ -82,6 +89,11 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
 		compiler.EndScope();
+	}
+
+	public static void Expression(Compiler compiler)
+	{
+		compiler.ParseWithPrecedence((int)Precedence.Assignment);
 	}
 
 	public static void Grouping(Compiler compiler)

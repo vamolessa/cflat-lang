@@ -3,6 +3,7 @@ public enum TokenKind
 	IntegerNumber, RealNumber, String, True, False, Nil, Identifier,
 	Function, For, If, Else, While, Return, Break, Let,
 	And, Or, Dot, Comma, Semicolon,
+	Print,
 
 	OpenParenthesis, CloseParenthesis, OpenCurlyBrackets, CloseCurlyBrackets,
 
@@ -42,6 +43,8 @@ public static class LangScanners
 
 		new ExactScanner("and").ForToken((int)TokenKind.And),
 		new ExactScanner("or").ForToken((int)TokenKind.Or),
+
+		new ExactScanner("print").ForToken((int)TokenKind.Print),
 
 		new CharScanner('.').ForToken((int)TokenKind.Dot),
 		new CharScanner(',').ForToken((int)TokenKind.Comma),
