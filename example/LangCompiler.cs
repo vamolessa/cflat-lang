@@ -177,6 +177,8 @@ public sealed class LangCompiler
 			}
 			else
 			{
+				compiler.UseVariable(index);
+
 				compiler.EmitInstruction(Instruction.LoadLocal);
 				compiler.EmitByte((byte)index);
 				compiler.PushType(compiler.GetLocalVariable(index).type);

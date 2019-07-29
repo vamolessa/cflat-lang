@@ -19,12 +19,14 @@ public sealed class Compiler
 		public readonly Token token;
 		public readonly int depth;
 		public readonly ValueType type;
+		public readonly bool isUsed;
 
-		public LocalVariable(Token token, int depth, ValueType type)
+		public LocalVariable(Token token, int depth, ValueType type, bool isUsed)
 		{
 			this.token = token;
 			this.depth = depth;
 			this.type = type;
+			this.isUsed = isUsed;
 		}
 	}
 
@@ -91,10 +93,15 @@ public sealed class Compiler
 
 		var localCount = 0;
 		while (
-			localVariables.count - localCount > 0 &&
-			localVariables.buffer[localVariables.count - localCount - 1].depth > scopeDepth
+			localVariables.count > 0 &&
+			localVariables.buffer[localVariables.count - 1].depth > scopeDepth
 		)
 		{
+			var variable = localVariables.buffer[localVariables.count - 1];
+			if (!variable.isUsed)
+				AddSoftError(variable.token, "Unused variable");
+
+			localVariables.count -= 1;
 			localCount += 1;
 		}
 
@@ -103,7 +110,6 @@ public sealed class Compiler
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
 
-			localVariables.count -= localCount;
 			typeStack.count -= localCount;
 		}
 	}
@@ -123,7 +129,8 @@ public sealed class Compiler
 		localVariables.PushBack(new LocalVariable(
 			token,
 			scopeDepth,
-			type
+			type,
+			false
 		));
 	}
 
@@ -139,6 +146,18 @@ public sealed class Compiler
 		}
 
 		return -1;
+	}
+
+	public void UseVariable(int index)
+	{
+		var variable = localVariables.buffer[index];
+		if (!variable.isUsed)
+			localVariables.buffer[index] = new LocalVariable(
+				variable.token,
+				variable.depth,
+				variable.type,
+				true
+			);
 	}
 
 	public LocalVariable GetLocalVariable(int index)
