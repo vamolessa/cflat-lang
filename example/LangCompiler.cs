@@ -30,7 +30,7 @@ public sealed class LangCompiler
 		var canAssign = precedence <= (int)Precedence.Assignment;
 		if (canAssign && compiler.Match((int)TokenKind.Equal))
 		{
-			compiler.AddHardError(compiler.previousToken, "Invalid assignment target");
+			compiler.AddHardError(compiler.previousToken.slice, "Invalid assignment target");
 			Expression(compiler, precedence);
 		}
 	}
@@ -59,12 +59,12 @@ public sealed class LangCompiler
 	private static void VariableDeclaration(Compiler compiler, int precedence)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
-		var token = compiler.previousToken;
+		var slice = compiler.previousToken.slice;
 
 		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
 		Expression(compiler, precedence);
 
-		compiler.DeclareLocalVariable(token);
+		compiler.DeclareLocalVariable(slice);
 	}
 
 	private static void PrintStatement(Compiler compiler, int precedence)
@@ -138,7 +138,7 @@ public sealed class LangCompiler
 			break;
 		default:
 			compiler.AddHardError(
-				compiler.previousToken,
+				compiler.previousToken.slice,
 				string.Format("Expected literal. Got {0}", compiler.previousToken.kind)
 			);
 			compiler.PushType(ValueType.Nil);
@@ -148,7 +148,7 @@ public sealed class LangCompiler
 
 	public static void Variable(Compiler compiler, int precedence)
 	{
-		var token = compiler.previousToken;
+		var slice = compiler.previousToken.slice;
 		var index = compiler.ResolveToLocalVariableIndex();
 
 		var canAssign = precedence <= (int)Precedence.Assignment;
@@ -158,7 +158,7 @@ public sealed class LangCompiler
 
 			if (index < 0)
 			{
-				compiler.AddSoftError(token, "Variable not declared");
+				compiler.AddSoftError(slice, "Variable not declared");
 			}
 			else
 			{
@@ -172,7 +172,7 @@ public sealed class LangCompiler
 		{
 			if (index < 0)
 			{
-				compiler.AddSoftError(token, "Variable not declared");
+				compiler.AddSoftError(slice, "Variable not declared");
 				compiler.PushType(ValueType.Nil);
 			}
 			else
@@ -207,7 +207,7 @@ public sealed class LangCompiler
 				compiler.PushType(ValueType.Float);
 				break;
 			default:
-				compiler.AddSoftError(opToken, "Unary minus operator can only be applied to ints or floats");
+				compiler.AddSoftError(opToken.slice, "Unary minus operator can only be applied to ints or floats");
 				compiler.PushType(type);
 				break;
 			}
@@ -232,14 +232,14 @@ public sealed class LangCompiler
 				compiler.PushType(ValueType.Bool);
 				break;
 			default:
-				compiler.AddSoftError(opToken, "Not operator can only be applied to nil, bools, ints, floats or strings");
+				compiler.AddSoftError(opToken.slice, "Not operator can only be applied to nil, bools, ints, floats or strings");
 				compiler.PushType(ValueType.Bool);
 				break;
 			}
 			break;
 		default:
 			compiler.AddHardError(
-					opToken,
+					opToken.slice,
 					string.Format("Expected unary operator. Got {0}", opToken.kind)
 				);
 			compiler.PushType(ValueType.Nil);
@@ -265,7 +265,7 @@ public sealed class LangCompiler
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler.EmitInstruction(Instruction.AddFloat).PushType(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken, "Plus operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Plus operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.Minus:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -273,7 +273,7 @@ public sealed class LangCompiler
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler.EmitInstruction(Instruction.SubtractFloat).PushType(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken, "Minus operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Minus operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.Asterisk:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -281,7 +281,7 @@ public sealed class LangCompiler
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler.EmitInstruction(Instruction.MultiplyFloat).PushType(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken, "Multiply operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Multiply operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.Slash:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -289,12 +289,12 @@ public sealed class LangCompiler
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler.EmitInstruction(Instruction.DivideFloat).PushType(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken, "Divide operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Divide operator can only be applied to ints or floats").PushType(aType);
 			break;
 		case TokenKind.EqualEqual:
 			if (aType != bType)
 			{
-				compiler.AddSoftError(opToken, "Equal operator can only be applied to same type values");
+				compiler.AddSoftError(opToken.slice, "Equal operator can only be applied to same type values");
 				compiler.PushType(ValueType.Bool);
 				break;
 			}
@@ -319,7 +319,7 @@ public sealed class LangCompiler
 				compiler.EmitInstruction(Instruction.EqualString);
 				break;
 			default:
-				compiler.AddSoftError(opToken, "Equal operator can only be applied to nil, bools, ints and floats");
+				compiler.AddSoftError(opToken.slice, "Equal operator can only be applied to nil, bools, ints and floats");
 				break;
 			}
 			compiler.PushType(ValueType.Bool);
@@ -327,7 +327,7 @@ public sealed class LangCompiler
 		case TokenKind.BangEqual:
 			if (aType != bType)
 			{
-				compiler.AddSoftError(opToken, "NotEqual operator can only be applied to same type values");
+				compiler.AddSoftError(opToken.slice, "NotEqual operator can only be applied to same type values");
 				compiler.PushType(ValueType.Bool);
 				break;
 			}
@@ -351,7 +351,7 @@ public sealed class LangCompiler
 				compiler.EmitInstruction(Instruction.EqualString);
 				break;
 			default:
-				compiler.AddSoftError(opToken, "NotEqual operator can only be applied to nil, bools, ints and floats");
+				compiler.AddSoftError(opToken.slice, "NotEqual operator can only be applied to nil, bools, ints and floats");
 				break;
 			}
 			compiler.EmitInstruction(Instruction.Not);
@@ -363,7 +363,7 @@ public sealed class LangCompiler
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler.EmitInstruction(Instruction.GreaterFloat);
 			else
-				compiler.AddSoftError(opToken, "Greater operator can only be applied to ints or floats");
+				compiler.AddSoftError(opToken.slice, "Greater operator can only be applied to ints or floats");
 			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.GreaterEqual:
@@ -376,7 +376,7 @@ public sealed class LangCompiler
 					.EmitInstruction(Instruction.LessFloat)
 					.EmitInstruction(Instruction.Not);
 			else
-				compiler.AddSoftError(opToken, "GreaterOrEqual operator can only be applied to ints or floats");
+				compiler.AddSoftError(opToken.slice, "GreaterOrEqual operator can only be applied to ints or floats");
 			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.Less:
@@ -385,7 +385,7 @@ public sealed class LangCompiler
 			else if (aType == ValueType.Float && bType == ValueType.Float)
 				compiler.EmitInstruction(Instruction.LessFloat);
 			else
-				compiler.AddSoftError(opToken, "Less operator can only be applied to ints or floats");
+				compiler.AddSoftError(opToken.slice, "Less operator can only be applied to ints or floats");
 			compiler.PushType(ValueType.Bool);
 			break;
 		case TokenKind.LessEqual:
@@ -398,7 +398,7 @@ public sealed class LangCompiler
 					.EmitInstruction(Instruction.GreaterFloat)
 					.EmitInstruction(Instruction.Not);
 			else
-				compiler.AddSoftError(opToken, "LessOrEqual operator can only be applied to ints or floats");
+				compiler.AddSoftError(opToken.slice, "LessOrEqual operator can only be applied to ints or floats");
 			compiler.PushType(ValueType.Bool);
 			break;
 		default:

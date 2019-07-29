@@ -3,13 +3,13 @@ using System.Text;
 public readonly struct RuntimeError
 {
 	public readonly int instructionIndex;
-	public readonly Token token;
+	public readonly Slice slice;
 	public readonly string message;
 
-	public RuntimeError(int instructionIndex, Token token, string message)
+	public RuntimeError(int instructionIndex, Slice slice, string message)
 	{
 		this.instructionIndex = instructionIndex;
-		this.token = token;
+		this.slice = slice;
 		this.message = message;
 	}
 }
@@ -66,7 +66,7 @@ public sealed class VirtualMachine
 	{
 		maybeError = Option.Some(new RuntimeError(
 			previousProgramCount,
-			chunk.tokens.buffer[previousProgramCount],
+			chunk.slices.buffer[previousProgramCount],
 			message
 		));
 		return true;

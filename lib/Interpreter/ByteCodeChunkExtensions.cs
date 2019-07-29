@@ -20,12 +20,12 @@ public static class ByteCodeChunkExtensions
 
 	public static int DisassembleInstruction(this ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
-		var currentSourceIndex = self.tokens.buffer[index].index;
+		var currentSourceIndex = self.slices.buffer[index].index;
 		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex, 1);
 		var lastLine = -1;
 		if (index > 0)
 		{
-			var lastSourceIndex = self.tokens.buffer[index - 1].index;
+			var lastSourceIndex = self.slices.buffer[index - 1].index;
 			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
 		}
 

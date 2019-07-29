@@ -20,7 +20,7 @@ public readonly struct LineAndColumn
 
 public static class CompilerHelper
 {
-	public static bool AreEqual(string source, Token a, Token b)
+	public static bool AreEqual(string source, Slice a, Slice b)
 	{
 		if (a.length != b.length)
 			return false;
@@ -38,8 +38,8 @@ public static class CompilerHelper
 	{
 		var source = compiler.tokenizer.Source;
 		var sub = source.Substring(
-			compiler.previousToken.index,
-			compiler.previousToken.length
+			compiler.previousToken.slice.index,
+			compiler.previousToken.slice.length
 		);
 		return int.Parse(sub);
 	}
@@ -48,8 +48,8 @@ public static class CompilerHelper
 	{
 		var source = compiler.tokenizer.Source;
 		var sub = source.Substring(
-			compiler.previousToken.index,
-			compiler.previousToken.length
+			compiler.previousToken.slice.index,
+			compiler.previousToken.slice.length
 		);
 		return float.Parse(sub);
 	}
@@ -58,8 +58,8 @@ public static class CompilerHelper
 	{
 		var source = compiler.tokenizer.Source;
 		return source.Substring(
-			compiler.previousToken.index + 1,
-			compiler.previousToken.length - 2
+			compiler.previousToken.slice.index + 1,
+			compiler.previousToken.slice.length - 2
 		);
 	}
 
@@ -116,7 +116,7 @@ public static class CompilerHelper
 
 		foreach (var e in errors)
 		{
-			var position = GetLineAndColumn(source, e.token.index, tabSize);
+			var position = GetLineAndColumn(source, e.slice.index, tabSize);
 			var lines = GetLines(
 				source,
 				System.Math.Max(position.line - contextSize, 0),
@@ -132,7 +132,7 @@ public static class CompilerHelper
 
 			sb.AppendLine(lines);
 			sb.Append(' ', position.column - 1);
-			sb.Append('^', e.token.length > 0 ? e.token.length : 1);
+			sb.Append('^', e.slice.length > 0 ? e.slice.length : 1);
 			sb.Append(" here\n\n");
 		}
 

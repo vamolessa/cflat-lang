@@ -2,12 +2,12 @@ using System.Collections.Generic;
 
 public readonly struct CompileError
 {
-	public readonly Token token;
+	public readonly Slice slice;
 	public readonly string message;
 
-	public CompileError(Token token, string message)
+	public CompileError(Slice slice, string message)
 	{
-		this.token = token;
+		this.slice = slice;
 		this.message = message;
 	}
 }
@@ -16,14 +16,14 @@ public sealed class Compiler
 {
 	public readonly struct LocalVariable
 	{
-		public readonly Token token;
+		public readonly Slice slice;
 		public readonly int depth;
 		public readonly ValueType type;
 		public readonly bool isUsed;
 
-		public LocalVariable(Token token, int depth, ValueType type, bool isUsed)
+		public LocalVariable(Slice slice, int depth, ValueType type, bool isUsed)
 		{
-			this.token = token;
+			this.slice = slice;
 			this.depth = depth;
 			this.type = type;
 			this.isUsed = isUsed;
@@ -49,8 +49,8 @@ public sealed class Compiler
 		this.tokenizer = tokenizer;
 		this.parseRules = parseRules;
 		this.onParseWithPrecedence = onParseWithPrecedence;
-		previousToken = new Token(Token.EndKind, 0, 0);
-		currentToken = new Token(Token.EndKind, 0, 0);
+		previousToken = new Token(Token.EndKind, new Slice());
+		currentToken = new Token(Token.EndKind, new Slice());
 		panicMode = false;
 		chunk = new ByteCodeChunk();
 		typeStack.count = 0;
@@ -58,19 +58,19 @@ public sealed class Compiler
 		scopeDepth = 0;
 	}
 
-	public Compiler AddSoftError(Token token, string message)
+	public Compiler AddSoftError(Slice slice, string message)
 	{
-		errors.Add(new CompileError(token, message));
+		errors.Add(new CompileError(slice, message));
 		return this;
 	}
 
-	public Compiler AddHardError(Token token, string message)
+	public Compiler AddHardError(Slice slice, string message)
 	{
 		if (panicMode)
 			return this;
 
 		panicMode = true;
-		errors.Add(new CompileError(token, message));
+		errors.Add(new CompileError(slice, message));
 
 		return this;
 	}
@@ -99,7 +99,7 @@ public sealed class Compiler
 		{
 			var variable = localVariables.buffer[localVariables.count - 1];
 			if (!variable.isUsed)
-				AddSoftError(variable.token, "Unused variable");
+				AddSoftError(variable.slice, "Unused variable");
 
 			localVariables.count -= 1;
 			localCount += 1;
@@ -114,11 +114,11 @@ public sealed class Compiler
 		}
 	}
 
-	public void DeclareLocalVariable(Token token)
+	public void DeclareLocalVariable(Slice slice)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
 		{
-			AddSoftError(previousToken, "Too many local variables in function");
+			AddSoftError(previousToken.slice, "Too many local variables in function");
 			return;
 		}
 
@@ -126,12 +126,7 @@ public sealed class Compiler
 		if (typeStack.count > 0)
 			type = typeStack.buffer[typeStack.count - 1];
 
-		localVariables.PushBack(new LocalVariable(
-			token,
-			scopeDepth,
-			type,
-			false
-		));
+		localVariables.PushBack(new LocalVariable(slice, scopeDepth, type, false));
 	}
 
 	public int ResolveToLocalVariableIndex()
@@ -141,7 +136,7 @@ public sealed class Compiler
 		for (var i = localVariables.count - 1; i >= 0; i--)
 		{
 			var local = localVariables.buffer[i];
-			if (CompilerHelper.AreEqual(source, previousToken, local.token))
+			if (CompilerHelper.AreEqual(source, previousToken.slice, local.slice))
 				return i;
 		}
 
@@ -153,7 +148,7 @@ public sealed class Compiler
 		var variable = localVariables.buffer[index];
 		if (!variable.isUsed)
 			localVariables.buffer[index] = new LocalVariable(
-				variable.token,
+				variable.slice,
 				variable.depth,
 				variable.type,
 				true
@@ -179,7 +174,7 @@ public sealed class Compiler
 		var prefixRule = parseRules[previousToken.kind].prefixRule;
 		if (prefixRule == null)
 		{
-			AddHardError(previousToken, "Expected expression");
+			AddHardError(previousToken.slice, "Expected expression");
 			return;
 		}
 		prefixRule(this, precedence);
@@ -207,7 +202,7 @@ public sealed class Compiler
 			if (currentToken.kind != Token.ErrorKind)
 				break;
 
-			AddHardError(currentToken, "Invalid char");
+			AddHardError(currentToken.slice, "Invalid char");
 		}
 	}
 
@@ -230,7 +225,7 @@ public sealed class Compiler
 		if (currentToken.kind == tokenKind)
 			Next();
 		else
-			AddHardError(currentToken, errorMessage);
+			AddHardError(currentToken.slice, errorMessage);
 	}
 
 	public void PushType(ValueType type)
@@ -245,7 +240,7 @@ public sealed class Compiler
 
 	public Compiler EmitByte(byte value)
 	{
-		chunk.WriteByte(value, previousToken);
+		chunk.WriteByte(value, previousToken.slice);
 		return this;
 	}
 

@@ -51,7 +51,7 @@ public static class VirtualMachineHelper
 	{
 		var sb = new StringBuilder();
 
-		var position = CompilerHelper.GetLineAndColumn(source, error.token.index, tabSize);
+		var position = CompilerHelper.GetLineAndColumn(source, error.slice.index, tabSize);
 
 		sb.Append(error.message);
 		sb.Append(" (line: ");
@@ -69,7 +69,7 @@ public static class VirtualMachineHelper
 		));
 		sb.AppendLine();
 		sb.Append(' ', position.column - 1);
-		sb.Append('^', error.token.length > 0 ? error.token.length : 1);
+		sb.Append('^', error.slice.length > 0 ? error.slice.length : 1);
 		sb.Append(" here\n\n");
 
 		return sb.ToString();

@@ -1,17 +1,27 @@
-﻿public readonly struct Token
+﻿public readonly struct Slice
+{
+	public readonly int index;
+	public readonly int length;
+
+	public Slice(int index, int length)
+	{
+		this.index = index;
+		this.length = length;
+	}
+}
+
+public readonly struct Token
 {
 	public static readonly int EndKind = -1;
 	public static readonly int ErrorKind = -2;
 
 	public readonly int kind;
-	public readonly int index;
-	public readonly int length;
+	public readonly Slice slice;
 
-	public Token(int kind, int index, int length)
+	public Token(int kind, Slice slice)
 	{
 		this.kind = kind;
-		this.index = index;
-		this.length = length;
+		this.slice = slice;
 	}
 
 	public bool IsValid()
@@ -70,11 +80,11 @@ public sealed class Tokenizer : ITokenizer
 			if (tokenLength == 0)
 				tokenLength = 1;
 
-			var token = new Token(tokenKind, nextIndex, tokenLength);
+			var token = new Token(tokenKind, new Slice(nextIndex, tokenLength));
 			nextIndex += tokenLength;
 			return token;
 		}
 
-		return new Token(Token.EndKind, source.Length, 0);
+		return new Token(Token.EndKind, new Slice(source.Length, 0));
 	}
 }
