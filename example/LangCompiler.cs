@@ -37,7 +37,7 @@ public sealed class LangCompiler
 		if (compiler.Match((int)TokenKind.OpenCurlyBrackets))
 			BlockStatement(compiler);
 		else if (compiler.Match((int)TokenKind.Let))
-			VarDeclaration(compiler);
+			VariableDeclaration(compiler);
 		else
 			ExpressionStatement(compiler);
 	}
@@ -56,7 +56,7 @@ public sealed class LangCompiler
 		compiler.ParseWithPrecedence((int)Precedence.Assignment);
 	}
 
-	private static void VarDeclaration(Compiler compiler)
+	private static void VariableDeclaration(Compiler compiler)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
 		var token = compiler.previousToken;
@@ -76,7 +76,7 @@ public sealed class LangCompiler
 			!compiler.Check(Token.EndKind)
 		)
 		{
-			ExpressionStatement(compiler);
+			Statement(compiler);
 		}
 
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
@@ -129,6 +129,7 @@ public sealed class LangCompiler
 				compiler.previousToken,
 				string.Format("Expected literal. Got {0}", compiler.previousToken.kind)
 			);
+			compiler.PushType(ValueType.Nil);
 			break;
 		}
 	}
@@ -203,18 +204,22 @@ public sealed class LangCompiler
 			case ValueType.Nil:
 				compiler.EmitInstruction(Instruction.Pop);
 				compiler.EmitInstruction(Instruction.LoadTrue);
+				compiler.PushType(ValueType.Bool);
 				break;
 			case ValueType.Bool:
 				compiler.EmitInstruction(Instruction.Not);
+				compiler.PushType(ValueType.Bool);
 				break;
 			case ValueType.Int:
 			case ValueType.Float:
 			case ValueType.String:
 				compiler.EmitInstruction(Instruction.Pop);
 				compiler.EmitInstruction(Instruction.LoadFalse);
+				compiler.PushType(ValueType.Bool);
 				break;
 			default:
 				compiler.AddSoftError(opToken, "Not operator can only be applied to nil, bools, ints, floats or strings");
+				compiler.PushType(ValueType.Bool);
 				break;
 			}
 			break;
@@ -223,6 +228,7 @@ public sealed class LangCompiler
 					opToken,
 					string.Format("Expected unary operator. Got {0}", opToken.kind)
 				);
+			compiler.PushType(ValueType.Nil);
 			break;
 		}
 	}

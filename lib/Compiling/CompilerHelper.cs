@@ -130,7 +130,7 @@ public static class CompilerHelper
 			));
 			sb.AppendLine();
 			sb.Append(' ', position.column - 1);
-			sb.Append('^', e.token.length);
+			sb.Append('^', e.token.length > 0 ? e.token.length : 1);
 			sb.Append(" here\n");
 		}
 
