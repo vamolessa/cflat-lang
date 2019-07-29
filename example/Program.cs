@@ -15,7 +15,7 @@ public sealed class Program
 		var compileResult = compiler.Compile(source, tokenizer);
 		if (!compileResult.isOk)
 		{
-			var error = CompilerHelper.FormatError(source, compileResult.error, 2);
+			var error = CompilerHelper.FormatError(source, compileResult.error, 2, 8);
 			System.Console.WriteLine("COMPILE ERROR");
 			System.Console.WriteLine(error);
 			return;

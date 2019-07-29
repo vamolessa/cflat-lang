@@ -18,11 +18,11 @@ public sealed class CompilerHelperTests
 	[Theory]
 	[InlineData("0123456789", 0, 0)]
 	[InlineData("0123456789", 3, 3)]
-	[InlineData("\t\t23456789", 3, 9)]
-	[InlineData("\t\t2345\t789", 3, 9)]
+	[InlineData("\t\t23456789", 3, 17)]
+	[InlineData("\t\t2345\t789", 3, 17)]
 	public void LengthToIndexTest(string source, int index, int expectedLength)
 	{
-		var length = CompilerHelper.LengthUntilIndex(source, index);
+		var length = CompilerHelper.LengthUntilIndex(source, index, 8);
 		Assert.Equal(expectedLength, length);
 	}
 }
