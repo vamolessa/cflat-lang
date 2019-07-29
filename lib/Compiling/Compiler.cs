@@ -2,12 +2,12 @@ using System.Collections.Generic;
 
 public readonly struct CompileError
 {
-	public readonly int sourceIndex;
+	public readonly Token token;
 	public readonly string message;
 
-	public CompileError(int sourceIndex, string message)
+	public CompileError(Token token, string message)
 	{
-		this.sourceIndex = sourceIndex;
+		this.token = token;
 		this.message = message;
 	}
 }
@@ -34,17 +34,25 @@ public sealed class Compiler
 
 	internal ITokenizer tokenizer;
 	private ParseRule[] parseRules;
+	private ParseFunction onParseWithPrecedence;
 	private bool panicMode;
 	private ByteCodeChunk chunk;
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
-	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(byte.MaxValue);
+	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	private int scopeDepth;
+	private int currentPrecedence;
 
-	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules)
+	public int CurrentPrecedence
+	{
+		get { return currentPrecedence; }
+	}
+
+	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
 	{
 		errors.Clear();
 		this.tokenizer = tokenizer;
 		this.parseRules = parseRules;
+		this.onParseWithPrecedence = onParseWithPrecedence;
 		previousToken = new Token(Token.EndKind, 0, 0);
 		currentToken = new Token(Token.EndKind, 0, 0);
 		panicMode = false;
@@ -54,19 +62,19 @@ public sealed class Compiler
 		scopeDepth = 0;
 	}
 
-	public Compiler AddSoftError(int sourceIndex, string message)
+	public Compiler AddSoftError(Token token, string message)
 	{
-		errors.Add(new CompileError(sourceIndex, message));
+		errors.Add(new CompileError(token, message));
 		return this;
 	}
 
-	public Compiler AddHardError(int sourceIndex, string message)
+	public Compiler AddHardError(Token token, string message)
 	{
 		if (panicMode)
 			return this;
 
 		panicMode = true;
-		errors.Add(new CompileError(sourceIndex, message));
+		errors.Add(new CompileError(token, message));
 
 		return this;
 	}
@@ -100,7 +108,7 @@ public sealed class Compiler
 		{
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
-			
+
 			typeStack.count -= localCount;
 		}
 	}
@@ -109,7 +117,7 @@ public sealed class Compiler
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
 		{
-			AddSoftError(previousToken.index, "Too many local variables in function");
+			AddSoftError(previousToken, "Too many local variables in function");
 			return;
 		}
 
@@ -118,6 +126,27 @@ public sealed class Compiler
 			scopeDepth,
 			typeStack.buffer[typeStack.count - 1]
 		));
+
+		chunk.localVariables.PushBack(token);
+	}
+
+	public int ResolveToLocalVariableIndex()
+	{
+		var source = tokenizer.Source;
+
+		for (var i = localVariables.count - 1; i >= 0; i--)
+		{
+			var local = localVariables.buffer[i];
+			if (CompilerHelper.AreEqual(source, previousToken, local.token))
+				return i;
+		}
+
+		return -1;
+	}
+
+	public LocalVariable GetLocalVariable(int index)
+	{
+		return localVariables.buffer[index];
 	}
 
 	public int GetTokenPrecedence(int tokenKind)
@@ -127,6 +156,8 @@ public sealed class Compiler
 
 	public void ParseWithPrecedence(int precedence)
 	{
+		currentPrecedence = precedence;
+
 		Next();
 		if (previousToken.kind == Token.EndKind)
 			return;
@@ -134,7 +165,7 @@ public sealed class Compiler
 		var prefixRule = parseRules[previousToken.kind].prefixRule;
 		if (prefixRule == null)
 		{
-			AddHardError(previousToken.index, "Expected expression");
+			AddHardError(previousToken, "Expected expression");
 			return;
 		}
 		prefixRule(this);
@@ -148,6 +179,8 @@ public sealed class Compiler
 			var infixRule = parseRules[previousToken.kind].infixRule;
 			infixRule(this);
 		}
+
+		onParseWithPrecedence(this);
 	}
 
 	public void Next()
@@ -160,7 +193,7 @@ public sealed class Compiler
 			if (currentToken.kind != Token.ErrorKind)
 				break;
 
-			AddHardError(currentToken.index, "Invalid char");
+			AddHardError(currentToken, "Invalid char");
 		}
 	}
 
@@ -183,7 +216,7 @@ public sealed class Compiler
 		if (currentToken.kind == tokenKind)
 			Next();
 		else
-			AddHardError(currentToken.index, errorMessage);
+			AddHardError(currentToken, errorMessage);
 	}
 
 	public void PushType(ValueType type)

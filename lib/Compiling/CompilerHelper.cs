@@ -114,7 +114,7 @@ public static class CompilerHelper
 
 		foreach (var e in errors)
 		{
-			var position = GetLineAndColumn(source, e.sourceIndex);
+			var position = GetLineAndColumn(source, e.token.index);
 
 			sb.Append(e.message);
 			sb.Append(" (line: ");
@@ -130,7 +130,8 @@ public static class CompilerHelper
 			));
 			sb.AppendLine();
 			sb.Append(' ', position.column - 1);
-			sb.Append("^ here\n");
+			sb.Append('^', e.token.length);
+			sb.Append(" here\n");
 		}
 
 		return sb.ToString();

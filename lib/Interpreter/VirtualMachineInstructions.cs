@@ -43,10 +43,16 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.LoadLocal:
-			vm.PushValue(new ValueData(), ValueType.Nil);
-			break;
+			{
+				var index = NextByte(vm);
+				vm.PushValue(
+					vm.valueStack.buffer[index],
+					vm.typeStack.buffer[index]
+				);
+				break;
+			}
 		case Instruction.AssignLocal:
-			vm.PopValue();
+			vm.valueStack.buffer[NextByte(vm)] = vm.PopValue();
 			break;
 		case Instruction.IntToFloat:
 			vm.PushValue(new ValueData((float)vm.PopValue().asInt), ValueType.Float);
