@@ -27,6 +27,21 @@ public sealed class LangTests
 	}
 
 	[Theory]
+	[InlineData("{0}", 0)]
+	[InlineData("{4}", 4)]
+	[InlineData("{{4}}", 4)]
+	[InlineData("{let a=4 a}", 4)]
+	[InlineData("{let a=4 a+5}", 9)]
+	[InlineData("{let a=4 {let a=2 a+1} a+5}", 9)]
+	public void BlockIntTests(string source, int expected)
+	{
+		var error = RunExpression(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(ValueType.Int, t);
+		Assert.Equal(expected, v.asInt);
+	}
+
+	[Theory]
 	[InlineData("if true {}")]
 	[InlineData("if true {} else {}")]
 	[InlineData("if true {} else if false {}")]
@@ -41,10 +56,12 @@ public sealed class LangTests
 	}
 
 	[Theory]
-	[InlineData("if true {0} else {1}", 0)]
-	[InlineData("if 2>3 {0} else {1}", 1)]
-	[InlineData("if 3>3 {1} else if 3<3 {-1} else {0}", 0)]
-	[InlineData("if if false{true}else{false} {1} else {0}", 0)]
+	[InlineData("if true {4} else {5}", 4)]
+	[InlineData("if 2>3 {4} else {5}", 5)]
+	[InlineData("if 3>3 {4} else if 3<3 {-4} else {5}", 5)]
+	[InlineData("if if false{true}else{false} {4} else {5}", 5)]
+	[InlineData("if true {4} else {5} + 10", 14)]
+	[InlineData("20 + if true {4} else {5}", 24)]
 	public void IfIntTests(string source, int expected)
 	{
 		var error = RunExpression(source, out var v, out var t);
