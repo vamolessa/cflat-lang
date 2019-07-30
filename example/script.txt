@@ -1,4 +1,7 @@
 {
+	{
+		2
+	}
 	//let myvar = 3
 	print {
 		let a = 3

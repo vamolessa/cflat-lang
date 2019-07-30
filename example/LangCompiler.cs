@@ -24,7 +24,11 @@ public sealed class LangCompiler
 
 		if (compiler.errors.Count > 0)
 			return Result.Error(compiler.errors);
-		return Result.Ok(compiler.GetByteCodeChunk());
+
+		var chunk = compiler.GetByteCodeChunk();
+		Optimizer.Optimize(chunk);
+
+		return Result.Ok(chunk);
 	}
 
 	public static void OnParseWithPrecedence(Compiler compiler, int precedence)

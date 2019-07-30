@@ -22,8 +22,6 @@ public sealed class Program
 			return;
 		}
 
-		Optimizer.Optimize(compileResult.ok);
-
 		if (DEBUG)
 		{
 			var sb = new StringBuilder();
