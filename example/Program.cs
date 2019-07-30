@@ -2,7 +2,6 @@
 
 public sealed class Program
 {
-	private static readonly bool DEBUG = true;
 	private const int TabSize = 8;
 
 	public static void Main(string[] args)
@@ -22,12 +21,9 @@ public sealed class Program
 			return;
 		}
 
-		if (DEBUG)
-		{
-			var sb = new StringBuilder();
-			compileResult.ok.Disassemble(source, "script", sb);
-			System.Console.WriteLine(sb);
-		}
+		var sb = new StringBuilder();
+		compileResult.ok.Disassemble(source, "script", sb);
+		System.Console.WriteLine(sb);
 
 		var vm = new VirtualMachine();
 		var runResult = vm.Run(source, compileResult.ok);

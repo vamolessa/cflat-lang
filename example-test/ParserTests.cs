@@ -3,8 +3,6 @@ using Xunit;
 
 public sealed class ParserTest
 {
-	private readonly LangParser parser = new LangParser();
-
 	[Theory]
 	[InlineData("-1")]
 	[InlineData("1 + 2")]

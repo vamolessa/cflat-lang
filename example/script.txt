@@ -1,5 +1,3 @@
 {
-	if true {
-		print "asdasd"
-	}
+	print if true {0} else {1}
 }

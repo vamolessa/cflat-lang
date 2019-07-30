@@ -31,6 +31,21 @@ public sealed class LangCompiler
 		return Result.Ok(chunk);
 	}
 
+	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, ITokenizer tokenizer)
+	{
+		var compiler = new Compiler();
+		tokenizer.Begin(LangScanners.scanners, source);
+		compiler.Begin(tokenizer, LangParseRules.rules, OnParseWithPrecedence);
+
+		compiler.Next();
+		Expression(compiler, (int)Precedence.Assignment);
+		compiler.EmitInstruction(Instruction.Halt);
+
+		if (compiler.errors.Count > 0)
+			return Result.Error(compiler.errors);
+		return Result.Ok(compiler.GetByteCodeChunk());
+	}
+
 	public static void OnParseWithPrecedence(Compiler compiler, int precedence)
 	{
 		var canAssign = precedence <= (int)Precedence.Assignment;
@@ -149,19 +164,24 @@ public sealed class LangCompiler
 		if (compiler.Match((int)TokenKind.Else))
 		{
 			if (compiler.Match((int)TokenKind.If))
+			{
 				If(compiler, precedence);
+			}
 			else
+			{
+				compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after else");
 				Block(compiler, precedence);
+			}
 
 			var elseType = compiler.PopType();
 			if (thenType != elseType)
-				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce values of the same type on both branches");
+				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce values of the same type on both branches. Found types: {0} and {1}", thenType, elseType);
 		}
 		else
 		{
 			compiler.EmitInstruction(Instruction.LoadNil);
 			if (thenType != ValueType.Nil)
-				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce nil if there is no else branch");
+				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce nil when there is no else branch. Found type: {0}", thenType);
 		}
 
 		compiler.EndEmitJump(thenJump);

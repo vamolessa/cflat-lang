@@ -58,19 +58,19 @@ public sealed class Compiler
 		scopeDepth = 0;
 	}
 
-	public Compiler AddSoftError(Slice slice, string message)
+	public Compiler AddSoftError(Slice slice, string format, params object[] args)
 	{
-		errors.Add(new CompileError(slice, message));
+		errors.Add(new CompileError(slice, string.Format(format, args)));
 		return this;
 	}
 
-	public Compiler AddHardError(Slice slice, string message)
+	public Compiler AddHardError(Slice slice, string format, params object[] args)
 	{
 		if (panicMode)
 			return this;
 
 		panicMode = true;
-		errors.Add(new CompileError(slice, message));
+		errors.Add(new CompileError(slice, string.Format(format, args)));
 
 		return this;
 	}
@@ -112,6 +112,7 @@ public sealed class Compiler
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
 
+			typeStack.buffer[typeStack.count - 1 - localCount] = typeStack.buffer[typeStack.count - 1];
 			typeStack.count -= localCount;
 		}
 	}
@@ -279,10 +280,7 @@ public sealed class Compiler
 
 	public Compiler EmitLoadLiteral(ValueData value, ValueType type)
 	{
-		var index = System.Array.IndexOf(chunk.literalData.buffer, value);
-		if (index < 0)
-			index = chunk.AddValueLiteral(value, type);
-
+		var index = chunk.AddValueLiteral(value, type);
 		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)index);
 
@@ -291,17 +289,9 @@ public sealed class Compiler
 
 	public Compiler EmitLoadStringLiteral(string value)
 	{
-		var stringIndex = System.Array.IndexOf(chunk.stringLiterals.buffer, value);
-
-		var constantIndex = stringIndex < 0 ?
-			chunk.AddStringLiteral(value) :
-			System.Array.IndexOf(
-				chunk.literalData.buffer,
-				new ValueData(stringIndex)
-			);
-
+		var index = chunk.AddStringLiteral(value);
 		EmitInstruction(Instruction.LoadLiteral);
-		EmitByte((byte)constantIndex);
+		EmitByte((byte)index);
 
 		return this;
 	}

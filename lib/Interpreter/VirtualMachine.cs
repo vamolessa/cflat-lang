@@ -93,4 +93,9 @@ public sealed class VirtualMachine
 	{
 		return ref valueStack.buffer[valueStack.count - 2];
 	}
+
+	public ValueType PeekType()
+	{
+		return typeStack.buffer[typeStack.count - 1];
+	}
 }
