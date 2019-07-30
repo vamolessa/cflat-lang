@@ -159,11 +159,17 @@ internal static class VirtualMachineInstructions
 			);
 			break;
 		case Instruction.JumpForward:
-			vm.programCount += BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
-			break;
+			{
+				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				vm.programCount += offset;
+				break;
+			}
 		case Instruction.JumpBackward:
-			vm.programCount -= BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
-			break;
+			{
+				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				vm.programCount -= offset;
+				break;
+			}
 		case Instruction.JumpForwardIfFalse:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));

@@ -135,7 +135,9 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		sb.Append(offset);
-		sb.AppendLine();
+		sb.Append(" (to ");
+		sb.Append(index + 3 + offset);
+		sb.AppendLine(")");
 		return index + 3;
 	}
 }
