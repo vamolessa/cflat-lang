@@ -41,11 +41,11 @@ internal static class VirtualMachineInstructions
 		case Instruction.LoadNil:
 			vm.PushValue(new ValueData(), ValueType.Nil);
 			break;
-		case Instruction.LoadTrue:
-			vm.PushValue(new ValueData(true), ValueType.Bool);
-			break;
 		case Instruction.LoadFalse:
 			vm.PushValue(new ValueData(false), ValueType.Bool);
+			break;
+		case Instruction.LoadTrue:
+			vm.PushValue(new ValueData(true), ValueType.Bool);
 			break;
 		case Instruction.LoadLiteral:
 			{
@@ -157,6 +157,33 @@ internal static class VirtualMachineInstructions
 				new ValueData(vm.PopValue().asFloat > vm.PopValue().asFloat),
 				ValueType.Bool
 			);
+			break;
+		case Instruction.JumpForward:
+			vm.programCount += BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+			break;
+		case Instruction.JumpBackward:
+			vm.programCount -= BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+			break;
+		case Instruction.JumpForwardIfFalse:
+			{
+				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				if (!vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
+					vm.programCount += offset;
+			}
+			break;
+		case Instruction.JumpForwardIfTrue:
+			{
+				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				if (vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
+					vm.programCount += offset;
+			}
+			break;
+		case Instruction.PopAndJumpForwardIfFalse:
+			{
+				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				if (!vm.PopValue().asBool)
+					vm.programCount += offset;
+			}
 			break;
 		default:
 			break;

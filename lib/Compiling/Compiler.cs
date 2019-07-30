@@ -116,6 +116,31 @@ public sealed class Compiler
 		}
 	}
 
+	public int BeginEmitJump(Instruction instruction)
+	{
+		EmitInstruction(instruction);
+		EmitByte(0);
+		EmitByte(0);
+
+		return chunk.bytes.count - 2;
+	}
+
+	public void EndEmitJump(int jumpIndex)
+	{
+		var offset = chunk.bytes.count - jumpIndex - 2;
+		if (offset > ushort.MaxValue)
+		{
+			AddSoftError(previousToken.slice, "Too much code to jump over");
+			return;
+		}
+
+		BytesHelper.ShortToBytes(
+			(ushort)offset,
+			out chunk.bytes.buffer[jumpIndex],
+			out chunk.bytes.buffer[jumpIndex + 1]
+		);
+	}
+
 	public void DeclareLocalVariable(Slice slice)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)

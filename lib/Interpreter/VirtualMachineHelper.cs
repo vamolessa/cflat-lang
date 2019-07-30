@@ -15,7 +15,7 @@ public static class VirtualMachineHelper
 		case ValueType.Float:
 			return data.asFloat.ToString();
 		case ValueType.String:
-			return objs[data.asInt].ToString();
+			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
 		default:
 			return "<invalid value>";
 		}

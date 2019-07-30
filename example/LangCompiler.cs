@@ -26,7 +26,7 @@ public sealed class LangCompiler
 			return Result.Error(compiler.errors);
 
 		var chunk = compiler.GetByteCodeChunk();
-		Optimizer.Optimize(chunk);
+		//Optimizer.Optimize(chunk);
 
 		return Result.Ok(chunk);
 	}
@@ -132,8 +132,40 @@ public sealed class LangCompiler
 	public static void If(Compiler compiler, int precedence)
 	{
 		Expression(compiler, precedence);
+
+		var conditionType = compiler.PopType();
+		if (conditionType != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as if condition");
+
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
+
+		var elseJump = compiler.BeginEmitJump(Instruction.PopAndJumpForwardIfFalse);
 		Block(compiler, precedence);
+		var thenType = compiler.PopType();
+
+		var thenJump = compiler.BeginEmitJump(Instruction.JumpForward);
+		compiler.EndEmitJump(elseJump);
+
+		if (compiler.Match((int)TokenKind.Else))
+		{
+			if (compiler.Match((int)TokenKind.If))
+				If(compiler, precedence);
+			else
+				Block(compiler, precedence);
+
+			var elseType = compiler.PopType();
+			if (thenType != elseType)
+				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce values of the same type on both branches");
+		}
+		else
+		{
+			compiler.EmitInstruction(Instruction.LoadNil);
+			if (thenType != ValueType.Nil)
+				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce nil if there is no else branch");
+		}
+
+		compiler.EndEmitJump(thenJump);
+		compiler.PushType(thenType);
 	}
 
 	public static void Literal(Compiler compiler, int precedence)

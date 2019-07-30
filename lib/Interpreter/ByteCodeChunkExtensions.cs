@@ -45,8 +45,8 @@ public static class ByteCodeChunkExtensions
 		case Instruction.Print:
 		case Instruction.Pop:
 		case Instruction.LoadNil:
-		case Instruction.LoadTrue:
 		case Instruction.LoadFalse:
+		case Instruction.LoadTrue:
 		case Instruction.IntToFloat:
 		case Instruction.FloatToInt:
 		case Instruction.NegateInt:
@@ -73,9 +73,15 @@ public static class ByteCodeChunkExtensions
 		case Instruction.CopyTo:
 		case Instruction.AssignLocal:
 		case Instruction.LoadLocal:
-			return WithArgInstruction(self, instruction, index, sb);
+			return ArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
+		case Instruction.JumpForward:
+		case Instruction.JumpBackward:
+		case Instruction.JumpForwardIfFalse:
+		case Instruction.JumpForwardIfTrue:
+		case Instruction.PopAndJumpForwardIfFalse:
+			return JumpInstruction(self, instruction, index, sb);
 		default:
 			sb.AppendFormat("Unknown instruction '{0}'\n", instruction.ToString());
 			return index + 1;
@@ -88,7 +94,7 @@ public static class ByteCodeChunkExtensions
 		return index + 1;
 	}
 
-	private static int WithArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int ArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
@@ -118,5 +124,18 @@ public static class ByteCodeChunkExtensions
 		}
 
 		return index + 2;
+	}
+
+	private static int JumpInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		var offset = BytesHelper.BytesToShort(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2]
+		);
+		sb.Append(offset);
+		sb.AppendLine();
+		return index + 3;
 	}
 }
