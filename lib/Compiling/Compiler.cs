@@ -107,7 +107,9 @@ public sealed class Compiler
 
 		if (localCount > 0)
 		{
-			EmitInstruction(Instruction.RemoveLocals);
+			EmitInstruction(Instruction.CopyTo);
+			EmitByte((byte)localCount);
+			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
 
 			typeStack.count -= localCount;
