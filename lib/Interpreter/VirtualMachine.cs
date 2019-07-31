@@ -16,11 +16,22 @@ public readonly struct RuntimeError
 
 public sealed class VirtualMachine
 {
+	internal struct CallFrame
+	{
+		public int baseIndex;
+		public int instructionIndex;
+
+		public CallFrame(int baseIndex, int instructionIndex)
+		{
+			this.baseIndex = baseIndex;
+			this.instructionIndex = instructionIndex;
+		}
+	}
+
 	internal ByteCodeChunk chunk;
-	internal int programCount;
-	internal int previousProgramCount;
 	internal Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
+	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
@@ -29,10 +40,11 @@ public sealed class VirtualMachine
 		this.chunk = chunk;
 		maybeError = Option.None;
 
-		programCount = 0;
-		previousProgramCount = 0;
 		typeStack.count = 0;
 		valueStack.count = 0;
+		callframeStack.count = 0;
+
+		callframeStack.PushBack(new CallFrame(0, 0));
 
 		heap = new Buffer<object>
 		{
@@ -44,11 +56,14 @@ public sealed class VirtualMachine
 
 		while (true)
 		{
-			sb.Clear();
-			VirtualMachineHelper.TraceStack(this, sb);
-			chunk.PrintLineNumber(source, programCount, sb);
-			chunk.DisassembleInstruction(programCount, sb);
-			System.Console.Write(sb);
+			{
+				var ip = callframeStack.buffer[callframeStack.count - 1].instructionIndex;
+				sb.Clear();
+				VirtualMachineHelper.TraceStack(this, sb);
+				chunk.PrintLineNumber(source, ip, sb);
+				chunk.DisassembleInstruction(ip, sb);
+				System.Console.Write(sb);
+			}
 
 			var done = VirtualMachineInstructions.Tick(this);
 			if (done)
@@ -63,9 +78,10 @@ public sealed class VirtualMachine
 
 	public bool Error(string message)
 	{
+		var ip = callframeStack.buffer[callframeStack.count - 1].instructionIndex;
 		maybeError = Option.Some(new RuntimeError(
-			previousProgramCount,
-			chunk.slices.buffer[previousProgramCount],
+			ip,
+			chunk.slices.buffer[ip],
 			message
 		));
 		return true;

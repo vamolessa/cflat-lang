@@ -1,8 +1,11 @@
 public enum TokenKind
 {
-	IntegerNumber, RealNumber, String, True, False, Nil, Identifier,
-	Function, For, If, Else, While, Return, Break, Let, Mut,
-	And, Or, Dot, Comma, Semicolon,
+	IntLiteral, FloatLiteral, StringLiteral, True, False, Nil, Identifier,
+	Function, For, If, Else, While, Return, Break,
+	And, Or, Dot, Comma,
+
+	Let, Mut,
+
 	Print,
 
 	OpenParenthesis, CloseParenthesis, OpenCurlyBrackets, CloseCurlyBrackets,
@@ -39,17 +42,16 @@ public static class LangScanners
 		new ExactScanner("while").ForToken((int)TokenKind.While),
 		new ExactScanner("return").ForToken((int)TokenKind.Return),
 		new ExactScanner("break").ForToken((int)TokenKind.Break),
-		new ExactScanner("let").ForToken((int)TokenKind.Let),
-		new ExactScanner("mut").ForToken((int)TokenKind.Mut),
-
 		new ExactScanner("and").ForToken((int)TokenKind.And),
 		new ExactScanner("or").ForToken((int)TokenKind.Or),
+
+		new ExactScanner("let").ForToken((int)TokenKind.Let),
+		new ExactScanner("mut").ForToken((int)TokenKind.Mut),
 
 		new ExactScanner("print").ForToken((int)TokenKind.Print),
 
 		new CharScanner('.').ForToken((int)TokenKind.Dot),
 		new CharScanner(',').ForToken((int)TokenKind.Comma),
-		new CharScanner(';').ForToken((int)TokenKind.Semicolon),
 		new CharScanner('(').ForToken((int)TokenKind.OpenParenthesis),
 		new CharScanner(')').ForToken((int)TokenKind.CloseParenthesis),
 		new CharScanner('{').ForToken((int)TokenKind.OpenCurlyBrackets),
@@ -70,9 +72,9 @@ public static class LangScanners
 		new ExactScanner("<=").ForToken((int)TokenKind.LessEqual),
 		new ExactScanner(">=").ForToken((int)TokenKind.GreaterEqual),
 
-		new IntegerNumberScanner().ForToken((int)TokenKind.IntegerNumber),
-		new RealNumberScanner().ForToken((int)TokenKind.RealNumber),
-		new EnclosedScanner("\"", "\"").ForToken((int)TokenKind.String),
+		new IntegerNumberScanner().ForToken((int)TokenKind.IntLiteral),
+		new RealNumberScanner().ForToken((int)TokenKind.FloatLiteral),
+		new EnclosedScanner("\"", "\"").ForToken((int)TokenKind.StringLiteral),
 		new ExactScanner("true").ForToken((int)TokenKind.True),
 		new ExactScanner("false").ForToken((int)TokenKind.False),
 		new ExactScanner("nil").ForToken((int)TokenKind.Nil),

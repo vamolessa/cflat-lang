@@ -32,6 +32,22 @@ public sealed class Compiler
 		}
 	}
 
+	private readonly struct Function
+	{
+		public readonly Slice slice;
+		public readonly Buffer<ValueType> argTypes;
+		public readonly ValueType returnType;
+		public readonly int instructionIndex;
+
+		public Function(Slice slice, Buffer<ValueType> argTypes, ValueType returnType, int instructionIndex)
+		{
+			this.slice = slice;
+			this.argTypes = argTypes;
+			this.returnType = returnType;
+			this.instructionIndex = instructionIndex;
+		}
+	}
+
 	private readonly struct LoopBreak
 	{
 		public readonly int nesting;
@@ -55,6 +71,7 @@ public sealed class Compiler
 	private ByteCodeChunk chunk;
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
+	private Buffer<Function> functions = new Buffer<Function>(64);
 	private int scopeDepth;
 	private int loopNesting;
 	private Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(16);
@@ -71,6 +88,7 @@ public sealed class Compiler
 		chunk = new ByteCodeChunk();
 		typeStack.count = 0;
 		localVariables.count = 0;
+		functions.count = 0;
 		scopeDepth = 0;
 		loopNesting = 0;
 		loopBreaks.count = 0;

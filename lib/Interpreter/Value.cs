@@ -8,6 +8,7 @@ public enum ValueType
 	Int,
 	Float,
 	String,
+	Function,
 	Boxed,
 	Struct,
 }
@@ -24,19 +25,22 @@ public struct ValueData
 
 	public ValueData(bool value)
 	{
-		this = default(ValueData);
+		asInt = 0;
+		asFloat = 0;
 		asBool = value;
 	}
 
 	public ValueData(int value)
 	{
-		this = default(ValueData);
+		asBool = false;
+		asFloat = 0.0f;
 		asInt = value;
 	}
 
 	public ValueData(float value)
 	{
-		this = default(ValueData);
+		asBool = false;
+		asInt = 0;
 		asFloat = value;
 	}
 }

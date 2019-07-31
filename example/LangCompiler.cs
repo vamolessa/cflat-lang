@@ -339,21 +339,21 @@ public sealed class LangCompiler
 			compiler.EmitInstruction(Instruction.LoadFalse);
 			compiler.PushType(ValueType.Bool);
 			break;
-		case TokenKind.IntegerNumber:
+		case TokenKind.IntLiteral:
 			compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetInt(compiler)),
 				ValueType.Int
 			);
 			compiler.PushType(ValueType.Int);
 			break;
-		case TokenKind.RealNumber:
+		case TokenKind.FloatLiteral:
 			compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetFloat(compiler)),
 				ValueType.Float
 			);
 			compiler.PushType(ValueType.Float);
 			break;
-		case TokenKind.String:
+		case TokenKind.StringLiteral:
 			compiler.EmitLoadStringLiteral(CompilerHelper.GetString(compiler));
 			compiler.PushType(ValueType.String);
 			break;

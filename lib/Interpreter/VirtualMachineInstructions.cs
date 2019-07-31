@@ -1,14 +1,15 @@
 internal static class VirtualMachineInstructions
 {
-	public static byte NextByte(VirtualMachine vm)
+	public static byte NextByte(VirtualMachine vm, ref VirtualMachine.CallFrame frame)
 	{
-		return vm.chunk.bytes.buffer[vm.programCount++];
+		return vm.chunk.bytes.buffer[frame.instructionIndex++];
 	}
 
 	public static bool Tick(VirtualMachine vm)
 	{
-		vm.previousProgramCount = vm.programCount;
-		var nextInstruction = (Instruction)NextByte(vm);
+		ref var frame = ref vm.callframeStack.buffer[vm.callframeStack.count - 1];
+
+		var nextInstruction = (Instruction)NextByte(vm, ref frame);
 		switch (nextInstruction)
 		{
 		case Instruction.Halt:
@@ -25,7 +26,7 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.PopMultiple:
 			{
-				var count = NextByte(vm);
+				var count = NextByte(vm, ref frame);
 				vm.valueStack.count -= count;
 				vm.typeStack.count -= count;
 			}
@@ -33,7 +34,7 @@ internal static class VirtualMachineInstructions
 		case Instruction.CopyTo:
 			{
 				var last = vm.valueStack.count - 1;
-				var index = last - NextByte(vm);
+				var index = last - NextByte(vm, ref frame);
 				vm.valueStack.buffer[index] = vm.valueStack.buffer[last];
 				vm.typeStack.buffer[index] = vm.typeStack.buffer[last];
 			}
@@ -49,7 +50,7 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.LoadLiteral:
 			{
-				var index = NextByte(vm);
+				var index = NextByte(vm, ref frame);
 				vm.PushValue(
 					vm.chunk.literalData.buffer[index],
 					vm.chunk.literalTypes.buffer[index]
@@ -57,21 +58,21 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.AssignLocal:
-			vm.valueStack.buffer[NextByte(vm)] = vm.Peek();
+			vm.valueStack.buffer[frame.baseIndex + NextByte(vm, ref frame)] = vm.Peek();
 			break;
 		case Instruction.LoadLocal:
 			{
-				var index = NextByte(vm);
+				var index = NextByte(vm, ref frame);
 				vm.PushValue(
-					vm.valueStack.buffer[index],
-					vm.typeStack.buffer[index]
+					vm.valueStack.buffer[frame.baseIndex + index],
+					vm.typeStack.buffer[frame.baseIndex + index]
 				);
 				break;
 			}
 		case Instruction.IncrementLocal:
 			{
-				var index = NextByte(vm);
-				vm.valueStack.buffer[index].asInt += 1;
+				var index = NextByte(vm, ref frame);
+				vm.valueStack.buffer[frame.baseIndex + index].asInt += 1;
 				break;
 			}
 		case Instruction.IntToFloat:
@@ -166,41 +167,41 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.JumpForward:
 			{
-				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
-				vm.programCount += offset;
+				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
+				frame.instructionIndex += offset;
 				break;
 			}
 		case Instruction.JumpBackward:
 			{
-				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
-				vm.programCount -= offset;
+				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
+				frame.instructionIndex -= offset;
 				break;
 			}
 		case Instruction.JumpForwardIfFalse:
 			{
-				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				if (!vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
-					vm.programCount += offset;
+					frame.instructionIndex += offset;
 				break;
 			}
 		case Instruction.JumpForwardIfTrue:
 			{
-				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				if (vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
-					vm.programCount += offset;
+					frame.instructionIndex += offset;
 				break;
 			}
 		case Instruction.PopAndJumpForwardIfFalse:
 			{
-				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
+				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				if (!vm.PopValue().asBool)
-					vm.programCount += offset;
+					frame.instructionIndex += offset;
 				break;
 			}
 		case Instruction.ForLoopCheck:
 			{
-				var index = NextByte(vm);
-				var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
+				var index = NextByte(vm, ref frame);
+				var less = vm.valueStack.buffer[frame.baseIndex + index].asInt < vm.valueStack.buffer[frame.baseIndex + index + 1].asInt;
 				vm.PushValue(
 					new ValueData(less),
 					ValueType.Bool

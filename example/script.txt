@@ -1,8 +1,4 @@
 {
-	for a = 0,2 {
-		while true {
-			break
-		}
-		print a
-	}
+	let a = "asdas"
+	print a
 }

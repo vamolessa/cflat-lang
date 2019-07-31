@@ -3,11 +3,24 @@ using System.Diagnostics;
 [DebuggerTypeProxy(typeof(ByteCodeChunkDebugView))]
 public sealed class ByteCodeChunk
 {
+	public readonly struct Function
+	{
+		public readonly string name;
+		public readonly int index;
+
+		public Function(string name, int index)
+		{
+			this.name = name;
+			this.index = index;
+		}
+	}
+
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<Slice> slices = new Buffer<Slice>(256);
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
 	public Buffer<ValueType> literalTypes = new Buffer<ValueType>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
+	public Buffer<Function> functions = new Buffer<Function>(64);
 
 	public int AddValueLiteral(ValueData value, ValueType type)
 	{
