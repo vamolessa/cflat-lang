@@ -16,6 +16,7 @@ public enum Instruction
 	FloatToInt,
 	NegateInt,
 	NegateFloat,
+	IncrementLocal,
 	AddInt,
 	AddFloat,
 	SubtractInt,

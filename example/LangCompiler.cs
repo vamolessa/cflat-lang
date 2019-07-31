@@ -71,6 +71,11 @@ public sealed class LangCompiler
 			WhileStatement(compiler, precedence);
 			return Option.None;
 		}
+		else if (compiler.Match((int)TokenKind.For))
+		{
+			ForStatement(compiler, precedence);
+			return Option.None;
+		}
 		else if (compiler.Match((int)TokenKind.Print))
 		{
 			PrintStatement(compiler, precedence);
@@ -109,7 +114,7 @@ public sealed class LangCompiler
 		compiler.EndScope(false);
 	}
 
-	private static void VariableDeclarationStatement(Compiler compiler, int precedence)
+	private static int VariableDeclarationStatement(Compiler compiler, int precedence)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.previousToken.slice;
@@ -117,7 +122,7 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
 		Expression(compiler, precedence);
 
-		compiler.DeclareLocalVariable(slice);
+		return compiler.DeclareLocalVariable(slice);
 	}
 
 	public static void WhileStatement(Compiler compiler, int precedence)
@@ -135,6 +140,42 @@ public sealed class LangCompiler
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
+	}
+
+	public static void ForStatement(Compiler compiler, int precedence)
+	{
+		compiler.BeginScope();
+		var itVarIndex = VariableDeclarationStatement(compiler, precedence);
+		var itVar = compiler.GetLocalVariable(itVarIndex);
+		if (itVar.type != ValueType.Int)
+			compiler.AddSoftError(itVar.slice, "Expected int variable in for loop");
+
+		compiler.Consume((int)TokenKind.Comma, "Expected comma after begin expression");
+		Expression(compiler, precedence);
+		var toVarIndex = compiler.DeclareLocalVariable(compiler.previousToken.slice);
+		compiler.UseVariable(toVarIndex);
+		if (compiler.GetLocalVariable(toVarIndex).type != ValueType.Int)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected int expression");
+
+		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
+
+		var loopJump = compiler.BeginEmitBackwardJump();
+		compiler.EmitInstruction(Instruction.LoadLocal);
+		compiler.EmitByte((byte)itVarIndex);
+		compiler.EmitInstruction(Instruction.LoadLocal);
+		compiler.EmitByte((byte)toVarIndex);
+		compiler.EmitInstruction(Instruction.LessInt);
+
+		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
+		BlockStatement(compiler, precedence);
+
+		compiler.EmitInstruction(Instruction.IncrementLocal);
+		compiler.EmitByte((byte)itVarIndex);
+
+		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
+		compiler.EndEmitForwardJump(breakJump);
+
+		compiler.EndScope(false);
 	}
 
 	private static void PrintStatement(Compiler compiler, int precedence)

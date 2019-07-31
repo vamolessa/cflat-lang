@@ -120,12 +120,12 @@ public sealed class Compiler
 		}
 	}
 
-	public void DeclareLocalVariable(Slice slice)
+	public int DeclareLocalVariable(Slice slice)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
 		{
 			AddSoftError(previousToken.slice, "Too many local variables in function");
-			return;
+			return -1;
 		}
 
 		var type = ValueType.Nil;
@@ -133,6 +133,7 @@ public sealed class Compiler
 			type = typeStack.buffer[typeStack.count - 1];
 
 		localVariables.PushBack(new LocalVariable(slice, scopeDepth, type, false));
+		return localVariables.count - 1;
 	}
 
 	public int ResolveToLocalVariableIndex()

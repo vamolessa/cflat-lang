@@ -68,6 +68,12 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.IncrementLocal:
+			{
+				var index = NextByte(vm);
+				vm.valueStack.buffer[index].asInt += 1;
+				break;
+			}
 		case Instruction.IntToFloat:
 			vm.PushValue(new ValueData((float)vm.PopValue().asInt), ValueType.Float);
 			break;
