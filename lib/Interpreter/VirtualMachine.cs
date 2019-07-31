@@ -16,7 +16,6 @@ public readonly struct RuntimeError
 
 public sealed class VirtualMachine
 {
-	internal string source;
 	internal ByteCodeChunk chunk;
 	internal int programCount;
 	internal int previousProgramCount;
@@ -27,7 +26,6 @@ public sealed class VirtualMachine
 
 	public Result<None, RuntimeError> Run(string source, ByteCodeChunk chunk)
 	{
-		this.source = source;
 		this.chunk = chunk;
 		maybeError = Option.None;
 
@@ -48,7 +46,8 @@ public sealed class VirtualMachine
 		{
 			sb.Clear();
 			VirtualMachineHelper.TraceStack(this, sb);
-			chunk.DisassembleInstruction(source, programCount, sb);
+			chunk.PrintLineNumber(source, programCount, sb);
+			chunk.DisassembleInstruction(programCount, sb);
 			System.Console.Write(sb);
 
 			var done = VirtualMachineInstructions.Tick(this);

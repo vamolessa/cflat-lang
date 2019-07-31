@@ -2,6 +2,16 @@ using System.Text;
 
 public static class ByteCodeChunkExtensions
 {
+	public static void Disassemble(this ByteCodeChunk self, StringBuilder sb)
+	{
+		sb.Append("== ");
+		sb.Append(self.bytes.count);
+		sb.AppendLine(" bytes ==");
+		for (var index = 0; index < self.bytes.count;)
+			index = DisassembleInstruction(self, index, sb);
+		sb.AppendLine("== end ==");
+	}
+
 	public static void Disassemble(this ByteCodeChunk self, string source, string chunkName, StringBuilder sb)
 	{
 		sb.Append("== ");
@@ -11,14 +21,17 @@ public static class ByteCodeChunkExtensions
 		sb.AppendLine(" bytes] ==");
 
 		for (var index = 0; index < self.bytes.count;)
-			index = DisassembleInstruction(self, source, index, sb);
+		{
+			PrintLineNumber(self, source, index, sb);
+			index = DisassembleInstruction(self, index, sb);
+		}
 
 		sb.Append("== ");
 		sb.Append(chunkName);
 		sb.AppendLine(" end ==");
 	}
 
-	public static int DisassembleInstruction(this ByteCodeChunk self, string source, int index, StringBuilder sb)
+	public static void PrintLineNumber(this ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
 		var currentSourceIndex = self.slices.buffer[index].index;
 		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex, 1);
@@ -34,7 +47,10 @@ public static class ByteCodeChunkExtensions
 			sb.Append("   | ");
 		else
 			sb.AppendFormat("{0,4} ", currentPosition.line);
+	}
 
+	public static int DisassembleInstruction(this ByteCodeChunk self, int index, StringBuilder sb)
+	{
 		var instructionCode = self.bytes.buffer[index];
 		var instruction = (Instruction)instructionCode;
 
@@ -77,11 +93,12 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.JumpForward:
-		case Instruction.JumpBackward:
 		case Instruction.JumpForwardIfFalse:
 		case Instruction.JumpForwardIfTrue:
 		case Instruction.PopAndJumpForwardIfFalse:
-			return JumpInstruction(self, instruction, index, sb);
+			return JumpInstruction(self, instruction, 1, index, sb);
+		case Instruction.JumpBackward:
+			return JumpInstruction(self, instruction, -1, index, sb);
 		default:
 			sb.AppendFormat("Unknown instruction '{0}'\n", instruction.ToString());
 			return index + 1;
@@ -126,7 +143,7 @@ public static class ByteCodeChunkExtensions
 		return index + 2;
 	}
 
-	private static int JumpInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int JumpInstruction(ByteCodeChunk chunk, Instruction instruction, int sign, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
@@ -135,8 +152,8 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		sb.Append(offset);
-		sb.Append(" (to ");
-		sb.Append(index + 3 + offset);
+		sb.Append(" (goto ");
+		sb.Append(index + 3 + offset * sign);
 		sb.AppendLine(")");
 		return index + 3;
 	}

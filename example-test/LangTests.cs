@@ -29,6 +29,7 @@ public sealed class LangTests
 	[Theory]
 	[InlineData("{}")]
 	[InlineData("{{}}")]
+	[InlineData("{let a=4 a=a+1 {}}")]
 	public void BlockNilTests(string source)
 	{
 		var error = RunExpression(source, out var v, out var t);
@@ -73,6 +74,20 @@ public sealed class LangTests
 	[InlineData("if true {4} else {5} + 10", 14)]
 	[InlineData("20 + if true {4} else {5}", 24)]
 	public void IfIntTests(string source, int expected)
+	{
+		var error = RunExpression(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(ValueType.Int, t);
+		Assert.Equal(expected, v.asInt);
+	}
+
+	[Theory]
+	[InlineData("{let a=4 a=a+1 a}", 5)]
+	[InlineData("{let a=4 a=a=5 a}", 5)]
+	[InlineData("{let a=4 a=a=a+1 a}", 5)]
+	[InlineData("{let a=4 a=a=a+1 a}", 5)]
+	[InlineData("{let a=4 let b=5 b+1 a=b=7 a}", 7)]
+	public void AssignmentIntTests(string source, int expected)
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);

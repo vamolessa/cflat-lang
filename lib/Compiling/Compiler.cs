@@ -117,31 +117,6 @@ public sealed class Compiler
 		}
 	}
 
-	public int BeginEmitJump(Instruction instruction)
-	{
-		EmitInstruction(instruction);
-		EmitByte(0);
-		EmitByte(0);
-
-		return chunk.bytes.count - 2;
-	}
-
-	public void EndEmitJump(int jumpIndex)
-	{
-		var offset = chunk.bytes.count - jumpIndex - 2;
-		if (offset > ushort.MaxValue)
-		{
-			AddSoftError(previousToken.slice, "Too much code to jump over");
-			return;
-		}
-
-		BytesHelper.ShortToBytes(
-			(ushort)offset,
-			out chunk.bytes.buffer[jumpIndex],
-			out chunk.bytes.buffer[jumpIndex + 1]
-		);
-	}
-
 	public void DeclareLocalVariable(Slice slice)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
@@ -300,5 +275,51 @@ public sealed class Compiler
 	{
 		chunk.bytes.count -= 1;
 		return this;
+	}
+
+	public int BeginEmitBackwardJump()
+	{
+		return chunk.bytes.count;
+	}
+
+	public void EndEmitBackwardJump(Instruction instruction, int jumpIndex)
+	{
+		EmitInstruction(instruction);
+
+		var offset = chunk.bytes.count - jumpIndex + 2;
+		if (offset > ushort.MaxValue)
+		{
+			AddSoftError(previousToken.slice, "Too much code to jump over");
+			return;
+		}
+
+		BytesHelper.ShortToBytes((ushort)offset, out var b0, out var b1);
+		EmitByte(b0);
+		EmitByte(b1);
+	}
+
+	public int BeginEmitForwardJump(Instruction instruction)
+	{
+		EmitInstruction(instruction);
+		EmitByte(0);
+		EmitByte(0);
+
+		return chunk.bytes.count - 2;
+	}
+
+	public void EndEmitForwardJump(int jumpIndex)
+	{
+		var offset = chunk.bytes.count - jumpIndex - 2;
+		if (offset > ushort.MaxValue)
+		{
+			AddSoftError(previousToken.slice, "Too much code to jump over");
+			return;
+		}
+
+		BytesHelper.ShortToBytes(
+			(ushort)offset,
+			out chunk.bytes.buffer[jumpIndex],
+			out chunk.bytes.buffer[jumpIndex + 1]
+		);
 	}
 }

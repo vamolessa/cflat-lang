@@ -38,7 +38,7 @@ public static class LangParseRules
 		Set(TokenKind.Return, null, null, Precedence.None);
 		Set(TokenKind.True, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Let, null, null, Precedence.None);
-		Set(TokenKind.While, LangCompiler.While, null, Precedence.None);
+		Set(TokenKind.While, null, null, Precedence.None);
 	}
 
 	private static void Set(TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)

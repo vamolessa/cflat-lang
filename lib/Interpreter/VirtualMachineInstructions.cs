@@ -57,7 +57,7 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.AssignLocal:
-			vm.valueStack.buffer[NextByte(vm)] = vm.PopValue();
+			vm.valueStack.buffer[NextByte(vm)] = vm.Peek();
 			break;
 		case Instruction.LoadLocal:
 			{

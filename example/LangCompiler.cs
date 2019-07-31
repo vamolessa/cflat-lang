@@ -60,7 +60,12 @@ public sealed class LangCompiler
 	{
 		if (compiler.Match((int)TokenKind.Let))
 		{
-			VariableDeclaration(compiler, precedence);
+			VariableDeclarationStatement(compiler, precedence);
+			return Option.None;
+		}
+		else if (compiler.Match((int)TokenKind.While))
+		{
+			WhileStatement(compiler, precedence);
 			return Option.None;
 		}
 		else if (compiler.Match((int)TokenKind.Print))
@@ -86,7 +91,7 @@ public sealed class LangCompiler
 		return type;
 	}
 
-	private static void VariableDeclaration(Compiler compiler, int precedence)
+	private static void VariableDeclarationStatement(Compiler compiler, int precedence)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.previousToken.slice;
@@ -95,6 +100,25 @@ public sealed class LangCompiler
 		Expression(compiler, precedence);
 
 		compiler.DeclareLocalVariable(slice);
+	}
+
+	public static void WhileStatement(Compiler compiler, int precedence)
+	{
+		var loopJump = compiler.BeginEmitBackwardJump();
+		Expression(compiler, precedence);
+
+		if (compiler.PopType() != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as while condition");
+
+		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
+
+		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
+		Block(compiler, precedence);
+		compiler.EmitInstruction(Instruction.Pop);
+		compiler.PopType();
+
+		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
+		compiler.EndEmitForwardJump(breakJump);
 	}
 
 	private static void PrintStatement(Compiler compiler, int precedence)
@@ -153,12 +177,12 @@ public sealed class LangCompiler
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
 
-		var elseJump = compiler.BeginEmitJump(Instruction.PopAndJumpForwardIfFalse);
+		var elseJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		Block(compiler, precedence);
 		var thenType = compiler.PopType();
 
-		var thenJump = compiler.BeginEmitJump(Instruction.JumpForward);
-		compiler.EndEmitJump(elseJump);
+		var thenJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
+		compiler.EndEmitForwardJump(elseJump);
 
 		if (compiler.Match((int)TokenKind.Else))
 		{
@@ -183,7 +207,7 @@ public sealed class LangCompiler
 				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce nil when there is no else branch. Found type: {0}", thenType);
 		}
 
-		compiler.EndEmitJump(thenJump);
+		compiler.EndEmitForwardJump(thenJump);
 		compiler.PushType(thenType);
 	}
 
@@ -192,10 +216,10 @@ public sealed class LangCompiler
 		if (compiler.PopType() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before and");
 
-		var jump = compiler.BeginEmitJump(Instruction.JumpForwardIfFalse);
+		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		compiler.EmitInstruction(Instruction.Pop);
 		compiler.ParseWithPrecedence((int)Precedence.And);
-		compiler.EndEmitJump(jump);
+		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.PopType() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression after and");
@@ -208,38 +232,15 @@ public sealed class LangCompiler
 		if (compiler.PopType() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before or");
 
-		var jump = compiler.BeginEmitJump(Instruction.JumpForwardIfTrue);
+		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		compiler.EmitInstruction(Instruction.Pop);
 		compiler.ParseWithPrecedence((int)Precedence.Or);
-		compiler.EndEmitJump(jump);
+		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.PopType() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression after or");
 
 		compiler.PushType(ValueType.Bool);
-	}
-
-	public static void While(Compiler compiler, int precedence)
-	{
-		Expression(compiler, precedence);
-
-		if (compiler.PopType() != ValueType.Bool)
-			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as while condition");
-
-		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while expression");
-
-		var condJump = compiler.BeginEmitJump(Instruction.PopAndJumpForwardIfFalse);
-		Block(compiler, precedence);
-		compiler.EmitInstruction(Instruction.Pop);
-		compiler.PopType();
-
-		var thenJump = compiler.BeginEmitJump(Instruction.JumpForward);
-		compiler.EndEmitJump(condJump);
-
-		compiler.EndEmitJump(thenJump);
-
-		compiler.EmitInstruction(Instruction.LoadNil);
-		compiler.PushType(ValueType.Nil);
 	}
 
 	public static void Literal(Compiler compiler, int precedence)
@@ -298,15 +299,13 @@ public sealed class LangCompiler
 
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Variable not declared");
+				compiler.AddSoftError(slice, "Use of undeclared variable");
 			}
 			else
 			{
 				compiler.EmitInstruction(Instruction.AssignLocal);
 				compiler.EmitByte((byte)index);
 			}
-
-			compiler.PopType();
 		}
 		else
 		{

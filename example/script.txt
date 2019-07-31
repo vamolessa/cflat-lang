@@ -1,4 +1,7 @@
 {
-	let a = {}
+	let a = 7
+	let b = 4
+	a = b = 3
 	print a
+	print b
 }
