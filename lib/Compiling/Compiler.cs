@@ -34,14 +34,14 @@ public sealed class Compiler
 
 	private readonly struct Function
 	{
-		public readonly Slice slice;
+		public readonly int index;
 		public readonly Buffer<ValueType> argTypes;
 		public readonly ValueType returnType;
 		public readonly int instructionIndex;
 
-		public Function(Slice slice, Buffer<ValueType> argTypes, ValueType returnType, int instructionIndex)
+		public Function(int index, Buffer<ValueType> argTypes, ValueType returnType, int instructionIndex)
 		{
-			this.slice = slice;
+			this.index = index;
 			this.argTypes = argTypes;
 			this.returnType = returnType;
 			this.instructionIndex = instructionIndex;
