@@ -146,6 +146,7 @@ public sealed class LangCompiler
 	{
 		compiler.BeginScope();
 		var itVarIndex = VariableDeclarationStatement(compiler, precedence);
+		compiler.UseVariable(itVarIndex);
 		var itVar = compiler.GetLocalVariable(itVarIndex);
 		if (itVar.type != ValueType.Int)
 			compiler.AddSoftError(itVar.slice, "Expected int variable in for loop");
