@@ -188,6 +188,30 @@ public sealed class LangCompiler
 		compiler.PushType(thenType);
 	}
 
+	public static void While(Compiler compiler, int precedence)
+	{
+		Expression(compiler, precedence);
+
+		var conditionType = compiler.PopType();
+		if (conditionType != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as while condition");
+
+		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while expression");
+
+		var condJump = compiler.BeginEmitJump(Instruction.PopAndJumpForwardIfFalse);
+		Block(compiler, precedence);
+		compiler.EmitInstruction(Instruction.Pop);
+		compiler.PopType();
+
+		var thenJump = compiler.BeginEmitJump(Instruction.JumpForward);
+		compiler.EndEmitJump(condJump);
+
+		compiler.EndEmitJump(thenJump);
+
+		compiler.EmitInstruction(Instruction.LoadNil);
+		compiler.PushType(ValueType.Nil);
+	}
+
 	public static void Literal(Compiler compiler, int precedence)
 	{
 		switch ((TokenKind)compiler.previousToken.kind)

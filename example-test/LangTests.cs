@@ -27,6 +27,16 @@ public sealed class LangTests
 	}
 
 	[Theory]
+	[InlineData("{}")]
+	[InlineData("{{}}")]
+	public void BlockNilTests(string source)
+	{
+		var error = RunExpression(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(ValueType.Nil, t);
+	}
+
+	[Theory]
 	[InlineData("{0}", 0)]
 	[InlineData("{4}", 4)]
 	[InlineData("{{4}}", 4)]
