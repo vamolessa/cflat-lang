@@ -32,6 +32,18 @@ public sealed class Compiler
 		}
 	}
 
+	private readonly struct LoopBreak
+	{
+		public readonly int nesting;
+		public readonly int jump;
+
+		public LoopBreak(int nesting, int jump)
+		{
+			this.nesting = nesting;
+			this.jump = jump;
+		}
+	}
+
 	public readonly List<CompileError> errors = new List<CompileError>();
 	public Token previousToken;
 	private Token currentToken;
@@ -44,6 +56,8 @@ public sealed class Compiler
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	private int scopeDepth;
+	private int loopNesting;
+	private Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(16);
 
 	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
 	{
@@ -58,6 +72,8 @@ public sealed class Compiler
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;
+		loopNesting = 0;
+		loopBreaks.count = 0;
 	}
 
 	public Compiler AddSoftError(Slice slice, string format, params object[] args)
@@ -120,6 +136,35 @@ public sealed class Compiler
 			EmitByte((byte)localCount);
 			typeStack.count -= localCount;
 		}
+	}
+
+	public void BeginLoop()
+	{
+		loopNesting += 1;
+	}
+
+	public void EndLoop()
+	{
+		loopNesting -= 1;
+
+		for (var i = loopBreaks.count - 1; i >= 0; i--)
+		{
+			var loopBreak = loopBreaks.buffer[i];
+			if (loopBreak.nesting == loopNesting)
+			{
+				PatchJump(loopBreak.jump);
+				loopBreaks.SwapRemove(i);
+			}
+		}
+	}
+
+	public bool BreakLoop(int nesting, int jump)
+	{
+		if (loopNesting < nesting)
+			return false;
+
+		loopBreaks.PushBack(new LoopBreak(loopNesting - nesting, jump));
+		return true;
 	}
 
 	public int DeclareLocalVariable(Slice slice, bool mutable)
@@ -316,17 +361,21 @@ public sealed class Compiler
 
 	public void EndEmitForwardJump(int jumpIndex)
 	{
+		if (!PatchJump(jumpIndex))
+			AddSoftError(previousToken.slice, "Too much code to jump over");
+	}
+
+	private bool PatchJump(int jumpIndex)
+	{
 		var offset = chunk.bytes.count - jumpIndex - 2;
 		if (offset > ushort.MaxValue)
-		{
-			AddSoftError(previousToken.slice, "Too much code to jump over");
-			return;
-		}
+			return false;
 
 		BytesHelper.ShortToBytes(
 			(ushort)offset,
 			out chunk.bytes.buffer[jumpIndex],
 			out chunk.bytes.buffer[jumpIndex + 1]
 		);
+		return true;
 	}
 }

@@ -48,7 +48,7 @@ public sealed class VirtualMachine
 			VirtualMachineHelper.TraceStack(this, sb);
 			chunk.PrintLineNumber(source, programCount, sb);
 			chunk.DisassembleInstruction(programCount, sb);
-			//System.Console.Write(sb);
+			System.Console.Write(sb);
 
 			var done = VirtualMachineInstructions.Tick(this);
 			if (done)

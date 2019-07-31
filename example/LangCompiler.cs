@@ -81,6 +81,11 @@ public sealed class LangCompiler
 			ForStatement(compiler, precedence);
 			return Option.None;
 		}
+		else if (compiler.Match((int)TokenKind.Break))
+		{
+			BreakStatement(compiler, precedence);
+			return Option.None;
+		}
 		else if (compiler.Match((int)TokenKind.Print))
 		{
 			PrintStatement(compiler, precedence);
@@ -141,10 +146,12 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
+		compiler.BeginLoop();
 		BlockStatement(compiler, precedence);
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
+		compiler.EndLoop();
 	}
 
 	public static void ForStatement(Compiler compiler, int precedence)
@@ -170,6 +177,7 @@ public sealed class LangCompiler
 		compiler.EmitByte((byte)itVarIndex);
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
+		compiler.BeginLoop();
 		BlockStatement(compiler, precedence);
 
 		compiler.EmitInstruction(Instruction.IncrementLocal);
@@ -177,8 +185,20 @@ public sealed class LangCompiler
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
+		compiler.EndLoop();
 
 		compiler.EndScope(false);
+	}
+
+	private static void BreakStatement(Compiler compiler, int precedence)
+	{
+		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
+
+		if (!compiler.BreakLoop(1, breakJump))
+		{
+			compiler.AddSoftError(compiler.previousToken.slice, "Not inside a loop");
+			return;
+		}
 	}
 
 	private static void PrintStatement(Compiler compiler, int precedence)

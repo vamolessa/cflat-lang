@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+
 public struct Buffer<T>
 {
 	public int count;
@@ -18,17 +20,16 @@ public struct Buffer<T>
 			buffer = temp;
 		}
 
-		unchecked
-		{
-			buffer[count++] = element;
-		}
+		buffer[count++] = element;
 	}
 
 	public T PopLast()
 	{
-		unchecked
-		{
-			return buffer[--count];
-		}
+		return buffer[--count];
+	}
+
+	public void SwapRemove(int index)
+	{
+		buffer[--count] = buffer[index];
 	}
 }

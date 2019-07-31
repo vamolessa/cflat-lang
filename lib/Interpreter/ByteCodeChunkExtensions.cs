@@ -19,6 +19,8 @@ public static class ByteCodeChunkExtensions
 		sb.Append("== ");
 		sb.Append(self.bytes.count);
 		sb.AppendLine(" bytes ==");
+		sb.AppendLine("byte instruction");
+
 		for (var index = 0; index < self.bytes.count;)
 			index = DisassembleInstruction(self, index, sb);
 		sb.AppendLine("== end ==");
@@ -31,6 +33,7 @@ public static class ByteCodeChunkExtensions
 		sb.Append(" [");
 		sb.Append(self.bytes.count);
 		sb.AppendLine(" bytes] ==");
+		sb.AppendLine("line byte instruction");
 
 		for (var index = 0; index < self.bytes.count;)
 		{
@@ -54,7 +57,6 @@ public static class ByteCodeChunkExtensions
 			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
 		}
 
-		sb.AppendFormat("{0:0000} ", index);
 		if (currentPosition.line == lastLine)
 			sb.Append("   | ");
 		else
@@ -63,6 +65,8 @@ public static class ByteCodeChunkExtensions
 
 	public static int DisassembleInstruction(this ByteCodeChunk self, int index, StringBuilder sb)
 	{
+		sb.AppendFormat("{0:0000} ", index);
+
 		var instructionCode = self.bytes.buffer[index];
 		var instruction = (Instruction)instructionCode;
 

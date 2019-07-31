@@ -1,5 +1,8 @@
 {
-	let a = "asda"
-	a = "ops"
-	print a
+	for a = 0,2 {
+		while true {
+			break
+		}
+		print a
+	}
 }

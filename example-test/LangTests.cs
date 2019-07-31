@@ -104,7 +104,6 @@ public sealed class LangTests
 	[InlineData("{mut a=4 a=a+1 a}", 5)]
 	[InlineData("{mut a=4 a=a=5 a}", 5)]
 	[InlineData("{mut a=4 a=a=a+1 a}", 5)]
-	[InlineData("{mut a=4 a=a=a+1 a}", 5)]
 	[InlineData("{mut a=4 mut b=5 b+1 a=b=7 a}", 7)]
 	public void AssignmentIntTests(string source, int expected)
 	{
