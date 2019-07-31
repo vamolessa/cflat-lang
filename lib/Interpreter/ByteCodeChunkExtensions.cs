@@ -1,5 +1,17 @@
 using System.Text;
 
+public sealed class ByteCodeChunkDebugView
+{
+	public readonly string[] lines;
+
+	public ByteCodeChunkDebugView(ByteCodeChunk chunk)
+	{
+		var sb = new StringBuilder();
+		chunk.Disassemble(sb);
+		lines = sb.ToString().Split(new string[] { "\n", "\r\n" }, System.StringSplitOptions.RemoveEmptyEntries);
+	}
+}
+
 public static class ByteCodeChunkExtensions
 {
 	public static void Disassemble(this ByteCodeChunk self, StringBuilder sb)

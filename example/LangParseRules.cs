@@ -26,14 +26,14 @@ public static class LangParseRules
 		Set(TokenKind.Identifier, LangCompiler.Variable, null, Precedence.None);
 		Set(TokenKind.String, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.IntegerNumber, LangCompiler.Literal, null, Precedence.None);
-		Set(TokenKind.And, LangCompiler.And, null, Precedence.And);
+		Set(TokenKind.And, null, LangCompiler.And, Precedence.And);
 		Set(TokenKind.Else, null, null, Precedence.None);
 		Set(TokenKind.False, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.For, null, null, Precedence.None);
 		Set(TokenKind.Function, null, null, Precedence.None);
 		Set(TokenKind.If, LangCompiler.If, null, Precedence.None);
 		Set(TokenKind.Nil, LangCompiler.Literal, null, Precedence.None);
-		Set(TokenKind.Or, LangCompiler.Or, null, Precedence.Or);
+		Set(TokenKind.Or, null, LangCompiler.Or, Precedence.Or);
 		Set(TokenKind.RealNumber, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Return, null, null, Precedence.None);
 		Set(TokenKind.True, LangCompiler.Literal, null, Precedence.None);

@@ -1,5 +1,6 @@
-using System.Text;
+using System.Diagnostics;
 
+[DebuggerTypeProxy(typeof(ByteCodeChunkDebugView))]
 public sealed class ByteCodeChunk
 {
 	public Buffer<byte> bytes = new Buffer<byte>(256);
@@ -7,16 +8,6 @@ public sealed class ByteCodeChunk
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
 	public Buffer<ValueType> literalTypes = new Buffer<ValueType>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
-
-	public string Disassembled
-	{
-		get
-		{
-			var sb = new StringBuilder();
-			ByteCodeChunkExtensions.Disassemble(this, sb);
-			return sb.ToString();
-		}
-	}
 
 	public int AddValueLiteral(ValueData value, ValueType type)
 	{

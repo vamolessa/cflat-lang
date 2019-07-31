@@ -82,6 +82,23 @@ public sealed class LangTests
 	}
 
 	[Theory]
+	[InlineData("true and true", true)]
+	[InlineData("true and false", false)]
+	[InlineData("false and true", false)]
+	[InlineData("false and false", false)]
+	[InlineData("true or true", true)]
+	[InlineData("true or false", true)]
+	[InlineData("false or true", true)]
+	[InlineData("false or false", false)]
+	public void LogicalTests(string source, bool expected)
+	{
+		var error = RunExpression(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(ValueType.Bool, t);
+		Assert.Equal(expected, v.asBool);
+	}
+
+	[Theory]
 	[InlineData("{let a=4 a=a+1 a}", 5)]
 	[InlineData("{let a=4 a=a=5 a}", 5)]
 	[InlineData("{let a=4 a=a=a+1 a}", 5)]
