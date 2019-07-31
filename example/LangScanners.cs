@@ -1,7 +1,7 @@
 public enum TokenKind
 {
 	IntegerNumber, RealNumber, String, True, False, Nil, Identifier,
-	Function, For, If, Else, While, Return, Break, Let,
+	Function, For, If, Else, While, Return, Break, Let, Mut,
 	And, Or, Dot, Comma, Semicolon,
 	Print,
 
@@ -40,6 +40,7 @@ public static class LangScanners
 		new ExactScanner("return").ForToken((int)TokenKind.Return),
 		new ExactScanner("break").ForToken((int)TokenKind.Break),
 		new ExactScanner("let").ForToken((int)TokenKind.Let),
+		new ExactScanner("mut").ForToken((int)TokenKind.Mut),
 
 		new ExactScanner("and").ForToken((int)TokenKind.And),
 		new ExactScanner("or").ForToken((int)TokenKind.Or),

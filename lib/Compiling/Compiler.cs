@@ -19,13 +19,15 @@ public sealed class Compiler
 		public readonly Slice slice;
 		public readonly int depth;
 		public readonly ValueType type;
+		public readonly bool isMutable;
 		public readonly bool isUsed;
 
-		public LocalVariable(Slice slice, int depth, ValueType type, bool isUsed)
+		public LocalVariable(Slice slice, int depth, ValueType type, bool isMutable, bool isUsed)
 		{
 			this.slice = slice;
 			this.depth = depth;
 			this.type = type;
+			this.isMutable = isMutable;
 			this.isUsed = isUsed;
 		}
 	}
@@ -120,7 +122,7 @@ public sealed class Compiler
 		}
 	}
 
-	public int DeclareLocalVariable(Slice slice)
+	public int DeclareLocalVariable(Slice slice, bool mutable)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
 		{
@@ -132,7 +134,7 @@ public sealed class Compiler
 		if (typeStack.count > 0)
 			type = typeStack.buffer[typeStack.count - 1];
 
-		localVariables.PushBack(new LocalVariable(slice, scopeDepth, type, false));
+		localVariables.PushBack(new LocalVariable(slice, scopeDepth, type, mutable, false));
 		return localVariables.count - 1;
 	}
 
@@ -158,6 +160,7 @@ public sealed class Compiler
 				variable.slice,
 				variable.depth,
 				variable.type,
+				variable.isMutable,
 				true
 			);
 	}

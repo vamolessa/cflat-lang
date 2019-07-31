@@ -29,7 +29,7 @@ public sealed class LangTests
 	[Theory]
 	[InlineData("{}")]
 	[InlineData("{{}}")]
-	[InlineData("{let a=4 a=a+1 {}}")]
+	[InlineData("{mut a=4 a=a+1 {}}")]
 	public void BlockNilTests(string source)
 	{
 		var error = RunExpression(source, out var v, out var t);
@@ -40,7 +40,7 @@ public sealed class LangTests
 	[Theory]
 	[InlineData("{0}", 0)]
 	[InlineData("{4}", 4)]
-	[InlineData("{{4}}", 4)]
+	[InlineData("{({4})}", 4)]
 	[InlineData("{let a=4 a}", 4)]
 	[InlineData("{let a=4 a+5}", 9)]
 	[InlineData("{let a=4 {let a=2 a+1} a+5}", 9)]
@@ -90,8 +90,8 @@ public sealed class LangTests
 	[InlineData("true or false", true)]
 	[InlineData("false or true", true)]
 	[InlineData("false or false", false)]
-	[InlineData("{let a=false true or {a=true false} a}", false)]
-	[InlineData("{let a=false false and {a=true true} a}", false)]
+	[InlineData("{mut a=false true or {a=true false} a}", false)]
+	[InlineData("{mut a=false false and {a=true true} a}", false)]
 	public void LogicalTests(string source, bool expected)
 	{
 		var error = RunExpression(source, out var v, out var t);
@@ -101,11 +101,11 @@ public sealed class LangTests
 	}
 
 	[Theory]
-	[InlineData("{let a=4 a=a+1 a}", 5)]
-	[InlineData("{let a=4 a=a=5 a}", 5)]
-	[InlineData("{let a=4 a=a=a+1 a}", 5)]
-	[InlineData("{let a=4 a=a=a+1 a}", 5)]
-	[InlineData("{let a=4 let b=5 b+1 a=b=7 a}", 7)]
+	[InlineData("{mut a=4 a=a+1 a}", 5)]
+	[InlineData("{mut a=4 a=a=5 a}", 5)]
+	[InlineData("{mut a=4 a=a=a+1 a}", 5)]
+	[InlineData("{mut a=4 a=a=a+1 a}", 5)]
+	[InlineData("{mut a=4 mut b=5 b+1 a=b=7 a}", 7)]
 	public void AssignmentIntTests(string source, int expected)
 	{
 		var error = RunExpression(source, out var v, out var t);

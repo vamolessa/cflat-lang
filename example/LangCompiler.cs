@@ -63,7 +63,12 @@ public sealed class LangCompiler
 		}
 		else if (compiler.Match((int)TokenKind.Let))
 		{
-			VariableDeclarationStatement(compiler, precedence);
+			VariableDeclarationStatement(compiler, precedence, false);
+			return Option.None;
+		}
+		else if (compiler.Match((int)TokenKind.Mut))
+		{
+			VariableDeclarationStatement(compiler, precedence, true);
 			return Option.None;
 		}
 		else if (compiler.Match((int)TokenKind.While))
@@ -114,7 +119,7 @@ public sealed class LangCompiler
 		compiler.EndScope(false);
 	}
 
-	private static int VariableDeclarationStatement(Compiler compiler, int precedence)
+	private static int VariableDeclarationStatement(Compiler compiler, int precedence, bool mutable)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.previousToken.slice;
@@ -122,7 +127,7 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
 		Expression(compiler, precedence);
 
-		return compiler.DeclareLocalVariable(slice);
+		return compiler.DeclareLocalVariable(slice, mutable);
 	}
 
 	public static void WhileStatement(Compiler compiler, int precedence)
@@ -145,7 +150,7 @@ public sealed class LangCompiler
 	public static void ForStatement(Compiler compiler, int precedence)
 	{
 		compiler.BeginScope();
-		var itVarIndex = VariableDeclarationStatement(compiler, precedence);
+		var itVarIndex = VariableDeclarationStatement(compiler, precedence, true);
 		compiler.UseVariable(itVarIndex);
 		var itVar = compiler.GetLocalVariable(itVarIndex);
 		if (itVar.type != ValueType.Int)
@@ -153,7 +158,7 @@ public sealed class LangCompiler
 
 		compiler.Consume((int)TokenKind.Comma, "Expected comma after begin expression");
 		Expression(compiler, precedence);
-		var toVarIndex = compiler.DeclareLocalVariable(compiler.previousToken.slice);
+		var toVarIndex = compiler.DeclareLocalVariable(compiler.previousToken.slice, false);
 		compiler.UseVariable(toVarIndex);
 		if (compiler.GetLocalVariable(toVarIndex).type != ValueType.Int)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected int expression");
@@ -354,10 +359,13 @@ public sealed class LangCompiler
 
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Use of undeclared variable");
+				compiler.AddSoftError(slice, "Can not write to undeclared variable");
 			}
 			else
 			{
+				if (!compiler.GetLocalVariable(index).isMutable)
+					compiler.AddSoftError(slice, "Can not write to immutable variable");
+
 				compiler.EmitInstruction(Instruction.AssignLocal);
 				compiler.EmitByte((byte)index);
 			}
@@ -366,7 +374,7 @@ public sealed class LangCompiler
 		{
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Variable not declared");
+				compiler.AddSoftError(slice, "Can not read undeclared variable");
 				compiler.PushType(ValueType.Nil);
 			}
 			else
