@@ -34,8 +34,8 @@ public enum Instruction
 	LessInt,
 	LessFloat,
 	JumpForward,
-	PopAndJumpForwardIfFalse,
+	JumpBackward,
 	JumpForwardIfFalse,
 	JumpForwardIfTrue,
-	JumpBackward
+	PopAndJumpForwardIfFalse,
 }

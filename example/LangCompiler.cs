@@ -148,8 +148,7 @@ public sealed class LangCompiler
 	{
 		Expression(compiler, precedence);
 
-		var conditionType = compiler.PopType();
-		if (conditionType != ValueType.Bool)
+		if (compiler.PopType() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as if condition");
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
@@ -188,12 +187,43 @@ public sealed class LangCompiler
 		compiler.PushType(thenType);
 	}
 
+	public static void And(Compiler compiler, int precedence)
+	{
+		if (compiler.PopType() != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before and");
+
+		var jump = compiler.BeginEmitJump(Instruction.JumpForwardIfFalse);
+		compiler.EmitInstruction(Instruction.Pop);
+		compiler.ParseWithPrecedence((int)Precedence.And);
+		compiler.EndEmitJump(jump);
+
+		if (compiler.PopType() != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression after and");
+
+		compiler.PushType(ValueType.Bool);
+	}
+
+	public static void Or(Compiler compiler, int precedence)
+	{
+		if (compiler.PopType() != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before or");
+
+		var jump = compiler.BeginEmitJump(Instruction.JumpForwardIfTrue);
+		compiler.EmitInstruction(Instruction.Pop);
+		compiler.ParseWithPrecedence((int)Precedence.Or);
+		compiler.EndEmitJump(jump);
+
+		if (compiler.PopType() != ValueType.Bool)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression after or");
+
+		compiler.PushType(ValueType.Bool);
+	}
+
 	public static void While(Compiler compiler, int precedence)
 	{
 		Expression(compiler, precedence);
 
-		var conditionType = compiler.PopType();
-		if (conditionType != ValueType.Bool)
+		if (compiler.PopType() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as while condition");
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while expression");
