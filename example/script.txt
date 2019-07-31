@@ -1,9 +1,5 @@
 {
 	let a = "asda"
-	for a = 3, 5 {
-		for a = 0, 2 {
-			print a
-		}
-	}
+	a = "ops"
 	print a
 }

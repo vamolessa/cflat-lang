@@ -359,12 +359,12 @@ public sealed class LangCompiler
 
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Can not write to undeclared variable");
+				compiler.AddSoftError(slice, "Can not write to undeclared variable. Declare it with 'let'");
 			}
 			else
 			{
 				if (!compiler.GetLocalVariable(index).isMutable)
-					compiler.AddSoftError(slice, "Can not write to immutable variable");
+					compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
 				compiler.EmitInstruction(Instruction.AssignLocal);
 				compiler.EmitByte((byte)index);
@@ -374,7 +374,7 @@ public sealed class LangCompiler
 		{
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Can not read undeclared variable");
+				compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
 				compiler.PushType(ValueType.Nil);
 			}
 			else
