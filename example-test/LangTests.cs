@@ -90,6 +90,8 @@ public sealed class LangTests
 	[InlineData("true or false", true)]
 	[InlineData("false or true", true)]
 	[InlineData("false or false", false)]
+	[InlineData("{let a=false true or {a=true false} a}", false)]
+	[InlineData("{let a=false false and {a=true true} a}", false)]
 	public void LogicalTests(string source, bool expected)
 	{
 		var error = RunExpression(source, out var v, out var t);
