@@ -14,9 +14,7 @@ public sealed class LangCompiler
 		while (!compiler.Match(Token.EndKind))
 		{
 			compiler.Consume((int)TokenKind.OpenCurlyBrackets, "");
-			Block(compiler, (int)Precedence.Primary);
-			compiler.EmitInstruction(Instruction.Pop);
-			compiler.PopType();
+			BlockStatement(compiler, (int)Precedence.Primary);
 		}
 
 		// end compiler
@@ -58,7 +56,12 @@ public sealed class LangCompiler
 
 	public static Option<ValueType> Statement(Compiler compiler, int precedence)
 	{
-		if (compiler.Match((int)TokenKind.Let))
+		if (compiler.Match((int)TokenKind.OpenCurlyBrackets))
+		{
+			BlockStatement(compiler, precedence);
+			return Option.None;
+		}
+		else if (compiler.Match((int)TokenKind.Let))
 		{
 			VariableDeclarationStatement(compiler, precedence);
 			return Option.None;
@@ -91,6 +94,21 @@ public sealed class LangCompiler
 		return type;
 	}
 
+	public static void BlockStatement(Compiler compiler, int precedence)
+	{
+		compiler.BeginScope();
+		while (
+			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(Token.EndKind)
+		)
+		{
+			Statement(compiler, precedence);
+		}
+
+		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
+		compiler.EndScope(false);
+	}
+
 	private static void VariableDeclarationStatement(Compiler compiler, int precedence)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
@@ -113,9 +131,7 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		Block(compiler, precedence);
-		compiler.EmitInstruction(Instruction.Pop);
-		compiler.PopType();
+		BlockStatement(compiler, precedence);
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
@@ -165,7 +181,7 @@ public sealed class LangCompiler
 
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
-		compiler.EndScope();
+		compiler.EndScope(true);
 	}
 
 	public static void If(Compiler compiler, int precedence)

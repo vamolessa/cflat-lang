@@ -87,7 +87,7 @@ public sealed class Compiler
 		scopeDepth += 1;
 	}
 
-	public void EndScope()
+	public void EndScope(bool leftValueOnStack)
 	{
 		scopeDepth -= 1;
 
@@ -107,12 +107,15 @@ public sealed class Compiler
 
 		if (localCount > 0)
 		{
-			EmitInstruction(Instruction.CopyTo);
-			EmitByte((byte)localCount);
+			if (leftValueOnStack)
+			{
+				EmitInstruction(Instruction.CopyTo);
+				EmitByte((byte)localCount);
+				typeStack.buffer[typeStack.count - 1 - localCount] = typeStack.buffer[typeStack.count - 1];
+			}
+
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
-
-			typeStack.buffer[typeStack.count - 1 - localCount] = typeStack.buffer[typeStack.count - 1];
 			typeStack.count -= localCount;
 		}
 	}
