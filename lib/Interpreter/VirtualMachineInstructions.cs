@@ -181,22 +181,32 @@ internal static class VirtualMachineInstructions
 				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
 				if (!vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
 					vm.programCount += offset;
+				break;
 			}
-			break;
 		case Instruction.JumpForwardIfTrue:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
 				if (vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
 					vm.programCount += offset;
+				break;
 			}
-			break;
 		case Instruction.PopAndJumpForwardIfFalse:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm), NextByte(vm));
 				if (!vm.PopValue().asBool)
 					vm.programCount += offset;
+				break;
 			}
-			break;
+		case Instruction.ForLoopCheck:
+			{
+				var index = NextByte(vm);
+				var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
+				vm.PushValue(
+					new ValueData(less),
+					ValueType.Bool
+				);
+				break;
+			}
 		default:
 			break;
 		}

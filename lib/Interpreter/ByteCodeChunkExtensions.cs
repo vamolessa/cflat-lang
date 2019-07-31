@@ -102,6 +102,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.AssignLocal:
 		case Instruction.LoadLocal:
 		case Instruction.IncrementLocal:
+		case Instruction.ForLoopCheck:
 			return ArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);

@@ -160,11 +160,8 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var loopJump = compiler.BeginEmitBackwardJump();
-		compiler.EmitInstruction(Instruction.LoadLocal);
+		compiler.EmitInstruction(Instruction.ForLoopCheck);
 		compiler.EmitByte((byte)itVarIndex);
-		compiler.EmitInstruction(Instruction.LoadLocal);
-		compiler.EmitByte((byte)toVarIndex);
-		compiler.EmitInstruction(Instruction.LessInt);
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		BlockStatement(compiler, precedence);
