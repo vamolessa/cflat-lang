@@ -26,7 +26,7 @@ public sealed class Program
 		System.Console.WriteLine(sb);
 
 		var vm = new VirtualMachine();
-		var runResult = vm.Run(source, compileResult.ok);
+		var runResult = vm.Run(compileResult.ok, "main");
 		if (!runResult.isOk)
 		{
 			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2, TabSize);

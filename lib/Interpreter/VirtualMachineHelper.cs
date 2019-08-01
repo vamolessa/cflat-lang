@@ -4,7 +4,7 @@ public static class VirtualMachineHelper
 {
 	public static string ValueToString(object[] objs, ValueData data, ValueType type)
 	{
-		switch (type)
+		switch (ValueTypeHelper.GetKind(type))
 		{
 		case ValueType.Unit:
 			return "{}";
@@ -18,8 +18,10 @@ public static class VirtualMachineHelper
 			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
 		case ValueType.Function:
 			return string.Format("Function {0}", data.asInt);
+		case ValueType.Custom:
+			return string.Format("CustomType {0}", data.asInt);
 		default:
-			return "<invalid value>";
+			return "<invalid type>";
 		}
 	}
 

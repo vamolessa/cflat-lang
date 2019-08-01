@@ -16,6 +16,18 @@ public readonly struct RuntimeError
 
 public sealed class VirtualMachine
 {
+	public readonly struct Return
+	{
+		public readonly ValueData value;
+		public readonly ValueType type;
+
+		public Return(ValueData value, ValueType type)
+		{
+			this.value = value;
+			this.type = type;
+		}
+	}
+
 	internal struct CallFrame
 	{
 		public int functionIndex;
@@ -37,7 +49,7 @@ public sealed class VirtualMachine
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
-	public Result<None, RuntimeError> Run(string source, ByteCodeChunk chunk)
+	public Result<Return, RuntimeError> Run(ByteCodeChunk chunk, string functionName)
 	{
 		this.chunk = chunk;
 		maybeError = Option.None;
@@ -49,7 +61,7 @@ public sealed class VirtualMachine
 		for (var i = 0; i < chunk.functions.count; i++)
 		{
 			var function = chunk.functions.buffer[i];
-			if (function.name == "main")
+			if (function.name == functionName)
 			{
 				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 0));
 				break;
@@ -79,7 +91,6 @@ public sealed class VirtualMachine
 				var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
-				chunk.PrintLineNumber(source, ip, sb);
 				chunk.DisassembleInstruction(ip, sb);
 				System.Console.Write(sb);
 			}
@@ -92,7 +103,9 @@ public sealed class VirtualMachine
 		if (maybeError.isSome)
 			return Result.Error(maybeError.value);
 
-		return Result.Ok(new None());
+		var type = PeekType();
+		var value = PopValue();
+		return Result.Ok(new Return(value, type));
 	}
 
 	public bool Error(string message)

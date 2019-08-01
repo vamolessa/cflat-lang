@@ -55,10 +55,12 @@ public sealed class LangCompiler
 
 	public static void FunctionDeclaration(Compiler compiler)
 	{
+		const int MaxParamCount = 8;
+
 		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
 		var slice = compiler.previousToken.slice;
 
-		var paramTypes = new Buffer<ValueType>(8);
+		var declaration = compiler.BeginFunctionDeclaration();
 
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
 		if (!compiler.Check((int)TokenKind.CloseParenthesis))
@@ -75,22 +77,21 @@ public sealed class LangCompiler
 				var paramType = ValueType.Int;
 				//paramType=compiler.ResolveType();
 
-				if (paramTypes.count == paramTypes.buffer.Length)
-					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", paramTypes.buffer.Length);
+				if (declaration.parameterCount >= MaxParamCount)
+					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", MaxParamCount);
 				else
-					paramTypes.PushBack(paramType);
+					declaration.AddParam(paramType);
 			} while (compiler.Match((int)TokenKind.Comma));
 		}
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
-		var returnType = ValueType.Unit;
 		if (compiler.Match((int)TokenKind.Colon))
 		{
 			compiler.Consume((int)TokenKind.Identifier, "Expected function return type");
-			//returnType=compiler.ResolveType();
+			//declaration.returnType=compiler.ResolveType();
 		}
 
-		compiler.DeclareFunction(slice, paramTypes, returnType);
+		compiler.EndFunctionDeclaration(slice, declaration);
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 		BlockStatement(compiler);
@@ -446,7 +447,7 @@ public sealed class LangCompiler
 		{
 			if (index < 0)
 			{
-				var functionIndex = compiler.ResolveToFunction(compiler.previousToken.slice, out var function);
+				var functionIndex = compiler.ResolveToFunctionIndex();
 				if (functionIndex < 0)
 				{
 					compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
@@ -455,7 +456,8 @@ public sealed class LangCompiler
 				else
 				{
 					compiler.EmitLoadFunction(functionIndex);
-					compiler.PushType(ValueType.Function);
+					var type = ValueTypeHelper.SetIndex(ValueType.Function, functionIndex);
+					compiler.PushType(type);
 				}
 			}
 			else
@@ -473,11 +475,19 @@ public sealed class LangCompiler
 	{
 		var slice = compiler.previousToken.slice;
 
-		if (compiler.PopType() != ValueType.Function)
+		var functionIndex = -1;
+		var function = new FunctionDefinition();
+		var type = compiler.PopType();
+
+		if (ValueTypeHelper.GetKind(type) == ValueType.Function)
+			functionIndex = ValueTypeHelper.GetIndex(type);
+		else
 			compiler.AddSoftError(slice, "Callee must be a function");
 
-		var hasFunction = compiler.ResolveToFunction(compiler.previousPreviousToken.slice, out var function) >= 0;
-		if (!hasFunction)
+		var hasFunction = functionIndex >= 0;
+		if (hasFunction)
+			function = compiler.GetFunction(functionIndex);
+		else
 			compiler.AddSoftError(slice, "Could not find such function");
 
 		var argIndex = 0;
@@ -489,25 +499,27 @@ public sealed class LangCompiler
 				var argType = compiler.PopType();
 				if (
 					hasFunction &&
-					argIndex < function.paramTypes.count &&
-					argType != function.paramTypes.buffer[argIndex++]
+					argIndex < function.parameters.length &&
+					argType != compiler.GetFunctionParamType(in function, argIndex)
 				)
 				{
 					compiler.AddSoftError(
 						slice,
 						"Wrong type for argument {0}. Expected {1}. Got {2}",
 						argIndex,
-						function.paramTypes.buffer[argIndex - 1],
+						compiler.GetFunctionParamType(in function, argIndex),
 						argType
 					);
 				}
+
+				argIndex += 1;
 			} while (compiler.Match((int)TokenKind.Comma));
 		}
 
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expect ')' after function argument list");
 
-		if (hasFunction && argIndex != function.paramTypes.count)
-			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", function.paramTypes.count, argIndex);
+		if (hasFunction && argIndex != function.parameters.length)
+			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", function.parameters.length, argIndex);
 
 		compiler.EmitInstruction(Instruction.Call);
 		compiler.PushType(

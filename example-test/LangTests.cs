@@ -17,7 +17,7 @@ public sealed class LangTests
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);
 
 		var vm = new VirtualMachine();
-		var runResult = vm.Run(source, compileResult.ok);
+		var runResult = vm.Run(compileResult.ok, "main");
 		if (!runResult.isOk)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runResult.error, 1, 8);
 

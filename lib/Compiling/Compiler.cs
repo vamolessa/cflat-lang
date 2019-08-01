@@ -174,41 +174,46 @@ public sealed class Compiler
 		return true;
 	}
 
-	public void DeclareFunction(Slice slice, Buffer<ValueType> paramTypes, ValueType returnType)
+	public ByteCodeChunk.FunctionDefinitionBuilder BeginFunctionDeclaration()
+	{
+		return chunk.BeginAddFunction();
+	}
+
+	public void EndFunctionDeclaration(Slice slice, ByteCodeChunk.FunctionDefinitionBuilder builder)
 	{
 		if (chunk.functions.count >= ushort.MaxValue)
 		{
+			chunk.functionsParams.count -= builder.parameterCount;
 			AddSoftError(slice, "Too many function declarations");
 			return;
 		}
 
-		var functionName = tokenizer.Source.Substring(slice.index, slice.length);
-
-		chunk.functions.PushBack(new ByteCodeChunk.Function(
-			functionName,
-			chunk.bytes.count,
-			paramTypes,
-			returnType
-		));
+		var name = tokenizer.Source.Substring(slice.index, slice.length);
+		chunk.EndAddFunction(name, builder);
 	}
 
-	public int ResolveToFunction(Slice slice, out ByteCodeChunk.Function function)
+	public int ResolveToFunctionIndex()
 	{
-		function = new ByteCodeChunk.Function();
-
 		var source = tokenizer.Source;
 
 		for (var i = 0; i < chunk.functions.count; i++)
 		{
 			var f = chunk.functions.buffer[i];
-			if (CompilerHelper.AreEqual(source, slice, f.name))
-			{
-				function = f;
+			if (CompilerHelper.AreEqual(source, previousToken.slice, f.name))
 				return i;
-			}
 		}
 
 		return -1;
+	}
+
+	public FunctionDefinition GetFunction(int index)
+	{
+		return chunk.functions.buffer[index];
+	}
+
+	public ValueType GetFunctionParamType(in FunctionDefinition function, int paramIndex)
+	{
+		return chunk.functionsParams.buffer[function.parameters.index + paramIndex];
 	}
 
 	public int DeclareLocalVariable(Slice slice, bool mutable)
