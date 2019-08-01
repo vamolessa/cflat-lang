@@ -1,3 +1,9 @@
+fn foo() {
+	let a = "foo"
+	print a
+}
+
 fn main () {
-	print "hello world"
+	foo()
+	print "main"
 }

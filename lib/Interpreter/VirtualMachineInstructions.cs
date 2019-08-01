@@ -42,8 +42,8 @@ internal static class VirtualMachineInstructions
 				vm.typeStack.count = previousStackCount;
 
 				vm.PushValue(returnValue, returnType);
+				break;
 			}
-			return true;
 		case Instruction.Print:
 			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
 			break;

@@ -55,6 +55,7 @@ public sealed class Compiler
 	}
 
 	public readonly List<CompileError> errors = new List<CompileError>();
+	public Token previousPreviousToken;
 	public Token previousToken;
 	private Token currentToken;
 
@@ -75,6 +76,7 @@ public sealed class Compiler
 		this.tokenizer = tokenizer;
 		this.parseRules = parseRules;
 		this.onParseWithPrecedence = onParseWithPrecedence;
+		previousPreviousToken = new Token(Token.EndKind, new Slice());
 		previousToken = new Token(Token.EndKind, new Slice());
 		currentToken = new Token(Token.EndKind, new Slice());
 		panicMode = false;
@@ -174,7 +176,7 @@ public sealed class Compiler
 
 	public void DeclareFunction(Slice slice, Buffer<ValueType> paramTypes, ValueType returnType)
 	{
-		if(chunk.functions.count >= ushort.MaxValue)
+		if (chunk.functions.count >= ushort.MaxValue)
 		{
 			AddSoftError(slice, "Too many function declarations");
 			return;
@@ -190,7 +192,7 @@ public sealed class Compiler
 		));
 	}
 
-	public int ResolveToFunction(out ByteCodeChunk.Function function)
+	public int ResolveToFunction(Slice slice, out ByteCodeChunk.Function function)
 	{
 		function = new ByteCodeChunk.Function();
 
@@ -199,7 +201,7 @@ public sealed class Compiler
 		for (var i = 0; i < chunk.functions.count; i++)
 		{
 			var f = chunk.functions.buffer[i];
-			if (CompilerHelper.AreEqual(source, previousToken.slice, f.name))
+			if (CompilerHelper.AreEqual(source, slice, f.name))
 			{
 				function = f;
 				return i;
@@ -291,6 +293,7 @@ public sealed class Compiler
 
 	public void Next()
 	{
+		previousPreviousToken = previousToken;
 		previousToken = currentToken;
 
 		while (true)
@@ -352,6 +355,16 @@ public sealed class Compiler
 		var index = chunk.AddValueLiteral(value, type);
 		EmitInstruction(Instruction.LoadLiteral);
 		EmitByte((byte)index);
+
+		return this;
+	}
+
+	public Compiler EmitLoadFunction(int functionIndex)
+	{
+		EmitInstruction(Instruction.LoadFunction);
+		BytesHelper.ShortToBytes((ushort)functionIndex, out var b0, out var b1);
+		EmitByte(b0);
+		EmitByte(b1);
 
 		return this;
 	}

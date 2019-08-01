@@ -446,7 +446,7 @@ public sealed class LangCompiler
 		{
 			if (index < 0)
 			{
-				var functionIndex = compiler.ResolveToFunction(out var function);
+				var functionIndex = compiler.ResolveToFunction(compiler.previousToken.slice, out var function);
 				if (functionIndex < 0)
 				{
 					compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
@@ -454,8 +454,7 @@ public sealed class LangCompiler
 				}
 				else
 				{
-					compiler.EmitInstruction(Instruction.LoadFunction);
-					compiler.EmitByte((byte)functionIndex);
+					compiler.EmitLoadFunction(functionIndex);
 					compiler.PushType(ValueType.Function);
 				}
 			}
@@ -477,7 +476,7 @@ public sealed class LangCompiler
 		if (compiler.PopType() != ValueType.Function)
 			compiler.AddSoftError(slice, "Callee must be a function");
 
-		var hasFunction = compiler.ResolveToFunction(out var function) >= 0;
+		var hasFunction = compiler.ResolveToFunction(compiler.previousPreviousToken.slice, out var function) >= 0;
 		if (!hasFunction)
 			compiler.AddSoftError(slice, "Could not find such function");
 
@@ -510,6 +509,7 @@ public sealed class LangCompiler
 		if (hasFunction && argIndex != function.paramTypes.count)
 			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", function.paramTypes.count, argIndex);
 
+		compiler.EmitInstruction(Instruction.Call);
 		compiler.PushType(
 			hasFunction ? function.returnType : ValueType.Unit
 		);

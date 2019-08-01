@@ -17,7 +17,7 @@ public static class VirtualMachineHelper
 		case ValueType.String:
 			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
 		case ValueType.Function:
-			return string.Format("Function (goto {0})", data.asInt);
+			return string.Format("Function {0}", data.asInt);
 		default:
 			return "<invalid value>";
 		}
