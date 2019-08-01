@@ -131,7 +131,7 @@ public sealed class LangCompiler
 
 	public static void BlockStatement(Compiler compiler)
 	{
-		compiler.BeginScope();
+		var scope = compiler.BeginScope();
 		while (
 			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
 			!compiler.Check(Token.EndKind)
@@ -141,7 +141,7 @@ public sealed class LangCompiler
 		}
 
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
-		compiler.EndScope(false);
+		compiler.EndScope(scope);
 	}
 
 	private static int VariableDeclaration(Compiler compiler, bool mutable)
@@ -176,7 +176,7 @@ public sealed class LangCompiler
 
 	public static void ForStatement(Compiler compiler)
 	{
-		compiler.BeginScope();
+		var scope = compiler.BeginScope();
 		var itVarIndex = VariableDeclaration(compiler, true);
 		compiler.UseVariable(itVarIndex);
 		var itVar = compiler.GetLocalVariable(itVarIndex);
@@ -207,7 +207,7 @@ public sealed class LangCompiler
 		compiler.EndEmitForwardJump(breakJump);
 		compiler.EndLoop();
 
-		compiler.EndScope(false);
+		compiler.EndScope(scope);
 	}
 
 	private static void BreakStatement(Compiler compiler)
@@ -241,9 +241,7 @@ public sealed class LangCompiler
 
 	public static void Block(Compiler compiler, int precedence)
 	{
-		var varCount = compiler.GetLocalVariableCount();
-
-		compiler.BeginScope();
+		var scope = compiler.BeginScope();
 		var maybeType = new Option<ValueType>();
 
 		while (
@@ -258,17 +256,17 @@ public sealed class LangCompiler
 		{
 			compiler.PopEmittedByte();
 
-			var blockVarCount = compiler.GetLocalVariableCount() - varCount;
-			if (blockVarCount > 0)
+			var varCount = compiler.GetScopeLocalVariableCount(scope);
+			if (varCount > 0)
 			{
 				compiler.EmitInstruction(Instruction.CopyTo);
-				compiler.EmitByte((byte)blockVarCount);
+				compiler.EmitByte((byte)varCount);
 			}
 		}
 
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
-		compiler.EndScope(false);
+		compiler.EndScope(scope);
 
 		if (maybeType.isSome)
 		{

@@ -14,6 +14,16 @@ public readonly struct CompileError
 
 public sealed class Compiler
 {
+	public readonly struct Scope
+	{
+		public readonly int localVarStartIndex;
+
+		public Scope(int localVarStartIndex)
+		{
+			this.localVarStartIndex = localVarStartIndex;
+		}
+	}
+
 	public readonly struct LocalVariable
 	{
 		public readonly Slice slice;
@@ -116,42 +126,37 @@ public sealed class Compiler
 		return c;
 	}
 
-	public void BeginScope()
+	public Scope BeginScope()
 	{
 		scopeDepth += 1;
+		return new Scope(localVariables.count);
 	}
 
-	public void EndScope(bool leftValueOnStack)
+	public void EndScope(Scope scope)
 	{
 		scopeDepth -= 1;
 
-		var localCount = 0;
-		while (
-			localVariables.count > 0 &&
-			localVariables.buffer[localVariables.count - 1].depth > scopeDepth
-		)
+		for (var i = scope.localVarStartIndex; i < localVariables.count; i++)
 		{
-			var variable = localVariables.buffer[localVariables.count - 1];
+			var variable = localVariables.buffer[i];
 			if (!variable.isUsed)
 				AddSoftError(variable.slice, "Unused variable");
-
-			localVariables.count -= 1;
-			localCount += 1;
 		}
 
+		var localCount = GetScopeLocalVariableCount(scope);
 		if (localCount > 0)
 		{
-			if (leftValueOnStack)
-			{
-				EmitInstruction(Instruction.CopyTo);
-				EmitByte((byte)localCount);
-				typeStack.buffer[typeStack.count - 1 - localCount] = typeStack.buffer[typeStack.count - 1];
-			}
-
 			EmitInstruction(Instruction.PopMultiple);
 			EmitByte((byte)localCount);
+
+			localVariables.count -= localCount;
 			typeStack.count -= localCount;
 		}
+	}
+
+	public int GetScopeLocalVariableCount(Scope scope)
+	{
+		return localVariables.count - scope.localVarStartIndex;
 	}
 
 	public void BeginLoop()
@@ -242,11 +247,6 @@ public sealed class Compiler
 				variable.isMutable,
 				true
 			);
-	}
-
-	public int GetLocalVariableCount()
-	{
-		return localVariables.count;
 	}
 
 	public LocalVariable GetLocalVariable(int index)
