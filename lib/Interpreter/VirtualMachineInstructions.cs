@@ -2,7 +2,7 @@ internal static class VirtualMachineInstructions
 {
 	public static byte NextByte(VirtualMachine vm, ref VirtualMachine.CallFrame frame)
 	{
-		return vm.chunk.bytes.buffer[frame.instructionIndex++];
+		return vm.chunk.bytes.buffer[frame.codeIndex++];
 	}
 
 	public static bool Tick(VirtualMachine vm)
@@ -14,6 +14,17 @@ internal static class VirtualMachineInstructions
 		{
 		case Instruction.Halt:
 			return true;
+		case Instruction.Call:
+			{
+				var function = vm.chunk.functions.buffer[vm.PopValue().asInt];
+				vm.callframeStack.PushBack(
+					new VirtualMachine.CallFrame(
+						function.codeIndex,
+						vm.valueStack.count - function.paramTypes.count
+					)
+				);
+				break;
+			}
 		case Instruction.Return:
 			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
 			return true;
@@ -57,15 +68,24 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.LoadFunction:
+			{
+				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
+				vm.PushValue(
+					new ValueData(index),
+					ValueType.Function
+				);
+				break;
+			}
 		case Instruction.AssignLocal:
 			{
-				var index = frame.baseIndex + NextByte(vm, ref frame);
+				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				vm.valueStack.buffer[index] = vm.Peek();
 				break;
 			}
 		case Instruction.LoadLocal:
 			{
-				var index = frame.baseIndex + NextByte(vm, ref frame);
+				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				vm.PushValue(
 					vm.valueStack.buffer[index],
 					vm.typeStack.buffer[index]
@@ -74,7 +94,7 @@ internal static class VirtualMachineInstructions
 			}
 		case Instruction.IncrementLocal:
 			{
-				var index = frame.baseIndex + NextByte(vm, ref frame);
+				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				vm.valueStack.buffer[index].asInt += 1;
 				break;
 			}
@@ -171,39 +191,39 @@ internal static class VirtualMachineInstructions
 		case Instruction.JumpForward:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
-				frame.instructionIndex += offset;
+				frame.codeIndex += offset;
 				break;
 			}
 		case Instruction.JumpBackward:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
-				frame.instructionIndex -= offset;
+				frame.codeIndex -= offset;
 				break;
 			}
 		case Instruction.JumpForwardIfFalse:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				if (!vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
-					frame.instructionIndex += offset;
+					frame.codeIndex += offset;
 				break;
 			}
 		case Instruction.JumpForwardIfTrue:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				if (vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
-					frame.instructionIndex += offset;
+					frame.codeIndex += offset;
 				break;
 			}
 		case Instruction.PopAndJumpForwardIfFalse:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				if (!vm.PopValue().asBool)
-					frame.instructionIndex += offset;
+					frame.codeIndex += offset;
 				break;
 			}
 		case Instruction.ForLoopCheck:
 			{
-				var index = frame.baseIndex + NextByte(vm, ref frame);
+				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
 				vm.PushValue(
 					new ValueData(less),

@@ -4,7 +4,7 @@ public static class LangParseRules
 
 	public static void InitRules()
 	{
-		Set(TokenKind.OpenParenthesis, LangCompiler.Grouping, null, Precedence.Primary);
+		Set(TokenKind.OpenParenthesis, LangCompiler.Grouping, LangCompiler.Call, Precedence.Call);
 		Set(TokenKind.OpenCurlyBrackets, LangCompiler.Block, null, Precedence.None);
 		Set(TokenKind.Minus, LangCompiler.Unary, LangCompiler.Binary, Precedence.Term);
 		Set(TokenKind.Plus, null, LangCompiler.Binary, Precedence.Term);

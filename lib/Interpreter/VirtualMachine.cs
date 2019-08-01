@@ -18,13 +18,13 @@ public sealed class VirtualMachine
 {
 	internal struct CallFrame
 	{
-		public int baseIndex;
-		public int instructionIndex;
+		public int codeIndex;
+		public int baseStackIndex;
 
-		public CallFrame(int baseIndex, int instructionIndex)
+		public CallFrame(int codeIndex, int baseStackIndex)
 		{
-			this.baseIndex = baseIndex;
-			this.instructionIndex = instructionIndex;
+			this.codeIndex = codeIndex;
+			this.baseStackIndex = baseStackIndex;
 		}
 	}
 
@@ -44,7 +44,24 @@ public sealed class VirtualMachine
 		valueStack.count = 0;
 		callframeStack.count = 0;
 
-		callframeStack.PushBack(new CallFrame(0, 0));
+		for (var i = 0; i < chunk.functions.count; i++)
+		{
+			var function = chunk.functions.buffer[i];
+			if (function.name == "main")
+			{
+				callframeStack.PushBack(new CallFrame(function.codeIndex, 0));
+				break;
+			}
+		}
+
+		if (callframeStack.count == 0)
+		{
+			return Result.Error(new RuntimeError(
+				0,
+				new Slice(),
+				"Could not find 'main' function"
+			));
+		}
 
 		heap = new Buffer<object>
 		{
@@ -57,7 +74,7 @@ public sealed class VirtualMachine
 		while (true)
 		{
 			{
-				var ip = callframeStack.buffer[callframeStack.count - 1].instructionIndex;
+				var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
 				chunk.PrintLineNumber(source, ip, sb);
@@ -78,7 +95,7 @@ public sealed class VirtualMachine
 
 	public bool Error(string message)
 	{
-		var ip = callframeStack.buffer[callframeStack.count - 1].instructionIndex;
+		var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
 		maybeError = Option.Some(new RuntimeError(
 			ip,
 			chunk.slices.buffer[ip],

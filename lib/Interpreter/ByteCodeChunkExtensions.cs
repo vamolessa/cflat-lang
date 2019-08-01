@@ -73,6 +73,7 @@ public static class ByteCodeChunkExtensions
 		switch (instruction)
 		{
 		case Instruction.Halt:
+		case Instruction.Call:
 		case Instruction.Return:
 		case Instruction.Print:
 		case Instruction.Pop:
@@ -110,6 +111,8 @@ public static class ByteCodeChunkExtensions
 			return ArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
+		case Instruction.LoadFunction:
+			return LoadFunctionInstruction(self, instruction, index, sb);
 		case Instruction.JumpForward:
 		case Instruction.JumpForwardIfFalse:
 		case Instruction.JumpForwardIfTrue:
@@ -159,6 +162,19 @@ public static class ByteCodeChunkExtensions
 		}
 
 		return index + 2;
+	}
+
+	private static int LoadFunctionInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		var functionIndex = BytesHelper.BytesToShort(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2]
+		);
+		var function = chunk.functions.buffer[functionIndex];
+		sb.AppendLine(function.name);
+		return index + 3;
 	}
 
 	private static int JumpInstruction(ByteCodeChunk chunk, Instruction instruction, int sign, int index, StringBuilder sb)

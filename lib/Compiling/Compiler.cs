@@ -42,20 +42,6 @@ public sealed class Compiler
 		}
 	}
 
-	private readonly struct Function
-	{
-		public readonly int index;
-		public readonly Buffer<ValueType> argTypes;
-		public readonly ValueType returnType;
-
-		public Function(int index, Buffer<ValueType> argTypes, ValueType returnType)
-		{
-			this.index = index;
-			this.argTypes = argTypes;
-			this.returnType = returnType;
-		}
-	}
-
 	private readonly struct LoopBreak
 	{
 		public readonly int nesting;
@@ -79,7 +65,6 @@ public sealed class Compiler
 	private ByteCodeChunk chunk;
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
-	private Buffer<Function> functions = new Buffer<Function>(64);
 	private int scopeDepth;
 	private int loopNesting;
 	private Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(16);
@@ -96,7 +81,6 @@ public sealed class Compiler
 		chunk = new ByteCodeChunk();
 		typeStack.count = 0;
 		localVariables.count = 0;
-		functions.count = 0;
 		scopeDepth = 0;
 		loopNesting = 0;
 		loopBreaks.count = 0;
@@ -188,6 +172,43 @@ public sealed class Compiler
 		return true;
 	}
 
+	public void DeclareFunction(Slice slice, Buffer<ValueType> paramTypes, ValueType returnType)
+	{
+		if(chunk.functions.count >= ushort.MaxValue)
+		{
+			AddSoftError(slice, "Too many function declarations");
+			return;
+		}
+
+		var functionName = tokenizer.Source.Substring(slice.index, slice.length);
+
+		chunk.functions.PushBack(new ByteCodeChunk.Function(
+			functionName,
+			chunk.bytes.count,
+			paramTypes,
+			returnType
+		));
+	}
+
+	public int ResolveToFunction(out ByteCodeChunk.Function function)
+	{
+		function = new ByteCodeChunk.Function();
+
+		var source = tokenizer.Source;
+
+		for (var i = 0; i < chunk.functions.count; i++)
+		{
+			var f = chunk.functions.buffer[i];
+			if (CompilerHelper.AreEqual(source, previousToken.slice, f.name))
+			{
+				function = f;
+				return i;
+			}
+		}
+
+		return -1;
+	}
+
 	public int DeclareLocalVariable(Slice slice, bool mutable)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
@@ -204,29 +225,11 @@ public sealed class Compiler
 		return localVariables.count - 1;
 	}
 
-	public int DeclareFunction(Slice slice, Buffer<ValueType> argTypes, ValueType returnType)
-	{
-		var functionName = tokenizer.Source.Substring(slice.index, slice.length);
-
-		chunk.functions.PushBack(new ByteCodeChunk.Function(
-			functionName,
-			chunk.bytes.count
-		));
-
-		functions.PushBack(new Function(
-			chunk.functions.count - 1,
-			argTypes,
-			returnType
-		));
-
-		return functions.count - 1;
-	}
-
 	public int ResolveToLocalVariableIndex()
 	{
 		var source = tokenizer.Source;
 
-		for (var i = localVariables.count - 1; i >= 0; i--)
+		for (var i = 0; i < localVariables.count; i++)
 		{
 			var local = localVariables.buffer[i];
 			if (CompilerHelper.AreEqual(source, previousToken.slice, local.slice))

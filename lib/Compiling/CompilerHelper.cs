@@ -34,6 +34,20 @@ public static class CompilerHelper
 		return true;
 	}
 
+	public static bool AreEqual(string source, Slice slice, string other)
+	{
+		if (slice.length != other.Length)
+			return false;
+
+		for (var i = 0; i < slice.length; i++)
+		{
+			if (source[slice.index + i] != other[i])
+				return false;
+		}
+
+		return true;
+	}
+
 	public static int GetInt(Compiler compiler)
 	{
 		var source = compiler.tokenizer.Source;

@@ -58,8 +58,30 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
 		var slice = compiler.previousToken.slice;
 
+		var paramTypes = new Buffer<ValueType>(8);
+
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
-		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function name");
+		if (!compiler.Check((int)TokenKind.CloseParenthesis))
+		{
+			do
+			{
+				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
+				var paramSlice = compiler.previousToken.slice;
+				var paramIndex = compiler.DeclareLocalVariable(slice, false);
+				compiler.UseVariable(paramIndex);
+
+				compiler.Consume((int)TokenKind.Colon, "Expected ':' before parameter type");
+				compiler.Consume((int)TokenKind.Identifier, "Expected parameter type");
+				var paramType = ValueType.Int;
+				//paramType=compiler.ResolveType();
+
+				if (paramTypes.count == paramTypes.buffer.Length)
+					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", paramTypes.buffer.Length);
+				else
+					paramTypes.PushBack(paramType);
+			} while (compiler.Match((int)TokenKind.Comma));
+		}
+		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		var returnType = ValueType.Unit;
 		if (compiler.Match((int)TokenKind.Colon))
@@ -68,7 +90,7 @@ public sealed class LangCompiler
 			//returnType=compiler.ResolveType();
 		}
 
-		compiler.DeclareFunction(slice, new Buffer<ValueType>(0), returnType);
+		compiler.DeclareFunction(slice, paramTypes, returnType);
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 		BlockStatement(compiler);
@@ -421,8 +443,18 @@ public sealed class LangCompiler
 		{
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-				compiler.PushType(ValueType.Unit);
+				var functionIndex = compiler.ResolveToFunction(out var function);
+				if (functionIndex < 0)
+				{
+					compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
+					compiler.PushType(ValueType.Unit);
+				}
+				else
+				{
+					compiler.EmitInstruction(Instruction.LoadFunction);
+					compiler.EmitByte((byte)functionIndex);
+					compiler.PushType(ValueType.Function);
+				}
 			}
 			else
 			{
@@ -433,6 +465,51 @@ public sealed class LangCompiler
 				compiler.PushType(compiler.GetLocalVariable(index).type);
 			}
 		}
+	}
+
+	public static void Call(Compiler compiler, int precedence)
+	{
+		var slice = compiler.previousToken.slice;
+
+		if (compiler.PopType() != ValueType.Function)
+			compiler.AddSoftError(slice, "Callee must be a function");
+
+		var hasFunction = compiler.ResolveToFunction(out var function) >= 0;
+		if (!hasFunction)
+			compiler.AddSoftError(slice, "Could not find such function");
+
+		var argIndex = 0;
+		if (!compiler.Check((int)TokenKind.CloseParenthesis))
+		{
+			do
+			{
+				Expression(compiler);
+				var argType = compiler.PopType();
+				if (
+					hasFunction &&
+					argIndex < function.paramTypes.count &&
+					argType != function.paramTypes.buffer[argIndex++]
+				)
+				{
+					compiler.AddSoftError(
+						slice,
+						"Wrong type for argument {0}. Expected {1}. Got {2}",
+						argIndex,
+						function.paramTypes.buffer[argIndex - 1],
+						argType
+					);
+				}
+			} while (compiler.Match((int)TokenKind.Comma));
+		}
+
+		compiler.Consume((int)TokenKind.CloseParenthesis, "Expect ')' after function argument list");
+
+		if (hasFunction && argIndex != function.paramTypes.count)
+			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", function.paramTypes.count, argIndex);
+
+		compiler.PushType(
+			hasFunction ? function.returnType : ValueType.Unit
+		);
 	}
 
 	public static void Unary(Compiler compiler, int precedence)

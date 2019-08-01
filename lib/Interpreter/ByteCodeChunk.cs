@@ -6,12 +6,16 @@ public sealed class ByteCodeChunk
 	public readonly struct Function
 	{
 		public readonly string name;
-		public readonly int bytesIndex;
+		public readonly int codeIndex;
+		public readonly Buffer<ValueType> paramTypes;
+		public readonly ValueType returnType;
 
-		public Function(string name, int bytesIndex)
+		public Function(string name, int codeIndex, Buffer<ValueType> paramTypes, ValueType returnType)
 		{
 			this.name = name;
-			this.bytesIndex = bytesIndex;
+			this.codeIndex = codeIndex;
+			this.paramTypes = paramTypes;
+			this.returnType = returnType;
 		}
 	}
 

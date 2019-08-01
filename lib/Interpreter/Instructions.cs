@@ -1,6 +1,7 @@
 public enum Instruction
 {
 	Halt,
+	Call,
 	Return,
 	Print,
 	Pop,
@@ -10,6 +11,7 @@ public enum Instruction
 	LoadTrue,
 	LoadFalse,
 	LoadLiteral,
+	LoadFunction,
 	LoadLocal,
 	AssignLocal,
 	IntToFloat,
