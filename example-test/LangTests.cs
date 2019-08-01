@@ -30,11 +30,11 @@ public sealed class LangTests
 	[InlineData("{}")]
 	[InlineData("{{}}")]
 	[InlineData("{mut a=4 a=a+1 {}}")]
-	public void BlockNilTests(string source)
+	public void BlockUnitTests(string source)
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(ValueType.Nil, t);
+		Assert.Equal(ValueType.Unit, t);
 	}
 
 	[Theory]
@@ -57,13 +57,13 @@ public sealed class LangTests
 	[InlineData("if true {} else {}")]
 	[InlineData("if true {} else if false {}")]
 	[InlineData("if true {} else if false {} else {}")]
-	[InlineData("if true {let a=0 a+1 nil}")]
-	[InlineData("if true {nil}")]
-	public void IfNilTests(string source)
+	[InlineData("if true {let a=0 a+1 {}}")]
+	[InlineData("if true {{}}")]
+	public void IfUnitTests(string source)
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(ValueType.Nil, t);
+		Assert.Equal(ValueType.Unit, t);
 	}
 
 	[Theory]

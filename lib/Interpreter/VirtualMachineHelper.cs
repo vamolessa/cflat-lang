@@ -6,8 +6,8 @@ public static class VirtualMachineHelper
 	{
 		switch (type)
 		{
-		case ValueType.Nil:
-			return "nil";
+		case ValueType.Unit:
+			return "{}";
 		case ValueType.Bool:
 			return data.asBool ? "true" : "false";
 		case ValueType.Int:

@@ -1,6 +1,6 @@
 public enum TokenKind
 {
-	IntLiteral, FloatLiteral, StringLiteral, True, False, Nil, Identifier,
+	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
 	Function, For, If, Else, While, Return, Break,
 	And, Or, Dot, Comma, Colon,
 
@@ -78,7 +78,6 @@ public static class LangScanners
 		new EnclosedScanner("\"", "\"").ForToken((int)TokenKind.StringLiteral),
 		new ExactScanner("true").ForToken((int)TokenKind.True),
 		new ExactScanner("false").ForToken((int)TokenKind.False),
-		new ExactScanner("nil").ForToken((int)TokenKind.Nil),
 		new IdentifierScanner("_").ForToken((int)TokenKind.Identifier),
 
 		new WhiteSpaceScanner().Ignore(),

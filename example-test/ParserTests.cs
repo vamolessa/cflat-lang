@@ -58,7 +58,7 @@ public sealed class ParserTest
 		[Theory]
 		[InlineData("fn foo(){}")]
 		[InlineData("fn foo(a,b) { return true }")]
-		[InlineData("fn foo(a,b) { fn bar() { return nil } return true }")]
+		[InlineData("fn foo(a,b) { fn bar() { return {} } return true }")]
 		public void TestFunctionDeclaration(string source)
 		{
 			var result = CopmileExpression(source);

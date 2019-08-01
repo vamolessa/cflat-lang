@@ -6,7 +6,7 @@ public enum Instruction
 	Pop,
 	PopMultiple,
 	CopyTo,
-	LoadNil,
+	LoadUnit,
 	LoadTrue,
 	LoadFalse,
 	LoadLiteral,

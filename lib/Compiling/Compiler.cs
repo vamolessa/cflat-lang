@@ -196,7 +196,7 @@ public sealed class Compiler
 			return -1;
 		}
 
-		var type = ValueType.Nil;
+		var type = ValueType.Unit;
 		if (typeStack.count > 0)
 			type = typeStack.buffer[typeStack.count - 1];
 

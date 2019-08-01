@@ -3,7 +3,7 @@ using System.Runtime.InteropServices;
 public enum ValueType
 {
 	ForeignObject,
-	Nil,
+	Unit,
 	Bool,
 	Int,
 	Float,

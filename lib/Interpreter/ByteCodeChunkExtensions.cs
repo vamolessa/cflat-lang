@@ -76,7 +76,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.Return:
 		case Instruction.Print:
 		case Instruction.Pop:
-		case Instruction.LoadNil:
+		case Instruction.LoadUnit:
 		case Instruction.LoadFalse:
 		case Instruction.LoadTrue:
 		case Instruction.IntToFloat:

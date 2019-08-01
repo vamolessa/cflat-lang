@@ -23,7 +23,6 @@ public static class LangParseRules
 		Set(TokenKind.And, null, LangCompiler.And, Precedence.And);
 		Set(TokenKind.False, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.If, LangCompiler.If, null, Precedence.None);
-		Set(TokenKind.Nil, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.Or, null, LangCompiler.Or, Precedence.Or);
 		Set(TokenKind.FloatLiteral, LangCompiler.Literal, null, Precedence.None);
 		Set(TokenKind.True, LangCompiler.Literal, null, Precedence.None);

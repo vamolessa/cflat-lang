@@ -61,7 +61,7 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function name");
 
-		var returnType = ValueType.Nil;
+		var returnType = ValueType.Unit;
 		if (compiler.Match((int)TokenKind.Colon))
 		{
 			compiler.Consume((int)TokenKind.Identifier, "Expected function return type");
@@ -274,8 +274,8 @@ public sealed class LangCompiler
 		}
 		else
 		{
-			compiler.PushType(ValueType.Nil);
-			compiler.EmitInstruction(Instruction.LoadNil);
+			compiler.PushType(ValueType.Unit);
+			compiler.EmitInstruction(Instruction.LoadUnit);
 		}
 	}
 
@@ -313,9 +313,9 @@ public sealed class LangCompiler
 		}
 		else
 		{
-			compiler.EmitInstruction(Instruction.LoadNil);
-			if (thenType != ValueType.Nil)
-				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce nil when there is no else branch. Found type: {0}", thenType);
+			compiler.EmitInstruction(Instruction.LoadUnit);
+			if (thenType != ValueType.Unit)
+				compiler.AddSoftError(compiler.previousToken.slice, "If expression must not produce a value when there is no else branch. Found type: {0}. Try ending with '{}'", thenType);
 		}
 
 		compiler.EndEmitForwardJump(thenJump);
@@ -358,10 +358,6 @@ public sealed class LangCompiler
 	{
 		switch ((TokenKind)compiler.previousToken.kind)
 		{
-		case TokenKind.Nil:
-			compiler.EmitInstruction(Instruction.LoadNil);
-			compiler.PushType(ValueType.Nil);
-			break;
 		case TokenKind.True:
 			compiler.EmitInstruction(Instruction.LoadTrue);
 			compiler.PushType(ValueType.Bool);
@@ -393,7 +389,7 @@ public sealed class LangCompiler
 				compiler.previousToken.slice,
 				string.Format("Expected literal. Got {0}", compiler.previousToken.kind)
 			);
-			compiler.PushType(ValueType.Nil);
+			compiler.PushType(ValueType.Unit);
 			break;
 		}
 	}
@@ -426,7 +422,7 @@ public sealed class LangCompiler
 			if (index < 0)
 			{
 				compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-				compiler.PushType(ValueType.Nil);
+				compiler.PushType(ValueType.Unit);
 			}
 			else
 			{
@@ -468,11 +464,6 @@ public sealed class LangCompiler
 		case TokenKind.Bang:
 			switch (type)
 			{
-			case ValueType.Nil:
-				compiler.EmitInstruction(Instruction.Pop);
-				compiler.EmitInstruction(Instruction.LoadTrue);
-				compiler.PushType(ValueType.Bool);
-				break;
 			case ValueType.Bool:
 				compiler.EmitInstruction(Instruction.Not);
 				compiler.PushType(ValueType.Bool);
@@ -485,7 +476,7 @@ public sealed class LangCompiler
 				compiler.PushType(ValueType.Bool);
 				break;
 			default:
-				compiler.AddSoftError(opToken.slice, "Not operator can only be applied to nil, bools, ints, floats or strings");
+				compiler.AddSoftError(opToken.slice, "Not operator can only be applied to bools, ints, floats or strings");
 				compiler.PushType(ValueType.Bool);
 				break;
 			}
@@ -495,7 +486,7 @@ public sealed class LangCompiler
 					opToken.slice,
 					string.Format("Expected unary operator. Got {0}", opToken.kind)
 				);
-			compiler.PushType(ValueType.Nil);
+			compiler.PushType(ValueType.Unit);
 			break;
 		}
 	}
@@ -554,11 +545,6 @@ public sealed class LangCompiler
 
 			switch (aType)
 			{
-			case ValueType.Nil:
-				compiler.EmitInstruction(Instruction.Pop);
-				compiler.EmitInstruction(Instruction.Pop);
-				compiler.EmitInstruction(Instruction.LoadTrue);
-				break;
 			case ValueType.Bool:
 				compiler.EmitInstruction(Instruction.EqualBool);
 				break;
@@ -572,7 +558,7 @@ public sealed class LangCompiler
 				compiler.EmitInstruction(Instruction.EqualString);
 				break;
 			default:
-				compiler.AddSoftError(opToken.slice, "Equal operator can only be applied to nil, bools, ints and floats");
+				compiler.AddSoftError(opToken.slice, "Equal operator can only be applied to bools, ints and floats");
 				break;
 			}
 			compiler.PushType(ValueType.Bool);
@@ -587,10 +573,6 @@ public sealed class LangCompiler
 
 			switch (aType)
 			{
-			case ValueType.Nil:
-				compiler.EmitInstruction(Instruction.Pop);
-				compiler.EmitInstruction(Instruction.LoadFalse);
-				break;
 			case ValueType.Bool:
 				compiler.EmitInstruction(Instruction.EqualBool);
 				break;
@@ -604,7 +586,7 @@ public sealed class LangCompiler
 				compiler.EmitInstruction(Instruction.EqualString);
 				break;
 			default:
-				compiler.AddSoftError(opToken.slice, "NotEqual operator can only be applied to nil, bools, ints and floats");
+				compiler.AddSoftError(opToken.slice, "NotEqual operator can only be applied to bools, ints and floats");
 				break;
 			}
 			compiler.EmitInstruction(Instruction.Not);

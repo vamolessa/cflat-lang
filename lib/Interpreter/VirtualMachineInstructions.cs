@@ -39,8 +39,8 @@ internal static class VirtualMachineInstructions
 				vm.typeStack.buffer[index] = vm.typeStack.buffer[last];
 			}
 			break;
-		case Instruction.LoadNil:
-			vm.PushValue(new ValueData(), ValueType.Nil);
+		case Instruction.LoadUnit:
+			vm.PushValue(new ValueData(), ValueType.Unit);
 			break;
 		case Instruction.LoadFalse:
 			vm.PushValue(new ValueData(false), ValueType.Bool);
