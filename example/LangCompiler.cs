@@ -94,6 +94,9 @@ public sealed class LangCompiler
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 		BlockStatement(compiler);
+
+		compiler.EmitInstruction(Instruction.LoadUnit);
+		compiler.EmitInstruction(Instruction.Return);
 	}
 
 	public static Option<ValueType> Statement(Compiler compiler)

@@ -16,9 +16,11 @@ internal static class VirtualMachineInstructions
 			return true;
 		case Instruction.Call:
 			{
-				var function = vm.chunk.functions.buffer[vm.PopValue().asInt];
+				var functionIndex = vm.PopValue().asInt;
+				var function = vm.chunk.functions.buffer[functionIndex];
 				vm.callframeStack.PushBack(
 					new VirtualMachine.CallFrame(
+						functionIndex,
 						function.codeIndex,
 						vm.valueStack.count - function.paramTypes.count
 					)
@@ -26,7 +28,21 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.Return:
-			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
+			{
+				var returnType = vm.PeekType();
+				var returnValue = vm.PopValue();
+
+				var previousStackCount = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+
+				vm.callframeStack.count -= 1;
+				if (vm.callframeStack.count == 0)
+					return true;
+
+				vm.valueStack.count = previousStackCount;
+				vm.typeStack.count = previousStackCount;
+
+				vm.PushValue(returnValue, returnType);
+			}
 			return true;
 		case Instruction.Print:
 			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));

@@ -18,11 +18,13 @@ public sealed class VirtualMachine
 {
 	internal struct CallFrame
 	{
+		public int functionIndex;
 		public int codeIndex;
 		public int baseStackIndex;
 
-		public CallFrame(int codeIndex, int baseStackIndex)
+		public CallFrame(int functionIndex, int codeIndex, int baseStackIndex)
 		{
+			this.functionIndex = functionIndex;
 			this.codeIndex = codeIndex;
 			this.baseStackIndex = baseStackIndex;
 		}
@@ -49,7 +51,7 @@ public sealed class VirtualMachine
 			var function = chunk.functions.buffer[i];
 			if (function.name == "main")
 			{
-				callframeStack.PushBack(new CallFrame(function.codeIndex, 0));
+				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 0));
 				break;
 			}
 		}
