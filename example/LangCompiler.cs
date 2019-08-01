@@ -241,6 +241,8 @@ public sealed class LangCompiler
 
 	public static void Block(Compiler compiler, int precedence)
 	{
+		var varCount = compiler.GetLocalVariableCount();
+
 		compiler.BeginScope();
 		var maybeType = new Option<ValueType>();
 
@@ -254,18 +256,29 @@ public sealed class LangCompiler
 
 		if (maybeType.isSome)
 		{
-			compiler.RemoveLastEmittedByte();
-			compiler.PushType(maybeType.value);
-		}
-		else
-		{
-			compiler.EmitInstruction(Instruction.LoadNil);
-			compiler.PushType(ValueType.Nil);
+			compiler.PopEmittedByte();
+
+			var blockVarCount = compiler.GetLocalVariableCount() - varCount;
+			if (blockVarCount > 0)
+			{
+				compiler.EmitInstruction(Instruction.CopyTo);
+				compiler.EmitByte((byte)blockVarCount);
+			}
 		}
 
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
-		compiler.EndScope(true);
+		compiler.EndScope(false);
+
+		if (maybeType.isSome)
+		{
+			compiler.PushType(maybeType.value);
+		}
+		else
+		{
+			compiler.PushType(ValueType.Nil);
+			compiler.EmitInstruction(Instruction.LoadNil);
+		}
 	}
 
 	public static void If(Compiler compiler, int precedence)

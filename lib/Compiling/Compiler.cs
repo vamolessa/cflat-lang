@@ -244,6 +244,11 @@ public sealed class Compiler
 			);
 	}
 
+	public int GetLocalVariableCount()
+	{
+		return localVariables.count;
+	}
+
 	public LocalVariable GetLocalVariable(int index)
 	{
 		return localVariables.buffer[index];
@@ -357,7 +362,7 @@ public sealed class Compiler
 		return this;
 	}
 
-	public Compiler RemoveLastEmittedByte()
+	public Compiler PopEmittedByte()
 	{
 		chunk.bytes.count -= 1;
 		return this;

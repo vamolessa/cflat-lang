@@ -58,21 +58,24 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.AssignLocal:
-			vm.valueStack.buffer[frame.baseIndex + NextByte(vm, ref frame)] = vm.Peek();
-			break;
+			{
+				var index = frame.baseIndex + NextByte(vm, ref frame);
+				vm.valueStack.buffer[index] = vm.Peek();
+				break;
+			}
 		case Instruction.LoadLocal:
 			{
-				var index = NextByte(vm, ref frame);
+				var index = frame.baseIndex + NextByte(vm, ref frame);
 				vm.PushValue(
-					vm.valueStack.buffer[frame.baseIndex + index],
-					vm.typeStack.buffer[frame.baseIndex + index]
+					vm.valueStack.buffer[index],
+					vm.typeStack.buffer[index]
 				);
 				break;
 			}
 		case Instruction.IncrementLocal:
 			{
-				var index = NextByte(vm, ref frame);
-				vm.valueStack.buffer[frame.baseIndex + index].asInt += 1;
+				var index = frame.baseIndex + NextByte(vm, ref frame);
+				vm.valueStack.buffer[index].asInt += 1;
 				break;
 			}
 		case Instruction.IntToFloat:
@@ -200,8 +203,8 @@ internal static class VirtualMachineInstructions
 			}
 		case Instruction.ForLoopCheck:
 			{
-				var index = NextByte(vm, ref frame);
-				var less = vm.valueStack.buffer[frame.baseIndex + index].asInt < vm.valueStack.buffer[frame.baseIndex + index + 1].asInt;
+				var index = frame.baseIndex + NextByte(vm, ref frame);
+				var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
 				vm.PushValue(
 					new ValueData(less),
 					ValueType.Bool
