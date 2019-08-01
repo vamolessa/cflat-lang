@@ -6,12 +6,12 @@ public sealed class ByteCodeChunk
 	public readonly struct Function
 	{
 		public readonly string name;
-		public readonly int index;
+		public readonly int bytesIndex;
 
-		public Function(string name, int index)
+		public Function(string name, int bytesIndex)
 		{
 			this.name = name;
-			this.index = index;
+			this.bytesIndex = bytesIndex;
 		}
 	}
 

@@ -2,7 +2,7 @@ public enum TokenKind
 {
 	IntLiteral, FloatLiteral, StringLiteral, True, False, Nil, Identifier,
 	Function, For, If, Else, While, Return, Break,
-	And, Or, Dot, Comma,
+	And, Or, Dot, Comma, Colon,
 
 	Let, Mut,
 
@@ -52,6 +52,7 @@ public static class LangScanners
 
 		new CharScanner('.').ForToken((int)TokenKind.Dot),
 		new CharScanner(',').ForToken((int)TokenKind.Comma),
+		new CharScanner(':').ForToken((int)TokenKind.Colon),
 		new CharScanner('(').ForToken((int)TokenKind.OpenParenthesis),
 		new CharScanner(')').ForToken((int)TokenKind.CloseParenthesis),
 		new CharScanner('{').ForToken((int)TokenKind.OpenCurlyBrackets),

@@ -13,11 +13,10 @@ public sealed class LangCompiler
 
 		while (!compiler.Match(Token.EndKind))
 		{
-			compiler.Consume((int)TokenKind.OpenCurlyBrackets, "");
-			BlockStatement(compiler);
+			compiler.Consume((int)TokenKind.Function, "Expected 'fn' before function name");
+			FunctionDeclaration(compiler);
 		}
 
-		// end compiler
 		compiler.EmitInstruction(Instruction.Halt);
 
 		if (compiler.errors.Count > 0)
@@ -56,7 +55,23 @@ public sealed class LangCompiler
 
 	public static void FunctionDeclaration(Compiler compiler)
 	{
+		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
+		var slice = compiler.previousToken.slice;
 
+		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
+		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function name");
+
+		var returnType = ValueType.Nil;
+		if (compiler.Match((int)TokenKind.Colon))
+		{
+			compiler.Consume((int)TokenKind.Identifier, "Expected function return type");
+			//returnType=compiler.ResolveType();
+		}
+
+		compiler.DeclareFunction(slice, new Buffer<ValueType>(0), returnType);
+
+		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
+		BlockStatement(compiler);
 	}
 
 	public static Option<ValueType> Statement(Compiler compiler)

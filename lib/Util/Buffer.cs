@@ -1,5 +1,3 @@
-using System.Collections.Generic;
-
 public struct Buffer<T>
 {
 	public int count;

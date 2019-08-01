@@ -1,4 +1,9 @@
-{
+fn foo () {
 	let a = "asdas"
+	print a
+}
+
+fn bar() {
+	let a = 3
 	print a
 }

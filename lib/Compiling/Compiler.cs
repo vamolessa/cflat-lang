@@ -37,14 +37,12 @@ public sealed class Compiler
 		public readonly int index;
 		public readonly Buffer<ValueType> argTypes;
 		public readonly ValueType returnType;
-		public readonly int instructionIndex;
 
-		public Function(int index, Buffer<ValueType> argTypes, ValueType returnType, int instructionIndex)
+		public Function(int index, Buffer<ValueType> argTypes, ValueType returnType)
 		{
 			this.index = index;
 			this.argTypes = argTypes;
 			this.returnType = returnType;
-			this.instructionIndex = instructionIndex;
 		}
 	}
 
@@ -199,6 +197,24 @@ public sealed class Compiler
 
 		localVariables.PushBack(new LocalVariable(slice, scopeDepth, type, mutable, false));
 		return localVariables.count - 1;
+	}
+
+	public int DeclareFunction(Slice slice, Buffer<ValueType> argTypes, ValueType returnType)
+	{
+		var functionName = tokenizer.Source.Substring(slice.index, slice.length);
+
+		chunk.functions.PushBack(new ByteCodeChunk.Function(
+			functionName,
+			chunk.bytes.count
+		));
+
+		functions.PushBack(new Function(
+			chunk.functions.count - 1,
+			argTypes,
+			returnType
+		));
+
+		return functions.count - 1;
 	}
 
 	public int ResolveToLocalVariableIndex()
