@@ -1,9 +1,9 @@
-fn foo() {
-	let a = "foo"
-	print a
+fn sum() {
+	let a = 1
+	let b = 2
+	print a + b
 }
 
 fn main () {
-	foo()
-	print "main"
+	sum()
 }

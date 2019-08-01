@@ -55,7 +55,6 @@ public sealed class Compiler
 	}
 
 	public readonly List<CompileError> errors = new List<CompileError>();
-	public Token previousPreviousToken;
 	public Token previousToken;
 	private Token currentToken;
 
@@ -76,7 +75,6 @@ public sealed class Compiler
 		this.tokenizer = tokenizer;
 		this.parseRules = parseRules;
 		this.onParseWithPrecedence = onParseWithPrecedence;
-		previousPreviousToken = new Token(Token.EndKind, new Slice());
 		previousToken = new Token(Token.EndKind, new Slice());
 		currentToken = new Token(Token.EndKind, new Slice());
 		panicMode = false;
@@ -174,6 +172,20 @@ public sealed class Compiler
 		return true;
 	}
 
+	public Option<ValueType> ResolveType()
+	{
+		var source = tokenizer.Source;
+		if (CompilerHelper.AreEqual(source, previousToken.slice, "bool"))
+			return Option.Some(ValueType.Bool);
+		else if (CompilerHelper.AreEqual(source, previousToken.slice, "int"))
+			return Option.Some(ValueType.Int);
+		else if (CompilerHelper.AreEqual(source, previousToken.slice, "float"))
+			return Option.Some(ValueType.Float);
+		else if (CompilerHelper.AreEqual(source, previousToken.slice, "string"))
+			return Option.Some(ValueType.String);
+		return Option.None;
+	}
+
 	public ByteCodeChunk.FunctionDefinitionBuilder BeginFunctionDeclaration()
 	{
 		return chunk.BeginAddFunction();
@@ -220,7 +232,7 @@ public sealed class Compiler
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
 		{
-			AddSoftError(previousToken.slice, "Too many local variables in function");
+			AddSoftError(slice, "Too many local variables in function");
 			return -1;
 		}
 
@@ -298,7 +310,6 @@ public sealed class Compiler
 
 	public void Next()
 	{
-		previousPreviousToken = previousToken;
 		previousToken = currentToken;
 
 		while (true)

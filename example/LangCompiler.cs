@@ -21,11 +21,7 @@ public sealed class LangCompiler
 
 		if (compiler.errors.Count > 0)
 			return Result.Error(compiler.errors);
-
-		var chunk = compiler.GetByteCodeChunk();
-		//Optimizer.Optimize(chunk);
-
-		return Result.Ok(chunk);
+		return Result.Ok(compiler.GetByteCodeChunk());
 	}
 
 	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, ITokenizer tokenizer)
@@ -61,6 +57,7 @@ public sealed class LangCompiler
 		var slice = compiler.previousToken.slice;
 
 		var declaration = compiler.BeginFunctionDeclaration();
+		var scope = compiler.BeginScope();
 
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
 		if (!compiler.Check((int)TokenKind.CloseParenthesis))
@@ -69,18 +66,27 @@ public sealed class LangCompiler
 			{
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.previousToken.slice;
-				var paramIndex = compiler.DeclareLocalVariable(slice, false);
-				compiler.UseVariable(paramIndex);
-
 				compiler.Consume((int)TokenKind.Colon, "Expected ':' before parameter type");
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter type");
-				var paramType = ValueType.Int;
-				//paramType=compiler.ResolveType();
+
+				var paramType = compiler.ResolveType();
+				if (!paramType.isSome)
+				{
+					compiler.AddSoftError(compiler.previousToken.slice, "Could not find type");
+					continue;
+				}
 
 				if (declaration.parameterCount >= MaxParamCount)
+				{
 					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", MaxParamCount);
-				else
-					declaration.AddParam(paramType);
+					continue;
+				}
+
+				compiler.PushType(paramType.value);
+				var paramIndex = compiler.DeclareLocalVariable(paramSlice, false);
+				compiler.UseVariable(paramIndex);
+
+				declaration.AddParam(paramType.value);
 			} while (compiler.Match((int)TokenKind.Comma));
 		}
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
@@ -88,7 +94,10 @@ public sealed class LangCompiler
 		if (compiler.Match((int)TokenKind.Colon))
 		{
 			compiler.Consume((int)TokenKind.Identifier, "Expected function return type");
-			//declaration.returnType=compiler.ResolveType();
+			var returnType = compiler.ResolveType();
+			if (!returnType.isSome)
+				compiler.AddSoftError(compiler.previousToken.slice, "Could not find type");
+			declaration.returnType = returnType.value;
 		}
 
 		compiler.EndFunctionDeclaration(slice, declaration);
@@ -98,6 +107,8 @@ public sealed class LangCompiler
 
 		compiler.EmitInstruction(Instruction.LoadUnit);
 		compiler.EmitInstruction(Instruction.Return);
+
+		compiler.EndScope(scope);
 	}
 
 	public static Option<ValueType> Statement(Compiler compiler)
