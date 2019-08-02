@@ -109,7 +109,7 @@ public sealed class LangCompiler
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.previousToken.slice;
 				compiler.Consume((int)TokenKind.Colon, "Expected ':' after parameter name");
-				var paramType = this.ConsumeType(compiler, "Expected parameter type");
+				var paramType = this.ConsumeType(compiler, "Expected parameter type", 0);
 
 				if (declaration.parameterCount >= MaxParamCount)
 				{
@@ -131,7 +131,7 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.Match((int)TokenKind.Colon))
-			declaration.returnType = this.ConsumeType(compiler, "Expected function return type");
+			declaration.returnType = this.ConsumeType(compiler, "Expected function return type", 0);
 
 		compiler.EndFunctionDeclaration(slice, declaration);
 		functionReturnTypeStack.PushBack(declaration.returnType);
