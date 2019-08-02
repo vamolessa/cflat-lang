@@ -1,4 +1,5 @@
 using System.Runtime.InteropServices;
+using System.Text;
 
 [StructLayout(LayoutKind.Explicit)]
 public struct ValueData
@@ -59,19 +60,41 @@ public static class ValueTypeHelper
 	{
 		return (ValueType)(((int)type & 0b1111) | (index << 4));
 	}
+
+	public static string ToString(this ValueType type, ByteCodeChunk chunk)
+	{
+		var kind = GetKind(type);
+		if (kind == ValueType.Function)
+		{
+			var index = GetIndex(type);
+			return chunk.FormatFunctionType(index, new StringBuilder()).ToString();
+		}
+
+		return type.ToString();
+	}
 }
 
-public readonly struct FunctionDefinition
+public readonly struct Function
 {
 	public readonly string name;
 	public readonly int codeIndex;
-	public readonly Slice parameters;
-	public readonly ValueType returnType;
+	public readonly int typeIndex;
 
-	public FunctionDefinition(string name, int codeIndex, Slice parameters, ValueType returnType)
+	public Function(string name, int codeIndex, int typeIndex)
 	{
 		this.name = name;
 		this.codeIndex = codeIndex;
+		this.typeIndex = typeIndex;
+	}
+}
+
+public readonly struct FunctionType
+{
+	public readonly Slice parameters;
+	public readonly ValueType returnType;
+
+	public FunctionType(Slice parameters, ValueType returnType)
+	{
 		this.parameters = parameters;
 		this.returnType = returnType;
 	}

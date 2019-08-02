@@ -49,7 +49,7 @@ public sealed class Compiler
 	public ITokenizer tokenizer;
 	public ParseFunction onParseWithPrecedence;
 
-	public bool panicMode;
+	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
 	public Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
@@ -64,7 +64,7 @@ public sealed class Compiler
 		previousToken = new Token(Token.EndKind, new Slice());
 		currentToken = new Token(Token.EndKind, new Slice());
 
-		panicMode = false;
+		isInPanicMode = false;
 		chunk = new ByteCodeChunk();
 		typeStack.count = 0;
 		localVariables.count = 0;
@@ -73,16 +73,16 @@ public sealed class Compiler
 
 	public Compiler AddSoftError(Slice slice, string format, params object[] args)
 	{
-		if (!panicMode)
+		if (!isInPanicMode)
 			errors.Add(new CompileError(slice, string.Format(format, args)));
 		return this;
 	}
 
 	public Compiler AddHardError(Slice slice, string format, params object[] args)
 	{
-		if (!panicMode)
+		if (!isInPanicMode)
 		{
-			panicMode = true;
+			isInPanicMode = true;
 			if (args == null || args.Length == 0)
 				errors.Add(new CompileError(slice, format));
 			else
@@ -121,20 +121,22 @@ public sealed class Compiler
 
 	public ByteCodeChunk.FunctionDefinitionBuilder BeginFunctionDeclaration()
 	{
-		return chunk.BeginAddFunction();
+		return chunk.BeginAddFunctionType();
 	}
 
 	public void EndFunctionDeclaration(Slice slice, ByteCodeChunk.FunctionDefinitionBuilder builder)
 	{
 		if (chunk.functions.count >= ushort.MaxValue)
 		{
-			chunk.functionsParams.count -= builder.parameterCount;
+			chunk.functionTypeParams.count -= builder.parameterCount;
 			AddSoftError(slice, "Too many function declarations");
 			return;
 		}
 
+		var typeIndex = chunk.EndAddFunctionType(builder);
+
 		var name = tokenizer.Source.Substring(slice.index, slice.length);
-		chunk.EndAddFunction(name, builder);
+		chunk.AddFunction(name, typeIndex);
 	}
 
 	public int ResolveToFunctionIndex()
@@ -149,11 +151,6 @@ public sealed class Compiler
 		}
 
 		return -1;
-	}
-
-	public ValueType GetFunctionParamType(in FunctionDefinition function, int paramIndex)
-	{
-		return chunk.functionsParams.buffer[function.parameters.index + paramIndex];
 	}
 
 	public int DeclareLocalVariable(Slice slice, bool mutable)

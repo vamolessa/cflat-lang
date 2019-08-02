@@ -14,22 +14,28 @@ public sealed class ByteCodeChunkDebugView
 
 public static class ByteCodeChunkExtensions
 {
-	public static string FormatFunction(this ByteCodeChunk self, int functionIndex)
+	public static StringBuilder FormatFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
 	{
-		var sb = new StringBuilder();
 		var function = self.functions.buffer[functionIndex];
 		sb.Append(function.name);
-		sb.Append('(');
-		for (var i = 0; i < function.parameters.length; i++)
+		sb.Append(' ');
+		return FormatFunctionType(self, function.typeIndex, sb);
+	}
+
+	public static StringBuilder FormatFunctionType(this ByteCodeChunk self, int functionTypeIndex, StringBuilder sb)
+	{
+		var type = self.functionTypes.buffer[functionTypeIndex];
+		sb.Append("fn(");
+		for (var i = 0; i < type.parameters.length; i++)
 		{
-			var paramIndex = function.parameters.index + i;
-			var param = self.functionsParams.buffer[paramIndex];
+			var paramIndex = type.parameters.index + i;
+			var param = self.functionTypeParams.buffer[paramIndex];
 			sb.Append(ValueTypeHelper.GetKind(param));
-			if (i < function.parameters.length - 1)
+			if (i < type.parameters.length - 1)
 				sb.Append(',');
 		}
 		sb.Append(')');
-		return sb.ToString();
+		return sb;
 	}
 
 	public static void Disassemble(this ByteCodeChunk self, StringBuilder sb)
@@ -190,7 +196,7 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 1],
 			chunk.bytes.buffer[index + 2]
 		);
-		sb.Append(FormatFunction(chunk, functionIndex));
+		FormatFunction(chunk, functionIndex, sb);
 		sb.AppendLine();
 		return index + 3;
 	}

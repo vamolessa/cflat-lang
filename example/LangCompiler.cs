@@ -15,7 +15,7 @@ public readonly struct LoopBreak
 public sealed class LangCompiler
 {
 	public readonly ParseRule[] rules = new ParseRule[(int)TokenKind.COUNT];
-	public Buffer<ByteCodeChunk.FunctionDefinitionBuilder> functionBuilders = new Buffer<ByteCodeChunk.FunctionDefinitionBuilder>(4);
+	public Buffer<ValueType> functionReturnTypeStack = new Buffer<ValueType>(4);
 	public Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
 	public int loopNesting;
 
@@ -64,7 +64,7 @@ public sealed class LangCompiler
 
 	private void Syncronize(Compiler compiler)
 	{
-		if (!compiler.panicMode)
+		if (!compiler.isInPanicMode)
 			return;
 
 		while (compiler.currentToken.kind != Token.EndKind)
@@ -72,7 +72,7 @@ public sealed class LangCompiler
 			switch ((TokenKind)compiler.currentToken.kind)
 			{
 			case TokenKind.Function:
-				compiler.panicMode = false;
+				compiler.isInPanicMode = false;
 				return;
 			default:
 				break;
@@ -109,7 +109,7 @@ public sealed class LangCompiler
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.previousToken.slice;
 				compiler.Consume((int)TokenKind.Colon, "Expected ':' after parameter name");
-				var paramType = ConsumeType(compiler, "Expected parameter type");
+				var paramType = this.ConsumeType(compiler, "Expected parameter type");
 
 				if (declaration.parameterCount >= MaxParamCount)
 				{
@@ -131,10 +131,10 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.Match((int)TokenKind.Colon))
-			declaration.returnType = ConsumeType(compiler, "Expected function return type");
+			declaration.returnType = this.ConsumeType(compiler, "Expected function return type");
 
 		compiler.EndFunctionDeclaration(slice, declaration);
-		functionBuilders.PushBack(declaration);
+		functionReturnTypeStack.PushBack(declaration.returnType);
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
@@ -148,44 +148,13 @@ public sealed class LangCompiler
 			Block(compiler, (int)Precedence.None);
 			var type = compiler.typeStack.PopLast();
 			if (declaration.returnType != type)
-				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType, type);
+				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
 
-		var builder = functionBuilders.PopLast();
-		compiler.localVariables.count -= builder.parameterCount;
-	}
-
-	private ValueType ConsumeType(Compiler compiler, string error)
-	{
-		var type = new Option<ValueType>();
-		if (compiler.Match((int)TokenKind.Identifier))
-			type = ResolveSimpleType(compiler, compiler.previousToken.slice);
-		else if (compiler.Match((int)TokenKind.Function))
-		{
-
-		}
-
-		if (type.isSome)
-			return type.value;
-
-		compiler.AddSoftError(compiler.previousToken.slice, error);
-		return ValueType.Unit;
-	}
-
-	private Option<ValueType> ResolveSimpleType(Compiler compiler, Slice slice)
-	{
-		var source = compiler.tokenizer.Source;
-		if (CompilerHelper.AreEqual(source, slice, "bool"))
-			return Option.Some(ValueType.Bool);
-		else if (CompilerHelper.AreEqual(source, slice, "int"))
-			return Option.Some(ValueType.Int);
-		else if (CompilerHelper.AreEqual(source, slice, "float"))
-			return Option.Some(ValueType.Float);
-		else if (CompilerHelper.AreEqual(source, slice, "string"))
-			return Option.Some(ValueType.String);
-		return Option.None;
+		functionReturnTypeStack.PopLast();
+		compiler.localVariables.count -= declaration.parameterCount;
 	}
 
 	public Option<ValueType> Statement(Compiler compiler)
@@ -338,20 +307,22 @@ public sealed class LangCompiler
 
 	private void ReturnStatement(Compiler compiler)
 	{
-		if (compiler.Match((int)TokenKind.CloseCurlyBrackets))
+		var expectedType = functionReturnTypeStack.buffer[functionReturnTypeStack.count - 1];
+		var returnType = ValueType.Unit;
+
+		if (compiler.Match((int)TokenKind.Colon))
 		{
-			compiler.EmitInstruction(Instruction.LoadUnit);
+			Expression(compiler);
+			returnType = compiler.typeStack.PopLast();
 		}
 		else
 		{
-			Expression(compiler);
-			var type = compiler.typeStack.PopLast();
-			var declaration = functionBuilders.buffer[functionBuilders.count - 1];
-			if (declaration.returnType != type)
-				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType, type);
+			compiler.EmitInstruction(Instruction.LoadUnit);
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
+		if (expectedType != returnType)
+			compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
 	}
 
 	private void PrintStatement(Compiler compiler)
@@ -563,7 +534,8 @@ public sealed class LangCompiler
 				else
 				{
 					compiler.EmitLoadFunction(functionIndex);
-					var type = ValueTypeHelper.SetIndex(ValueType.Function, functionIndex);
+					var function = compiler.chunk.functions.buffer[functionIndex];
+					var type = ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex);
 					compiler.typeStack.PushBack(type);
 				}
 			}
@@ -583,20 +555,19 @@ public sealed class LangCompiler
 	{
 		var slice = compiler.previousToken.slice;
 
-		var functionIndex = -1;
-		var function = new FunctionDefinition();
+		var functionType = new FunctionType();
 		var type = compiler.typeStack.PopLast();
 
+		var hasFunction = false;
 		if (ValueTypeHelper.GetKind(type) == ValueType.Function)
-			functionIndex = ValueTypeHelper.GetIndex(type);
+		{
+			functionType = compiler.chunk.functionTypes.buffer[ValueTypeHelper.GetIndex(type)];
+			hasFunction = true;
+		}
 		else
+		{
 			compiler.AddSoftError(slice, "Callee must be a function");
-
-		var hasFunction = functionIndex >= 0;
-		if (hasFunction)
-			function = compiler.chunk.functions.buffer[functionIndex];
-		else
-			compiler.AddSoftError(slice, "Could not find such function");
+		}
 
 		var argIndex = 0;
 		if (!compiler.Check((int)TokenKind.CloseParenthesis))
@@ -607,17 +578,20 @@ public sealed class LangCompiler
 				var argType = compiler.typeStack.PopLast();
 				if (
 					hasFunction &&
-					argIndex < function.parameters.length &&
-					argType != compiler.GetFunctionParamType(in function, argIndex)
+					argIndex < functionType.parameters.length
 				)
 				{
-					compiler.AddSoftError(
-						compiler.previousToken.slice,
-						"Wrong type for argument {0}. Expected {1}. Got {2}",
-						argIndex + 1,
-						compiler.GetFunctionParamType(in function, argIndex),
-						argType
-					);
+					var paramType = compiler.chunk.functionTypeParams.buffer[functionType.parameters.index + argIndex];
+					if (argType != paramType)
+					{
+						compiler.AddSoftError(
+							compiler.previousToken.slice,
+							"Wrong type for argument {0}. Expected {1}. Got {2}",
+							argIndex + 1,
+							paramType.ToString(compiler.chunk),
+							argType.ToString(compiler.chunk)
+						);
+					}
 				}
 
 				argIndex += 1;
@@ -626,13 +600,13 @@ public sealed class LangCompiler
 
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expect ')' after function argument list");
 
-		if (hasFunction && argIndex != function.parameters.length)
-			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", function.parameters.length, argIndex);
+		if (hasFunction && argIndex != functionType.parameters.length)
+			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
 		compiler.EmitInstruction(Instruction.Call);
-		compiler.EmitByte((byte)(hasFunction ? function.parameters.length : 0));
+		compiler.EmitByte((byte)(hasFunction ? functionType.parameters.length : 0));
 		compiler.typeStack.PushBack(
-			hasFunction ? function.returnType : ValueType.Unit
+			hasFunction ? functionType.returnType : ValueType.Unit
 		);
 	}
 

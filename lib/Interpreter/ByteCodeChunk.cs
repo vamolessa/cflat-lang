@@ -5,13 +5,20 @@ public sealed class ByteCodeChunk
 {
 	public struct FunctionDefinitionBuilder
 	{
+		public ByteCodeChunk chunk;
 		public int parameterCount;
 		public ValueType returnType;
-		internal ByteCodeChunk chunk;
+
+		public FunctionDefinitionBuilder(ByteCodeChunk chunk)
+		{
+			this.chunk = chunk;
+			this.parameterCount = 0;
+			this.returnType = ValueType.Unit;
+		}
 
 		public void AddParam(ValueType type)
 		{
-			chunk.functionsParams.PushBack(type);
+			chunk.functionTypeParams.PushBack(type);
 			parameterCount += 1;
 		}
 	}
@@ -21,8 +28,9 @@ public sealed class ByteCodeChunk
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
 	public Buffer<ValueType> literalTypes = new Buffer<ValueType>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
-	public Buffer<FunctionDefinition> functions = new Buffer<FunctionDefinition>(8);
-	public Buffer<ValueType> functionsParams = new Buffer<ValueType>(16);
+	public Buffer<FunctionType> functionTypes = new Buffer<FunctionType>(16);
+	public Buffer<ValueType> functionTypeParams = new Buffer<ValueType>(16);
+	public Buffer<Function> functions = new Buffer<Function>(8);
 
 	public void WriteByte(byte value, Slice slice)
 	{
@@ -55,31 +63,54 @@ public sealed class ByteCodeChunk
 		return AddValueLiteral(new ValueData(stringIndex), ValueType.String);
 	}
 
-	public FunctionDefinitionBuilder BeginAddFunction()
+	public FunctionDefinitionBuilder BeginAddFunctionType()
 	{
-		functions.PushBack(new FunctionDefinition(
-			"",
-			bytes.count,
-			new Slice(functionsParams.count, 0),
-			ValueType.Unit
-		));
-
-		return new FunctionDefinitionBuilder
-		{
-			chunk = this,
-			returnType = ValueType.Unit
-		};
+		return new FunctionDefinitionBuilder(this);
 	}
 
-	public void EndAddFunction(string name, FunctionDefinitionBuilder builder)
+	public int EndAddFunctionType(FunctionDefinitionBuilder builder)
 	{
-		var function = functions.buffer[functions.count - 1];
-		functions.buffer[functions.count - 1] = new FunctionDefinition(
-			name,
-			function.codeIndex,
-			new Slice(function.parameters.index, builder.parameterCount),
+		var parametersIndex = functionTypeParams.count - builder.parameterCount;
+
+		for (var i = 0; i < functionTypes.count; i++)
+		{
+			var function = functionTypes.buffer[i];
+			if (function.returnType != builder.returnType || function.parameters.length != builder.parameterCount)
+				continue;
+
+			var match = true;
+			for (var j = 0; j < builder.parameterCount; j++)
+			{
+				var a = functionTypeParams.buffer[function.parameters.index + j];
+				var b = functionTypeParams.buffer[parametersIndex + j];
+				if (a != b)
+				{
+					match = false;
+					break;
+				}
+			}
+
+			if (match)
+			{
+				functionTypeParams.count = parametersIndex;
+				return i;
+			}
+		}
+
+		functionTypes.PushBack(new FunctionType(
+			new Slice(
+				parametersIndex,
+				builder.parameterCount
+			),
 			builder.returnType
-		);
+		));
+
+		return functionTypes.count - 1;
+	}
+
+	public void AddFunction(string name, int typeIndex)
+	{
+		functions.PushBack(new Function(name, bytes.count, typeIndex));
 	}
 
 	private int FindValueIndex(ValueData value, ValueType type)

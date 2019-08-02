@@ -65,7 +65,7 @@ public sealed class VirtualMachine
 			{
 				PushValue(
 					new ValueData(i),
-					ValueTypeHelper.SetIndex(ValueType.Function, i)
+					ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex)
 				);
 				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 1));
 				break;

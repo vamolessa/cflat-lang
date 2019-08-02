@@ -1,9 +1,12 @@
-fn sum(a:int, b:int):int {
-	a+b
+fn hello() {
+	print "hello!!!"
+}
+
+fn foo(): fn() {
+	hello
 }
 
 fn main() {
-	let s = sum
-	let t = s(3,4)
-	print t
+	let f = foo()
+	f()
 }

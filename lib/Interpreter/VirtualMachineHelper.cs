@@ -17,7 +17,7 @@ public static class VirtualMachineHelper
 		case ValueType.String:
 			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
 		case ValueType.Function:
-			return chunk.FormatFunction(data.asInt);
+			return chunk.FormatFunction(data.asInt, new StringBuilder()).ToString();
 		case ValueType.Custom:
 			return string.Format("CustomType [{0}] {1}", objs[data.asInt].GetType().Name, objs[data.asInt].ToString());
 		default:
@@ -67,7 +67,7 @@ public static class VirtualMachineHelper
 			sb.Append(pos.line);
 			sb.Append("] ");
 
-			sb.Append(vm.chunk.FormatFunction(callframe.functionIndex));
+			vm.chunk.FormatFunction(callframe.functionIndex, sb);
 
 			sb.Append(" => ");
 			var line = CompilerHelper.GetLines(source, pos.line - 1, pos.line - 1);

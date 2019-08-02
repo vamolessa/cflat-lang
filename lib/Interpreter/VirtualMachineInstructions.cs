@@ -90,9 +90,10 @@ internal static class VirtualMachineInstructions
 		case Instruction.LoadFunction:
 			{
 				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
+				var typeIndex = vm.chunk.functions.buffer[index].typeIndex;
 				vm.PushValue(
 					new ValueData(index),
-					ValueTypeHelper.SetIndex(ValueType.Function, index)
+					ValueTypeHelper.SetIndex(ValueType.Function, typeIndex)
 				);
 				break;
 			}
