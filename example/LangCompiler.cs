@@ -134,6 +134,7 @@ public sealed class LangCompiler
 			declaration.returnType = ConsumeType(compiler, "Expected function return type");
 
 		compiler.EndFunctionDeclaration(slice, declaration);
+		functionBuilders.PushBack(declaration);
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
@@ -362,7 +363,7 @@ public sealed class LangCompiler
 
 	public void Expression(Compiler compiler)
 	{
-		compiler.ParseWithPrecedence((int)Precedence.Assignment);
+		compiler.ParseWithPrecedence(rules, (int)Precedence.Assignment);
 	}
 
 	public void Grouping(Compiler compiler, int precedence)
@@ -461,7 +462,7 @@ public sealed class LangCompiler
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.ParseWithPrecedence((int)Precedence.And);
+		compiler.ParseWithPrecedence(rules, (int)Precedence.And);
 		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
@@ -477,7 +478,7 @@ public sealed class LangCompiler
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.ParseWithPrecedence((int)Precedence.Or);
+		compiler.ParseWithPrecedence(rules, (int)Precedence.Or);
 		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
@@ -593,7 +594,7 @@ public sealed class LangCompiler
 
 		var hasFunction = functionIndex >= 0;
 		if (hasFunction)
-			function = compiler.GetFunction(functionIndex);
+			function = compiler.chunk.functions.buffer[functionIndex];
 		else
 			compiler.AddSoftError(slice, "Could not find such function");
 
@@ -639,7 +640,7 @@ public sealed class LangCompiler
 	{
 		var opToken = compiler.previousToken;
 
-		compiler.ParseWithPrecedence((int)Precedence.Unary);
+		compiler.ParseWithPrecedence(rules, (int)Precedence.Unary);
 		var type = compiler.typeStack.PopLast();
 
 		switch ((TokenKind)opToken.kind)
@@ -696,7 +697,7 @@ public sealed class LangCompiler
 		var opToken = compiler.previousToken;
 
 		var opPrecedence = rules[opToken.kind].precedence;
-		compiler.ParseWithPrecedence(opPrecedence + 1);
+		compiler.ParseWithPrecedence(rules, opPrecedence + 1);
 
 		var bType = compiler.typeStack.PopLast();
 		var aType = compiler.typeStack.PopLast();

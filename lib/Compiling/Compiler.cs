@@ -47,7 +47,6 @@ public sealed class Compiler
 	public Token currentToken;
 
 	public ITokenizer tokenizer;
-	public ParseRule[] parseRules;
 	public ParseFunction onParseWithPrecedence;
 
 	public bool panicMode;
@@ -60,7 +59,6 @@ public sealed class Compiler
 	{
 		errors.Clear();
 		this.tokenizer = tokenizer;
-		this.parseRules = parseRules;
 		this.onParseWithPrecedence = onParseWithPrecedence;
 
 		previousToken = new Token(Token.EndKind, new Slice());
@@ -153,11 +151,6 @@ public sealed class Compiler
 		return -1;
 	}
 
-	public FunctionDefinition GetFunction(int index)
-	{
-		return chunk.functions.buffer[index];
-	}
-
 	public ValueType GetFunctionParamType(in FunctionDefinition function, int paramIndex)
 	{
 		return chunk.functionsParams.buffer[function.parameters.index + paramIndex];
@@ -191,68 +184,5 @@ public sealed class Compiler
 		}
 
 		return -1;
-	}
-
-	public void ParseWithPrecedence(int precedence)
-	{
-		Next();
-		if (previousToken.kind == Token.EndKind)
-			return;
-
-		var prefixRule = parseRules[previousToken.kind].prefixRule;
-		if (prefixRule == null)
-		{
-			AddHardError(previousToken.slice, "Expected expression");
-			return;
-		}
-		prefixRule(this, precedence);
-
-		while (
-			currentToken.kind != Token.EndKind &&
-			precedence <= parseRules[currentToken.kind].precedence
-		)
-		{
-			Next();
-			var infixRule = parseRules[previousToken.kind].infixRule;
-			infixRule(this, precedence);
-		}
-
-		onParseWithPrecedence(this, precedence);
-	}
-
-	public void Next()
-	{
-		previousToken = currentToken;
-
-		while (true)
-		{
-			currentToken = tokenizer.Next();
-			if (currentToken.kind != Token.ErrorKind)
-				break;
-
-			AddHardError(currentToken.slice, "Invalid char");
-		}
-	}
-
-	public bool Check(int tokenKind)
-	{
-		return currentToken.kind == tokenKind;
-	}
-
-	public bool Match(int tokenKind)
-	{
-		if (currentToken.kind != tokenKind)
-			return false;
-
-		Next();
-		return true;
-	}
-
-	public void Consume(int tokenKind, string errorMessage)
-	{
-		if (currentToken.kind == tokenKind)
-			Next();
-		else
-			AddHardError(currentToken.slice, errorMessage);
 	}
 }

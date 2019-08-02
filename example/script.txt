@@ -4,5 +4,6 @@ fn sum(a:int, b:int):int {
 
 fn main() {
 	let s = sum
-	print s(3,4)
+	let t = s(3,4)
+	print t
 }
