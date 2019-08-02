@@ -108,18 +108,26 @@ public sealed class LangCompiler
 			var returnType = compiler.ResolveType();
 			if (!returnType.isSome)
 				compiler.AddSoftError(compiler.previousToken.slice, "Could not find type");
-			declaration.returnType = returnType.value;
+			else
+				declaration.returnType = returnType.value;
 		}
 
 		compiler.EndFunctionDeclaration(slice, declaration);
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
-		BlockStatement(compiler);
 
-		compiler.PopLocalVariables(declaration.parameterCount);
+		if (declaration.returnType == ValueType.Unit)
+		{
+			BlockStatement(compiler);
+			compiler.EmitInstruction(Instruction.LoadUnit);
+		}
+		else
+		{
+			Block(compiler, (int)Precedence.None);
+		}
 
-		compiler.EmitInstruction(Instruction.LoadUnit);
 		compiler.EmitInstruction(Instruction.Return);
+		compiler.PopLocalVariables(declaration.parameterCount);
 	}
 
 	public static Option<ValueType> Statement(Compiler compiler)

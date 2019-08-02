@@ -67,6 +67,7 @@ public sealed class ByteCodeChunk
 		return new FunctionDefinitionBuilder
 		{
 			chunk = this,
+			returnType = ValueType.Unit
 		};
 	}
 
