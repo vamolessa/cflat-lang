@@ -6,8 +6,6 @@ public sealed class Program
 
 	public static void Main(string[] args)
 	{
-		LangParseRules.InitRules();
-
 		var source = System.IO.File.ReadAllText("script.txt");
 		var tokenizer = new Tokenizer();
 		var compiler = new LangCompiler();

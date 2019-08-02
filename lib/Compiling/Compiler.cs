@@ -12,6 +12,24 @@ public readonly struct CompileError
 	}
 }
 
+public struct LocalVariable
+{
+	public Slice slice;
+	public int depth;
+	public ValueType type;
+	public bool isMutable;
+	public bool isUsed;
+
+	public LocalVariable(Slice slice, int depth, ValueType type, bool isMutable, bool isUsed)
+	{
+		this.slice = slice;
+		this.depth = depth;
+		this.type = type;
+		this.isMutable = isMutable;
+		this.isUsed = isUsed;
+	}
+}
+
 public sealed class Compiler
 {
 	public readonly struct Scope
@@ -24,55 +42,21 @@ public sealed class Compiler
 		}
 	}
 
-	public readonly struct LocalVariable
-	{
-		public readonly Slice slice;
-		public readonly int depth;
-		public readonly ValueType type;
-		public readonly bool isMutable;
-		public readonly bool isUsed;
-
-		public LocalVariable(Slice slice, int depth, ValueType type, bool isMutable, bool isUsed)
-		{
-			this.slice = slice;
-			this.depth = depth;
-			this.type = type;
-			this.isMutable = isMutable;
-			this.isUsed = isUsed;
-		}
-	}
-
-	private readonly struct LoopBreak
-	{
-		public readonly int nesting;
-		public readonly int jump;
-
-		public LoopBreak(int nesting, int jump)
-		{
-			this.nesting = nesting;
-			this.jump = jump;
-		}
-	}
-
 	public readonly List<CompileError> errors = new List<CompileError>();
 	public Token previousToken;
-	private Token currentToken;
+	public Token currentToken;
 
-	internal ITokenizer tokenizer;
-	private ParseRule[] parseRules;
-	private ParseFunction onParseWithPrecedence;
+	public ITokenizer tokenizer;
+	public ParseRule[] parseRules;
+	public ParseFunction onParseWithPrecedence;
 
-	private bool panicMode;
-	private ByteCodeChunk chunk;
-	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
-	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
-	private int scopeDepth;
+	public bool panicMode;
+	public ByteCodeChunk chunk;
+	public Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
+	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
+	public int scopeDepth;
 
-	private Buffer<ByteCodeChunk.FunctionDefinitionBuilder> functionBuilders = new Buffer<ByteCodeChunk.FunctionDefinitionBuilder>(4);
-	private Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
-	private int loopNesting;
-
-	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
+	public void Reset(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
 	{
 		errors.Clear();
 		this.tokenizer = tokenizer;
@@ -87,17 +71,6 @@ public sealed class Compiler
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;
-
-		functionBuilders.count = 0;
-		loopBreaks.count = 0;
-		loopNesting = 0;
-	}
-
-	public ByteCodeChunk GetByteCodeChunk()
-	{
-		var c = chunk;
-		chunk = null;
-		return c;
 	}
 
 	public Compiler AddSoftError(Slice slice, string format, params object[] args)
@@ -120,22 +93,6 @@ public sealed class Compiler
 		return this;
 	}
 
-	public void Synchronize(System.Predicate<int> synchronizer)
-	{
-		if (!panicMode)
-			return;
-
-		while (
-			currentToken.kind != Token.EndKind &&
-			!synchronizer(currentToken.kind)
-		)
-		{
-			Next();
-		}
-
-		panicMode = false;
-	}
-
 	public Scope BeginScope()
 	{
 		scopeDepth += 1;
@@ -153,63 +110,15 @@ public sealed class Compiler
 				AddSoftError(variable.slice, "Unused variable");
 		}
 
-		var localCount = GetScopeLocalVariableCount(scope);
+		var localCount = localVariables.count - scope.localVarStartIndex;
 		if (localCount > 0)
 		{
-			EmitInstruction(Instruction.PopMultiple);
-			EmitByte((byte)localCount);
+			this.EmitInstruction(Instruction.PopMultiple);
+			this.EmitByte((byte)localCount);
 
 			localVariables.count -= localCount;
 			typeStack.count -= localCount;
 		}
-	}
-
-	public int GetScopeLocalVariableCount(Scope scope)
-	{
-		return localVariables.count - scope.localVarStartIndex;
-	}
-
-	public void BeginLoop()
-	{
-		loopNesting += 1;
-	}
-
-	public void EndLoop()
-	{
-		loopNesting -= 1;
-
-		for (var i = loopBreaks.count - 1; i >= 0; i--)
-		{
-			var loopBreak = loopBreaks.buffer[i];
-			if (loopBreak.nesting == loopNesting)
-			{
-				PatchJump(loopBreak.jump);
-				loopBreaks.SwapRemove(i);
-			}
-		}
-	}
-
-	public bool BreakLoop(int nesting, int jump)
-	{
-		if (loopNesting < nesting)
-			return false;
-
-		loopBreaks.PushBack(new LoopBreak(loopNesting - nesting, jump));
-		return true;
-	}
-
-	public Option<ValueType> ResolveType()
-	{
-		var source = tokenizer.Source;
-		if (CompilerHelper.AreEqual(source, previousToken.slice, "bool"))
-			return Option.Some(ValueType.Bool);
-		else if (CompilerHelper.AreEqual(source, previousToken.slice, "int"))
-			return Option.Some(ValueType.Int);
-		else if (CompilerHelper.AreEqual(source, previousToken.slice, "float"))
-			return Option.Some(ValueType.Float);
-		else if (CompilerHelper.AreEqual(source, previousToken.slice, "string"))
-			return Option.Some(ValueType.String);
-		return Option.None;
 	}
 
 	public ByteCodeChunk.FunctionDefinitionBuilder BeginFunctionDeclaration()
@@ -228,19 +137,6 @@ public sealed class Compiler
 
 		var name = tokenizer.Source.Substring(slice.index, slice.length);
 		chunk.EndAddFunction(name, builder);
-
-		functionBuilders.PushBack(builder);
-	}
-
-	public ByteCodeChunk.FunctionDefinitionBuilder PeekFunctionBuilder()
-	{
-		return functionBuilders.buffer[functionBuilders.count - 1];
-	}
-
-	public void EndFunctionBody()
-	{
-		var builder = functionBuilders.PopLast();
-		localVariables.count -= builder.parameterCount;
 	}
 
 	public int ResolveToFunctionIndex()
@@ -295,29 +191,6 @@ public sealed class Compiler
 		}
 
 		return -1;
-	}
-
-	public void UseVariable(int index)
-	{
-		var variable = localVariables.buffer[index];
-		if (!variable.isUsed)
-			localVariables.buffer[index] = new LocalVariable(
-				variable.slice,
-				variable.depth,
-				variable.type,
-				variable.isMutable,
-				true
-			);
-	}
-
-	public LocalVariable GetLocalVariable(int index)
-	{
-		return localVariables.buffer[index];
-	}
-
-	public int GetTokenPrecedence(int tokenKind)
-	{
-		return parseRules[tokenKind].precedence;
 	}
 
 	public void ParseWithPrecedence(int precedence)
@@ -381,111 +254,5 @@ public sealed class Compiler
 			Next();
 		else
 			AddHardError(currentToken.slice, errorMessage);
-	}
-
-	public void PushType(ValueType type)
-	{
-		typeStack.PushBack(type);
-	}
-
-	public ValueType PopType()
-	{
-		return typeStack.PopLast();
-	}
-
-	public Compiler EmitByte(byte value)
-	{
-		chunk.WriteByte(value, previousToken.slice);
-		return this;
-	}
-
-	public Compiler EmitInstruction(Instruction instruction)
-	{
-		EmitByte((byte)instruction);
-		return this;
-	}
-
-	public Compiler EmitLoadLiteral(ValueData value, ValueType type)
-	{
-		var index = chunk.AddValueLiteral(value, type);
-		EmitInstruction(Instruction.LoadLiteral);
-		EmitByte((byte)index);
-
-		return this;
-	}
-
-	public Compiler EmitLoadFunction(int functionIndex)
-	{
-		EmitInstruction(Instruction.LoadFunction);
-		BytesHelper.ShortToBytes((ushort)functionIndex, out var b0, out var b1);
-		EmitByte(b0);
-		EmitByte(b1);
-
-		return this;
-	}
-
-	public Compiler EmitLoadStringLiteral(string value)
-	{
-		var index = chunk.AddStringLiteral(value);
-		EmitInstruction(Instruction.LoadLiteral);
-		EmitByte((byte)index);
-
-		return this;
-	}
-
-	public Compiler PopEmittedByte()
-	{
-		chunk.bytes.count -= 1;
-		return this;
-	}
-
-	public int BeginEmitBackwardJump()
-	{
-		return chunk.bytes.count;
-	}
-
-	public void EndEmitBackwardJump(Instruction instruction, int jumpIndex)
-	{
-		EmitInstruction(instruction);
-
-		var offset = chunk.bytes.count - jumpIndex + 2;
-		if (offset > ushort.MaxValue)
-		{
-			AddSoftError(previousToken.slice, "Too much code to jump over");
-			return;
-		}
-
-		BytesHelper.ShortToBytes((ushort)offset, out var b0, out var b1);
-		EmitByte(b0);
-		EmitByte(b1);
-	}
-
-	public int BeginEmitForwardJump(Instruction instruction)
-	{
-		EmitInstruction(instruction);
-		EmitByte(0);
-		EmitByte(0);
-
-		return chunk.bytes.count - 2;
-	}
-
-	public void EndEmitForwardJump(int jumpIndex)
-	{
-		if (!PatchJump(jumpIndex))
-			AddSoftError(previousToken.slice, "Too much code to jump over");
-	}
-
-	private bool PatchJump(int jumpIndex)
-	{
-		var offset = chunk.bytes.count - jumpIndex - 2;
-		if (offset > ushort.MaxValue)
-			return false;
-
-		BytesHelper.ShortToBytes(
-			(ushort)offset,
-			out chunk.bytes.buffer[jumpIndex],
-			out chunk.bytes.buffer[jumpIndex + 1]
-		);
-		return true;
 	}
 }

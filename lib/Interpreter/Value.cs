@@ -34,31 +34,30 @@ public struct ValueData
 
 public enum ValueType : int
 {
-	ForeignObject = 0b001,
-	Unit = 0b001,
-	Bool = 0b010,
-	Int = 0b011,
-	Float = 0b100,
-	String = 0b101,
-	Function = 0b110,
-	Custom = 0b111,
+	Unit,
+	Bool,
+	Int,
+	Float,
+	String,
+	Function,
+	Custom,
 }
 
 public static class ValueTypeHelper
 {
 	public static ValueType GetKind(ValueType type)
 	{
-		return (ValueType)((int)type & 0b111);
+		return (ValueType)((int)type & 0b1111);
 	}
 
 	public static int GetIndex(ValueType type)
 	{
-		return (int)type >> 3;
+		return (int)type >> 4;
 	}
 
 	public static ValueType SetIndex(ValueType type, int index)
 	{
-		return (ValueType)(((int)type & 0b111) | (index << 3));
+		return (ValueType)(((int)type & 0b1111) | (index << 4));
 	}
 }
 

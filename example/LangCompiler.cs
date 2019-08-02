@@ -1,13 +1,35 @@
 using System.Collections.Generic;
 
+public readonly struct LoopBreak
+{
+	public readonly int nesting;
+	public readonly int jump;
+
+	public LoopBreak(int nesting, int jump)
+	{
+		this.nesting = nesting;
+		this.jump = jump;
+	}
+}
+
 public sealed class LangCompiler
 {
+	public readonly ParseRule[] rules = new ParseRule[(int)TokenKind.COUNT];
+	public Buffer<ByteCodeChunk.FunctionDefinitionBuilder> functionBuilders = new Buffer<ByteCodeChunk.FunctionDefinitionBuilder>(4);
+	public Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
+	public int loopNesting;
+
+	public LangCompiler()
+	{
+		LangParseRules.InitRulesFor(this);
+	}
+
 	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
 	{
 		var compiler = new Compiler();
 
-		tokenizer.Begin(LangScanners.scanners, source);
-		compiler.Begin(tokenizer, LangParseRules.rules, OnParseWithPrecedence);
+		tokenizer.Reset(LangScanners.scanners, source);
+		compiler.Reset(tokenizer, rules, OnParseWithPrecedence);
 
 		compiler.Next();
 
@@ -15,31 +37,21 @@ public sealed class LangCompiler
 		{
 			compiler.Consume((int)TokenKind.Function, "Expected 'fn' before function name");
 			FunctionDeclaration(compiler);
-
-			compiler.Synchronize(token =>
-			{
-				switch ((TokenKind)token)
-				{
-				case TokenKind.Function:
-					return true;
-				default:
-					return false;
-				}
-			});
+			Syncronize(compiler);
 		}
 
 		compiler.EmitInstruction(Instruction.Halt);
 
 		if (compiler.errors.Count > 0)
 			return Result.Error(compiler.errors);
-		return Result.Ok(compiler.GetByteCodeChunk());
+		return Result.Ok(compiler.chunk);
 	}
 
 	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, ITokenizer tokenizer)
 	{
 		var compiler = new Compiler();
-		tokenizer.Begin(LangScanners.scanners, source);
-		compiler.Begin(tokenizer, LangParseRules.rules, OnParseWithPrecedence);
+		tokenizer.Reset(LangScanners.scanners, source);
+		compiler.Reset(tokenizer, rules, OnParseWithPrecedence);
 
 		compiler.Next();
 		Expression(compiler);
@@ -47,10 +59,30 @@ public sealed class LangCompiler
 
 		if (compiler.errors.Count > 0)
 			return Result.Error(compiler.errors);
-		return Result.Ok(compiler.GetByteCodeChunk());
+		return Result.Ok(compiler.chunk);
 	}
 
-	public static void OnParseWithPrecedence(Compiler compiler, int precedence)
+	private void Syncronize(Compiler compiler)
+	{
+		if (!compiler.panicMode)
+			return;
+
+		while (compiler.currentToken.kind != Token.EndKind)
+		{
+			switch ((TokenKind)compiler.currentToken.kind)
+			{
+			case TokenKind.Function:
+				compiler.panicMode = false;
+				return;
+			default:
+				break;
+			}
+
+			compiler.Next();
+		}
+	}
+
+	public void OnParseWithPrecedence(Compiler compiler, int precedence)
 	{
 		var canAssign = precedence <= (int)Precedence.Assignment;
 		if (canAssign && compiler.Match((int)TokenKind.Equal))
@@ -60,7 +92,7 @@ public sealed class LangCompiler
 		}
 	}
 
-	public static void FunctionDeclaration(Compiler compiler)
+	public void FunctionDeclaration(Compiler compiler)
 	{
 		const int MaxParamCount = 8;
 
@@ -77,14 +109,7 @@ public sealed class LangCompiler
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.previousToken.slice;
 				compiler.Consume((int)TokenKind.Colon, "Expected ':' after parameter name");
-				compiler.Consume((int)TokenKind.Identifier, "Expected parameter type");
-
-				var paramType = compiler.ResolveType();
-				if (!paramType.isSome)
-				{
-					compiler.AddSoftError(compiler.previousToken.slice, "Could not find type");
-					paramType = Option.Some(ValueType.Unit);
-				}
+				var paramType = ConsumeType(compiler, "Expected parameter type");
 
 				if (declaration.parameterCount >= MaxParamCount)
 				{
@@ -92,25 +117,21 @@ public sealed class LangCompiler
 					continue;
 				}
 
-				compiler.PushType(paramType.value);
-				var paramIndex = compiler.DeclareLocalVariable(paramSlice, false);
-				compiler.UseVariable(paramIndex);
-				compiler.PopType();
+				compiler.localVariables.PushBack(new LocalVariable(
+					paramSlice,
+					compiler.scopeDepth,
+					paramType,
+					false,
+					true
+				));
 
-				declaration.AddParam(paramType.value);
+				declaration.AddParam(paramType);
 			} while (compiler.Match((int)TokenKind.Comma));
 		}
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.Match((int)TokenKind.Colon))
-		{
-			compiler.Consume((int)TokenKind.Identifier, "Expected function return type");
-			var returnType = compiler.ResolveType();
-			if (!returnType.isSome)
-				compiler.AddSoftError(compiler.previousToken.slice, "Could not find type");
-			else
-				declaration.returnType = returnType.value;
-		}
+			declaration.returnType = ConsumeType(compiler, "Expected function return type");
 
 		compiler.EndFunctionDeclaration(slice, declaration);
 
@@ -124,16 +145,49 @@ public sealed class LangCompiler
 		else
 		{
 			Block(compiler, (int)Precedence.None);
-			var type = compiler.PopType();
+			var type = compiler.typeStack.PopLast();
 			if (declaration.returnType != type)
 				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType, type);
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EndFunctionBody();
+
+		var builder = functionBuilders.PopLast();
+		compiler.localVariables.count -= builder.parameterCount;
 	}
 
-	public static Option<ValueType> Statement(Compiler compiler)
+	private ValueType ConsumeType(Compiler compiler, string error)
+	{
+		var type = new Option<ValueType>();
+		if (compiler.Match((int)TokenKind.Identifier))
+			type = ResolveSimpleType(compiler, compiler.previousToken.slice);
+		else if (compiler.Match((int)TokenKind.Function))
+		{
+
+		}
+
+		if (type.isSome)
+			return type.value;
+
+		compiler.AddSoftError(compiler.previousToken.slice, error);
+		return ValueType.Unit;
+	}
+
+	private Option<ValueType> ResolveSimpleType(Compiler compiler, Slice slice)
+	{
+		var source = compiler.tokenizer.Source;
+		if (CompilerHelper.AreEqual(source, slice, "bool"))
+			return Option.Some(ValueType.Bool);
+		else if (CompilerHelper.AreEqual(source, slice, "int"))
+			return Option.Some(ValueType.Int);
+		else if (CompilerHelper.AreEqual(source, slice, "float"))
+			return Option.Some(ValueType.Float);
+		else if (CompilerHelper.AreEqual(source, slice, "string"))
+			return Option.Some(ValueType.String);
+		return Option.None;
+	}
+
+	public Option<ValueType> Statement(Compiler compiler)
 	{
 		if (compiler.Match((int)TokenKind.OpenCurlyBrackets))
 		{
@@ -182,14 +236,14 @@ public sealed class LangCompiler
 		}
 	}
 
-	public static ValueType ExpressionStatement(Compiler compiler)
+	public ValueType ExpressionStatement(Compiler compiler)
 	{
 		Expression(compiler);
 		compiler.EmitInstruction(Instruction.Pop);
-		return compiler.PopType();
+		return compiler.typeStack.PopLast();
 	}
 
-	public static void BlockStatement(Compiler compiler)
+	public void BlockStatement(Compiler compiler)
 	{
 		var scope = compiler.BeginScope();
 		while (
@@ -204,7 +258,7 @@ public sealed class LangCompiler
 		compiler.EndScope(scope);
 	}
 
-	private static int VariableDeclaration(Compiler compiler, bool mutable)
+	private int VariableDeclaration(Compiler compiler, bool mutable)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.previousToken.slice;
@@ -215,40 +269,40 @@ public sealed class LangCompiler
 		return compiler.DeclareLocalVariable(slice, mutable);
 	}
 
-	public static void WhileStatement(Compiler compiler)
+	public void WhileStatement(Compiler compiler)
 	{
 		var loopJump = compiler.BeginEmitBackwardJump();
 		Expression(compiler);
 
-		if (compiler.PopType() != ValueType.Bool)
+		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as while condition");
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		compiler.BeginLoop();
+		LangCompilerHelper.BeginLoop(this);
 		BlockStatement(compiler);
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
-		compiler.EndLoop();
+		LangCompilerHelper.EndLoop(this, compiler);
 	}
 
-	public static void ForStatement(Compiler compiler)
+	public void ForStatement(Compiler compiler)
 	{
 		var scope = compiler.BeginScope();
 		var itVarIndex = VariableDeclaration(compiler, true);
-		compiler.UseVariable(itVarIndex);
-		var itVar = compiler.GetLocalVariable(itVarIndex);
+		compiler.localVariables.buffer[itVarIndex].isUsed = true;
+		var itVar = compiler.localVariables.buffer[itVarIndex];
 		if (itVar.type != ValueType.Int)
-			compiler.AddSoftError(itVar.slice, "Expected int variable in for loop");
+			compiler.AddSoftError(itVar.slice, "Expected variable of type int in for loop");
 
 		compiler.Consume((int)TokenKind.Comma, "Expected comma after begin expression");
 		Expression(compiler);
 		var toVarIndex = compiler.DeclareLocalVariable(compiler.previousToken.slice, false);
-		compiler.UseVariable(toVarIndex);
-		if (compiler.GetLocalVariable(toVarIndex).type != ValueType.Int)
-			compiler.AddSoftError(compiler.previousToken.slice, "Expected int expression");
+		compiler.localVariables.buffer[toVarIndex].isUsed = true;
+		if (compiler.localVariables.buffer[toVarIndex].type != ValueType.Int)
+			compiler.AddSoftError(compiler.previousToken.slice, "Expected expression of type int");
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
@@ -257,7 +311,7 @@ public sealed class LangCompiler
 		compiler.EmitByte((byte)itVarIndex);
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		compiler.BeginLoop();
+		LangCompilerHelper.BeginLoop(this);
 		BlockStatement(compiler);
 
 		compiler.EmitInstruction(Instruction.IncrementLocal);
@@ -265,23 +319,23 @@ public sealed class LangCompiler
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
-		compiler.EndLoop();
+		LangCompilerHelper.EndLoop(this, compiler);
 
 		compiler.EndScope(scope);
 	}
 
-	private static void BreakStatement(Compiler compiler)
+	private void BreakStatement(Compiler compiler)
 	{
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 
-		if (!compiler.BreakLoop(1, breakJump))
+		if (!LangCompilerHelper.BreakLoop(this, 1, breakJump))
 		{
 			compiler.AddSoftError(compiler.previousToken.slice, "Not inside a loop");
 			return;
 		}
 	}
 
-	private static void ReturnStatement(Compiler compiler)
+	private void ReturnStatement(Compiler compiler)
 	{
 		if (compiler.Match((int)TokenKind.CloseCurlyBrackets))
 		{
@@ -290,8 +344,8 @@ public sealed class LangCompiler
 		else
 		{
 			Expression(compiler);
-			var type = compiler.PopType();
-			var declaration = compiler.PeekFunctionBuilder();
+			var type = compiler.typeStack.PopLast();
+			var declaration = functionBuilders.buffer[functionBuilders.count - 1];
 			if (declaration.returnType != type)
 				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType, type);
 		}
@@ -299,25 +353,25 @@ public sealed class LangCompiler
 		compiler.EmitInstruction(Instruction.Return);
 	}
 
-	private static void PrintStatement(Compiler compiler)
+	private void PrintStatement(Compiler compiler)
 	{
 		Expression(compiler);
 		compiler.EmitInstruction(Instruction.Print);
-		compiler.PopType();
+		compiler.typeStack.PopLast();
 	}
 
-	public static void Expression(Compiler compiler)
+	public void Expression(Compiler compiler)
 	{
 		compiler.ParseWithPrecedence((int)Precedence.Assignment);
 	}
 
-	public static void Grouping(Compiler compiler, int precedence)
+	public void Grouping(Compiler compiler, int precedence)
 	{
 		Expression(compiler);
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
 	}
 
-	public static void Block(Compiler compiler, int precedence)
+	public void Block(Compiler compiler, int precedence)
 	{
 		var scope = compiler.BeginScope();
 		var maybeType = new Option<ValueType>();
@@ -332,9 +386,9 @@ public sealed class LangCompiler
 
 		if (maybeType.isSome)
 		{
-			compiler.PopEmittedByte();
+			compiler.chunk.bytes.count -= 1;
 
-			var varCount = compiler.GetScopeLocalVariableCount(scope);
+			var varCount = compiler.localVariables.count - scope.localVarStartIndex;
 			if (varCount > 0)
 			{
 				compiler.EmitInstruction(Instruction.CopyTo);
@@ -348,27 +402,27 @@ public sealed class LangCompiler
 
 		if (maybeType.isSome)
 		{
-			compiler.PushType(maybeType.value);
+			compiler.typeStack.PushBack(maybeType.value);
 		}
 		else
 		{
-			compiler.PushType(ValueType.Unit);
+			compiler.typeStack.PushBack(ValueType.Unit);
 			compiler.EmitInstruction(Instruction.LoadUnit);
 		}
 	}
 
-	public static void If(Compiler compiler, int precedence)
+	public void If(Compiler compiler, int precedence)
 	{
 		Expression(compiler);
 
-		if (compiler.PopType() != ValueType.Bool)
+		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as if condition");
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
 
 		var elseJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		Block(compiler, precedence);
-		var thenType = compiler.PopType();
+		var thenType = compiler.typeStack.PopLast();
 
 		var thenJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 		compiler.EndEmitForwardJump(elseJump);
@@ -385,7 +439,7 @@ public sealed class LangCompiler
 				Block(compiler, precedence);
 			}
 
-			var elseType = compiler.PopType();
+			var elseType = compiler.typeStack.PopLast();
 			if (thenType != elseType)
 				compiler.AddSoftError(compiler.previousToken.slice, "If expression must produce values of the same type on both branches. Found types: {0} and {1}", thenType, elseType);
 		}
@@ -397,12 +451,12 @@ public sealed class LangCompiler
 		}
 
 		compiler.EndEmitForwardJump(thenJump);
-		compiler.PushType(thenType);
+		compiler.typeStack.PushBack(thenType);
 	}
 
-	public static void And(Compiler compiler, int precedence)
+	public void And(Compiler compiler, int precedence)
 	{
-		if (compiler.PopType() != ValueType.Bool)
+		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before and");
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
@@ -410,15 +464,15 @@ public sealed class LangCompiler
 		compiler.ParseWithPrecedence((int)Precedence.And);
 		compiler.EndEmitForwardJump(jump);
 
-		if (compiler.PopType() != ValueType.Bool)
+		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression after and");
 
-		compiler.PushType(ValueType.Bool);
+		compiler.typeStack.PushBack(ValueType.Bool);
 	}
 
-	public static void Or(Compiler compiler, int precedence)
+	public void Or(Compiler compiler, int precedence)
 	{
-		if (compiler.PopType() != ValueType.Bool)
+		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before or");
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
@@ -426,53 +480,53 @@ public sealed class LangCompiler
 		compiler.ParseWithPrecedence((int)Precedence.Or);
 		compiler.EndEmitForwardJump(jump);
 
-		if (compiler.PopType() != ValueType.Bool)
+		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression after or");
 
-		compiler.PushType(ValueType.Bool);
+		compiler.typeStack.PushBack(ValueType.Bool);
 	}
 
-	public static void Literal(Compiler compiler, int precedence)
+	public void Literal(Compiler compiler, int precedence)
 	{
 		switch ((TokenKind)compiler.previousToken.kind)
 		{
 		case TokenKind.True:
 			compiler.EmitInstruction(Instruction.LoadTrue);
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.False:
 			compiler.EmitInstruction(Instruction.LoadFalse);
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.IntLiteral:
 			compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetInt(compiler)),
 				ValueType.Int
 			);
-			compiler.PushType(ValueType.Int);
+			compiler.typeStack.PushBack(ValueType.Int);
 			break;
 		case TokenKind.FloatLiteral:
 			compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetFloat(compiler)),
 				ValueType.Float
 			);
-			compiler.PushType(ValueType.Float);
+			compiler.typeStack.PushBack(ValueType.Float);
 			break;
 		case TokenKind.StringLiteral:
 			compiler.EmitLoadStringLiteral(CompilerHelper.GetString(compiler));
-			compiler.PushType(ValueType.String);
+			compiler.typeStack.PushBack(ValueType.String);
 			break;
 		default:
 			compiler.AddHardError(
 				compiler.previousToken.slice,
 				string.Format("Expected literal. Got {0}", compiler.previousToken.kind)
 			);
-			compiler.PushType(ValueType.Unit);
+			compiler.typeStack.PushBack(ValueType.Unit);
 			break;
 		}
 	}
 
-	public static void Variable(Compiler compiler, int precedence)
+	public void Variable(Compiler compiler, int precedence)
 	{
 		var slice = compiler.previousToken.slice;
 		var index = compiler.ResolveToLocalVariableIndex();
@@ -488,7 +542,7 @@ public sealed class LangCompiler
 			}
 			else
 			{
-				if (!compiler.GetLocalVariable(index).isMutable)
+				if (!compiler.localVariables.buffer[index].isMutable)
 					compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
 				compiler.EmitInstruction(Instruction.AssignLocal);
@@ -503,33 +557,34 @@ public sealed class LangCompiler
 				if (functionIndex < 0)
 				{
 					compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-					compiler.PushType(ValueType.Unit);
+					compiler.typeStack.PushBack(ValueType.Unit);
 				}
 				else
 				{
 					compiler.EmitLoadFunction(functionIndex);
 					var type = ValueTypeHelper.SetIndex(ValueType.Function, functionIndex);
-					compiler.PushType(type);
+					compiler.typeStack.PushBack(type);
 				}
 			}
 			else
 			{
-				compiler.UseVariable(index);
+				ref var localVar = ref compiler.localVariables.buffer[index];
+				localVar.isUsed = true;
 
 				compiler.EmitInstruction(Instruction.LoadLocal);
 				compiler.EmitByte((byte)index);
-				compiler.PushType(compiler.GetLocalVariable(index).type);
+				compiler.typeStack.PushBack(localVar.type);
 			}
 		}
 	}
 
-	public static void Call(Compiler compiler, int precedence)
+	public void Call(Compiler compiler, int precedence)
 	{
 		var slice = compiler.previousToken.slice;
 
 		var functionIndex = -1;
 		var function = new FunctionDefinition();
-		var type = compiler.PopType();
+		var type = compiler.typeStack.PopLast();
 
 		if (ValueTypeHelper.GetKind(type) == ValueType.Function)
 			functionIndex = ValueTypeHelper.GetIndex(type);
@@ -548,7 +603,7 @@ public sealed class LangCompiler
 			do
 			{
 				Expression(compiler);
-				var argType = compiler.PopType();
+				var argType = compiler.typeStack.PopLast();
 				if (
 					hasFunction &&
 					argIndex < function.parameters.length &&
@@ -575,17 +630,17 @@ public sealed class LangCompiler
 
 		compiler.EmitInstruction(Instruction.Call);
 		compiler.EmitByte((byte)(hasFunction ? function.parameters.length : 0));
-		compiler.PushType(
+		compiler.typeStack.PushBack(
 			hasFunction ? function.returnType : ValueType.Unit
 		);
 	}
 
-	public static void Unary(Compiler compiler, int precedence)
+	public void Unary(Compiler compiler, int precedence)
 	{
 		var opToken = compiler.previousToken;
 
 		compiler.ParseWithPrecedence((int)Precedence.Unary);
-		var type = compiler.PopType();
+		var type = compiler.typeStack.PopLast();
 
 		switch ((TokenKind)opToken.kind)
 		{
@@ -594,15 +649,15 @@ public sealed class LangCompiler
 			{
 			case ValueType.Int:
 				compiler.EmitInstruction(Instruction.NegateInt);
-				compiler.PushType(ValueType.Int);
+				compiler.typeStack.PushBack(ValueType.Int);
 				break;
 			case ValueType.Float:
 				compiler.EmitInstruction(Instruction.NegateFloat);
-				compiler.PushType(ValueType.Float);
+				compiler.typeStack.PushBack(ValueType.Float);
 				break;
 			default:
 				compiler.AddSoftError(opToken.slice, "Unary minus operator can only be applied to ints or floats");
-				compiler.PushType(type);
+				compiler.typeStack.PushBack(type);
 				break;
 			}
 			break;
@@ -611,18 +666,18 @@ public sealed class LangCompiler
 			{
 			case ValueType.Bool:
 				compiler.EmitInstruction(Instruction.Not);
-				compiler.PushType(ValueType.Bool);
+				compiler.typeStack.PushBack(ValueType.Bool);
 				break;
 			case ValueType.Int:
 			case ValueType.Float:
 			case ValueType.String:
 				compiler.EmitInstruction(Instruction.Pop);
 				compiler.EmitInstruction(Instruction.LoadFalse);
-				compiler.PushType(ValueType.Bool);
+				compiler.typeStack.PushBack(ValueType.Bool);
 				break;
 			default:
 				compiler.AddSoftError(opToken.slice, "Not operator can only be applied to bools, ints, floats or strings");
-				compiler.PushType(ValueType.Bool);
+				compiler.typeStack.PushBack(ValueType.Bool);
 				break;
 			}
 			break;
@@ -631,60 +686,60 @@ public sealed class LangCompiler
 					opToken.slice,
 					string.Format("Expected unary operator. Got {0}", opToken.kind)
 				);
-			compiler.PushType(ValueType.Unit);
+			compiler.typeStack.PushBack(ValueType.Unit);
 			break;
 		}
 	}
 
-	public static void Binary(Compiler compiler, int precedence)
+	public void Binary(Compiler compiler, int precedence)
 	{
 		var opToken = compiler.previousToken;
 
-		var opPrecedence = compiler.GetTokenPrecedence(opToken.kind);
+		var opPrecedence = rules[opToken.kind].precedence;
 		compiler.ParseWithPrecedence(opPrecedence + 1);
 
-		var bType = compiler.PopType();
-		var aType = compiler.PopType();
+		var bType = compiler.typeStack.PopLast();
+		var aType = compiler.typeStack.PopLast();
 
 		switch ((TokenKind)opToken.kind)
 		{
 		case TokenKind.Plus:
 			if (aType == ValueType.Int && bType == ValueType.Int)
-				compiler.EmitInstruction(Instruction.AddInt).PushType(ValueType.Int);
+				compiler.EmitInstruction(Instruction.AddInt).typeStack.PushBack(ValueType.Int);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
-				compiler.EmitInstruction(Instruction.AddFloat).PushType(ValueType.Float);
+				compiler.EmitInstruction(Instruction.AddFloat).typeStack.PushBack(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken.slice, "Plus operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Plus operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.Minus:
 			if (aType == ValueType.Int && bType == ValueType.Int)
-				compiler.EmitInstruction(Instruction.SubtractInt).PushType(ValueType.Int);
+				compiler.EmitInstruction(Instruction.SubtractInt).typeStack.PushBack(ValueType.Int);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
-				compiler.EmitInstruction(Instruction.SubtractFloat).PushType(ValueType.Float);
+				compiler.EmitInstruction(Instruction.SubtractFloat).typeStack.PushBack(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken.slice, "Minus operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Minus operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.Asterisk:
 			if (aType == ValueType.Int && bType == ValueType.Int)
-				compiler.EmitInstruction(Instruction.MultiplyInt).PushType(ValueType.Int);
+				compiler.EmitInstruction(Instruction.MultiplyInt).typeStack.PushBack(ValueType.Int);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
-				compiler.EmitInstruction(Instruction.MultiplyFloat).PushType(ValueType.Float);
+				compiler.EmitInstruction(Instruction.MultiplyFloat).typeStack.PushBack(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken.slice, "Multiply operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Multiply operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.Slash:
 			if (aType == ValueType.Int && bType == ValueType.Int)
-				compiler.EmitInstruction(Instruction.DivideInt).PushType(ValueType.Int);
+				compiler.EmitInstruction(Instruction.DivideInt).typeStack.PushBack(ValueType.Int);
 			else if (aType == ValueType.Float && bType == ValueType.Float)
-				compiler.EmitInstruction(Instruction.DivideFloat).PushType(ValueType.Float);
+				compiler.EmitInstruction(Instruction.DivideFloat).typeStack.PushBack(ValueType.Float);
 			else
-				compiler.AddSoftError(opToken.slice, "Divide operator can only be applied to ints or floats").PushType(aType);
+				compiler.AddSoftError(opToken.slice, "Divide operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.EqualEqual:
 			if (aType != bType)
 			{
 				compiler.AddSoftError(opToken.slice, "Equal operator can only be applied to same type values");
-				compiler.PushType(ValueType.Bool);
+				compiler.typeStack.PushBack(ValueType.Bool);
 				break;
 			}
 
@@ -706,13 +761,13 @@ public sealed class LangCompiler
 				compiler.AddSoftError(opToken.slice, "Equal operator can only be applied to bools, ints and floats");
 				break;
 			}
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.BangEqual:
 			if (aType != bType)
 			{
 				compiler.AddSoftError(opToken.slice, "NotEqual operator can only be applied to same type values");
-				compiler.PushType(ValueType.Bool);
+				compiler.typeStack.PushBack(ValueType.Bool);
 				break;
 			}
 
@@ -735,7 +790,7 @@ public sealed class LangCompiler
 				break;
 			}
 			compiler.EmitInstruction(Instruction.Not);
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.Greater:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -744,7 +799,7 @@ public sealed class LangCompiler
 				compiler.EmitInstruction(Instruction.GreaterFloat);
 			else
 				compiler.AddSoftError(opToken.slice, "Greater operator can only be applied to ints or floats");
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.GreaterEqual:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -757,7 +812,7 @@ public sealed class LangCompiler
 					.EmitInstruction(Instruction.Not);
 			else
 				compiler.AddSoftError(opToken.slice, "GreaterOrEqual operator can only be applied to ints or floats");
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.Less:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -766,7 +821,7 @@ public sealed class LangCompiler
 				compiler.EmitInstruction(Instruction.LessFloat);
 			else
 				compiler.AddSoftError(opToken.slice, "Less operator can only be applied to ints or floats");
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		case TokenKind.LessEqual:
 			if (aType == ValueType.Int && bType == ValueType.Int)
@@ -779,7 +834,7 @@ public sealed class LangCompiler
 					.EmitInstruction(Instruction.Not);
 			else
 				compiler.AddSoftError(opToken.slice, "LessOrEqual operator can only be applied to ints or floats");
-			compiler.PushType(ValueType.Bool);
+			compiler.typeStack.PushBack(ValueType.Bool);
 			break;
 		default:
 			return;

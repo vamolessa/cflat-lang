@@ -4,8 +4,6 @@ public sealed class ParserTest
 {
 	public static string CopmileExpression(string source)
 	{
-		LangParseRules.InitRules();
-
 		var tokenizer = new Tokenizer();
 		var compiler = new LangCompiler();
 		var compileResult = compiler.CompileExpression(source, tokenizer);

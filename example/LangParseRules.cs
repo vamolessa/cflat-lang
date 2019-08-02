@@ -1,35 +1,33 @@
 public static class LangParseRules
 {
-	public static readonly ParseRule[] rules = new ParseRule[(int)TokenKind.COUNT];
-
-	public static void InitRules()
+	public static void InitRulesFor(LangCompiler c)
 	{
-		Set(TokenKind.OpenParenthesis, LangCompiler.Grouping, LangCompiler.Call, Precedence.Call);
-		Set(TokenKind.OpenCurlyBrackets, LangCompiler.Block, null, Precedence.None);
-		Set(TokenKind.Minus, LangCompiler.Unary, LangCompiler.Binary, Precedence.Term);
-		Set(TokenKind.Plus, null, LangCompiler.Binary, Precedence.Term);
-		Set(TokenKind.Slash, null, LangCompiler.Binary, Precedence.Factor);
-		Set(TokenKind.Asterisk, null, LangCompiler.Binary, Precedence.Factor);
-		Set(TokenKind.Bang, LangCompiler.Unary, null, Precedence.None);
-		Set(TokenKind.BangEqual, null, LangCompiler.Binary, Precedence.Equality);
-		Set(TokenKind.EqualEqual, null, LangCompiler.Binary, Precedence.Equality);
-		Set(TokenKind.Greater, null, LangCompiler.Binary, Precedence.Comparison);
-		Set(TokenKind.GreaterEqual, null, LangCompiler.Binary, Precedence.Comparison);
-		Set(TokenKind.Less, null, LangCompiler.Binary, Precedence.Comparison);
-		Set(TokenKind.LessEqual, null, LangCompiler.Binary, Precedence.Comparison);
-		Set(TokenKind.Identifier, LangCompiler.Variable, null, Precedence.None);
-		Set(TokenKind.StringLiteral, LangCompiler.Literal, null, Precedence.None);
-		Set(TokenKind.IntLiteral, LangCompiler.Literal, null, Precedence.None);
-		Set(TokenKind.And, null, LangCompiler.And, Precedence.And);
-		Set(TokenKind.False, LangCompiler.Literal, null, Precedence.None);
-		Set(TokenKind.If, LangCompiler.If, null, Precedence.None);
-		Set(TokenKind.Or, null, LangCompiler.Or, Precedence.Or);
-		Set(TokenKind.FloatLiteral, LangCompiler.Literal, null, Precedence.None);
-		Set(TokenKind.True, LangCompiler.Literal, null, Precedence.None);
+		Set(c, TokenKind.OpenParenthesis, c.Grouping, c.Call, Precedence.Call);
+		Set(c, TokenKind.OpenCurlyBrackets, c.Block, null, Precedence.None);
+		Set(c, TokenKind.Minus, c.Unary, c.Binary, Precedence.Term);
+		Set(c, TokenKind.Plus, null, c.Binary, Precedence.Term);
+		Set(c, TokenKind.Slash, null, c.Binary, Precedence.Factor);
+		Set(c, TokenKind.Asterisk, null, c.Binary, Precedence.Factor);
+		Set(c, TokenKind.Bang, c.Unary, null, Precedence.None);
+		Set(c, TokenKind.BangEqual, null, c.Binary, Precedence.Equality);
+		Set(c, TokenKind.EqualEqual, null, c.Binary, Precedence.Equality);
+		Set(c, TokenKind.Greater, null, c.Binary, Precedence.Comparison);
+		Set(c, TokenKind.GreaterEqual, null, c.Binary, Precedence.Comparison);
+		Set(c, TokenKind.Less, null, c.Binary, Precedence.Comparison);
+		Set(c, TokenKind.LessEqual, null, c.Binary, Precedence.Comparison);
+		Set(c, TokenKind.Identifier, c.Variable, null, Precedence.None);
+		Set(c, TokenKind.StringLiteral, c.Literal, null, Precedence.None);
+		Set(c, TokenKind.IntLiteral, c.Literal, null, Precedence.None);
+		Set(c, TokenKind.And, null, c.And, Precedence.And);
+		Set(c, TokenKind.False, c.Literal, null, Precedence.None);
+		Set(c, TokenKind.If, c.If, null, Precedence.None);
+		Set(c, TokenKind.Or, null, c.Or, Precedence.Or);
+		Set(c, TokenKind.FloatLiteral, c.Literal, null, Precedence.None);
+		Set(c, TokenKind.True, c.Literal, null, Precedence.None);
 	}
 
-	private static void Set(TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
+	private static void Set(LangCompiler c, TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
 	{
-		rules[(int)kind] = new ParseRule(prefix, infix, (int)precedence);
+		c.rules[(int)kind] = new ParseRule(prefix, infix, (int)precedence);
 	}
 }

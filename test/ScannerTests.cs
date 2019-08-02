@@ -90,7 +90,7 @@ public sealed class ScannerTests
 	public void TokenizerTest(string input, int[] expectedTokenKinds)
 	{
 		var tokenizer = new Tokenizer();
-		tokenizer.Begin(scanners, input);
+		tokenizer.Reset(scanners, input);
 		var tokens = new List<Token>();
 		for (var t = tokenizer.Next(); t.IsValid(); t = tokenizer.Next())
 			tokens.Add(t);

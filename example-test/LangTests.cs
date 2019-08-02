@@ -4,8 +4,6 @@ public sealed class LangTests
 {
 	public static string RunExpression(string source, out ValueData value, out ValueType type)
 	{
-		LangParseRules.InitRules();
-
 		value = new ValueData();
 		type = new ValueType();
 

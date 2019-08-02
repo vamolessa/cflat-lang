@@ -33,7 +33,7 @@ public readonly struct Token
 public interface ITokenizer
 {
 	string Source { get; }
-	void Begin(Scanner[] scanners, string source);
+	void Reset(Scanner[] scanners, string source);
 	Token Next();
 }
 
@@ -48,7 +48,7 @@ public sealed class Tokenizer : ITokenizer
 		get { return source; }
 	}
 
-	public void Begin(Scanner[] scanners, string source)
+	public void Reset(Scanner[] scanners, string source)
 	{
 		this.scanners = scanners;
 		this.source = source;
