@@ -21,7 +21,7 @@ public static class VirtualMachineHelper
 		case ValueType.Custom:
 			return string.Format("CustomType {0}", data.asInt);
 		default:
-			return "<invalid type>";
+			return string.Format("<invalid type {0}>", type);
 		}
 	}
 

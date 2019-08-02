@@ -73,7 +73,6 @@ public static class ByteCodeChunkExtensions
 		switch (instruction)
 		{
 		case Instruction.Halt:
-		case Instruction.Call:
 		case Instruction.Return:
 		case Instruction.Print:
 		case Instruction.Pop:
@@ -102,6 +101,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LessInt:
 		case Instruction.LessFloat:
 			return SimpleInstruction(instruction, index, sb);
+		case Instruction.Call:
 		case Instruction.PopMultiple:
 		case Instruction.CopyTo:
 		case Instruction.AssignLocal:
@@ -173,7 +173,10 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		var function = chunk.functions.buffer[functionIndex];
-		sb.AppendLine(function.name);
+		sb.Append('\'');
+		sb.Append(function.name);
+		sb.Append('\'');
+		sb.AppendLine();
 		return index + 3;
 	}
 

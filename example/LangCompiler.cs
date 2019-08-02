@@ -57,7 +57,6 @@ public sealed class LangCompiler
 		var slice = compiler.previousToken.slice;
 
 		var declaration = compiler.BeginFunctionDeclaration();
-		var scope = compiler.BeginScope();
 
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
 		if (!compiler.Check((int)TokenKind.CloseParenthesis))
@@ -85,6 +84,7 @@ public sealed class LangCompiler
 				compiler.PushType(paramType.value);
 				var paramIndex = compiler.DeclareLocalVariable(paramSlice, false);
 				compiler.UseVariable(paramIndex);
+				compiler.PopType();
 
 				declaration.AddParam(paramType.value);
 			} while (compiler.Match((int)TokenKind.Comma));
@@ -105,10 +105,10 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 		BlockStatement(compiler);
 
+		compiler.PopLocalVariables(declaration.parameterCount);
+
 		compiler.EmitInstruction(Instruction.LoadUnit);
 		compiler.EmitInstruction(Instruction.Return);
-
-		compiler.EndScope(scope);
 	}
 
 	public static Option<ValueType> Statement(Compiler compiler)
@@ -533,6 +533,7 @@ public sealed class LangCompiler
 			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", function.parameters.length, argIndex);
 
 		compiler.EmitInstruction(Instruction.Call);
+		compiler.EmitByte((byte)(hasFunction ? function.parameters.length : 0));
 		compiler.PushType(
 			hasFunction ? function.returnType : ValueType.Unit
 		);

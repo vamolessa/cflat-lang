@@ -1,9 +1,7 @@
-fn sum() {
-	let a = 1
-	let b = 2
-	print a + b
+fn p(s:int) {
+	print s
 }
 
 fn main () {
-	sum()
+	p(2)
 }

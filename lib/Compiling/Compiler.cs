@@ -276,6 +276,11 @@ public sealed class Compiler
 		return localVariables.buffer[index];
 	}
 
+	public void PopLocalVariables(int count)
+	{
+		localVariables.count -= count;
+	}
+
 	public int GetTokenPrecedence(int tokenKind)
 	{
 		return parseRules[tokenKind].precedence;
