@@ -1,7 +1,8 @@
-fn p(s:int) {
-	print s
+fn sum(a:int, b:int) {
+	print a + b
 }
 
 fn main () {
-	p(2)
+	sum(1, 10)
+	sum(1, 3)
 }

@@ -15,6 +15,17 @@ public sealed class LangCompiler
 		{
 			compiler.Consume((int)TokenKind.Function, "Expected 'fn' before function name");
 			FunctionDeclaration(compiler);
+
+			compiler.Synchronize(token =>
+			{
+				switch ((TokenKind)token)
+				{
+				case TokenKind.Function:
+					return true;
+				default:
+					return false;
+				}
+			});
 		}
 
 		compiler.EmitInstruction(Instruction.Halt);
@@ -65,14 +76,14 @@ public sealed class LangCompiler
 			{
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.previousToken.slice;
-				compiler.Consume((int)TokenKind.Colon, "Expected ':' before parameter type");
+				compiler.Consume((int)TokenKind.Colon, "Expected ':' after parameter name");
 				compiler.Consume((int)TokenKind.Identifier, "Expected parameter type");
 
 				var paramType = compiler.ResolveType();
 				if (!paramType.isSome)
 				{
 					compiler.AddSoftError(compiler.previousToken.slice, "Could not find type");
-					continue;
+					paramType = Option.Some(ValueType.Unit);
 				}
 
 				if (declaration.parameterCount >= MaxParamCount)
@@ -159,11 +170,7 @@ public sealed class LangCompiler
 	{
 		Expression(compiler);
 		compiler.EmitInstruction(Instruction.Pop);
-		var type = compiler.PopType();
-
-		// sync here (global variables)
-
-		return type;
+		return compiler.PopType();
 	}
 
 	public static void BlockStatement(Compiler compiler)
@@ -515,9 +522,9 @@ public sealed class LangCompiler
 				)
 				{
 					compiler.AddSoftError(
-						slice,
+						compiler.previousToken.slice,
 						"Wrong type for argument {0}. Expected {1}. Got {2}",
-						argIndex,
+						argIndex + 1,
 						compiler.GetFunctionParamType(in function, argIndex),
 						argType
 					);

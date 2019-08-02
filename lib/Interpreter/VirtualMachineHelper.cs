@@ -2,7 +2,7 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
-	public static string ValueToString(object[] objs, ValueData data, ValueType type)
+	public static string ValueToString(ByteCodeChunk chunk, object[] objs, ValueData data, ValueType type)
 	{
 		switch (ValueTypeHelper.GetKind(type))
 		{
@@ -17,9 +17,9 @@ public static class VirtualMachineHelper
 		case ValueType.String:
 			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
 		case ValueType.Function:
-			return string.Format("Function {0}", data.asInt);
+			return chunk.FormatFunction(data.asInt);
 		case ValueType.Custom:
-			return string.Format("CustomType {0}", data.asInt);
+			return string.Format("CustomType [{0}] {1}", objs[data.asInt].GetType().Name, objs[data.asInt].ToString());
 		default:
 			return string.Format("<invalid type {0}>", type);
 		}
@@ -29,7 +29,7 @@ public static class VirtualMachineHelper
 	{
 		var data = vm.valueStack.buffer[vm.valueStack.count - 1];
 		var type = vm.typeStack.buffer[vm.typeStack.count - 1];
-		var str = ValueToString(vm.heap.buffer, data, type);
+		var str = ValueToString(vm.chunk, vm.heap.buffer, data, type);
 		vm.PopValue();
 
 		return str;
@@ -42,6 +42,7 @@ public static class VirtualMachineHelper
 		{
 			sb.Append("[");
 			sb.Append(ValueToString(
+				vm.chunk,
 				vm.heap.buffer,
 				vm.valueStack.buffer[i],
 				vm.typeStack.buffer[i]

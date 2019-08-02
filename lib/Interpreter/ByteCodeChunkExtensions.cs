@@ -14,6 +14,24 @@ public sealed class ByteCodeChunkDebugView
 
 public static class ByteCodeChunkExtensions
 {
+	public static string FormatFunction(this ByteCodeChunk self, int functionIndex)
+	{
+		var sb = new StringBuilder();
+		var function = self.functions.buffer[functionIndex];
+		sb.Append(function.name);
+		sb.Append('(');
+		for (var i = 0; i < function.parameters.length; i++)
+		{
+			var paramIndex = function.parameters.index + i;
+			var param = self.functionsParams.buffer[paramIndex];
+			sb.Append(ValueTypeHelper.GetKind(param));
+			if (i < function.parameters.length - 1)
+				sb.Append(',');
+		}
+		sb.Append(')');
+		return sb.ToString();
+	}
+
 	public static void Disassemble(this ByteCodeChunk self, StringBuilder sb)
 	{
 		sb.Append("== ");
@@ -172,10 +190,7 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 1],
 			chunk.bytes.buffer[index + 2]
 		);
-		var function = chunk.functions.buffer[functionIndex];
-		sb.Append('\'');
-		sb.Append(function.name);
-		sb.Append('\'');
+		sb.Append(FormatFunction(chunk, functionIndex));
 		sb.AppendLine();
 		return index + 3;
 	}

@@ -63,6 +63,10 @@ public sealed class VirtualMachine
 			var function = chunk.functions.buffer[i];
 			if (function.name == functionName)
 			{
+				PushValue(
+					new ValueData(i),
+					ValueTypeHelper.SetIndex(ValueType.Function, i)
+				);
 				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 1));
 				break;
 			}
@@ -73,7 +77,7 @@ public sealed class VirtualMachine
 			return Result.Error(new RuntimeError(
 				0,
 				new Slice(),
-				"Could not find 'main' function"
+				string.Format("Could not find '{0}' function", functionName)
 			));
 		}
 
@@ -102,6 +106,12 @@ public sealed class VirtualMachine
 
 		if (maybeError.isSome)
 			return Result.Error(maybeError.value);
+
+		{
+			sb.Clear();
+			VirtualMachineHelper.TraceStack(this, sb);
+			System.Console.Write(sb);
+		}
 
 		var type = PeekType();
 		var value = PopValue();

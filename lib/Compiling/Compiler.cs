@@ -86,28 +86,47 @@ public sealed class Compiler
 		loopBreaks.count = 0;
 	}
 
-	public Compiler AddSoftError(Slice slice, string format, params object[] args)
-	{
-		errors.Add(new CompileError(slice, string.Format(format, args)));
-		return this;
-	}
-
-	public Compiler AddHardError(Slice slice, string format, params object[] args)
-	{
-		if (panicMode)
-			return this;
-
-		panicMode = true;
-		errors.Add(new CompileError(slice, string.Format(format, args)));
-
-		return this;
-	}
-
 	public ByteCodeChunk GetByteCodeChunk()
 	{
 		var c = chunk;
 		chunk = null;
 		return c;
+	}
+
+	public Compiler AddSoftError(Slice slice, string format, params object[] args)
+	{
+		if (!panicMode)
+			errors.Add(new CompileError(slice, string.Format(format, args)));
+		return this;
+	}
+
+	public Compiler AddHardError(Slice slice, string format, params object[] args)
+	{
+		if (!panicMode)
+		{
+			panicMode = true;
+			if (args == null || args.Length == 0)
+				errors.Add(new CompileError(slice, format));
+			else
+				errors.Add(new CompileError(slice, string.Format(format, args)));
+		}
+		return this;
+	}
+
+	public void Synchronize(System.Predicate<int> synchronizer)
+	{
+		if (!panicMode)
+			return;
+
+		while (
+			currentToken.kind != Token.EndKind &&
+			!synchronizer(currentToken.kind)
+		)
+		{
+			Next();
+		}
+
+		panicMode = false;
 	}
 
 	public Scope BeginScope()
