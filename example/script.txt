@@ -1,6 +1,6 @@
 fn sum(a:int, b:int):int {
 	print "opsies!"
-	a + b
+	0
 }
 
 fn main() {

@@ -124,10 +124,13 @@ public sealed class LangCompiler
 		else
 		{
 			Block(compiler, (int)Precedence.None);
+			var type = compiler.PopType();
+			if (declaration.returnType != type)
+				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType, type);
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.PopLocalVariables(declaration.parameterCount);
+		compiler.EndFunctionBody();
 	}
 
 	public static Option<ValueType> Statement(Compiler compiler)
@@ -160,6 +163,11 @@ public sealed class LangCompiler
 		else if (compiler.Match((int)TokenKind.Break))
 		{
 			BreakStatement(compiler);
+			return Option.None;
+		}
+		else if (compiler.Match((int)TokenKind.Return))
+		{
+			ReturnStatement(compiler);
 			return Option.None;
 		}
 		else if (compiler.Match((int)TokenKind.Print))
@@ -271,6 +279,24 @@ public sealed class LangCompiler
 			compiler.AddSoftError(compiler.previousToken.slice, "Not inside a loop");
 			return;
 		}
+	}
+
+	private static void ReturnStatement(Compiler compiler)
+	{
+		if (compiler.Match((int)TokenKind.CloseCurlyBrackets))
+		{
+			compiler.EmitInstruction(Instruction.LoadUnit);
+		}
+		else
+		{
+			Expression(compiler);
+			var type = compiler.PopType();
+			var declaration = compiler.PeekFunctionBuilder();
+			if (declaration.returnType != type)
+				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType, type);
+		}
+
+		compiler.EmitInstruction(Instruction.Return);
 	}
 
 	private static void PrintStatement(Compiler compiler)

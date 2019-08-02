@@ -61,13 +61,16 @@ public sealed class Compiler
 	internal ITokenizer tokenizer;
 	private ParseRule[] parseRules;
 	private ParseFunction onParseWithPrecedence;
+
 	private bool panicMode;
 	private ByteCodeChunk chunk;
 	private Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	private Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	private int scopeDepth;
+
+	private Buffer<ByteCodeChunk.FunctionDefinitionBuilder> functionBuilders = new Buffer<ByteCodeChunk.FunctionDefinitionBuilder>(4);
+	private Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
 	private int loopNesting;
-	private Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(16);
 
 	public void Begin(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
 	{
@@ -75,15 +78,19 @@ public sealed class Compiler
 		this.tokenizer = tokenizer;
 		this.parseRules = parseRules;
 		this.onParseWithPrecedence = onParseWithPrecedence;
+
 		previousToken = new Token(Token.EndKind, new Slice());
 		currentToken = new Token(Token.EndKind, new Slice());
+
 		panicMode = false;
 		chunk = new ByteCodeChunk();
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;
-		loopNesting = 0;
+
+		functionBuilders.count = 0;
 		loopBreaks.count = 0;
+		loopNesting = 0;
 	}
 
 	public ByteCodeChunk GetByteCodeChunk()
@@ -221,6 +228,19 @@ public sealed class Compiler
 
 		var name = tokenizer.Source.Substring(slice.index, slice.length);
 		chunk.EndAddFunction(name, builder);
+
+		functionBuilders.PushBack(builder);
+	}
+
+	public ByteCodeChunk.FunctionDefinitionBuilder PeekFunctionBuilder()
+	{
+		return functionBuilders.buffer[functionBuilders.count - 1];
+	}
+
+	public void EndFunctionBody()
+	{
+		var builder = functionBuilders.PopLast();
+		localVariables.count -= builder.parameterCount;
 	}
 
 	public int ResolveToFunctionIndex()
@@ -293,11 +313,6 @@ public sealed class Compiler
 	public LocalVariable GetLocalVariable(int index)
 	{
 		return localVariables.buffer[index];
-	}
-
-	public void PopLocalVariables(int count)
-	{
-		localVariables.count -= count;
 	}
 
 	public int GetTokenPrecedence(int tokenKind)
