@@ -1,8 +1,8 @@
 fn sum(a:int, b:int):int {
-	print "opsies!"
-	0
+	a+b
 }
 
 fn main() {
-	sum(3, 4)
+	let s = sum
+	print s(3,4)
 }

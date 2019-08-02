@@ -96,7 +96,7 @@ public sealed class VirtualMachine
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
 				chunk.DisassembleInstruction(ip, sb);
-				System.Console.Write(sb);
+				//System.Console.Write(sb);
 			}
 
 			var done = VirtualMachineInstructions.Tick(this);
@@ -106,12 +106,6 @@ public sealed class VirtualMachine
 
 		if (maybeError.isSome)
 			return Result.Error(maybeError.value);
-
-		{
-			sb.Clear();
-			VirtualMachineHelper.TraceStack(this, sb);
-			System.Console.Write(sb);
-		}
 
 		var type = PeekType();
 		var value = PopValue();
