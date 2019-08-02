@@ -32,6 +32,7 @@ public sealed class Program
 			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2, TabSize);
 			System.Console.WriteLine("RUNTIME ERROR");
 			System.Console.WriteLine(error);
+			System.Console.WriteLine(VirtualMachineHelper.TraceCallStack(vm, source));
 		}
 	}
 }

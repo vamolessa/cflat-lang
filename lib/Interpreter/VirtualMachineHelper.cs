@@ -52,6 +52,31 @@ public static class VirtualMachineHelper
 		sb.AppendLine();
 	}
 
+	public static string TraceCallStack(VirtualMachine vm, string source)
+	{
+		var sb = new StringBuilder();
+
+		sb.AppendLine("callstack:");
+		for (var i = vm.callframeStack.count - 1; i >= 0; i--)
+		{
+			var callframe = vm.callframeStack.buffer[i];
+			var sourceIndex = vm.chunk.slices.buffer[callframe.codeIndex - 1].index;
+
+			var pos = CompilerHelper.GetLineAndColumn(source, sourceIndex, 1);
+			sb.Append("[line ");
+			sb.Append(pos.line);
+			sb.Append("] ");
+
+			sb.Append(vm.chunk.FormatFunction(callframe.functionIndex));
+
+			sb.Append(" => ");
+			var line = CompilerHelper.GetLines(source, pos.line - 1, pos.line - 1);
+			sb.AppendLine(line.TrimStart());
+		}
+
+		return sb.ToString();
+	}
+
 	public static string FormatError(string source, RuntimeError error, int contextSize, int tabSize)
 	{
 		var sb = new StringBuilder();
@@ -63,8 +88,6 @@ public static class VirtualMachineHelper
 		sb.Append(position.line);
 		sb.Append(", column: ");
 		sb.Append(position.column);
-		sb.Append(", pc: ");
-		sb.Append(error.instructionIndex);
 		sb.AppendLine(")");
 
 		sb.Append(CompilerHelper.GetLines(
@@ -75,7 +98,7 @@ public static class VirtualMachineHelper
 		sb.AppendLine();
 		sb.Append(' ', position.column - 1);
 		sb.Append('^', error.slice.length > 0 ? error.slice.length : 1);
-		sb.Append(" here\n\n");
+		sb.Append(" here\n");
 
 		return sb.ToString();
 	}
