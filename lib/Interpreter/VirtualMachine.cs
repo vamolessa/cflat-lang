@@ -63,7 +63,7 @@ public sealed class VirtualMachine
 			var function = chunk.functions.buffer[i];
 			if (function.name == functionName)
 			{
-				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 0));
+				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 1));
 				break;
 			}
 		}
