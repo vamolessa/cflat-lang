@@ -1,12 +1,13 @@
-fn hello() {
-	print "hello!!!"
+fn sum(a: int, b: int):int {
+	a + b
 }
 
-fn foo(): fn() {
-	hello
+fn foo(txt: string): fn(int, int): int {
+	print txt
+	sum
 }
 
 fn main() {
-	let f = foo()
-	f()
+	let f = foo("hola!")
+	print f(1, 2)
 }
