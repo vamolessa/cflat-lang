@@ -191,8 +191,8 @@ public sealed class LangCompiler
 		}
 		else if (compiler.Match((int)TokenKind.Return))
 		{
-			ReturnStatement(compiler);
-			return Option.None;
+			var type = ReturnStatement(compiler);
+			return Option.Some(type);
 		}
 		else if (compiler.Match((int)TokenKind.Print))
 		{
@@ -298,14 +298,33 @@ public sealed class LangCompiler
 	{
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 
-		if (!LangCompilerHelper.BreakLoop(this, 1, breakJump))
+		var nestingCount = 1;
+		if (compiler.Match((int)TokenKind.Colon))
+		{
+			if (compiler.Consume((int)TokenKind.IntLiteral, "Expected loop nesting count as int literal"))
+				nestingCount = CompilerHelper.GetInt(compiler);
+
+			if (nestingCount <= 0)
+			{
+				compiler.AddSoftError(compiler.previousToken.slice, "Nesting count must be at least 1");
+				nestingCount = 1;
+			}
+
+			if (nestingCount > loopNesting)
+			{
+				compiler.AddSoftError(compiler.previousToken.slice, "Nesting count can not exceed loop nesting count which is {0}", loopNesting);
+				nestingCount = loopNesting;
+			}
+		}
+
+		if (!LangCompilerHelper.BreakLoop(this, nestingCount, breakJump))
 		{
 			compiler.AddSoftError(compiler.previousToken.slice, "Not inside a loop");
 			return;
 		}
 	}
 
-	private void ReturnStatement(Compiler compiler)
+	private ValueType ReturnStatement(Compiler compiler)
 	{
 		var expectedType = functionReturnTypeStack.buffer[functionReturnTypeStack.count - 1];
 		var returnType = ValueType.Unit;
@@ -322,7 +341,9 @@ public sealed class LangCompiler
 
 		compiler.EmitInstruction(Instruction.Return);
 		if (expectedType != returnType)
-			compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
+			compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}. Did you forget to add ':' before the expression?", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
+
+		return returnType;
 	}
 
 	private void PrintStatement(Compiler compiler)

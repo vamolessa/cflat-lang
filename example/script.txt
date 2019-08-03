@@ -1,13 +1,10 @@
-fn sum(a: int, b: int):int {
-	a + b
-}
+fn main(): int {
+	for i = 0, 4 {
+		while true {
+			break: 2
+		}
+		print "ops!"
+	}
 
-fn foo(txt: string): fn(int, int): int {
-	print txt
-	sum
-}
-
-fn main() {
-	let f = foo("hola!")
-	print f(1, 2)
+	return: 0
 }
