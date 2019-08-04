@@ -299,10 +299,9 @@ public sealed class LangCompiler
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 
 		var nestingCount = 1;
-		if (compiler.Match((int)TokenKind.Colon))
+		if (compiler.Match((int)TokenKind.IntLiteral))
 		{
-			if (compiler.Consume((int)TokenKind.IntLiteral, "Expected loop nesting count as int literal"))
-				nestingCount = CompilerHelper.GetInt(compiler);
+			nestingCount = CompilerHelper.GetInt(compiler);
 
 			if (nestingCount <= 0)
 			{
@@ -329,10 +328,11 @@ public sealed class LangCompiler
 		var expectedType = functionReturnTypeStack.buffer[functionReturnTypeStack.count - 1];
 		var returnType = ValueType.Unit;
 
-		if (compiler.Match((int)TokenKind.Colon))
+		if (expectedType != ValueType.Unit)
 		{
 			Expression(compiler);
-			returnType = compiler.typeStack.PopLast();
+			if (compiler.typeStack.count > 0)
+				returnType = compiler.typeStack.PopLast();
 		}
 		else
 		{
@@ -341,7 +341,7 @@ public sealed class LangCompiler
 
 		compiler.EmitInstruction(Instruction.Return);
 		if (expectedType != returnType)
-			compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}. Did you forget to add ':' before the expression?", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
+			compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
 
 		return returnType;
 	}

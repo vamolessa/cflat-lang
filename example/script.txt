@@ -1,10 +1,10 @@
 fn main(): int {
 	for i = 0, 4 {
 		while true {
-			break: 2
+			break 2
 		}
 		print "ops!"
 	}
 
-	return: 0
+	return {}
 }
