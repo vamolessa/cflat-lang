@@ -35,7 +35,7 @@ public sealed class LangCompiler
 
 		while (!compiler.Match(Token.EndKind))
 		{
-			compiler.Consume((int)TokenKind.Function, "Expected 'fn' before function name");
+			compiler.Consume((int)TokenKind.Function, "Expected function declaration");
 			FunctionDeclaration(compiler);
 			Syncronize(compiler);
 		}
@@ -94,11 +94,25 @@ public sealed class LangCompiler
 
 	public void FunctionDeclaration(Compiler compiler)
 	{
+		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
+		ConsumeFunction(compiler);
+	}
+
+	public void FunctionExpression(Compiler compiler, int precedence)
+	{
+		ConsumeFunction(compiler);
+		var functionIndex = compiler.chunk.functions.count - 1;
+		var function = compiler.chunk.functions.buffer[functionIndex];
+
+		compiler.EmitLoadFunction(functionIndex);
+		compiler.typeStack.PushBack(ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex));
+	}
+
+	private void ConsumeFunction(Compiler compiler)
+	{
 		const int MaxParamCount = 8;
 
-		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
 		var slice = compiler.previousToken.slice;
-
 		var declaration = compiler.BeginFunctionDeclaration();
 
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
@@ -210,7 +224,9 @@ public sealed class LangCompiler
 	{
 		Expression(compiler);
 		compiler.EmitInstruction(Instruction.Pop);
-		return compiler.typeStack.PopLast();
+		return compiler.typeStack.count > 0 ?
+			compiler.typeStack.PopLast() :
+			ValueType.Unit;
 	}
 
 	public void BlockStatement(Compiler compiler)
@@ -298,7 +314,25 @@ public sealed class LangCompiler
 	{
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 
-		if (!LangCompilerHelper.BreakLoop(this, 1, breakJump))
+		var nestingCount = 1;
+		if (compiler.Match((int)TokenKind.IntLiteral))
+		{
+			nestingCount = CompilerHelper.GetInt(compiler);
+
+			if (nestingCount <= 0)
+			{
+				compiler.AddSoftError(compiler.previousToken.slice, "Nesting count must be at least 1");
+				nestingCount = 1;
+			}
+
+			if (nestingCount > loopNesting)
+			{
+				compiler.AddSoftError(compiler.previousToken.slice, "Nesting count can not exceed loop nesting count which is {0}", loopNesting);
+				nestingCount = loopNesting;
+			}
+		}
+
+		if (!LangCompilerHelper.BreakLoop(this, nestingCount, breakJump))
 		{
 			compiler.AddSoftError(compiler.previousToken.slice, "Not inside a loop");
 			return;
@@ -310,10 +344,11 @@ public sealed class LangCompiler
 		var expectedType = functionReturnTypeStack.buffer[functionReturnTypeStack.count - 1];
 		var returnType = ValueType.Unit;
 
-		if (compiler.Match((int)TokenKind.Colon))
+		if (expectedType != ValueType.Unit)
 		{
 			Expression(compiler);
-			returnType = compiler.typeStack.PopLast();
+			if (compiler.typeStack.count > 0)
+				returnType = compiler.typeStack.PopLast();
 		}
 		else
 		{
