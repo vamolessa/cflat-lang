@@ -191,8 +191,8 @@ public sealed class LangCompiler
 		}
 		else if (compiler.Match((int)TokenKind.Return))
 		{
-			ReturnStatement(compiler);
-			return Option.None;
+			var type = ReturnStatement(compiler);
+			return Option.Some(type);
 		}
 		else if (compiler.Match((int)TokenKind.Print))
 		{
@@ -305,7 +305,7 @@ public sealed class LangCompiler
 		}
 	}
 
-	private void ReturnStatement(Compiler compiler)
+	private ValueType ReturnStatement(Compiler compiler)
 	{
 		var expectedType = functionReturnTypeStack.buffer[functionReturnTypeStack.count - 1];
 		var returnType = ValueType.Unit;
@@ -323,6 +323,8 @@ public sealed class LangCompiler
 		compiler.EmitInstruction(Instruction.Return);
 		if (expectedType != returnType)
 			compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
+
+		return returnType;
 	}
 
 	private void PrintStatement(Compiler compiler)
