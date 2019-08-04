@@ -24,6 +24,7 @@ public static class LangParseRules
 		Set(c, TokenKind.Or, null, c.Or, Precedence.Or);
 		Set(c, TokenKind.FloatLiteral, c.Literal, null, Precedence.None);
 		Set(c, TokenKind.True, c.Literal, null, Precedence.None);
+		Set(c, TokenKind.Function, c.FunctionExpression, null, Precedence.None);
 	}
 
 	private static void Set(LangCompiler c, TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
