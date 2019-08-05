@@ -3,13 +3,13 @@ using System.Diagnostics;
 [DebuggerTypeProxy(typeof(ByteCodeChunkDebugView))]
 public sealed class ByteCodeChunk
 {
-	public struct FunctionDefinitionBuilder
+	public struct FunctionTypeBuilder
 	{
 		public ByteCodeChunk chunk;
 		public int parameterCount;
 		public ValueType returnType;
 
-		public FunctionDefinitionBuilder(ByteCodeChunk chunk)
+		public FunctionTypeBuilder(ByteCodeChunk chunk)
 		{
 			this.chunk = chunk;
 			this.parameterCount = 0;
@@ -23,6 +23,24 @@ public sealed class ByteCodeChunk
 		}
 	}
 
+	public struct StructTypeBuilder
+	{
+		public ByteCodeChunk chunk;
+		public int fieldCount;
+
+		public StructTypeBuilder(ByteCodeChunk chunk)
+		{
+			this.chunk = chunk;
+			this.fieldCount = 0;
+		}
+
+		public void AddField(string name, ValueType type)
+		{
+			chunk.structTypeFields.PushBack(new StructTypeField(name, type));
+			fieldCount += 1;
+		}
+	}
+
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<Slice> slices = new Buffer<Slice>(256);
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
@@ -31,6 +49,8 @@ public sealed class ByteCodeChunk
 	public Buffer<FunctionType> functionTypes = new Buffer<FunctionType>(16);
 	public Buffer<ValueType> functionTypeParams = new Buffer<ValueType>(16);
 	public Buffer<Function> functions = new Buffer<Function>(8);
+	public Buffer<StructType> structTypes = new Buffer<StructType>(8);
+	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(32);
 
 	public void WriteByte(byte value, Slice slice)
 	{
@@ -63,12 +83,12 @@ public sealed class ByteCodeChunk
 		return AddValueLiteral(new ValueData(stringIndex), ValueType.String);
 	}
 
-	public FunctionDefinitionBuilder BeginAddFunctionType()
+	public FunctionTypeBuilder BeginAddFunctionType()
 	{
-		return new FunctionDefinitionBuilder(this);
+		return new FunctionTypeBuilder(this);
 	}
 
-	public int EndAddFunctionType(FunctionDefinitionBuilder builder)
+	public int EndAddFunctionType(FunctionTypeBuilder builder)
 	{
 		var parametersIndex = functionTypeParams.count - builder.parameterCount;
 
@@ -111,6 +131,26 @@ public sealed class ByteCodeChunk
 	public void AddFunction(string name, int typeIndex)
 	{
 		functions.PushBack(new Function(name, bytes.count, typeIndex));
+	}
+
+	public StructTypeBuilder BeginAddStructType()
+	{
+		return new StructTypeBuilder(this);
+	}
+
+	public int EndAddStructType(StructTypeBuilder builder, string name)
+	{
+		var fieldIndex = structTypeFields.count - builder.fieldCount;
+
+		structTypes.PushBack(new StructType(
+			name,
+			new Slice(
+				fieldIndex,
+				builder.fieldCount
+			)
+		));
+
+		return structTypes.count - 1;
 	}
 
 	private int FindValueIndex(ValueData value, ValueType type)

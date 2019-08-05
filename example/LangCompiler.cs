@@ -34,11 +34,7 @@ public sealed class LangCompiler
 		compiler.Next();
 
 		while (!compiler.Match(Token.EndKind))
-		{
-			compiler.Consume((int)TokenKind.Function, "Expected function declaration");
-			FunctionDeclaration(compiler);
-			Syncronize(compiler);
-		}
+			Declaration(compiler);
 
 		compiler.EmitInstruction(Instruction.Halt);
 
@@ -92,15 +88,26 @@ public sealed class LangCompiler
 		}
 	}
 
+	public void Declaration(Compiler compiler)
+	{
+		if (compiler.Match((int)TokenKind.Function))
+			FunctionDeclaration(compiler);
+		else if (compiler.Match((int)TokenKind.Struct))
+			StructDeclaration(compiler);
+		else
+			compiler.AddHardError(compiler.previousToken.slice, "Expected function or struct declaration");
+		Syncronize(compiler);
+	}
+
 	public void FunctionDeclaration(Compiler compiler)
 	{
 		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
-		ConsumeFunction(compiler);
+		ConsumeFunction(compiler, compiler.previousToken.slice);
 	}
 
 	public void FunctionExpression(Compiler compiler, int precedence)
 	{
-		ConsumeFunction(compiler);
+		ConsumeFunction(compiler, new Slice());
 		var functionIndex = compiler.chunk.functions.count - 1;
 		var function = compiler.chunk.functions.buffer[functionIndex];
 
@@ -108,11 +115,10 @@ public sealed class LangCompiler
 		compiler.typeStack.PushBack(ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex));
 	}
 
-	private void ConsumeFunction(Compiler compiler)
+	private void ConsumeFunction(Compiler compiler, Slice slice)
 	{
 		const int MaxParamCount = 8;
 
-		var slice = compiler.previousToken.slice;
 		var declaration = compiler.BeginFunctionDeclaration();
 
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
@@ -147,7 +153,7 @@ public sealed class LangCompiler
 		if (compiler.Match((int)TokenKind.Colon))
 			declaration.returnType = this.ConsumeType(compiler, "Expected function return type", 0);
 
-		compiler.EndFunctionDeclaration(slice, declaration);
+		compiler.EndFunctionDeclaration(declaration, slice);
 		functionReturnTypeStack.PushBack(declaration.returnType);
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
@@ -169,6 +175,32 @@ public sealed class LangCompiler
 
 		functionReturnTypeStack.PopLast();
 		compiler.localVariables.count -= declaration.parameterCount;
+	}
+
+	public void StructDeclaration(Compiler compiler)
+	{
+		compiler.Consume((int)TokenKind.Identifier, "Expected struct name");
+		var slice = compiler.previousToken.slice;
+
+		var declaration = compiler.BeginStructDeclaration();
+
+		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before struct fields");
+		while (
+			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(Token.EndKind)
+		)
+		{
+			compiler.Consume((int)TokenKind.Identifier, "Expected field name");
+			var fieldSlice = compiler.previousToken.slice;
+			compiler.Consume((int)TokenKind.Colon, "Expected ':' after field name");
+			var fieldType = this.ConsumeType(compiler, "Expected field type", 0);
+
+			var fieldName = compiler.tokenizer.Source.Substring(fieldSlice.index, fieldSlice.length);
+			declaration.AddField(fieldName, fieldType);
+		}
+		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
+
+		compiler.EndStructDeclaration(declaration, slice);
 	}
 
 	public Option<ValueType> Statement(Compiler compiler)

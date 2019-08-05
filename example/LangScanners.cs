@@ -1,7 +1,7 @@
 public enum TokenKind
 {
 	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
-	Function, For, If, Else, While, Return, Break,
+	Function, Struct, For, If, Else, While, Return, Break,
 	And, Or, Dot, Comma, Colon,
 
 	Let, Mut,
@@ -36,6 +36,7 @@ public static class LangScanners
 {
 	public static readonly Scanner[] scanners = new Scanner[] {
 		new ExactScanner("fn").ForToken((int)TokenKind.Function),
+		new ExactScanner("struct").ForToken((int)TokenKind.Struct),
 		new ExactScanner("for").ForToken((int)TokenKind.For),
 		new ExactScanner("if").ForToken((int)TokenKind.If),
 		new ExactScanner("else").ForToken((int)TokenKind.Else),

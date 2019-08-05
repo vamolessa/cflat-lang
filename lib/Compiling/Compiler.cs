@@ -119,12 +119,12 @@ public sealed class Compiler
 		}
 	}
 
-	public ByteCodeChunk.FunctionDefinitionBuilder BeginFunctionDeclaration()
+	public ByteCodeChunk.FunctionTypeBuilder BeginFunctionDeclaration()
 	{
 		return chunk.BeginAddFunctionType();
 	}
 
-	public void EndFunctionDeclaration(Slice slice, ByteCodeChunk.FunctionDefinitionBuilder builder)
+	public void EndFunctionDeclaration(ByteCodeChunk.FunctionTypeBuilder builder, Slice slice)
 	{
 		if (chunk.functions.count >= ushort.MaxValue)
 		{
@@ -137,6 +137,24 @@ public sealed class Compiler
 
 		var name = tokenizer.Source.Substring(slice.index, slice.length);
 		chunk.AddFunction(name, typeIndex);
+	}
+
+	public ByteCodeChunk.StructTypeBuilder BeginStructDeclaration()
+	{
+		return chunk.BeginAddStructType();
+	}
+
+	public void EndStructDeclaration(ByteCodeChunk.StructTypeBuilder builder, Slice slice)
+	{
+		if (chunk.structTypes.count >= ushort.MaxValue)
+		{
+			chunk.structTypes.count -= builder.fieldCount;
+			AddSoftError(slice, "Too many struct declarations");
+			return;
+		}
+
+		var name = tokenizer.Source.Substring(slice.index, slice.length);
+		chunk.EndAddStructType(builder, name);
 	}
 
 	public int ResolveToFunctionIndex()

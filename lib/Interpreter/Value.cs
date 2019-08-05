@@ -99,3 +99,27 @@ public readonly struct FunctionType
 		this.returnType = returnType;
 	}
 }
+
+public readonly struct StructType
+{
+	public readonly string name;
+	public readonly Slice fields;
+
+	public StructType(string name, Slice fields)
+	{
+		this.name = name;
+		this.fields = fields;
+	}
+}
+
+public readonly struct StructTypeField
+{
+	public readonly string name;
+	public readonly ValueType type;
+
+	public StructTypeField(string name, ValueType type)
+	{
+		this.name = name;
+		this.type = type;
+	}
+}
