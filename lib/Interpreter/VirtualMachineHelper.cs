@@ -18,6 +18,8 @@ public static class VirtualMachineHelper
 			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
 		case ValueType.Function:
 			return chunk.FormatFunction(data.asInt, new StringBuilder()).ToString();
+		case ValueType.Struct:
+			return chunk.structTypeFields.buffer[ValueTypeHelper.GetIndex(type)].name;
 		case ValueType.Custom:
 			return string.Format("CustomType [{0}] {1}", objs[data.asInt].GetType().Name, objs[data.asInt].ToString());
 		default:

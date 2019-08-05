@@ -156,14 +156,7 @@ public sealed class LangCompiler
 					continue;
 				}
 
-				compiler.localVariables.PushBack(new LocalVariable(
-					paramSlice,
-					compiler.scopeDepth,
-					paramType,
-					false,
-					true
-				));
-
+				compiler.AddLocalVariable(paramSlice, paramType, false, true);
 				declaration.AddParam(paramType);
 			} while (compiler.Match((int)TokenKind.Comma));
 		}
@@ -237,6 +230,9 @@ public sealed class LangCompiler
 			declaration.AddField(fieldName, fieldType);
 		}
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
+
+		if (LangCompilerHelper.ResolveBasicType(source, slice).isSome)
+			compiler.AddSoftError(slice, "Can not name struct '{0}' as it's a basic type", source.Substring(slice.index, slice.length));
 
 		compiler.EndStructDeclaration(declaration, slice);
 	}
@@ -364,14 +360,14 @@ public sealed class LangCompiler
 
 		var loopJump = compiler.BeginEmitBackwardJump();
 		compiler.EmitInstruction(Instruction.ForLoopCheck);
-		compiler.EmitByte((byte)itVarIndex);
+		compiler.EmitByte((byte)itVar.stackIndex);
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		LangCompilerHelper.BeginLoop(this);
 		BlockStatement(compiler);
 
-		compiler.EmitInstruction(Instruction.IncrementLocal);
-		compiler.EmitByte((byte)itVarIndex);
+		compiler.EmitInstruction(Instruction.IncrementLocalInt);
+		compiler.EmitByte((byte)itVar.stackIndex);
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
@@ -617,15 +613,16 @@ public sealed class LangCompiler
 
 			if (index < 0)
 			{
-				compiler.AddSoftError(slice, "Can not write to undeclared variable. Declare it with 'let'");
+				compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let' or 'mut'");
 			}
 			else
 			{
-				if (!compiler.localVariables.buffer[index].isMutable)
+				var localVar = compiler.localVariables.buffer[index];
+				if (!localVar.isMutable)
 					compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
 				compiler.EmitInstruction(Instruction.AssignLocal);
-				compiler.EmitByte((byte)index);
+				compiler.EmitByte((byte)localVar.stackIndex);
 			}
 		}
 		else
@@ -652,7 +649,7 @@ public sealed class LangCompiler
 				localVar.isUsed = true;
 
 				compiler.EmitInstruction(Instruction.LoadLocal);
-				compiler.EmitByte((byte)index);
+				compiler.EmitByte((byte)localVar.stackIndex);
 				compiler.typeStack.PushBack(localVar.type);
 			}
 		}

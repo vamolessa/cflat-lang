@@ -130,7 +130,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.CopyTo:
 		case Instruction.AssignLocal:
 		case Instruction.LoadLocal:
-		case Instruction.IncrementLocal:
+		case Instruction.IncrementLocalInt:
 		case Instruction.ForLoopCheck:
 			return ArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:

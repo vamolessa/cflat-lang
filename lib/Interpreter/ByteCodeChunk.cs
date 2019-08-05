@@ -140,17 +140,43 @@ public sealed class ByteCodeChunk
 
 	public int EndAddStructType(StructTypeBuilder builder, string name)
 	{
-		var fieldIndex = structTypeFields.count - builder.fieldCount;
+		var fieldsIndex = structTypeFields.count - builder.fieldCount;
+
+		var size = 0;
+		for (var i = 0; i < builder.fieldCount; i++)
+		{
+			var field = structTypeFields.buffer[fieldsIndex + 1];
+			size += GetTypeSize(field.type);
+		}
+
+		if (size == 0)
+			size = 1;
 
 		structTypes.PushBack(new StructType(
 			name,
 			new Slice(
-				fieldIndex,
+				fieldsIndex,
 				builder.fieldCount
-			)
+			),
+			size
 		));
 
 		return structTypes.count - 1;
+	}
+
+	public int GetTypeSize(ValueType type)
+	{
+		var kind = ValueTypeHelper.GetKind(type);
+
+		if (kind == ValueType.Struct)
+		{
+			var index = ValueTypeHelper.GetIndex(type);
+			return structTypes.buffer[index].size;
+		}
+		else
+		{
+			return 1;
+		}
 	}
 
 	private int FindValueIndex(ValueData value, ValueType type)

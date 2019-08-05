@@ -15,14 +15,16 @@ public readonly struct CompileError
 public struct LocalVariable
 {
 	public Slice slice;
+	public int stackIndex;
 	public int depth;
 	public ValueType type;
 	public bool isMutable;
 	public bool isUsed;
 
-	public LocalVariable(Slice slice, int depth, ValueType type, bool isMutable, bool isUsed)
+	public LocalVariable(Slice slice, int stackIndex, int depth, ValueType type, bool isMutable, bool isUsed)
 	{
 		this.slice = slice;
+		this.stackIndex = stackIndex;
 		this.depth = depth;
 		this.type = type;
 		this.isMutable = isMutable;
@@ -153,6 +155,17 @@ public sealed class Compiler
 		}
 
 		var name = tokenizer.Source.Substring(slice.index, slice.length);
+
+		for (var i = 0; i < chunk.structTypes.count; i++)
+		{
+			if (chunk.structTypes.buffer[i].name == name)
+			{
+				chunk.structTypes.count -= builder.fieldCount;
+				AddSoftError(slice, "There's already a struct with this name");
+				return;
+			}
+		}
+
 		chunk.EndAddStructType(builder, name);
 	}
 
@@ -170,6 +183,27 @@ public sealed class Compiler
 		return -1;
 	}
 
+	public int AddLocalVariable(Slice slice, ValueType type, bool mutable, bool isUsed)
+	{
+		var stackIndex = 0;
+		if (localVariables.count > 0)
+		{
+			var lastVar = localVariables.buffer[localVariables.count - 1];
+			stackIndex = lastVar.stackIndex + chunk.GetTypeSize(lastVar.type);
+		}
+
+		localVariables.PushBack(new LocalVariable(
+			slice,
+			stackIndex,
+			scopeDepth,
+			type,
+			mutable,
+			isUsed
+		));
+
+		return localVariables.count - 1;
+	}
+
 	public int DeclareLocalVariable(Slice slice, bool mutable)
 	{
 		if (localVariables.count >= localVariables.buffer.Length)
@@ -182,8 +216,7 @@ public sealed class Compiler
 		if (typeStack.count > 0)
 			type = typeStack.buffer[typeStack.count - 1];
 
-		localVariables.PushBack(new LocalVariable(slice, scopeDepth, type, mutable, false));
-		return localVariables.count - 1;
+		return AddLocalVariable(slice, type, mutable, false);
 	}
 
 	public int ResolveToLocalVariableIndex()

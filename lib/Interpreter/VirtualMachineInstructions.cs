@@ -112,7 +112,7 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
-		case Instruction.IncrementLocal:
+		case Instruction.IncrementLocalInt:
 			{
 				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				vm.valueStack.buffer[index].asInt += 1;

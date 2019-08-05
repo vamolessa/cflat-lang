@@ -41,6 +41,7 @@ public enum ValueType : int
 	Float,
 	String,
 	Function,
+	Struct,
 	Custom,
 }
 
@@ -104,11 +105,13 @@ public readonly struct StructType
 {
 	public readonly string name;
 	public readonly Slice fields;
+	public readonly int size;
 
-	public StructType(string name, Slice fields)
+	public StructType(string name, Slice fields, int size)
 	{
 		this.name = name;
 		this.fields = fields;
+		this.size = size;
 	}
 }
 

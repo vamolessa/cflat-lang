@@ -29,19 +29,20 @@ public static class LangCompilerHelper
 		return true;
 	}
 
-	public static ValueType ConsumeType(this LangCompiler lang, Compiler compiler, string error, int recursiveLevel)
+	public static ValueType ConsumeType(this LangCompiler lang, Compiler compiler, string error, int recursionLevel)
 	{
-		if (recursiveLevel > 8)
+		if (recursionLevel > 8)
 		{
 			compiler.AddSoftError(compiler.previousToken.slice, "Type is nested too deeply");
 			return ValueType.Unit;
 		}
 
 		var type = new Option<ValueType>();
+
 		if (compiler.Match((int)TokenKind.Identifier))
-			type = lang.ResolveSimpleType(compiler, compiler.previousToken.slice, recursiveLevel + 1);
+			type = lang.ResolveIdentifierType(compiler, recursionLevel + 1);
 		else if (compiler.Match((int)TokenKind.Function))
-			type = lang.ResolveFunctionType(compiler, recursiveLevel + 1);
+			type = lang.ResolveFunctionType(compiler, recursionLevel + 1);
 
 		if (type.isSome)
 			return type.value;
@@ -50,9 +51,8 @@ public static class LangCompilerHelper
 		return ValueType.Unit;
 	}
 
-	private static Option<ValueType> ResolveSimpleType(this LangCompiler lang, Compiler compiler, Slice slice, int recursiveLevel)
+	public static Option<ValueType> ResolveBasicType(string source, Slice slice)
 	{
-		var source = compiler.tokenizer.Source;
 		if (CompilerHelper.AreEqual(source, slice, "bool"))
 			return Option.Some(ValueType.Bool);
 		else if (CompilerHelper.AreEqual(source, slice, "int"))
@@ -64,7 +64,26 @@ public static class LangCompilerHelper
 		return Option.None;
 	}
 
-	private static Option<ValueType> ResolveFunctionType(this LangCompiler lang, Compiler compiler, int recursiveLevel)
+	private static Option<ValueType> ResolveIdentifierType(this LangCompiler lang, Compiler compiler, int recursionLevel)
+	{
+		var source = compiler.tokenizer.Source;
+		var slice = compiler.previousToken.slice;
+
+		var basicType = ResolveBasicType(source, slice);
+		if (basicType.isSome)
+			return basicType;
+
+		for (var i = 0; i < compiler.chunk.structTypes.count; i++)
+		{
+			var structName = compiler.chunk.structTypes.buffer[i].name;
+			if (CompilerHelper.AreEqual(source, slice, structName))
+				return Option.Some(ValueTypeHelper.SetIndex(ValueType.String, i));
+		}
+
+		return Option.None;
+	}
+
+	private static Option<ValueType> ResolveFunctionType(this LangCompiler lang, Compiler compiler, int recursionLevel)
 	{
 		var declaration = compiler.chunk.BeginAddFunctionType();
 
@@ -73,13 +92,13 @@ public static class LangCompilerHelper
 		{
 			do
 			{
-				var paramType = lang.ConsumeType(compiler, "Expected function parameter type", recursiveLevel);
+				var paramType = lang.ConsumeType(compiler, "Expected function parameter type", recursionLevel);
 				declaration.AddParam(paramType);
 			} while (compiler.Match((int)TokenKind.Comma));
 		}
 		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
 		if (compiler.Match((int)TokenKind.Colon))
-			declaration.returnType = lang.ConsumeType(compiler, "Expected function return type", recursiveLevel);
+			declaration.returnType = lang.ConsumeType(compiler, "Expected function return type", recursionLevel);
 
 		var functionTypeIndex = compiler.chunk.EndAddFunctionType(declaration);
 		var type = ValueTypeHelper.SetIndex(ValueType.Function, functionTypeIndex);
