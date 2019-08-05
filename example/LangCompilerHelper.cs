@@ -39,8 +39,16 @@ public static class LangCompilerHelper
 
 		var type = new Option<ValueType>();
 
-		if (compiler.Match((int)TokenKind.Identifier))
-			type = lang.ResolveIdentifierType(compiler, recursionLevel + 1);
+		if (compiler.Match((int)TokenKind.Bool))
+			type = Option.Some(ValueType.Bool);
+		else if (compiler.Match((int)TokenKind.Int))
+			type = Option.Some(ValueType.Int);
+		else if (compiler.Match((int)TokenKind.Float))
+			type = Option.Some(ValueType.Float);
+		else if (compiler.Match((int)TokenKind.String))
+			type = Option.Some(ValueType.String);
+		else if (compiler.Match((int)TokenKind.Identifier))
+			type = lang.ResolveStructType(compiler, recursionLevel + 1);
 		else if (compiler.Match((int)TokenKind.Function))
 			type = lang.ResolveFunctionType(compiler, recursionLevel + 1);
 
@@ -51,27 +59,10 @@ public static class LangCompilerHelper
 		return ValueType.Unit;
 	}
 
-	public static Option<ValueType> ResolveBasicType(string source, Slice slice)
-	{
-		if (CompilerHelper.AreEqual(source, slice, "bool"))
-			return Option.Some(ValueType.Bool);
-		else if (CompilerHelper.AreEqual(source, slice, "int"))
-			return Option.Some(ValueType.Int);
-		else if (CompilerHelper.AreEqual(source, slice, "float"))
-			return Option.Some(ValueType.Float);
-		else if (CompilerHelper.AreEqual(source, slice, "string"))
-			return Option.Some(ValueType.String);
-		return Option.None;
-	}
-
-	private static Option<ValueType> ResolveIdentifierType(this LangCompiler lang, Compiler compiler, int recursionLevel)
+	private static Option<ValueType> ResolveStructType(this LangCompiler lang, Compiler compiler, int recursionLevel)
 	{
 		var source = compiler.tokenizer.Source;
 		var slice = compiler.previousToken.slice;
-
-		var basicType = ResolveBasicType(source, slice);
-		if (basicType.isSome)
-			return basicType;
 
 		for (var i = 0; i < compiler.chunk.structTypes.count; i++)
 		{

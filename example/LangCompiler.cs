@@ -231,9 +231,6 @@ public sealed class LangCompiler
 		}
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
 
-		if (LangCompilerHelper.ResolveBasicType(source, slice).isSome)
-			compiler.AddSoftError(slice, "Can not name struct '{0}' as it's a basic type", source.Substring(slice.index, slice.length));
-
 		compiler.EndStructDeclaration(declaration, slice);
 	}
 

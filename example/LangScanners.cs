@@ -5,6 +5,7 @@ public enum TokenKind
 	And, Or, Dot, Comma, Colon,
 
 	Let, Mut,
+	Bool, Int, Float, String,
 
 	Print,
 
@@ -48,6 +49,11 @@ public static class LangScanners
 
 		new ExactScanner("let").ForToken((int)TokenKind.Let),
 		new ExactScanner("mut").ForToken((int)TokenKind.Mut),
+
+		new ExactScanner("bool").ForToken((int)TokenKind.Bool),
+		new ExactScanner("int").ForToken((int)TokenKind.Int),
+		new ExactScanner("float").ForToken((int)TokenKind.Float),
+		new ExactScanner("string").ForToken((int)TokenKind.String),
 
 		new ExactScanner("print").ForToken((int)TokenKind.Print),
 
