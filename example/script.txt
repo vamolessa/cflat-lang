@@ -1,5 +1,6 @@
 struct A {
 	a: int
+	b: string
 }
 
 fn main(): int {

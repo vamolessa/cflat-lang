@@ -134,7 +134,6 @@ public sealed class Compiler
 		}
 
 		var typeIndex = chunk.EndAddFunctionType(builder);
-
 		var name = tokenizer.Source.Substring(slice.index, slice.length);
 		chunk.AddFunction(name, typeIndex);
 	}

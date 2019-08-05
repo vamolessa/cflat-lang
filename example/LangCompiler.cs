@@ -119,7 +119,9 @@ public sealed class LangCompiler
 	{
 		const int MaxParamCount = 8;
 
+		var source = compiler.tokenizer.Source;
 		var declaration = compiler.BeginFunctionDeclaration();
+		var paramStartIndex = compiler.localVariables.count;
 
 		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
 		if (!compiler.Check((int)TokenKind.CloseParenthesis))
@@ -134,6 +136,23 @@ public sealed class LangCompiler
 				if (declaration.parameterCount >= MaxParamCount)
 				{
 					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", MaxParamCount);
+					continue;
+				}
+
+				var hasDuplicate = false;
+				for (var i = 0; i < declaration.parameterCount; i++)
+				{
+					var otherSlice = compiler.localVariables.buffer[paramStartIndex + i].slice;
+					if (CompilerHelper.AreEqual(source, paramSlice, otherSlice))
+					{
+						hasDuplicate = true;
+						break;
+					}
+				}
+
+				if (hasDuplicate)
+				{
+					compiler.AddSoftError(paramSlice, "Function already has a parameter with this name");
 					continue;
 				}
 
@@ -182,7 +201,9 @@ public sealed class LangCompiler
 		compiler.Consume((int)TokenKind.Identifier, "Expected struct name");
 		var slice = compiler.previousToken.slice;
 
+		var source = compiler.tokenizer.Source;
 		var declaration = compiler.BeginStructDeclaration();
+		var fieldStartIndex = compiler.chunk.structTypeFields.count;
 
 		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before struct fields");
 		while (
@@ -195,7 +216,24 @@ public sealed class LangCompiler
 			compiler.Consume((int)TokenKind.Colon, "Expected ':' after field name");
 			var fieldType = this.ConsumeType(compiler, "Expected field type", 0);
 
-			var fieldName = compiler.tokenizer.Source.Substring(fieldSlice.index, fieldSlice.length);
+			var hasDuplicate = false;
+			for (var i = 0; i < declaration.fieldCount; i++)
+			{
+				var otherName = compiler.chunk.structTypeFields.buffer[fieldStartIndex + i].name;
+				if (CompilerHelper.AreEqual(source, fieldSlice, otherName))
+				{
+					hasDuplicate = true;
+					break;
+				}
+			}
+
+			if (hasDuplicate)
+			{
+				compiler.AddSoftError(fieldSlice, "Struct already has a field with this name");
+				continue;
+			}
+
+			var fieldName = source.Substring(fieldSlice.index, fieldSlice.length);
 			declaration.AddField(fieldName, fieldType);
 		}
 		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
