@@ -7,7 +7,7 @@ public sealed class Program
 	public static void Main(string[] args)
 	{
 		var source = System.IO.File.ReadAllText("script.txt");
-		var compiler = new LangCompiler();
+		var compiler = new PepperCompiler();
 
 		var compileResult = compiler.Compile(source);
 		if (!compileResult.isOk)

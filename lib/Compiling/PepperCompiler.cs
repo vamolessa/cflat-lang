@@ -12,21 +12,22 @@ public readonly struct LoopBreak
 	}
 }
 
-public sealed class LangCompiler
+public sealed class PepperCompiler
 {
-	public readonly ParseRule[] rules = new ParseRule[(int)TokenKind.COUNT];
+	public Compiler compiler;
+	public readonly ParseRule[] parseRules = new ParseRule[(int)TokenKind.COUNT];
 	public Buffer<ValueType> functionReturnTypeStack = new Buffer<ValueType>(4);
 	public Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
 	public int loopNesting;
 
-	public LangCompiler()
+	public PepperCompiler()
 	{
-		LangParseRules.InitRulesFor(this);
+		PepperParseRules.InitRulesFor(this);
 	}
 
-	private Compiler NewCompiler(string source)
+	private void NewCompiler(string source)
 	{
-		var compiler = new Compiler();
+		compiler = new Compiler();
 
 		var tokenizer = new Tokenizer(PepperScanners.scanners);
 		tokenizer.Reset(source);
@@ -34,13 +35,11 @@ public sealed class LangCompiler
 		parser.Reset();
 
 		compiler.Reset(parser, OnParseWithPrecedence);
-
-		return compiler;
 	}
 
 	public Result<ByteCodeChunk, List<CompileError>> Compile(string source)
 	{
-		var compiler = NewCompiler(source);
+		NewCompiler(source);
 
 		compiler.parser.Next();
 
@@ -56,7 +55,7 @@ public sealed class LangCompiler
 
 	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source)
 	{
-		var compiler = NewCompiler(source);
+		NewCompiler(source);
 
 		compiler.parser.Next();
 		Expression(compiler);
@@ -338,12 +337,12 @@ public sealed class LangCompiler
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		LangCompilerHelper.BeginLoop(this);
+		PepperCompilerHelper.BeginLoop(this);
 		BlockStatement(compiler);
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
-		LangCompilerHelper.EndLoop(this, compiler);
+		PepperCompilerHelper.EndLoop(this, compiler);
 	}
 
 	public void ForStatement(Compiler compiler)
@@ -369,7 +368,7 @@ public sealed class LangCompiler
 		compiler.EmitByte((byte)itVar.stackIndex);
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		LangCompilerHelper.BeginLoop(this);
+		PepperCompilerHelper.BeginLoop(this);
 		BlockStatement(compiler);
 
 		compiler.EmitInstruction(Instruction.IncrementLocalInt);
@@ -377,7 +376,7 @@ public sealed class LangCompiler
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		compiler.EndEmitForwardJump(breakJump);
-		LangCompilerHelper.EndLoop(this, compiler);
+		PepperCompilerHelper.EndLoop(this, compiler);
 
 		compiler.EndScope(scope);
 	}
@@ -404,7 +403,7 @@ public sealed class LangCompiler
 			}
 		}
 
-		if (!LangCompilerHelper.BreakLoop(this, nestingCount, breakJump))
+		if (!PepperCompilerHelper.BreakLoop(this, nestingCount, breakJump))
 		{
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Not inside a loop");
 			return;
@@ -443,7 +442,7 @@ public sealed class LangCompiler
 
 	public void Expression(Compiler compiler)
 	{
-		compiler.parser.ParseWithPrecedence(compiler, rules, Precedence.Assignment);
+		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.Assignment);
 	}
 
 	public void Grouping(Compiler compiler, Precedence precedence)
@@ -542,7 +541,7 @@ public sealed class LangCompiler
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.parser.ParseWithPrecedence(compiler, rules, Precedence.And);
+		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.And);
 		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
@@ -558,7 +557,7 @@ public sealed class LangCompiler
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.parser.ParseWithPrecedence(compiler, rules, Precedence.Or);
+		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.Or);
 		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
@@ -724,7 +723,7 @@ public sealed class LangCompiler
 	{
 		var opToken = compiler.parser.previousToken;
 
-		compiler.parser.ParseWithPrecedence(compiler, rules, Precedence.Unary);
+		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.Unary);
 		var type = compiler.typeStack.PopLast();
 
 		switch ((TokenKind)opToken.kind)
@@ -780,8 +779,8 @@ public sealed class LangCompiler
 	{
 		var opToken = compiler.parser.previousToken;
 
-		var opPrecedence = rules[(int)opToken.kind].precedence;
-		compiler.parser.ParseWithPrecedence(compiler, rules, opPrecedence + 1);
+		var opPrecedence = parseRules[(int)opToken.kind].precedence;
+		PepperCompilerHelper.ParseWithPrecedence(this, opPrecedence + 1);
 
 		var bType = compiler.typeStack.PopLast();
 		var aType = compiler.typeStack.PopLast();

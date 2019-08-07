@@ -4,7 +4,7 @@ public sealed class ParserTest
 {
 	public static string CopmileExpression(string source)
 	{
-		var compiler = new LangCompiler();
+		var compiler = new PepperCompiler();
 		var compileResult = compiler.CompileExpression(source);
 		if (!compileResult.isOk)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);

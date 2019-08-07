@@ -71,31 +71,4 @@ public sealed class Parser
 		else
 			onError(currentToken.slice, errorMessage);
 	}
-
-	public void ParseWithPrecedence(Compiler compiler, ParseRule[] parseRules, Precedence precedence)
-	{
-		Next();
-		if (previousToken.kind == TokenKind.End)
-			return;
-
-		var prefixRule = parseRules[(int)previousToken.kind].prefixRule;
-		if (prefixRule == null)
-		{
-			onError(previousToken.slice, "Expected expression");
-			return;
-		}
-		prefixRule(compiler, precedence);
-
-		while (
-			currentToken.kind != TokenKind.End &&
-			precedence <= parseRules[(int)currentToken.kind].precedence
-		)
-		{
-			Next();
-			var infixRule = parseRules[(int)previousToken.kind].infixRule;
-			infixRule(compiler, precedence);
-		}
-
-		compiler.onParseWithPrecedence(compiler, precedence);
-	}
 }
