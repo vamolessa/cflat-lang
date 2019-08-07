@@ -50,7 +50,7 @@ public static class CompilerHelper
 
 	public static int GetInt(Compiler compiler)
 	{
-		var source = compiler.tokenizer.Source;
+		var source = compiler.tokenizer.source;
 		var sub = source.Substring(
 			compiler.previousToken.slice.index,
 			compiler.previousToken.slice.length
@@ -60,7 +60,7 @@ public static class CompilerHelper
 
 	public static float GetFloat(Compiler compiler)
 	{
-		var source = compiler.tokenizer.Source;
+		var source = compiler.tokenizer.source;
 		var sub = source.Substring(
 			compiler.previousToken.slice.index,
 			compiler.previousToken.slice.length
@@ -70,7 +70,7 @@ public static class CompilerHelper
 
 	public static string GetString(Compiler compiler)
 	{
-		var source = compiler.tokenizer.Source;
+		var source = compiler.tokenizer.source;
 		return source.Substring(
 			compiler.previousToken.slice.index + 1,
 			compiler.previousToken.slice.length - 2

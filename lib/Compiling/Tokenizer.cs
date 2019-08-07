@@ -1,20 +1,9 @@
-﻿public interface ITokenizer
+﻿public sealed class Tokenizer
 {
-	string Source { get; }
-	void Reset(Scanner[] scanners, string source);
-	Token Next();
-}
+	public string source;
 
-public sealed class Tokenizer : ITokenizer
-{
 	private Scanner[] scanners;
-	private string source;
 	private int nextIndex;
-
-	public string Source
-	{
-		get { return source; }
-	}
 
 	public void Reset(Scanner[] scanners, string source)
 	{

@@ -48,7 +48,7 @@ public sealed class Compiler
 	public Token previousToken;
 	public Token currentToken;
 
-	public ITokenizer tokenizer;
+	public Tokenizer tokenizer;
 	public ParseFunction onParseWithPrecedence;
 
 	public bool isInPanicMode;
@@ -57,7 +57,7 @@ public sealed class Compiler
 	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	public int scopeDepth;
 
-	public void Reset(ITokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
+	public void Reset(Tokenizer tokenizer, ParseRule[] parseRules, ParseFunction onParseWithPrecedence)
 	{
 		errors.Clear();
 		this.tokenizer = tokenizer;
@@ -136,7 +136,7 @@ public sealed class Compiler
 		}
 
 		var typeIndex = chunk.EndAddFunctionType(builder);
-		var name = tokenizer.Source.Substring(slice.index, slice.length);
+		var name = tokenizer.source.Substring(slice.index, slice.length);
 		chunk.AddFunction(name, typeIndex);
 	}
 
@@ -154,7 +154,7 @@ public sealed class Compiler
 			return;
 		}
 
-		var name = tokenizer.Source.Substring(slice.index, slice.length);
+		var name = tokenizer.source.Substring(slice.index, slice.length);
 
 		for (var i = 0; i < chunk.structTypes.count; i++)
 		{
@@ -171,7 +171,7 @@ public sealed class Compiler
 
 	public int ResolveToFunctionIndex()
 	{
-		var source = tokenizer.Source;
+		var source = tokenizer.source;
 
 		for (var i = 0; i < chunk.functions.count; i++)
 		{
@@ -221,7 +221,7 @@ public sealed class Compiler
 
 	public int ResolveToLocalVariableIndex()
 	{
-		var source = tokenizer.Source;
+		var source = tokenizer.source;
 
 		for (var i = 0; i < localVariables.count; i++)
 		{

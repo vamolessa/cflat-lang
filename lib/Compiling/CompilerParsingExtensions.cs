@@ -28,18 +28,12 @@ public static class CompilerParsingExtensions
 		return true;
 	}
 
-	public static bool Consume(this Compiler compiler, TokenKind tokenKind, string errorMessage)
+	public static void Consume(this Compiler compiler, TokenKind tokenKind, string errorMessage)
 	{
 		if (compiler.currentToken.kind == tokenKind)
-		{
 			compiler.Next();
-			return true;
-		}
 		else
-		{
 			compiler.AddHardError(compiler.currentToken.slice, errorMessage);
-			return false;
-		}
 	}
 
 	public static void ParseWithPrecedence(this Compiler compiler, ParseRule[] parseRules, Precedence precedence)

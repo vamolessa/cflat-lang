@@ -61,7 +61,7 @@ public static class LangCompilerHelper
 
 	private static Option<ValueType> ResolveStructType(this LangCompiler lang, Compiler compiler, int recursionLevel)
 	{
-		var source = compiler.tokenizer.Source;
+		var source = compiler.tokenizer.source;
 		var slice = compiler.previousToken.slice;
 
 		for (var i = 0; i < compiler.chunk.structTypes.count; i++)

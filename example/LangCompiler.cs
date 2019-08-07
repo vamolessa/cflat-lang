@@ -24,7 +24,7 @@ public sealed class LangCompiler
 		LangParseRules.InitRulesFor(this);
 	}
 
-	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ITokenizer tokenizer)
+	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, Tokenizer tokenizer)
 	{
 		var compiler = new Compiler();
 
@@ -43,7 +43,7 @@ public sealed class LangCompiler
 		return Result.Ok(compiler.chunk);
 	}
 
-	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, ITokenizer tokenizer)
+	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, Tokenizer tokenizer)
 	{
 		var compiler = new Compiler();
 		tokenizer.Reset(LangScanners.scanners, source);
@@ -119,7 +119,7 @@ public sealed class LangCompiler
 	{
 		const int MaxParamCount = 8;
 
-		var source = compiler.tokenizer.Source;
+		var source = compiler.tokenizer.source;
 		var declaration = compiler.BeginFunctionDeclaration();
 		var paramStartIndex = compiler.localVariables.count;
 
@@ -194,7 +194,7 @@ public sealed class LangCompiler
 		compiler.Consume(TokenKind.Identifier, "Expected struct name");
 		var slice = compiler.previousToken.slice;
 
-		var source = compiler.tokenizer.Source;
+		var source = compiler.tokenizer.source;
 		var declaration = compiler.BeginStructDeclaration();
 		var fieldStartIndex = compiler.chunk.structTypeFields.count;
 
