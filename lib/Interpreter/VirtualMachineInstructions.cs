@@ -1,3 +1,5 @@
+using System.Text;
+
 internal static class VirtualMachineInstructions
 {
 	public static byte NextByte(VirtualMachine vm, ref VirtualMachine.CallFrame frame)
@@ -48,8 +50,22 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.Print:
-			System.Console.WriteLine(VirtualMachineHelper.PopToString(vm));
-			break;
+			{
+				var sb = new StringBuilder();
+				var size = vm.chunk.GetTypeSize(vm.PeekType());
+
+				VirtualMachineHelper.ValueToString(
+					vm,
+					vm.valueStack.count - size,
+					Option.None,
+					sb
+				);
+				vm.typeStack.count -= size;
+				vm.valueStack.count -= size;
+
+				System.Console.WriteLine(sb);
+				break;
+			}
 		case Instruction.Pop:
 			vm.valueStack.count -= 1;
 			vm.typeStack.count -= 1;
@@ -95,6 +111,18 @@ internal static class VirtualMachineInstructions
 					new ValueData(index),
 					ValueTypeHelper.SetIndex(ValueType.Function, typeIndex)
 				);
+				break;
+			}
+		case Instruction.ConvertToStruct:
+			{
+				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
+				var structType = vm.chunk.structTypes.buffer[index];
+
+				var startIndex = vm.typeStack.count - structType.size;
+				var type = ValueTypeHelper.SetIndex(ValueType.Struct, index);
+
+				for (var i = 0; i < structType.size; i++)
+					vm.typeStack.buffer[startIndex + i] = type;
 				break;
 			}
 		case Instruction.AssignLocal:

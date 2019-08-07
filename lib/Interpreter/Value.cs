@@ -65,13 +65,25 @@ public static class ValueTypeHelper
 	public static string ToString(this ValueType type, ByteCodeChunk chunk)
 	{
 		var kind = GetKind(type);
-		if (kind == ValueType.Function)
+		switch (kind)
 		{
-			var index = GetIndex(type);
-			return chunk.FormatFunctionType(index, new StringBuilder()).ToString();
+		case ValueType.Function:
+			{
+				var index = GetIndex(type);
+				var sb = new StringBuilder();
+				chunk.FormatFunctionType(index, sb);
+				return sb.ToString();
+			}
+		case ValueType.Struct:
+			{
+				var index = GetIndex(type);
+				var sb = new StringBuilder();
+				chunk.FormatStructType(index, sb);
+				return sb.ToString();
+			}
+		default:
+			return type.ToString();
 		}
-
-		return type.ToString();
 	}
 }
 

@@ -14,28 +14,45 @@ public sealed class ByteCodeChunkDebugView
 
 public static class ByteCodeChunkExtensions
 {
-	public static StringBuilder FormatFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
+	public static void FormatFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
 	{
 		var function = self.functions.buffer[functionIndex];
 		sb.Append(function.name);
 		sb.Append(' ');
-		return FormatFunctionType(self, function.typeIndex, sb);
+		FormatFunctionType(self, function.typeIndex, sb);
 	}
 
-	public static StringBuilder FormatFunctionType(this ByteCodeChunk self, int functionTypeIndex, StringBuilder sb)
+	public static void FormatFunctionType(this ByteCodeChunk self, int functionTypeIndex, StringBuilder sb)
 	{
 		var type = self.functionTypes.buffer[functionTypeIndex];
 		sb.Append("fn(");
 		for (var i = 0; i < type.parameters.length; i++)
 		{
 			var paramIndex = type.parameters.index + i;
-			var param = self.functionTypeParams.buffer[paramIndex];
-			sb.Append(ValueTypeHelper.GetKind(param));
+			var paramType = self.functionTypeParams.buffer[paramIndex];
+			sb.Append(ValueTypeHelper.ToString(paramType, self));
 			if (i < type.parameters.length - 1)
 				sb.Append(',');
 		}
 		sb.Append(')');
-		return sb;
+	}
+
+	public static void FormatStructType(this ByteCodeChunk self, int structTypeIndex, StringBuilder sb)
+	{
+		var type = self.structTypes.buffer[structTypeIndex];
+		sb.Append(type.name);
+		sb.Append('{');
+		for (var i = 0; i < type.fields.length; i++)
+		{
+			var fieldIndex = type.fields.index + i;
+			var field = self.structTypeFields.buffer[fieldIndex];
+			sb.Append(field.name);
+			sb.Append('=');
+			sb.Append(ValueTypeHelper.ToString(field.type, self));
+			if (i < type.fields.length - 1)
+				sb.Append(' ');
+		}
+		sb.Append('}');
 	}
 
 	public static void Disassemble(this ByteCodeChunk self, StringBuilder sb)
@@ -137,6 +154,8 @@ public static class ByteCodeChunkExtensions
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadFunction:
 			return LoadFunctionInstruction(self, instruction, index, sb);
+		case Instruction.ConvertToStruct:
+			return ConvertToStructInstruction(self, instruction, index, sb);
 		case Instruction.JumpForward:
 		case Instruction.JumpForwardIfFalse:
 		case Instruction.JumpForwardIfTrue:
@@ -197,6 +216,19 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		FormatFunction(chunk, functionIndex, sb);
+		sb.AppendLine();
+		return index + 3;
+	}
+
+	private static int ConvertToStructInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		var structIndex = BytesHelper.BytesToShort(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2]
+		);
+		sb.Append(chunk.structTypes.buffer[structIndex].name);
 		sb.AppendLine();
 		return index + 3;
 	}

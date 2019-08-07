@@ -2,39 +2,75 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
-	public static string ValueToString(ByteCodeChunk chunk, object[] objs, ValueData data, ValueType type)
+	public static void ValueToString(VirtualMachine vm, int index, Option<ValueType> overrideType, StringBuilder sb)
 	{
+		var type = overrideType.isSome ?
+			overrideType.value :
+			vm.typeStack.buffer[index];
+
 		switch (ValueTypeHelper.GetKind(type))
 		{
 		case ValueType.Unit:
-			return "{}";
+			sb.Append("{}");
+			return;
 		case ValueType.Bool:
-			return data.asBool ? "true" : "false";
+			sb.Append(vm.valueStack.buffer[index].asBool ? "true" : "false");
+			return;
 		case ValueType.Int:
-			return data.asInt.ToString();
+			sb.Append(vm.valueStack.buffer[index].asInt);
+			return;
 		case ValueType.Float:
-			return data.asFloat.ToString();
+			sb.Append(vm.valueStack.buffer[index].asFloat);
+			return;
 		case ValueType.String:
-			return string.Concat("\"", objs[data.asInt].ToString(), "\"");
+			{
+				var idx = vm.valueStack.buffer[index].asInt;
+				sb.Append('"');
+				sb.Append(vm.heap.buffer[idx]);
+				sb.Append('"');
+				return;
+			}
 		case ValueType.Function:
-			return chunk.FormatFunction(data.asInt, new StringBuilder()).ToString();
+			{
+				var idx = vm.valueStack.buffer[index].asInt;
+				vm.chunk.FormatFunction(idx, sb);
+				return;
+			}
 		case ValueType.Struct:
-			return chunk.structTypeFields.buffer[ValueTypeHelper.GetIndex(type)].name;
+			{
+				var idx = ValueTypeHelper.GetIndex(type);
+				var structType = vm.chunk.structTypes.buffer[idx];
+				sb.Append(structType.name);
+				sb.Append('{');
+				for (var i = 0; i < structType.fields.length; i++)
+				{
+					var fieldIndex = structType.fields.index + i;
+					var field = vm.chunk.structTypeFields.buffer[fieldIndex];
+					sb.Append(field.name);
+					sb.Append('=');
+					ValueToString(vm, index + i, Option.Some(field.type), sb);
+					if (i < structType.fields.length - 1)
+						sb.Append(' ');
+				}
+				sb.Append('}');
+				return;
+			}
 		case ValueType.Custom:
-			return string.Format("CustomType [{0}] {1}", objs[data.asInt].GetType().Name, objs[data.asInt].ToString());
+			{
+				var idx = vm.valueStack.buffer[index].asInt;
+				var obj = vm.heap.buffer[idx];
+				sb.Append("CustomType [");
+				sb.Append(obj.GetType().Name);
+				sb.Append("] ");
+				sb.Append(obj);
+				return;
+			}
 		default:
-			return string.Format("<invalid type {0}>", type);
+			sb.Append("<invalid type '");
+			sb.Append(type);
+			sb.Append("'>");
+			return;
 		}
-	}
-
-	public static string PopToString(VirtualMachine vm)
-	{
-		var data = vm.valueStack.buffer[vm.valueStack.count - 1];
-		var type = vm.typeStack.buffer[vm.typeStack.count - 1];
-		var str = ValueToString(vm.chunk, vm.heap.buffer, data, type);
-		vm.PopValue();
-
-		return str;
 	}
 
 	public static void TraceStack(VirtualMachine vm, StringBuilder sb)
@@ -43,12 +79,7 @@ public static class VirtualMachineHelper
 		for (var i = 0; i < vm.valueStack.count; i++)
 		{
 			sb.Append("[");
-			sb.Append(ValueToString(
-				vm.chunk,
-				vm.heap.buffer,
-				vm.valueStack.buffer[i],
-				vm.typeStack.buffer[i]
-			));
+			ValueToString(vm, i, Option.None, sb);
 			sb.Append("]");
 		}
 		sb.AppendLine();

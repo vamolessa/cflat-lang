@@ -30,7 +30,7 @@ public sealed class ParseRules
 		Set(TokenKind.GreaterEqual, null, CompilerController.Binary, Precedence.Comparison);
 		Set(TokenKind.Less, null, CompilerController.Binary, Precedence.Comparison);
 		Set(TokenKind.LessEqual, null, CompilerController.Binary, Precedence.Comparison);
-		Set(TokenKind.Identifier, CompilerController.Variable, null, Precedence.None);
+		Set(TokenKind.Identifier, CompilerController.Identifier, null, Precedence.None);
 		Set(TokenKind.StringLiteral, CompilerController.Literal, null, Precedence.None);
 		Set(TokenKind.IntLiteral, CompilerController.Literal, null, Precedence.None);
 		Set(TokenKind.And, null, CompilerController.And, Precedence.And);

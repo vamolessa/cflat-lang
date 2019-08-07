@@ -603,7 +603,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void Variable(CompilerController self, Precedence precedence)
+	public static void Identifier(CompilerController self, Precedence precedence)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
 		var index = self.compiler.ResolveToLocalVariableIndex();
@@ -631,18 +631,47 @@ public sealed class CompilerController
 		{
 			if (index < 0)
 			{
-				var functionIndex = self.compiler.ResolveToFunctionIndex();
-				if (functionIndex < 0)
-				{
-					self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-					self.compiler.typeStack.PushBack(ValueType.Unit);
-				}
-				else
+				if (self.compiler.ResolveToFunctionIndex(out var functionIndex))
 				{
 					self.compiler.EmitLoadFunction(functionIndex);
 					var function = self.compiler.chunk.functions.buffer[functionIndex];
 					var type = ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex);
 					self.compiler.typeStack.PushBack(type);
+				}
+				else if (self.compiler.ResolveToStructTypeIndex(out var structIndex))
+				{
+					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+					self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct initializer");
+					for (var i = 0; i < structType.fields.length; i++)
+					{
+						var fieldIndex = structType.fields.index + i;
+						var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
+						self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name '{0}'. Don't forget to initialize them in order of declaration", field.name);
+						self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
+
+						Expression(self);
+						var expressionType = self.compiler.typeStack.PopLast();
+						if (expressionType != field.type)
+						{
+							self.compiler.AddSoftError(
+								self.compiler.parser.previousToken.slice,
+								"Wrong type for field '{0}' initializer. Expected {1}. Got {2}",
+								field.name,
+								field.type.ToString(self.compiler.chunk),
+								expressionType.ToString(self.compiler.chunk)
+							);
+						}
+					}
+					self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
+
+					self.compiler.EmitConvertToStruct(structIndex);
+					var type = ValueTypeHelper.SetIndex(ValueType.Struct, structIndex);
+					self.compiler.typeStack.PushBack(type);
+				}
+				else
+				{
+					self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
+					self.compiler.typeStack.PushBack(ValueType.Unit);
 				}
 			}
 			else

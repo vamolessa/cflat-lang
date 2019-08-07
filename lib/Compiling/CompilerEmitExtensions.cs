@@ -31,6 +31,16 @@ public static class CompilerEmitExtensions
 		return self;
 	}
 
+	public static Compiler EmitConvertToStruct(this Compiler self, int structTypeIndex)
+	{
+		self.EmitInstruction(Instruction.ConvertToStruct);
+		BytesHelper.ShortToBytes((ushort)structTypeIndex, out var b0, out var b1);
+		self.EmitByte(b0);
+		self.EmitByte(b1);
+
+		return self;
+	}
+
 	public static Compiler EmitLoadStringLiteral(this Compiler self, string value)
 	{
 		var index = self.chunk.AddStringLiteral(value);

@@ -1,12 +1,12 @@
 public sealed class Parser
 {
 	public readonly Tokenizer tokenizer;
-	private readonly System.Action<Slice, string> onError;
+	private readonly System.Action<Slice, string, object[]> onError;
 
 	public Token previousToken;
 	public Token currentToken;
 
-	public Parser(Tokenizer tokenizer, System.Action<Slice, string> onError)
+	public Parser(Tokenizer tokenizer, System.Action<Slice, string, object[]> onError)
 	{
 		this.tokenizer = tokenizer;
 		this.onError = onError;
@@ -30,7 +30,7 @@ public sealed class Parser
 			if (currentToken.kind != TokenKind.Error)
 				break;
 
-			onError(currentToken.slice, "Invalid char");
+			onError(currentToken.slice, "Invalid char", new object[0]);
 		}
 	}
 
@@ -48,11 +48,11 @@ public sealed class Parser
 		return true;
 	}
 
-	public void Consume(TokenKind tokenKind, string errorMessage)
+	public void Consume(TokenKind tokenKind, string errorFormat, params object[] args)
 	{
 		if (currentToken.kind == tokenKind)
 			Next();
 		else
-			onError(currentToken.slice, errorMessage);
+			onError(currentToken.slice, errorFormat, args);
 	}
 }

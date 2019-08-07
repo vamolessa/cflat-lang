@@ -19,9 +19,9 @@ public sealed class Compiler
 
 	public Compiler()
 	{
-		void AddTokenizerError(Slice slice, string message)
+		void AddTokenizerError(Slice slice, string message, object[] args)
 		{
-			AddHardError(slice, message);
+			AddHardError(slice, message, args);
 		}
 
 		var tokenizer = new Tokenizer(PepperScanners.scanners);

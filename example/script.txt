@@ -1,3 +1,13 @@
+struct Vector
+{
+	x: int
+	y: int
+}
+
 fn main() {
-	print "hello"
+	let v = Vector {
+		x = 1
+		y = 2
+	}
+	print v
 }

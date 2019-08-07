@@ -12,6 +12,7 @@ public enum Instruction
 	LoadFalse,
 	LoadLiteral,
 	LoadFunction,
+	ConvertToStruct,
 	AssignLocal,
 	LoadLocal,
 	IncrementLocalInt,
