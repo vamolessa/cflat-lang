@@ -18,8 +18,8 @@ internal static class VirtualMachineInstructions
 			return true;
 		case Instruction.Call:
 			{
-				var argCount = NextByte(vm, ref frame);
-				var stackTop = vm.valueStack.count - argCount;
+				var size = NextByte(vm, ref frame);
+				var stackTop = vm.valueStack.count - size;
 				var functionIndex = vm.valueStack.buffer[stackTop - 1].asInt;
 				var function = vm.chunk.functions.buffer[functionIndex];
 
@@ -27,23 +27,29 @@ internal static class VirtualMachineInstructions
 					new VirtualMachine.CallFrame(
 						functionIndex,
 						function.codeIndex,
-						vm.valueStack.count - argCount
+						stackTop
 					)
 				);
 				break;
 			}
 		case Instruction.Return:
 			{
-				var returnType = vm.PeekType();
-				var returnValue = vm.PopValue();
-
 				vm.callframeStack.count -= 1;
 				var stackTop = vm.callframeStack.buffer[vm.callframeStack.count].baseStackIndex - 1;
 
+				var size = NextByte(vm, ref frame);
+				var dstIdx = stackTop;
+				var srcIdx = vm.valueStack.count - size;
+
+				while (srcIdx < vm.valueStack.count)
+				{
+					vm.valueStack.buffer[dstIdx] = vm.valueStack.buffer[srcIdx];
+					vm.typeStack.buffer[dstIdx++] = vm.typeStack.buffer[srcIdx++];
+				}
+
+				stackTop += size;
 				vm.valueStack.count = stackTop;
 				vm.typeStack.count = stackTop;
-
-				vm.PushValue(returnValue, returnType);
 
 				if (vm.callframeStack.count == 0)
 					return true;
@@ -72,17 +78,27 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.PopMultiple:
 			{
-				var count = NextByte(vm, ref frame);
-				vm.valueStack.count -= count;
-				vm.typeStack.count -= count;
+				var size = NextByte(vm, ref frame);
+				vm.valueStack.count -= size;
+				vm.typeStack.count -= size;
 			}
 			break;
-		case Instruction.CopyTo:
+		case Instruction.Move:
 			{
-				var last = vm.valueStack.count - 1;
-				var index = last - NextByte(vm, ref frame);
-				vm.valueStack.buffer[index] = vm.valueStack.buffer[last];
-				vm.typeStack.buffer[index] = vm.typeStack.buffer[last];
+				var sizeUnder = NextByte(vm, ref frame);
+				var size = NextByte(vm, ref frame);
+
+				var srcIdx = vm.valueStack.count - size;
+				var dstIdx = srcIdx - sizeUnder;
+
+				while (srcIdx < vm.valueStack.count)
+				{
+					vm.valueStack.buffer[dstIdx] = vm.valueStack.buffer[srcIdx];
+					vm.typeStack.buffer[dstIdx++] = vm.typeStack.buffer[srcIdx++];
+				}
+
+				vm.valueStack.count = dstIdx;
+				vm.typeStack.count = dstIdx;
 			}
 			break;
 		case Instruction.LoadUnit:
@@ -140,6 +156,16 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.AssignLocalMultiple:
+			{
+				var dstIdx = frame.baseStackIndex + NextByte(vm, ref frame);
+				var size = NextByte(vm, ref frame);
+				var srcIdx = vm.valueStack.count - size;
+
+				while (srcIdx < vm.valueStack.count)
+					vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
+				break;
+			}
 		case Instruction.LoadLocalMultiple:
 			{
 				var srcIdx = frame.baseStackIndex + NextByte(vm, ref frame);
@@ -147,6 +173,7 @@ internal static class VirtualMachineInstructions
 				var dstIdx = vm.valueStack.count;
 
 				vm.valueStack.Grow(size);
+				vm.typeStack.Grow(size);
 				while (dstIdx < vm.valueStack.count)
 				{
 					vm.valueStack.buffer[dstIdx] = vm.valueStack.buffer[srcIdx];

@@ -39,7 +39,7 @@ public static class CompilerTypeExtensions
 		{
 			var structName = self.chunk.structTypes.buffer[i].name;
 			if (CompilerHelper.AreEqual(source, slice, structName))
-				return Option.Some(ValueTypeHelper.SetIndex(ValueType.String, i));
+				return Option.Some(ValueTypeHelper.SetIndex(ValueType.Struct, i));
 		}
 
 		return Option.None;

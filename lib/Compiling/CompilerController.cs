@@ -181,6 +181,7 @@ public sealed class CompilerController
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
+		compiler.EmitByte((byte)compiler.chunk.GetTypeSize(declaration.returnType));
 
 		compiler.functionReturnTypeStack.PopLast();
 		compiler.localVariables.count -= declaration.parameterCount;
@@ -309,7 +310,7 @@ public sealed class CompilerController
 		}
 
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
-		compiler.EndScope(scope);
+		compiler.EndScope(scope, 0);
 	}
 
 	private int VariableDeclaration(bool mutable)
@@ -375,7 +376,7 @@ public sealed class CompilerController
 		compiler.EndEmitForwardJump(breakJump);
 		compiler.EndLoop();
 
-		compiler.EndScope(scope);
+		compiler.EndScope(scope, 0);
 	}
 
 	private void BreakStatement()
@@ -424,6 +425,8 @@ public sealed class CompilerController
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
+		compiler.EmitByte((byte)compiler.chunk.GetTypeSize(expectedType));
+
 		if (expectedType != returnType)
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
 
@@ -461,21 +464,16 @@ public sealed class CompilerController
 			maybeType = self.Statement();
 		}
 
-		if (maybeType.isSome)
-		{
-			self.compiler.chunk.bytes.count -= 1;
-
-			var varCount = self.compiler.localVariables.count - scope.localVarStartIndex;
-			if (varCount > 0)
-			{
-				self.compiler.EmitInstruction(Instruction.CopyTo);
-				self.compiler.EmitByte((byte)varCount);
-			}
-		}
-
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
-		self.compiler.EndScope(scope);
+		var sizeLeftOnStack = 0;
+		if (maybeType.isSome)
+		{
+			sizeLeftOnStack = self.compiler.chunk.GetTypeSize(maybeType.value);
+			self.compiler.chunk.bytes.count -= sizeLeftOnStack > 1 ? 2 : 1;
+		}
+
+		self.compiler.EndScope(scope, sizeLeftOnStack);
 
 		if (maybeType.isSome)
 		{
@@ -623,8 +621,31 @@ public sealed class CompilerController
 				if (!localVar.isMutable)
 					self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
-				self.compiler.EmitInstruction(Instruction.AssignLocal);
-				self.compiler.EmitByte((byte)localVar.stackIndex);
+				var expressionType = self.compiler.typeStack.PopLast();
+				if (expressionType != localVar.type)
+				{
+					self.compiler.AddSoftError(
+						self.compiler.parser.previousToken.slice,
+						"Wrong type for assignment. Expected {0}. Got {1}",
+						localVar.type.ToString(self.compiler.chunk),
+						expressionType.ToString(self.compiler.chunk)
+					);
+				}
+				self.compiler.typeStack.PushBack(expressionType);
+
+				if (ValueTypeHelper.GetKind(localVar.type) == ValueType.Struct)
+				{
+					var structIndex = ValueTypeHelper.GetIndex(localVar.type);
+					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+					self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
+					self.compiler.EmitByte((byte)localVar.stackIndex);
+					self.compiler.EmitByte((byte)structType.size);
+				}
+				else
+				{
+					self.compiler.EmitInstruction(Instruction.AssignLocal);
+					self.compiler.EmitByte((byte)localVar.stackIndex);
+				}
 			}
 		}
 		else
@@ -683,11 +704,9 @@ public sealed class CompilerController
 				{
 					var structIndex = ValueTypeHelper.GetIndex(localVar.type);
 					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
-					for (var i = 0; i < structType.fields.length; i++)
-					{
-						self.compiler.EmitInstruction(Instruction.LoadLocal);
-						self.compiler.EmitByte((byte)(localVar.stackIndex + i));
-					}
+					self.compiler.EmitInstruction(Instruction.LoadLocalMultiple);
+					self.compiler.EmitByte((byte)localVar.stackIndex);
+					self.compiler.EmitByte((byte)structType.size);
 				}
 				else
 				{
@@ -753,7 +772,7 @@ public sealed class CompilerController
 			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
 		self.compiler.EmitInstruction(Instruction.Call);
-		self.compiler.EmitByte((byte)(hasFunction ? functionType.parameters.length : 0));
+		self.compiler.EmitByte((byte)(hasFunction ? functionType.parametersTotalSize : 0));
 		self.compiler.typeStack.PushBack(
 			hasFunction ? functionType.returnType : ValueType.Unit
 		);

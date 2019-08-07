@@ -67,6 +67,16 @@ public static class ValueTypeHelper
 		var kind = GetKind(type);
 		switch (kind)
 		{
+		case ValueType.Unit:
+			return "{}";
+		case ValueType.Bool:
+			return "bool";
+		case ValueType.Int:
+			return "int";
+		case ValueType.Float:
+			return "float";
+		case ValueType.String:
+			return "string";
 		case ValueType.Function:
 			{
 				var index = GetIndex(type);
@@ -81,8 +91,10 @@ public static class ValueTypeHelper
 				chunk.FormatStructType(index, sb);
 				return sb.ToString();
 			}
+		case ValueType.Custom:
+			return "custom";
 		default:
-			return type.ToString();
+			return "unreachable";
 		}
 	}
 }
@@ -105,11 +117,13 @@ public readonly struct FunctionType
 {
 	public readonly Slice parameters;
 	public readonly ValueType returnType;
+	public readonly int parametersTotalSize;
 
-	public FunctionType(Slice parameters, ValueType returnType)
+	public FunctionType(Slice parameters, ValueType returnType, int parametersTotalSize)
 	{
 		this.parameters = parameters;
 		this.returnType = returnType;
+		this.parametersTotalSize = parametersTotalSize;
 	}
 }
 

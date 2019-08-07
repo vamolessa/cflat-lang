@@ -6,26 +6,42 @@ public static class CompilerFlowExtensions
 		return new Scope(self.localVariables.count);
 	}
 
-	public static void EndScope(this Compiler self, Scope scope)
+	public static void EndScope(this Compiler self, Scope scope, int sizeLeftOnStack)
 	{
 		self.scopeDepth -= 1;
 
-		for (var i = scope.localVarStartIndex; i < self.localVariables.count; i++)
+		for (var i = scope.localVariablesStartIndex; i < self.localVariables.count; i++)
 		{
 			var variable = self.localVariables.buffer[i];
 			if (!variable.isUsed)
 				self.AddSoftError(variable.slice, "Unused variable");
 		}
 
-		var localCount = self.localVariables.count - scope.localVarStartIndex;
-		if (localCount > 0)
+		var localCount = self.localVariables.count - scope.localVariablesStartIndex;
+		if (localCount == 0)
+			return;
+
+		var localVarsSize = 0;
+		for (var i = scope.localVariablesStartIndex; i < self.localVariables.count; i++)
+		{
+			var type = self.localVariables.buffer[i].type;
+			localVarsSize += self.chunk.GetTypeSize(type);
+		}
+
+		if (sizeLeftOnStack > 0)
+		{
+			self.EmitInstruction(Instruction.Move);
+			self.EmitByte((byte)localVarsSize);
+			self.EmitByte((byte)sizeLeftOnStack);
+		}
+		else
 		{
 			self.EmitInstruction(Instruction.PopMultiple);
-			self.EmitByte((byte)localCount);
-
-			self.localVariables.count -= localCount;
-			self.typeStack.count -= localCount;
+			self.EmitByte((byte)localVarsSize);
 		}
+
+		self.localVariables.count -= localCount;
+		self.typeStack.count -= localCount;
 	}
 
 	public static void BeginLoop(this Compiler self)

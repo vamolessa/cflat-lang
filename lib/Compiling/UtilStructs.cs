@@ -32,11 +32,11 @@ public struct LocalVariable
 
 public readonly struct Scope
 {
-	public readonly int localVarStartIndex;
+	public readonly int localVariablesStartIndex;
 
 	public Scope(int localVarStartIndex)
 	{
-		this.localVarStartIndex = localVarStartIndex;
+		this.localVariablesStartIndex = localVarStartIndex;
 	}
 }
 

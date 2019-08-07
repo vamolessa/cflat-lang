@@ -117,12 +117,20 @@ public sealed class ByteCodeChunk
 			}
 		}
 
+		var parametersTotalSize = 0;
+		for (var i = 0; i < builder.parameterCount; i++)
+		{
+			var param = functionTypeParams.buffer[parametersIndex + i];
+			parametersTotalSize += GetTypeSize(param);
+		}
+
 		functionTypes.PushBack(new FunctionType(
 			new Slice(
 				parametersIndex,
 				builder.parameterCount
 			),
-			builder.returnType
+			builder.returnType,
+			parametersTotalSize
 		));
 
 		return functionTypes.count - 1;

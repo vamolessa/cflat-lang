@@ -89,7 +89,7 @@ public static class CompilerDeclarationExtensions
 		return false;
 	}
 
-	// STRUCT
+	// STRUCTS
 	public static ByteCodeChunk.StructTypeBuilder BeginStructDeclaration(this Compiler self)
 	{
 		return self.chunk.BeginAddStructType();

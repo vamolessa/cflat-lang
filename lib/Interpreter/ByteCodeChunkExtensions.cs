@@ -47,7 +47,7 @@ public static class ByteCodeChunkExtensions
 			var fieldIndex = type.fields.index + i;
 			var field = self.structTypeFields.buffer[fieldIndex];
 			sb.Append(field.name);
-			sb.Append('=');
+			sb.Append(':');
 			sb.Append(ValueTypeHelper.ToString(field.type, self));
 			if (i < type.fields.length - 1)
 				sb.Append(' ');
@@ -114,7 +114,6 @@ public static class ByteCodeChunkExtensions
 		switch (instruction)
 		{
 		case Instruction.Halt:
-		case Instruction.Return:
 		case Instruction.Print:
 		case Instruction.Pop:
 		case Instruction.LoadUnit:
@@ -143,13 +142,15 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LessFloat:
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.Call:
+		case Instruction.Return:
 		case Instruction.PopMultiple:
-		case Instruction.CopyTo:
 		case Instruction.LoadLocal:
 		case Instruction.AssignLocal:
 		case Instruction.IncrementLocalInt:
 		case Instruction.ForLoopCheck:
 			return OneArgInstruction(self, instruction, index, sb);
+		case Instruction.Move:
+		case Instruction.AssignLocalMultiple:
 		case Instruction.LoadLocalMultiple:
 			return TwoArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:

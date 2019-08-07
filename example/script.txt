@@ -4,10 +4,14 @@ struct Vector
 	y: int
 }
 
-fn main() {
-	let v = Vector {
-		x = 1
-		y = 2
+fn newVector(x: int, y: int): Vector {
+	Vector {
+		x = x
+		y = y
 	}
+}
+
+fn main() {
+	let v = newVector(31, 17)
 	print v
 }
