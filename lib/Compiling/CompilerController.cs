@@ -679,8 +679,22 @@ public sealed class CompilerController
 				ref var localVar = ref self.compiler.localVariables.buffer[index];
 				localVar.isUsed = true;
 
-				self.compiler.EmitInstruction(Instruction.LoadLocal);
-				self.compiler.EmitByte((byte)localVar.stackIndex);
+				if (ValueTypeHelper.GetKind(localVar.type) == ValueType.Struct)
+				{
+					var structIndex = ValueTypeHelper.GetIndex(localVar.type);
+					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+					for (var i = 0; i < structType.fields.length; i++)
+					{
+						self.compiler.EmitInstruction(Instruction.LoadLocal);
+						self.compiler.EmitByte((byte)(localVar.stackIndex + i));
+					}
+				}
+				else
+				{
+					self.compiler.EmitInstruction(Instruction.LoadLocal);
+					self.compiler.EmitByte((byte)localVar.stackIndex);
+				}
+
 				self.compiler.typeStack.PushBack(localVar.type);
 			}
 		}

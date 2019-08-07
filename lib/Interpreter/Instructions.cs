@@ -15,6 +15,7 @@ public enum Instruction
 	ConvertToStruct,
 	AssignLocal,
 	LoadLocal,
+	LoadLocalMultiple,
 	IncrementLocalInt,
 	IntToFloat,
 	FloatToInt,

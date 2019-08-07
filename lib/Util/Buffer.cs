@@ -9,6 +9,18 @@ public struct Buffer<T>
 		count = 0;
 	}
 
+	public void Grow(int size)
+	{
+		count += size;
+
+		if (count > buffer.Length)
+		{
+			var temp = new T[buffer.Length * 2];
+			System.Array.Copy(buffer, temp, buffer.Length);
+			buffer = temp;
+		}
+	}
+
 	public void PushBack(T element)
 	{
 		if (count >= buffer.Length)

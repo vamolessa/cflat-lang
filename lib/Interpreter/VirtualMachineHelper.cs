@@ -76,10 +76,11 @@ public static class VirtualMachineHelper
 	public static void TraceStack(VirtualMachine vm, StringBuilder sb)
 	{
 		sb.Append("          ");
-		for (var i = 0; i < vm.valueStack.count; i++)
+		for (var i = 0; i < vm.valueStack.count;)
 		{
 			sb.Append("[");
 			ValueToString(vm, i, Option.None, sb);
+			i += vm.chunk.GetTypeSize(vm.typeStack.buffer[i]);
 			sb.Append("]");
 		}
 		sb.AppendLine();

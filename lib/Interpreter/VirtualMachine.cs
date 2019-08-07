@@ -96,7 +96,7 @@ public sealed class VirtualMachine
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
 				chunk.DisassembleInstruction(ip, sb);
-				//System.Console.Write(sb);
+				System.Console.Write(sb);
 			}
 
 			var done = VirtualMachineInstructions.Tick(this);

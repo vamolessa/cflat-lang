@@ -150,6 +150,8 @@ public static class ByteCodeChunkExtensions
 		case Instruction.IncrementLocalInt:
 		case Instruction.ForLoopCheck:
 			return OneArgInstruction(self, instruction, index, sb);
+		case Instruction.LoadLocalMultiple:
+			return TwoArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadFunction:
@@ -182,6 +184,17 @@ public static class ByteCodeChunkExtensions
 		sb.Append(chunk.bytes.buffer[index + 1]);
 		sb.AppendLine();
 		return index + 2;
+	}
+
+	private static int TwoArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		sb.Append(chunk.bytes.buffer[index + 1]);
+		sb.Append(", ");
+		sb.Append(chunk.bytes.buffer[index + 2]);
+		sb.AppendLine();
+		return index + 3;
 	}
 
 	private static int LoadLiteralInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)

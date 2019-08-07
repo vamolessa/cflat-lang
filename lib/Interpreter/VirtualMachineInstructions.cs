@@ -118,11 +118,11 @@ internal static class VirtualMachineInstructions
 				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				var structType = vm.chunk.structTypes.buffer[index];
 
-				var startIndex = vm.typeStack.count - structType.size;
 				var type = ValueTypeHelper.SetIndex(ValueType.Struct, index);
+				var idx = vm.typeStack.count - structType.size;
 
-				for (var i = 0; i < structType.size; i++)
-					vm.typeStack.buffer[startIndex + i] = type;
+				while (idx < vm.typeStack.count)
+					vm.typeStack.buffer[idx++] = type;
 				break;
 			}
 		case Instruction.AssignLocal:
@@ -138,6 +138,20 @@ internal static class VirtualMachineInstructions
 					vm.valueStack.buffer[index],
 					vm.typeStack.buffer[index]
 				);
+				break;
+			}
+		case Instruction.LoadLocalMultiple:
+			{
+				var srcIdx = frame.baseStackIndex + NextByte(vm, ref frame);
+				var size = NextByte(vm, ref frame);
+				var dstIdx = vm.valueStack.count;
+
+				vm.valueStack.Grow(size);
+				while (dstIdx < vm.valueStack.count)
+				{
+					vm.valueStack.buffer[dstIdx] = vm.valueStack.buffer[srcIdx];
+					vm.typeStack.buffer[dstIdx++] = vm.typeStack.buffer[srcIdx++];
+				}
 				break;
 			}
 		case Instruction.IncrementLocalInt:
