@@ -33,7 +33,7 @@ public sealed class LangCompiler
 
 		compiler.Next();
 
-		while (!compiler.Match(Token.EndKind))
+		while (!compiler.Match(TokenKind.End))
 			Declaration(compiler);
 
 		compiler.EmitInstruction(Instruction.Halt);
@@ -63,7 +63,7 @@ public sealed class LangCompiler
 		if (!compiler.isInPanicMode)
 			return;
 
-		while (compiler.currentToken.kind != Token.EndKind)
+		while (compiler.currentToken.kind != TokenKind.End)
 		{
 			switch ((TokenKind)compiler.currentToken.kind)
 			{
@@ -78,10 +78,10 @@ public sealed class LangCompiler
 		}
 	}
 
-	public void OnParseWithPrecedence(Compiler compiler, int precedence)
+	public void OnParseWithPrecedence(Compiler compiler, Precedence precedence)
 	{
-		var canAssign = precedence <= (int)Precedence.Assignment;
-		if (canAssign && compiler.Match((int)TokenKind.Equal))
+		var canAssign = precedence <= Precedence.Assignment;
+		if (canAssign && compiler.Match(TokenKind.Equal))
 		{
 			compiler.AddHardError(compiler.previousToken.slice, "Invalid assignment target");
 			Expression(compiler);
@@ -90,9 +90,9 @@ public sealed class LangCompiler
 
 	public void Declaration(Compiler compiler)
 	{
-		if (compiler.Match((int)TokenKind.Function))
+		if (compiler.Match(TokenKind.Function))
 			FunctionDeclaration(compiler);
-		else if (compiler.Match((int)TokenKind.Struct))
+		else if (compiler.Match(TokenKind.Struct))
 			StructDeclaration(compiler);
 		else
 			compiler.AddHardError(compiler.previousToken.slice, "Expected function or struct declaration");
@@ -101,11 +101,11 @@ public sealed class LangCompiler
 
 	public void FunctionDeclaration(Compiler compiler)
 	{
-		compiler.Consume((int)TokenKind.Identifier, "Expected function name");
+		compiler.Consume(TokenKind.Identifier, "Expected function name");
 		ConsumeFunction(compiler, compiler.previousToken.slice);
 	}
 
-	public void FunctionExpression(Compiler compiler, int precedence)
+	public void FunctionExpression(Compiler compiler, Precedence precedence)
 	{
 		ConsumeFunction(compiler, new Slice());
 		var functionIndex = compiler.chunk.functions.count - 1;
@@ -123,14 +123,14 @@ public sealed class LangCompiler
 		var declaration = compiler.BeginFunctionDeclaration();
 		var paramStartIndex = compiler.localVariables.count;
 
-		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function name");
-		if (!compiler.Check((int)TokenKind.CloseParenthesis))
+		compiler.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name");
+		if (!compiler.Check(TokenKind.CloseParenthesis))
 		{
 			do
 			{
-				compiler.Consume((int)TokenKind.Identifier, "Expected parameter name");
+				compiler.Consume(TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.previousToken.slice;
-				compiler.Consume((int)TokenKind.Colon, "Expected ':' after parameter name");
+				compiler.Consume(TokenKind.Colon, "Expected ':' after parameter name");
 				var paramType = this.ConsumeType(compiler, "Expected parameter type", 0);
 
 				if (declaration.parameterCount >= MaxParamCount)
@@ -158,17 +158,17 @@ public sealed class LangCompiler
 
 				compiler.AddLocalVariable(paramSlice, paramType, false, true);
 				declaration.AddParam(paramType);
-			} while (compiler.Match((int)TokenKind.Comma));
+			} while (compiler.Match(TokenKind.Comma));
 		}
-		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
+		compiler.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
-		if (compiler.Match((int)TokenKind.Colon))
+		if (compiler.Match(TokenKind.Colon))
 			declaration.returnType = this.ConsumeType(compiler, "Expected function return type", 0);
 
 		compiler.EndFunctionDeclaration(declaration, slice);
 		functionReturnTypeStack.PushBack(declaration.returnType);
 
-		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
+		compiler.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
 		if (declaration.returnType == ValueType.Unit)
 		{
@@ -177,7 +177,7 @@ public sealed class LangCompiler
 		}
 		else
 		{
-			Block(compiler, (int)Precedence.None);
+			Block(compiler, Precedence.None);
 			var type = compiler.typeStack.PopLast();
 			if (declaration.returnType != type)
 				compiler.AddSoftError(compiler.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
@@ -191,22 +191,22 @@ public sealed class LangCompiler
 
 	public void StructDeclaration(Compiler compiler)
 	{
-		compiler.Consume((int)TokenKind.Identifier, "Expected struct name");
+		compiler.Consume(TokenKind.Identifier, "Expected struct name");
 		var slice = compiler.previousToken.slice;
 
 		var source = compiler.tokenizer.Source;
 		var declaration = compiler.BeginStructDeclaration();
 		var fieldStartIndex = compiler.chunk.structTypeFields.count;
 
-		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' before struct fields");
+		compiler.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct fields");
 		while (
-			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
-			!compiler.Check(Token.EndKind)
+			!compiler.Check(TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(TokenKind.End)
 		)
 		{
-			compiler.Consume((int)TokenKind.Identifier, "Expected field name");
+			compiler.Consume(TokenKind.Identifier, "Expected field name");
 			var fieldSlice = compiler.previousToken.slice;
-			compiler.Consume((int)TokenKind.Colon, "Expected ':' after field name");
+			compiler.Consume(TokenKind.Colon, "Expected ':' after field name");
 			var fieldType = this.ConsumeType(compiler, "Expected field type", 0);
 
 			var hasDuplicate = false;
@@ -229,49 +229,49 @@ public sealed class LangCompiler
 			var fieldName = source.Substring(fieldSlice.index, fieldSlice.length);
 			declaration.AddField(fieldName, fieldType);
 		}
-		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
+		compiler.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
 
 		compiler.EndStructDeclaration(declaration, slice);
 	}
 
 	public Option<ValueType> Statement(Compiler compiler)
 	{
-		if (compiler.Match((int)TokenKind.OpenCurlyBrackets))
+		if (compiler.Match(TokenKind.OpenCurlyBrackets))
 		{
 			BlockStatement(compiler);
 			return Option.None;
 		}
-		else if (compiler.Match((int)TokenKind.Let))
+		else if (compiler.Match(TokenKind.Let))
 		{
 			VariableDeclaration(compiler, false);
 			return Option.None;
 		}
-		else if (compiler.Match((int)TokenKind.Mut))
+		else if (compiler.Match(TokenKind.Mut))
 		{
 			VariableDeclaration(compiler, true);
 			return Option.None;
 		}
-		else if (compiler.Match((int)TokenKind.While))
+		else if (compiler.Match(TokenKind.While))
 		{
 			WhileStatement(compiler);
 			return Option.None;
 		}
-		else if (compiler.Match((int)TokenKind.For))
+		else if (compiler.Match(TokenKind.For))
 		{
 			ForStatement(compiler);
 			return Option.None;
 		}
-		else if (compiler.Match((int)TokenKind.Break))
+		else if (compiler.Match(TokenKind.Break))
 		{
 			BreakStatement(compiler);
 			return Option.None;
 		}
-		else if (compiler.Match((int)TokenKind.Return))
+		else if (compiler.Match(TokenKind.Return))
 		{
 			var type = ReturnStatement(compiler);
 			return Option.Some(type);
 		}
-		else if (compiler.Match((int)TokenKind.Print))
+		else if (compiler.Match(TokenKind.Print))
 		{
 			PrintStatement(compiler);
 			return Option.None;
@@ -296,23 +296,23 @@ public sealed class LangCompiler
 	{
 		var scope = compiler.BeginScope();
 		while (
-			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
-			!compiler.Check(Token.EndKind)
+			!compiler.Check(TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(TokenKind.End)
 		)
 		{
 			Statement(compiler);
 		}
 
-		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
+		compiler.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 		compiler.EndScope(scope);
 	}
 
 	private int VariableDeclaration(Compiler compiler, bool mutable)
 	{
-		compiler.Consume((int)TokenKind.Identifier, "Expected variable name");
+		compiler.Consume(TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.previousToken.slice;
 
-		compiler.Consume((int)TokenKind.Equal, "Expected assignment");
+		compiler.Consume(TokenKind.Equal, "Expected assignment");
 		Expression(compiler);
 
 		return compiler.DeclareLocalVariable(slice, mutable);
@@ -326,7 +326,7 @@ public sealed class LangCompiler
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as while condition");
 
-		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
+		compiler.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		LangCompilerHelper.BeginLoop(this);
@@ -346,14 +346,14 @@ public sealed class LangCompiler
 		if (itVar.type != ValueType.Int)
 			compiler.AddSoftError(itVar.slice, "Expected variable of type int in for loop");
 
-		compiler.Consume((int)TokenKind.Comma, "Expected comma after begin expression");
+		compiler.Consume(TokenKind.Comma, "Expected comma after begin expression");
 		Expression(compiler);
 		var toVarIndex = compiler.DeclareLocalVariable(compiler.previousToken.slice, false);
 		compiler.localVariables.buffer[toVarIndex].isUsed = true;
 		if (compiler.localVariables.buffer[toVarIndex].type != ValueType.Int)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected expression of type int");
 
-		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
+		compiler.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var loopJump = compiler.BeginEmitBackwardJump();
 		compiler.EmitInstruction(Instruction.ForLoopCheck);
@@ -378,7 +378,7 @@ public sealed class LangCompiler
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 
 		var nestingCount = 1;
-		if (compiler.Match((int)TokenKind.IntLiteral))
+		if (compiler.Match(TokenKind.IntLiteral))
 		{
 			nestingCount = CompilerHelper.GetInt(compiler);
 
@@ -434,23 +434,23 @@ public sealed class LangCompiler
 
 	public void Expression(Compiler compiler)
 	{
-		compiler.ParseWithPrecedence(rules, (int)Precedence.Assignment);
+		compiler.ParseWithPrecedence(rules, Precedence.Assignment);
 	}
 
-	public void Grouping(Compiler compiler, int precedence)
+	public void Grouping(Compiler compiler, Precedence precedence)
 	{
 		Expression(compiler);
-		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after expression");
+		compiler.Consume(TokenKind.CloseParenthesis, "Expected ')' after expression");
 	}
 
-	public void Block(Compiler compiler, int precedence)
+	public void Block(Compiler compiler, Precedence precedence)
 	{
 		var scope = compiler.BeginScope();
 		var maybeType = new Option<ValueType>();
 
 		while (
-			!compiler.Check((int)TokenKind.CloseCurlyBrackets) &&
-			!compiler.Check(Token.EndKind)
+			!compiler.Check(TokenKind.CloseCurlyBrackets) &&
+			!compiler.Check(TokenKind.End)
 		)
 		{
 			maybeType = Statement(compiler);
@@ -468,7 +468,7 @@ public sealed class LangCompiler
 			}
 		}
 
-		compiler.Consume((int)TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
+		compiler.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
 		compiler.EndScope(scope);
 
@@ -483,14 +483,14 @@ public sealed class LangCompiler
 		}
 	}
 
-	public void If(Compiler compiler, int precedence)
+	public void If(Compiler compiler, Precedence precedence)
 	{
 		Expression(compiler);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression as if condition");
 
-		compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
+		compiler.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
 
 		var elseJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		Block(compiler, precedence);
@@ -499,15 +499,15 @@ public sealed class LangCompiler
 		var thenJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 		compiler.EndEmitForwardJump(elseJump);
 
-		if (compiler.Match((int)TokenKind.Else))
+		if (compiler.Match(TokenKind.Else))
 		{
-			if (compiler.Match((int)TokenKind.If))
+			if (compiler.Match(TokenKind.If))
 			{
 				If(compiler, precedence);
 			}
 			else
 			{
-				compiler.Consume((int)TokenKind.OpenCurlyBrackets, "Expected '{' after else");
+				compiler.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after else");
 				Block(compiler, precedence);
 			}
 
@@ -526,14 +526,14 @@ public sealed class LangCompiler
 		compiler.typeStack.PushBack(thenType);
 	}
 
-	public void And(Compiler compiler, int precedence)
+	public void And(Compiler compiler, Precedence precedence)
 	{
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before and");
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.ParseWithPrecedence(rules, (int)Precedence.And);
+		compiler.ParseWithPrecedence(rules, Precedence.And);
 		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
@@ -542,14 +542,14 @@ public sealed class LangCompiler
 		compiler.typeStack.PushBack(ValueType.Bool);
 	}
 
-	public void Or(Compiler compiler, int precedence)
+	public void Or(Compiler compiler, Precedence precedence)
 	{
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
 			compiler.AddSoftError(compiler.previousToken.slice, "Expected bool expression before or");
 
 		var jump = compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		compiler.EmitInstruction(Instruction.Pop);
-		compiler.ParseWithPrecedence(rules, (int)Precedence.Or);
+		compiler.ParseWithPrecedence(rules, Precedence.Or);
 		compiler.EndEmitForwardJump(jump);
 
 		if (compiler.typeStack.PopLast() != ValueType.Bool)
@@ -558,7 +558,7 @@ public sealed class LangCompiler
 		compiler.typeStack.PushBack(ValueType.Bool);
 	}
 
-	public void Literal(Compiler compiler, int precedence)
+	public void Literal(Compiler compiler, Precedence precedence)
 	{
 		switch ((TokenKind)compiler.previousToken.kind)
 		{
@@ -598,13 +598,13 @@ public sealed class LangCompiler
 		}
 	}
 
-	public void Variable(Compiler compiler, int precedence)
+	public void Variable(Compiler compiler, Precedence precedence)
 	{
 		var slice = compiler.previousToken.slice;
 		var index = compiler.ResolveToLocalVariableIndex();
 
-		var canAssign = precedence <= (int)Precedence.Assignment;
-		if (canAssign && compiler.Match((int)TokenKind.Equal))
+		var canAssign = precedence <= Precedence.Assignment;
+		if (canAssign && compiler.Match(TokenKind.Equal))
 		{
 			Expression(compiler);
 
@@ -652,7 +652,7 @@ public sealed class LangCompiler
 		}
 	}
 
-	public void Call(Compiler compiler, int precedence)
+	public void Call(Compiler compiler, Precedence precedence)
 	{
 		var slice = compiler.previousToken.slice;
 
@@ -671,7 +671,7 @@ public sealed class LangCompiler
 		}
 
 		var argIndex = 0;
-		if (!compiler.Check((int)TokenKind.CloseParenthesis))
+		if (!compiler.Check(TokenKind.CloseParenthesis))
 		{
 			do
 			{
@@ -696,10 +696,10 @@ public sealed class LangCompiler
 				}
 
 				argIndex += 1;
-			} while (compiler.Match((int)TokenKind.Comma));
+			} while (compiler.Match(TokenKind.Comma));
 		}
 
-		compiler.Consume((int)TokenKind.CloseParenthesis, "Expect ')' after function argument list");
+		compiler.Consume(TokenKind.CloseParenthesis, "Expect ')' after function argument list");
 
 		if (hasFunction && argIndex != functionType.parameters.length)
 			compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
@@ -711,11 +711,11 @@ public sealed class LangCompiler
 		);
 	}
 
-	public void Unary(Compiler compiler, int precedence)
+	public void Unary(Compiler compiler, Precedence precedence)
 	{
 		var opToken = compiler.previousToken;
 
-		compiler.ParseWithPrecedence(rules, (int)Precedence.Unary);
+		compiler.ParseWithPrecedence(rules, Precedence.Unary);
 		var type = compiler.typeStack.PopLast();
 
 		switch ((TokenKind)opToken.kind)
@@ -767,11 +767,11 @@ public sealed class LangCompiler
 		}
 	}
 
-	public void Binary(Compiler compiler, int precedence)
+	public void Binary(Compiler compiler, Precedence precedence)
 	{
 		var opToken = compiler.previousToken;
 
-		var opPrecedence = rules[opToken.kind].precedence;
+		var opPrecedence = rules[(int)opToken.kind].precedence;
 		compiler.ParseWithPrecedence(rules, opPrecedence + 1);
 
 		var bType = compiler.typeStack.PopLast();

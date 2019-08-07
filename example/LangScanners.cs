@@ -1,91 +1,56 @@
-public enum TokenKind
-{
-	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
-	Function, Struct, For, If, Else, While, Return, Break,
-	And, Or, Dot, Comma, Colon,
-
-	Let, Mut,
-	Bool, Int, Float, String,
-
-	Print,
-
-	OpenParenthesis, CloseParenthesis, OpenCurlyBrackets, CloseCurlyBrackets,
-
-	Plus, Minus, Asterisk, Slash,
-	Equal, EqualEqual, BangEqual, Bang,
-	Less, Greater, LessEqual, GreaterEqual,
-
-	COUNT
-}
-
-public enum Precedence
-{
-	None,
-	Assignment, // =
-	Or, // or
-	And, // and
-	Equality, // == !=
-	Comparison, // < > <= >=
-	Term,// + -
-	Factor, // * /
-	Unary, // ! -
-	Call, // . () []
-	Primary
-}
-
 public static class LangScanners
 {
 	public static readonly Scanner[] scanners = new Scanner[] {
-		new ExactScanner("fn").ForToken((int)TokenKind.Function),
-		new ExactScanner("struct").ForToken((int)TokenKind.Struct),
-		new ExactScanner("for").ForToken((int)TokenKind.For),
-		new ExactScanner("if").ForToken((int)TokenKind.If),
-		new ExactScanner("else").ForToken((int)TokenKind.Else),
-		new ExactScanner("while").ForToken((int)TokenKind.While),
-		new ExactScanner("return").ForToken((int)TokenKind.Return),
-		new ExactScanner("break").ForToken((int)TokenKind.Break),
-		new ExactScanner("and").ForToken((int)TokenKind.And),
-		new ExactScanner("or").ForToken((int)TokenKind.Or),
+		new ExactScanner("fn").ForToken(TokenKind.Function),
+		new ExactScanner("struct").ForToken(TokenKind.Struct),
+		new ExactScanner("for").ForToken(TokenKind.For),
+		new ExactScanner("if").ForToken(TokenKind.If),
+		new ExactScanner("else").ForToken(TokenKind.Else),
+		new ExactScanner("while").ForToken(TokenKind.While),
+		new ExactScanner("return").ForToken(TokenKind.Return),
+		new ExactScanner("break").ForToken(TokenKind.Break),
+		new ExactScanner("and").ForToken(TokenKind.And),
+		new ExactScanner("or").ForToken(TokenKind.Or),
 
-		new ExactScanner("let").ForToken((int)TokenKind.Let),
-		new ExactScanner("mut").ForToken((int)TokenKind.Mut),
+		new ExactScanner("let").ForToken(TokenKind.Let),
+		new ExactScanner("mut").ForToken(TokenKind.Mut),
 
-		new ExactScanner("bool").ForToken((int)TokenKind.Bool),
-		new ExactScanner("int").ForToken((int)TokenKind.Int),
-		new ExactScanner("float").ForToken((int)TokenKind.Float),
-		new ExactScanner("string").ForToken((int)TokenKind.String),
+		new ExactScanner("bool").ForToken(TokenKind.Bool),
+		new ExactScanner("int").ForToken(TokenKind.Int),
+		new ExactScanner("float").ForToken(TokenKind.Float),
+		new ExactScanner("string").ForToken(TokenKind.String),
 
-		new ExactScanner("print").ForToken((int)TokenKind.Print),
+		new ExactScanner("print").ForToken(TokenKind.Print),
 
-		new CharScanner('.').ForToken((int)TokenKind.Dot),
-		new CharScanner(',').ForToken((int)TokenKind.Comma),
-		new CharScanner(':').ForToken((int)TokenKind.Colon),
-		new CharScanner('(').ForToken((int)TokenKind.OpenParenthesis),
-		new CharScanner(')').ForToken((int)TokenKind.CloseParenthesis),
-		new CharScanner('{').ForToken((int)TokenKind.OpenCurlyBrackets),
-		new CharScanner('}').ForToken((int)TokenKind.CloseCurlyBrackets),
+		new CharScanner('.').ForToken(TokenKind.Dot),
+		new CharScanner(',').ForToken(TokenKind.Comma),
+		new CharScanner(':').ForToken(TokenKind.Colon),
+		new CharScanner('(').ForToken(TokenKind.OpenParenthesis),
+		new CharScanner(')').ForToken(TokenKind.CloseParenthesis),
+		new CharScanner('{').ForToken(TokenKind.OpenCurlyBrackets),
+		new CharScanner('}').ForToken(TokenKind.CloseCurlyBrackets),
 
-		new CharScanner('+').ForToken((int)TokenKind.Plus),
-		new CharScanner('-').ForToken((int)TokenKind.Minus),
-		new CharScanner('*').ForToken((int)TokenKind.Asterisk),
-		new CharScanner('/').ForToken((int)TokenKind.Slash),
+		new CharScanner('+').ForToken(TokenKind.Plus),
+		new CharScanner('-').ForToken(TokenKind.Minus),
+		new CharScanner('*').ForToken(TokenKind.Asterisk),
+		new CharScanner('/').ForToken(TokenKind.Slash),
 
-		new CharScanner('=').ForToken((int)TokenKind.Equal),
-		new ExactScanner("==").ForToken((int)TokenKind.EqualEqual),
-		new ExactScanner("!=").ForToken((int)TokenKind.BangEqual),
-		new ExactScanner("!").ForToken((int)TokenKind.Bang),
+		new CharScanner('=').ForToken(TokenKind.Equal),
+		new ExactScanner("==").ForToken(TokenKind.EqualEqual),
+		new ExactScanner("!=").ForToken(TokenKind.BangEqual),
+		new ExactScanner("!").ForToken(TokenKind.Bang),
 
-		new CharScanner('<').ForToken((int)TokenKind.Less),
-		new CharScanner('>').ForToken((int)TokenKind.Greater),
-		new ExactScanner("<=").ForToken((int)TokenKind.LessEqual),
-		new ExactScanner(">=").ForToken((int)TokenKind.GreaterEqual),
+		new CharScanner('<').ForToken(TokenKind.Less),
+		new CharScanner('>').ForToken(TokenKind.Greater),
+		new ExactScanner("<=").ForToken(TokenKind.LessEqual),
+		new ExactScanner(">=").ForToken(TokenKind.GreaterEqual),
 
-		new IntegerNumberScanner().ForToken((int)TokenKind.IntLiteral),
-		new RealNumberScanner().ForToken((int)TokenKind.FloatLiteral),
-		new EnclosedScanner("\"", "\"").ForToken((int)TokenKind.StringLiteral),
-		new ExactScanner("true").ForToken((int)TokenKind.True),
-		new ExactScanner("false").ForToken((int)TokenKind.False),
-		new IdentifierScanner("_").ForToken((int)TokenKind.Identifier),
+		new IntegerNumberScanner().ForToken(TokenKind.IntLiteral),
+		new RealNumberScanner().ForToken(TokenKind.FloatLiteral),
+		new EnclosedScanner("\"", "\"").ForToken(TokenKind.StringLiteral),
+		new ExactScanner("true").ForToken(TokenKind.True),
+		new ExactScanner("false").ForToken(TokenKind.False),
+		new IdentifierScanner("_").ForToken(TokenKind.Identifier),
 
 		new WhiteSpaceScanner().Ignore(),
 		new EnclosedScanner("//", "\n").Ignore(),

@@ -63,8 +63,8 @@ public sealed class Compiler
 		this.tokenizer = tokenizer;
 		this.onParseWithPrecedence = onParseWithPrecedence;
 
-		previousToken = new Token(Token.EndKind, new Slice());
-		currentToken = new Token(Token.EndKind, new Slice());
+		previousToken = new Token(TokenKind.End, new Slice());
+		currentToken = new Token(TokenKind.End, new Slice());
 
 		isInPanicMode = false;
 		chunk = new ByteCodeChunk();

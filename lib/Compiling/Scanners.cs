@@ -1,6 +1,6 @@
 ﻿public abstract class Scanner
 {
-	public int tokenKind;
+	public TokenKind tokenKind;
 
 	public static bool StartsWith(string str, int index, string match)
 	{
@@ -19,7 +19,7 @@
 
 	public abstract int Scan(string input, int index);
 
-	public Scanner ForToken(int tokenKind)
+	public Scanner ForToken(TokenKind tokenKind)
 	{
 		this.tokenKind = tokenKind;
 		return this;
@@ -27,7 +27,7 @@
 
 	public Scanner Ignore()
 	{
-		this.tokenKind = Token.EndKind;
+		this.tokenKind = TokenKind.End;
 		return this;
 	}
 }

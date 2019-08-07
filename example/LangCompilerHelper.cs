@@ -39,17 +39,17 @@ public static class LangCompilerHelper
 
 		var type = new Option<ValueType>();
 
-		if (compiler.Match((int)TokenKind.Bool))
+		if (compiler.Match(TokenKind.Bool))
 			type = Option.Some(ValueType.Bool);
-		else if (compiler.Match((int)TokenKind.Int))
+		else if (compiler.Match(TokenKind.Int))
 			type = Option.Some(ValueType.Int);
-		else if (compiler.Match((int)TokenKind.Float))
+		else if (compiler.Match(TokenKind.Float))
 			type = Option.Some(ValueType.Float);
-		else if (compiler.Match((int)TokenKind.String))
+		else if (compiler.Match(TokenKind.String))
 			type = Option.Some(ValueType.String);
-		else if (compiler.Match((int)TokenKind.Identifier))
+		else if (compiler.Match(TokenKind.Identifier))
 			type = lang.ResolveStructType(compiler, recursionLevel + 1);
-		else if (compiler.Match((int)TokenKind.Function))
+		else if (compiler.Match(TokenKind.Function))
 			type = lang.ResolveFunctionType(compiler, recursionLevel + 1);
 
 		if (type.isSome)
@@ -78,17 +78,17 @@ public static class LangCompilerHelper
 	{
 		var declaration = compiler.chunk.BeginAddFunctionType();
 
-		compiler.Consume((int)TokenKind.OpenParenthesis, "Expected '(' after function type");
-		if (!compiler.Check((int)TokenKind.CloseParenthesis))
+		compiler.Consume(TokenKind.OpenParenthesis, "Expected '(' after function type");
+		if (!compiler.Check(TokenKind.CloseParenthesis))
 		{
 			do
 			{
 				var paramType = lang.ConsumeType(compiler, "Expected function parameter type", recursionLevel);
 				declaration.AddParam(paramType);
-			} while (compiler.Match((int)TokenKind.Comma));
+			} while (compiler.Match(TokenKind.Comma));
 		}
-		compiler.Consume((int)TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
-		if (compiler.Match((int)TokenKind.Colon))
+		compiler.Consume(TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
+		if (compiler.Match(TokenKind.Colon))
 			declaration.returnType = lang.ConsumeType(compiler, "Expected function return type", recursionLevel);
 
 		var functionTypeIndex = compiler.chunk.EndAddFunctionType(declaration);

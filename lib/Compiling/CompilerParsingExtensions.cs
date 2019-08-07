@@ -7,19 +7,19 @@ public static class CompilerParsingExtensions
 		while (true)
 		{
 			compiler.currentToken = compiler.tokenizer.Next();
-			if (compiler.currentToken.kind != Token.ErrorKind)
+			if (compiler.currentToken.kind != TokenKind.Error)
 				break;
 
 			compiler.AddHardError(compiler.currentToken.slice, "Invalid char");
 		}
 	}
 
-	public static bool Check(this Compiler compiler, int tokenKind)
+	public static bool Check(this Compiler compiler, TokenKind tokenKind)
 	{
 		return compiler.currentToken.kind == tokenKind;
 	}
 
-	public static bool Match(this Compiler compiler, int tokenKind)
+	public static bool Match(this Compiler compiler, TokenKind tokenKind)
 	{
 		if (compiler.currentToken.kind != tokenKind)
 			return false;
@@ -28,7 +28,7 @@ public static class CompilerParsingExtensions
 		return true;
 	}
 
-	public static bool Consume(this Compiler compiler, int tokenKind, string errorMessage)
+	public static bool Consume(this Compiler compiler, TokenKind tokenKind, string errorMessage)
 	{
 		if (compiler.currentToken.kind == tokenKind)
 		{
@@ -42,13 +42,13 @@ public static class CompilerParsingExtensions
 		}
 	}
 
-	public static void ParseWithPrecedence(this Compiler compiler, ParseRule[] parseRules, int precedence)
+	public static void ParseWithPrecedence(this Compiler compiler, ParseRule[] parseRules, Precedence precedence)
 	{
 		compiler.Next();
-		if (compiler.previousToken.kind == Token.EndKind)
+		if (compiler.previousToken.kind == TokenKind.End)
 			return;
 
-		var prefixRule = parseRules[compiler.previousToken.kind].prefixRule;
+		var prefixRule = parseRules[(int)compiler.previousToken.kind].prefixRule;
 		if (prefixRule == null)
 		{
 			compiler.AddHardError(compiler.previousToken.slice, "Expected expression");
@@ -57,12 +57,12 @@ public static class CompilerParsingExtensions
 		prefixRule(compiler, precedence);
 
 		while (
-			compiler.currentToken.kind != Token.EndKind &&
-			precedence <= parseRules[compiler.currentToken.kind].precedence
+			compiler.currentToken.kind != TokenKind.End &&
+			precedence <= parseRules[(int)compiler.currentToken.kind].precedence
 		)
 		{
 			compiler.Next();
-			var infixRule = parseRules[compiler.previousToken.kind].infixRule;
+			var infixRule = parseRules[(int)compiler.previousToken.kind].infixRule;
 			infixRule(compiler, precedence);
 		}
 

@@ -1,36 +1,4 @@
-﻿public readonly struct Slice
-{
-	public readonly int index;
-	public readonly int length;
-
-	public Slice(int index, int length)
-	{
-		this.index = index;
-		this.length = length;
-	}
-}
-
-public readonly struct Token
-{
-	public static readonly int EndKind = -1;
-	public static readonly int ErrorKind = -2;
-
-	public readonly int kind;
-	public readonly Slice slice;
-
-	public Token(int kind, Slice slice)
-	{
-		this.kind = kind;
-		this.slice = slice;
-	}
-
-	public bool IsValid()
-	{
-		return kind >= 0;
-	}
-}
-
-public interface ITokenizer
+﻿public interface ITokenizer
 {
 	string Source { get; }
 	void Reset(Scanner[] scanners, string source);
@@ -60,7 +28,7 @@ public sealed class Tokenizer : ITokenizer
 		while (nextIndex < source.Length)
 		{
 			var tokenLength = 0;
-			var tokenKind = Token.ErrorKind;
+			var tokenKind = TokenKind.Error;
 			foreach (var scanner in scanners)
 			{
 				var length = scanner.Scan(source, nextIndex);
@@ -71,7 +39,7 @@ public sealed class Tokenizer : ITokenizer
 				tokenKind = scanner.tokenKind;
 			}
 
-			if (tokenKind == Token.EndKind)
+			if (tokenKind == TokenKind.End)
 			{
 				nextIndex += tokenLength;
 				continue;
@@ -85,6 +53,6 @@ public sealed class Tokenizer : ITokenizer
 			return token;
 		}
 
-		return new Token(Token.EndKind, new Slice(source.Length, 0));
+		return new Token(TokenKind.End, new Slice(source.Length, 0));
 	}
 }

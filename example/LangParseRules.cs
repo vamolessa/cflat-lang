@@ -29,6 +29,6 @@ public static class LangParseRules
 
 	private static void Set(LangCompiler c, TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
 	{
-		c.rules[(int)kind] = new ParseRule(prefix, infix, (int)precedence);
+		c.rules[(int)kind] = new ParseRule(prefix, infix, precedence);
 	}
 }
