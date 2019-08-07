@@ -48,33 +48,36 @@ public static class CompilerHelper
 		return true;
 	}
 
+	public static string GetSlice(Compiler compiler, Slice slice)
+	{
+		return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
+	}
+
+	public static string GetPreviousSlice(Compiler compiler)
+	{
+		var slice = compiler.parser.previousToken.slice;
+		return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
+	}
+
 	public static int GetInt(Compiler compiler)
 	{
-		var source = compiler.tokenizer.source;
-		var sub = source.Substring(
-			compiler.previousToken.slice.index,
-			compiler.previousToken.slice.length
-		);
+		var sub = GetPreviousSlice(compiler);
 		return int.Parse(sub);
 	}
 
 	public static float GetFloat(Compiler compiler)
 	{
-		var source = compiler.tokenizer.source;
-		var sub = source.Substring(
-			compiler.previousToken.slice.index,
-			compiler.previousToken.slice.length
-		);
+		var sub = GetPreviousSlice(compiler);
 		return float.Parse(sub);
 	}
 
 	public static string GetString(Compiler compiler)
 	{
-		var source = compiler.tokenizer.source;
-		return source.Substring(
-			compiler.previousToken.slice.index + 1,
-			compiler.previousToken.slice.length - 2
+		var slice = new Slice(
+			compiler.parser.previousToken.slice.index + 1,
+			compiler.parser.previousToken.slice.length - 2
 		);
+		return GetSlice(compiler, slice);
 	}
 
 	public static LineAndColumn GetLineAndColumn(string source, int index, int tabSize)

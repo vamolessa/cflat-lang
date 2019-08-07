@@ -4,9 +4,8 @@ public sealed class ParserTest
 {
 	public static string CopmileExpression(string source)
 	{
-		var tokenizer = new Tokenizer();
 		var compiler = new LangCompiler();
-		var compileResult = compiler.CompileExpression(source, tokenizer);
+		var compileResult = compiler.CompileExpression(source);
 		if (!compileResult.isOk)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);
 		return null;

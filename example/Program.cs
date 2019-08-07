@@ -7,10 +7,9 @@ public sealed class Program
 	public static void Main(string[] args)
 	{
 		var source = System.IO.File.ReadAllText("script.txt");
-		var tokenizer = new Tokenizer();
 		var compiler = new LangCompiler();
 
-		var compileResult = compiler.Compile(source, tokenizer);
+		var compileResult = compiler.Compile(source);
 		if (!compileResult.isOk)
 		{
 			var error = CompilerHelper.FormatError(source, compileResult.error, 2, TabSize);

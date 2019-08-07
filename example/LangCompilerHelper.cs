@@ -33,36 +33,36 @@ public static class LangCompilerHelper
 	{
 		if (recursionLevel > 8)
 		{
-			compiler.AddSoftError(compiler.previousToken.slice, "Type is nested too deeply");
+			compiler.AddSoftError(compiler.parser.previousToken.slice, "Type is nested too deeply");
 			return ValueType.Unit;
 		}
 
 		var type = new Option<ValueType>();
 
-		if (compiler.Match(TokenKind.Bool))
+		if (compiler.parser.Match(TokenKind.Bool))
 			type = Option.Some(ValueType.Bool);
-		else if (compiler.Match(TokenKind.Int))
+		else if (compiler.parser.Match(TokenKind.Int))
 			type = Option.Some(ValueType.Int);
-		else if (compiler.Match(TokenKind.Float))
+		else if (compiler.parser.Match(TokenKind.Float))
 			type = Option.Some(ValueType.Float);
-		else if (compiler.Match(TokenKind.String))
+		else if (compiler.parser.Match(TokenKind.String))
 			type = Option.Some(ValueType.String);
-		else if (compiler.Match(TokenKind.Identifier))
+		else if (compiler.parser.Match(TokenKind.Identifier))
 			type = lang.ResolveStructType(compiler, recursionLevel + 1);
-		else if (compiler.Match(TokenKind.Function))
+		else if (compiler.parser.Match(TokenKind.Function))
 			type = lang.ResolveFunctionType(compiler, recursionLevel + 1);
 
 		if (type.isSome)
 			return type.value;
 
-		compiler.AddSoftError(compiler.previousToken.slice, error);
+		compiler.AddSoftError(compiler.parser.previousToken.slice, error);
 		return ValueType.Unit;
 	}
 
 	private static Option<ValueType> ResolveStructType(this LangCompiler lang, Compiler compiler, int recursionLevel)
 	{
-		var source = compiler.tokenizer.source;
-		var slice = compiler.previousToken.slice;
+		var source = compiler.parser.tokenizer.source;
+		var slice = compiler.parser.previousToken.slice;
 
 		for (var i = 0; i < compiler.chunk.structTypes.count; i++)
 		{
@@ -78,17 +78,17 @@ public static class LangCompilerHelper
 	{
 		var declaration = compiler.chunk.BeginAddFunctionType();
 
-		compiler.Consume(TokenKind.OpenParenthesis, "Expected '(' after function type");
-		if (!compiler.Check(TokenKind.CloseParenthesis))
+		compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function type");
+		if (!compiler.parser.Check(TokenKind.CloseParenthesis))
 		{
 			do
 			{
 				var paramType = lang.ConsumeType(compiler, "Expected function parameter type", recursionLevel);
 				declaration.AddParam(paramType);
-			} while (compiler.Match(TokenKind.Comma));
+			} while (compiler.parser.Match(TokenKind.Comma));
 		}
-		compiler.Consume(TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
-		if (compiler.Match(TokenKind.Colon))
+		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
+		if (compiler.parser.Match(TokenKind.Colon))
 			declaration.returnType = lang.ConsumeType(compiler, "Expected function return type", recursionLevel);
 
 		var functionTypeIndex = compiler.chunk.EndAddFunctionType(declaration);

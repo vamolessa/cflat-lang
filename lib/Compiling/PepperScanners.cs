@@ -1,4 +1,4 @@
-public static class LangScanners
+public static class PepperScanners
 {
 	public static readonly Scanner[] scanners = new Scanner[] {
 		new ExactScanner("fn").ForToken(TokenKind.Function),

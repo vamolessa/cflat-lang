@@ -16,28 +16,35 @@ public readonly struct ParseRule
 
 public sealed class Parser
 {
+	public readonly Tokenizer tokenizer;
+	private readonly System.Action<Slice, string> onError;
+
 	public Token previousToken;
 	public Token currentToken;
-	public Tokenizer tokenizer;
 
-	public void Reset(Tokenizer tokenizer)
+	public Parser(Tokenizer tokenizer, System.Action<Slice, string> onError)
 	{
 		this.tokenizer = tokenizer;
+		this.onError = onError;
+
+		Reset();
+	}
+
+	public void Reset()
+	{
 		this.previousToken = new Token(TokenKind.End, new Slice());
 		this.currentToken = new Token(TokenKind.End, new Slice());
 	}
 
-	public void Next(Compiler compiler)
+	public void Next()
 	{
 		previousToken = currentToken;
 
 		while (true)
 		{
 			currentToken = tokenizer.Next();
-			if (currentToken.kind != TokenKind.Error)
-				break;
-
-			compiler.AddHardError(currentToken.slice, "Invalid char");
+			if (currentToken.kind == TokenKind.Error)
+				onError(currentToken.slice, "Invalid char");
 		}
 	}
 
@@ -46,44 +53,44 @@ public sealed class Parser
 		return currentToken.kind == tokenKind;
 	}
 
-	public bool Match(Compiler compiler, TokenKind tokenKind)
+	public bool Match(TokenKind tokenKind)
 	{
 		if (currentToken.kind != tokenKind)
 			return false;
 
-		Next(compiler);
+		Next();
 		return true;
 	}
 
-	public void Consume(Compiler compiler, TokenKind tokenKind, string errorMessage)
+	public void Consume(TokenKind tokenKind, string errorMessage)
 	{
 		if (currentToken.kind == tokenKind)
-			Next(compiler);
+			Next();
 		else
-			compiler.AddHardError(compiler.currentToken.slice, errorMessage);
+			onError(currentToken.slice, errorMessage);
 	}
 
 	public void ParseWithPrecedence(Compiler compiler, ParseRule[] parseRules, Precedence precedence)
 	{
-		Next(compiler);
+		Next();
 		if (previousToken.kind == TokenKind.End)
 			return;
 
-		var prefixRule = parseRules[(int)compiler.previousToken.kind].prefixRule;
+		var prefixRule = parseRules[(int)previousToken.kind].prefixRule;
 		if (prefixRule == null)
 		{
-			compiler.AddHardError(compiler.previousToken.slice, "Expected expression");
+			onError(previousToken.slice, "Expected expression");
 			return;
 		}
 		prefixRule(compiler, precedence);
 
 		while (
-			compiler.currentToken.kind != TokenKind.End &&
-			precedence <= parseRules[(int)compiler.currentToken.kind].precedence
+			currentToken.kind != TokenKind.End &&
+			precedence <= parseRules[(int)currentToken.kind].precedence
 		)
 		{
-			compiler.Next();
-			var infixRule = parseRules[(int)compiler.previousToken.kind].infixRule;
+			Next();
+			var infixRule = parseRules[(int)previousToken.kind].infixRule;
 			infixRule(compiler, precedence);
 		}
 

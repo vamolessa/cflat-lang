@@ -2,7 +2,7 @@ public static class CompilerChunkExtensions
 {
 	public static Compiler EmitByte(this Compiler compiler, byte value)
 	{
-		compiler.chunk.WriteByte(value, compiler.previousToken.slice);
+		compiler.chunk.WriteByte(value, compiler.parser.previousToken.slice);
 		return compiler;
 	}
 
@@ -52,7 +52,7 @@ public static class CompilerChunkExtensions
 		var offset = compiler.chunk.bytes.count - jumpIndex + 2;
 		if (offset > ushort.MaxValue)
 		{
-			compiler.AddSoftError(compiler.previousToken.slice, "Too much code to jump over");
+			compiler.AddSoftError(compiler.parser.previousToken.slice, "Too much code to jump over");
 			return;
 		}
 
@@ -74,7 +74,7 @@ public static class CompilerChunkExtensions
 	{
 		var offset = compiler.chunk.bytes.count - jumpIndex - 2;
 		if (offset > ushort.MaxValue)
-			compiler.AddSoftError(compiler.previousToken.slice, "Too much code to jump over");
+			compiler.AddSoftError(compiler.parser.previousToken.slice, "Too much code to jump over");
 
 		BytesHelper.ShortToBytes(
 			(ushort)offset,

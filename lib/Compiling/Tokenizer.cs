@@ -2,12 +2,17 @@
 {
 	public string source;
 
-	private Scanner[] scanners;
+	private readonly Scanner[] scanners;
 	private int nextIndex;
 
-	public void Reset(Scanner[] scanners, string source)
+	public Tokenizer(Scanner[] scanners)
 	{
 		this.scanners = scanners;
+		Reset(string.Empty);
+	}
+
+	public void Reset(string source)
+	{
 		this.source = source;
 		nextIndex = 0;
 	}
