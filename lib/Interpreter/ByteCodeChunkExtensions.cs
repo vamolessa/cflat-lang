@@ -128,11 +128,11 @@ public static class ByteCodeChunkExtensions
 		case Instruction.Call:
 		case Instruction.PopMultiple:
 		case Instruction.CopyTo:
-		case Instruction.AssignLocal:
 		case Instruction.LoadLocal:
+		case Instruction.AssignLocal:
 		case Instruction.IncrementLocalInt:
 		case Instruction.ForLoopCheck:
-			return ArgInstruction(self, instruction, index, sb);
+			return OneArgInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadFunction:
@@ -156,7 +156,7 @@ public static class ByteCodeChunkExtensions
 		return index + 1;
 	}
 
-	private static int ArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int OneArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');

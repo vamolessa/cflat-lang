@@ -74,6 +74,7 @@ public sealed class CompilerController
 			switch (compiler.parser.currentToken.kind)
 			{
 			case TokenKind.Function:
+			case TokenKind.Struct:
 				compiler.isInPanicMode = false;
 				return;
 			default:
@@ -282,10 +283,18 @@ public sealed class CompilerController
 	public ValueType ExpressionStatement()
 	{
 		Expression(this);
-		compiler.EmitInstruction(Instruction.Pop);
-		return compiler.typeStack.count > 0 ?
+		var type = compiler.typeStack.count > 0 ?
 			compiler.typeStack.PopLast() :
 			ValueType.Unit;
+
+		var size = compiler.chunk.GetTypeSize(type);
+
+		if (size > 1)
+			compiler.EmitInstruction(Instruction.PopMultiple).EmitByte((byte)size);
+		else
+			compiler.EmitInstruction(Instruction.Pop);
+
+		return type;
 	}
 
 	public void BlockStatement()
