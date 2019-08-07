@@ -1,6 +1,6 @@
-public static class PepperParseRules
+public static class ParseRules
 {
-	public static void InitRulesFor(PepperCompiler c)
+	public static void InitRulesFor(Compiler c)
 	{
 		Set(c, TokenKind.OpenParenthesis, c.Grouping, c.Call, Precedence.Call);
 		Set(c, TokenKind.OpenCurlyBrackets, c.Block, null, Precedence.None);
@@ -27,7 +27,7 @@ public static class PepperParseRules
 		Set(c, TokenKind.Function, c.FunctionExpression, null, Precedence.None);
 	}
 
-	private static void Set(PepperCompiler c, TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
+	private static void Set(Compiler c, TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
 	{
 		c.parseRules[(int)kind] = new ParseRule(prefix, infix, precedence);
 	}

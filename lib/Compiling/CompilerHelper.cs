@@ -48,30 +48,30 @@ public static class CompilerHelper
 		return true;
 	}
 
-	public static string GetSlice(Compiler compiler, Slice slice)
+	public static string GetSlice(CompilerCommon compiler, Slice slice)
 	{
 		return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
 	}
 
-	public static string GetPreviousSlice(Compiler compiler)
+	public static string GetPreviousSlice(CompilerCommon compiler)
 	{
 		var slice = compiler.parser.previousToken.slice;
 		return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
 	}
 
-	public static int GetInt(Compiler compiler)
+	public static int GetInt(CompilerCommon compiler)
 	{
 		var sub = GetPreviousSlice(compiler);
 		return int.Parse(sub);
 	}
 
-	public static float GetFloat(Compiler compiler)
+	public static float GetFloat(CompilerCommon compiler)
 	{
 		var sub = GetPreviousSlice(compiler);
 		return float.Parse(sub);
 	}
 
-	public static string GetString(Compiler compiler)
+	public static string GetString(CompilerCommon compiler)
 	{
 		var slice = new Slice(
 			compiler.parser.previousToken.slice.index + 1,

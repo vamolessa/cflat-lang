@@ -32,7 +32,7 @@ public struct LocalVariable
 	}
 }
 
-public sealed class Compiler
+public sealed class CompilerCommon
 {
 	public readonly struct Scope
 	{
@@ -45,8 +45,7 @@ public sealed class Compiler
 	}
 
 	public readonly List<CompileError> errors = new List<CompileError>();
-	public Parser parser;
-	public ParseFunction onParseWithPrecedence;
+	public readonly Parser parser;
 
 	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
@@ -54,11 +53,15 @@ public sealed class Compiler
 	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	public int scopeDepth;
 
-	public void Reset(Parser parser, ParseFunction onParseWithPrecedence)
+	public CompilerCommon(Parser parser)
+	{
+		this.parser = parser;
+		Reset();
+	}
+
+	public void Reset()
 	{
 		errors.Clear();
-		this.parser = parser;
-		this.onParseWithPrecedence = onParseWithPrecedence;
 
 		isInPanicMode = false;
 		chunk = new ByteCodeChunk();
@@ -67,14 +70,14 @@ public sealed class Compiler
 		scopeDepth = 0;
 	}
 
-	public Compiler AddSoftError(Slice slice, string format, params object[] args)
+	public CompilerCommon AddSoftError(Slice slice, string format, params object[] args)
 	{
 		if (!isInPanicMode)
 			errors.Add(new CompileError(slice, string.Format(format, args)));
 		return this;
 	}
 
-	public Compiler AddHardError(Slice slice, string format, params object[] args)
+	public CompilerCommon AddHardError(Slice slice, string format, params object[] args)
 	{
 		if (!isInPanicMode)
 		{

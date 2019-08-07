@@ -7,7 +7,7 @@ public sealed class LangTests
 		value = new ValueData();
 		type = new ValueType();
 
-		var compiler = new PepperCompiler();
+		var compiler = new Compiler();
 
 		var compileResult = compiler.CompileExpression(source);
 		if (!compileResult.isOk)

@@ -1,4 +1,4 @@
-public delegate void ParseFunction(Compiler compiler, Precedence currentPrecedence);
+public delegate void ParseFunction(Precedence currentPrecedence);
 
 public readonly struct ParseRule
 {

@@ -1,18 +1,18 @@
 public static class CompilerChunkExtensions
 {
-	public static Compiler EmitByte(this Compiler compiler, byte value)
+	public static CompilerCommon EmitByte(this CompilerCommon compiler, byte value)
 	{
 		compiler.chunk.WriteByte(value, compiler.parser.previousToken.slice);
 		return compiler;
 	}
 
-	public static Compiler EmitInstruction(this Compiler compiler, Instruction instruction)
+	public static CompilerCommon EmitInstruction(this CompilerCommon compiler, Instruction instruction)
 	{
 		compiler.EmitByte((byte)instruction);
 		return compiler;
 	}
 
-	public static Compiler EmitLoadLiteral(this Compiler compiler, ValueData value, ValueType type)
+	public static CompilerCommon EmitLoadLiteral(this CompilerCommon compiler, ValueData value, ValueType type)
 	{
 		var index = compiler.chunk.AddValueLiteral(value, type);
 		compiler.EmitInstruction(Instruction.LoadLiteral);
@@ -21,7 +21,7 @@ public static class CompilerChunkExtensions
 		return compiler;
 	}
 
-	public static Compiler EmitLoadFunction(this Compiler compiler, int functionIndex)
+	public static CompilerCommon EmitLoadFunction(this CompilerCommon compiler, int functionIndex)
 	{
 		compiler.EmitInstruction(Instruction.LoadFunction);
 		BytesHelper.ShortToBytes((ushort)functionIndex, out var b0, out var b1);
@@ -31,7 +31,7 @@ public static class CompilerChunkExtensions
 		return compiler;
 	}
 
-	public static Compiler EmitLoadStringLiteral(this Compiler compiler, string value)
+	public static CompilerCommon EmitLoadStringLiteral(this CompilerCommon compiler, string value)
 	{
 		var index = compiler.chunk.AddStringLiteral(value);
 		compiler.EmitInstruction(Instruction.LoadLiteral);
@@ -40,12 +40,12 @@ public static class CompilerChunkExtensions
 		return compiler;
 	}
 
-	public static int BeginEmitBackwardJump(this Compiler compiler)
+	public static int BeginEmitBackwardJump(this CompilerCommon compiler)
 	{
 		return compiler.chunk.bytes.count;
 	}
 
-	public static void EndEmitBackwardJump(this Compiler compiler, Instruction instruction, int jumpIndex)
+	public static void EndEmitBackwardJump(this CompilerCommon compiler, Instruction instruction, int jumpIndex)
 	{
 		compiler.EmitInstruction(instruction);
 
@@ -61,7 +61,7 @@ public static class CompilerChunkExtensions
 		compiler.EmitByte(b1);
 	}
 
-	public static int BeginEmitForwardJump(this Compiler compiler, Instruction instruction)
+	public static int BeginEmitForwardJump(this CompilerCommon compiler, Instruction instruction)
 	{
 		compiler.EmitInstruction(instruction);
 		compiler.EmitByte(0);
@@ -70,7 +70,7 @@ public static class CompilerChunkExtensions
 		return compiler.chunk.bytes.count - 2;
 	}
 
-	public static void EndEmitForwardJump(this Compiler compiler, int jumpIndex)
+	public static void EndEmitForwardJump(this CompilerCommon compiler, int jumpIndex)
 	{
 		var offset = compiler.chunk.bytes.count - jumpIndex - 2;
 		if (offset > ushort.MaxValue)

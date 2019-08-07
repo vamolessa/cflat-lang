@@ -1,44 +1,44 @@
 public static class PepperCompilerHelper
 {
-	public static void ParseWithPrecedence(PepperCompiler pepper, Precedence precedence)
+	public static void ParseWithPrecedence(Compiler compiler, Precedence precedence)
 	{
-		var parser = pepper.compiler.parser;
+		var parser = compiler.common.parser;
 		parser.Next();
 		if (parser.previousToken.kind == TokenKind.End)
 			return;
 
-		var prefixRule = pepper.parseRules[(int)parser.previousToken.kind].prefixRule;
+		var prefixRule = compiler.parseRules[(int)parser.previousToken.kind].prefixRule;
 		if (prefixRule == null)
 		{
-			pepper.compiler.AddHardError(parser.previousToken.slice, "Expected expression");
+			compiler.common.AddHardError(parser.previousToken.slice, "Expected expression");
 			return;
 		}
-		prefixRule(pepper.compiler, precedence);
+		prefixRule(precedence);
 
 		while (
 			parser.currentToken.kind != TokenKind.End &&
-			precedence <= pepper.parseRules[(int)parser.currentToken.kind].precedence
+			precedence <= compiler.parseRules[(int)parser.currentToken.kind].precedence
 		)
 		{
 			parser.Next();
-			var infixRule = pepper.parseRules[(int)parser.previousToken.kind].infixRule;
-			infixRule(pepper.compiler, precedence);
+			var infixRule = compiler.parseRules[(int)parser.previousToken.kind].infixRule;
+			infixRule(precedence);
 		}
 
 		var canAssign = precedence <= Precedence.Assignment;
-		if (canAssign && pepper.compiler.parser.Match(TokenKind.Equal))
+		if (canAssign && compiler.common.parser.Match(TokenKind.Equal))
 		{
-			pepper.compiler.AddHardError(pepper.compiler.parser.previousToken.slice, "Invalid assignment target");
-			pepper.Expression(pepper.compiler);
+			compiler.common.AddHardError(compiler.common.parser.previousToken.slice, "Invalid assignment target");
+			compiler.Expression();
 		}
 	}
 
-	public static void BeginLoop(PepperCompiler lang)
+	public static void BeginLoop(Compiler lang)
 	{
 		lang.loopNesting += 1;
 	}
 
-	public static void EndLoop(PepperCompiler lang, Compiler compiler)
+	public static void EndLoop(Compiler lang, CompilerCommon compiler)
 	{
 		lang.loopNesting -= 1;
 
@@ -53,7 +53,7 @@ public static class PepperCompilerHelper
 		}
 	}
 
-	public static bool BreakLoop(PepperCompiler lang, int nesting, int jump)
+	public static bool BreakLoop(Compiler lang, int nesting, int jump)
 	{
 		if (lang.loopNesting < nesting)
 			return false;
@@ -62,7 +62,7 @@ public static class PepperCompilerHelper
 		return true;
 	}
 
-	public static ValueType ConsumeType(this PepperCompiler lang, Compiler compiler, string error, int recursionLevel)
+	public static ValueType ConsumeType(this Compiler lang, CompilerCommon compiler, string error, int recursionLevel)
 	{
 		if (recursionLevel > 8)
 		{
@@ -92,7 +92,7 @@ public static class PepperCompilerHelper
 		return ValueType.Unit;
 	}
 
-	private static Option<ValueType> ResolveStructType(this PepperCompiler lang, Compiler compiler, int recursionLevel)
+	private static Option<ValueType> ResolveStructType(this Compiler lang, CompilerCommon compiler, int recursionLevel)
 	{
 		var source = compiler.parser.tokenizer.source;
 		var slice = compiler.parser.previousToken.slice;
@@ -107,7 +107,7 @@ public static class PepperCompilerHelper
 		return Option.None;
 	}
 
-	private static Option<ValueType> ResolveFunctionType(this PepperCompiler lang, Compiler compiler, int recursionLevel)
+	private static Option<ValueType> ResolveFunctionType(this Compiler lang, CompilerCommon compiler, int recursionLevel)
 	{
 		var declaration = compiler.chunk.BeginAddFunctionType();
 
