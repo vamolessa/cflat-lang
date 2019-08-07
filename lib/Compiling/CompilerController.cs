@@ -8,8 +8,8 @@ public sealed class CompilerController
 	public Result<ByteCodeChunk, List<CompileError>> Compile(string source)
 	{
 		compiler.Reset(source);
-		compiler.parser.Next();
 
+		compiler.parser.Next();
 		while (!compiler.parser.Match(TokenKind.End))
 			Declaration();
 
@@ -22,8 +22,18 @@ public sealed class CompilerController
 
 	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source)
 	{
+		compiler.Reset(source);
+
 		compiler.parser.Next();
 		Expression(this);
+
+		compiler.chunk.functionTypes.PushBack(new FunctionType(
+			new Slice(),
+			compiler.typeStack.PopLast(),
+			0
+		));
+		compiler.chunk.functions.PushBack(new Function("main", 0, 0));
+
 		compiler.EmitInstruction(Instruction.Halt);
 
 		if (compiler.errors.Count > 0)

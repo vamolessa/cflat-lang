@@ -24,6 +24,16 @@ public sealed class ExpressionTests
 	}
 
 	[Theory]
+	[InlineData("3")]
+	public void Test(string source)
+	{
+		var error = RunExpression(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(ValueType.Int, t);
+		Assert.Equal(new ValueData(3), v);
+	}
+
+	[Theory]
 	[InlineData("{}")]
 	[InlineData("{{}}")]
 	[InlineData("{mut a=4 a=a+1 {}}")]
