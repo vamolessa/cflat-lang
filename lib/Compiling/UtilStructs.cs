@@ -1,15 +1,3 @@
-public readonly struct LoopBreak
-{
-	public readonly int nesting;
-	public readonly int jump;
-
-	public LoopBreak(int nesting, int jump)
-	{
-		this.nesting = nesting;
-		this.jump = jump;
-	}
-}
-
 public readonly struct CompileError
 {
 	public readonly Slice slice;
@@ -49,5 +37,17 @@ public readonly struct Scope
 	public Scope(int localVarStartIndex)
 	{
 		this.localVarStartIndex = localVarStartIndex;
+	}
+}
+
+public readonly struct LoopBreak
+{
+	public readonly int nesting;
+	public readonly int jump;
+
+	public LoopBreak(int nesting, int jump)
+	{
+		this.nesting = nesting;
+		this.jump = jump;
 	}
 }
