@@ -43,8 +43,10 @@ public sealed class Parser
 		while (true)
 		{
 			currentToken = tokenizer.Next();
-			if (currentToken.kind == TokenKind.Error)
-				onError(currentToken.slice, "Invalid char");
+			if (currentToken.kind != TokenKind.Error)
+				break;
+
+			onError(currentToken.slice, "Invalid char");
 		}
 	}
 
