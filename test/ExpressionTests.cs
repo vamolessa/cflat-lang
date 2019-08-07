@@ -1,6 +1,6 @@
 using Xunit;
 
-public sealed class LangTests
+public sealed class ExpressionTests
 {
 	public static string RunExpression(string source, out ValueData value, out ValueType type)
 	{
