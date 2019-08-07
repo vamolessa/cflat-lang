@@ -116,7 +116,17 @@ public static class CompilerDeclarationExtensions
 			}
 		}
 
-		self.chunk.EndAddStructType(builder, name);
+		var index = self.chunk.EndAddStructType(builder, name);
+		var size = self.chunk.structTypes.buffer[index].size;
+		if (size >= byte.MaxValue)
+		{
+			self.AddSoftError(
+				slice,
+				"Struct size is too big. Max is {0}. Got {1}",
+				byte.MaxValue,
+				size
+			);
+		}
 	}
 
 	public static bool ResolveToStructTypeIndex(this Compiler self, out int index)
