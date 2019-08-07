@@ -7,7 +7,7 @@ public sealed class LangTests
 		value = new ValueData();
 		type = new ValueType();
 
-		var compiler = new Compiler();
+		var compiler = new ProgramCompiler();
 
 		var compileResult = compiler.CompileExpression(source);
 		if (!compileResult.isOk)
