@@ -1,17 +1,5 @@
 using System.Collections.Generic;
 
-public readonly struct LoopBreak
-{
-	public readonly int nesting;
-	public readonly int jump;
-
-	public LoopBreak(int nesting, int jump)
-	{
-		this.nesting = nesting;
-		this.jump = jump;
-	}
-}
-
 public sealed class Compiler
 {
 	public CompilerCommon common;
@@ -121,7 +109,7 @@ public sealed class Compiler
 				common.parser.Consume(TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = common.parser.previousToken.slice;
 				common.parser.Consume(TokenKind.Colon, "Expected ':' after parameter name");
-				var paramType = this.ConsumeType(common, "Expected parameter type", 0);
+				var paramType = this.ConsumeType("Expected parameter type", 0);
 
 				if (declaration.parameterCount >= MaxParamCount)
 				{
@@ -153,7 +141,7 @@ public sealed class Compiler
 		common.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (common.parser.Match(TokenKind.Colon))
-			declaration.returnType = this.ConsumeType(common, "Expected function return type", 0);
+			declaration.returnType = this.ConsumeType("Expected function return type", 0);
 
 		common.EndFunctionDeclaration(declaration, slice);
 		functionReturnTypeStack.PushBack(declaration.returnType);
@@ -197,7 +185,7 @@ public sealed class Compiler
 			common.parser.Consume(TokenKind.Identifier, "Expected field name");
 			var fieldSlice = common.parser.previousToken.slice;
 			common.parser.Consume(TokenKind.Colon, "Expected ':' after field name");
-			var fieldType = this.ConsumeType(common, "Expected field type", 0);
+			var fieldType = this.ConsumeType("Expected field type", 0);
 
 			var hasDuplicate = false;
 			for (var i = 0; i < declaration.fieldCount; i++)
@@ -319,12 +307,12 @@ public sealed class Compiler
 		common.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = common.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		PepperCompilerHelper.BeginLoop(this);
+		this.BeginLoop();
 		BlockStatement();
 
 		common.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		common.EndEmitForwardJump(breakJump);
-		PepperCompilerHelper.EndLoop(this, common);
+		this.EndLoop();
 	}
 
 	public void ForStatement()
@@ -350,7 +338,7 @@ public sealed class Compiler
 		common.EmitByte((byte)itVar.stackIndex);
 
 		var breakJump = common.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		PepperCompilerHelper.BeginLoop(this);
+		this.BeginLoop();
 		BlockStatement();
 
 		common.EmitInstruction(Instruction.IncrementLocalInt);
@@ -358,7 +346,7 @@ public sealed class Compiler
 
 		common.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
 		common.EndEmitForwardJump(breakJump);
-		PepperCompilerHelper.EndLoop(this, common);
+		this.EndLoop();
 
 		common.EndScope(scope);
 	}
@@ -385,7 +373,7 @@ public sealed class Compiler
 			}
 		}
 
-		if (!PepperCompilerHelper.BreakLoop(this, nestingCount, breakJump))
+		if (!this.BreakLoop(nestingCount, breakJump))
 		{
 			common.AddSoftError(common.parser.previousToken.slice, "Not inside a loop");
 			return;
@@ -424,7 +412,7 @@ public sealed class Compiler
 
 	public void Expression()
 	{
-		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.Assignment);
+		this.ParseWithPrecedence(Precedence.Assignment);
 	}
 
 	public void Grouping(Precedence precedence)
@@ -523,7 +511,7 @@ public sealed class Compiler
 
 		var jump = common.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		common.EmitInstruction(Instruction.Pop);
-		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.And);
+		this.ParseWithPrecedence(Precedence.And);
 		common.EndEmitForwardJump(jump);
 
 		if (common.typeStack.PopLast() != ValueType.Bool)
@@ -539,7 +527,7 @@ public sealed class Compiler
 
 		var jump = common.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		common.EmitInstruction(Instruction.Pop);
-		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.Or);
+		this.ParseWithPrecedence(Precedence.Or);
 		common.EndEmitForwardJump(jump);
 
 		if (common.typeStack.PopLast() != ValueType.Bool)
@@ -705,7 +693,7 @@ public sealed class Compiler
 	{
 		var opToken = common.parser.previousToken;
 
-		PepperCompilerHelper.ParseWithPrecedence(this, Precedence.Unary);
+		this.ParseWithPrecedence(Precedence.Unary);
 		var type = common.typeStack.PopLast();
 
 		switch ((TokenKind)opToken.kind)
@@ -762,7 +750,7 @@ public sealed class Compiler
 		var opToken = common.parser.previousToken;
 
 		var opPrecedence = parseRules[(int)opToken.kind].precedence;
-		PepperCompilerHelper.ParseWithPrecedence(this, opPrecedence + 1);
+		this.ParseWithPrecedence(opPrecedence + 1);
 
 		var bType = common.typeStack.PopLast();
 		var aType = common.typeStack.PopLast();
