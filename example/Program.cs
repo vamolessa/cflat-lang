@@ -7,7 +7,7 @@ public sealed class Program
 	public static void Main(string[] args)
 	{
 		var source = System.IO.File.ReadAllText("script.txt");
-		var compiler = new ProgramCompiler();
+		var compiler = new CompilerController();
 
 		var compileResult = compiler.Compile(source);
 		if (!compileResult.isOk)

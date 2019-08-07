@@ -1,34 +1,59 @@
-public static class ParseRules
+public sealed class ParseRules
 {
-	public static void InitRulesFor(ProgramCompiler c)
+	public delegate void RuleFunction(CompilerController controller, Precedence precedence);
+
+	private const int RuleCount = (int)TokenKind.COUNT;
+	private readonly Precedence[] precedences = new Precedence[RuleCount];
+	private readonly RuleFunction[] prefixRules = new RuleFunction[RuleCount];
+	private readonly RuleFunction[] infixRules = new RuleFunction[RuleCount];
+
+	public ParseRules()
 	{
-		Set(c, TokenKind.OpenParenthesis, c.Grouping, c.Call, Precedence.Call);
-		Set(c, TokenKind.OpenCurlyBrackets, c.Block, null, Precedence.None);
-		Set(c, TokenKind.Minus, c.Unary, c.Binary, Precedence.Term);
-		Set(c, TokenKind.Plus, null, c.Binary, Precedence.Term);
-		Set(c, TokenKind.Slash, null, c.Binary, Precedence.Factor);
-		Set(c, TokenKind.Asterisk, null, c.Binary, Precedence.Factor);
-		Set(c, TokenKind.Bang, c.Unary, null, Precedence.None);
-		Set(c, TokenKind.BangEqual, null, c.Binary, Precedence.Equality);
-		Set(c, TokenKind.EqualEqual, null, c.Binary, Precedence.Equality);
-		Set(c, TokenKind.Greater, null, c.Binary, Precedence.Comparison);
-		Set(c, TokenKind.GreaterEqual, null, c.Binary, Precedence.Comparison);
-		Set(c, TokenKind.Less, null, c.Binary, Precedence.Comparison);
-		Set(c, TokenKind.LessEqual, null, c.Binary, Precedence.Comparison);
-		Set(c, TokenKind.Identifier, c.Variable, null, Precedence.None);
-		Set(c, TokenKind.StringLiteral, c.Literal, null, Precedence.None);
-		Set(c, TokenKind.IntLiteral, c.Literal, null, Precedence.None);
-		Set(c, TokenKind.And, null, c.And, Precedence.And);
-		Set(c, TokenKind.False, c.Literal, null, Precedence.None);
-		Set(c, TokenKind.If, c.If, null, Precedence.None);
-		Set(c, TokenKind.Or, null, c.Or, Precedence.Or);
-		Set(c, TokenKind.FloatLiteral, c.Literal, null, Precedence.None);
-		Set(c, TokenKind.True, c.Literal, null, Precedence.None);
-		Set(c, TokenKind.Function, c.FunctionExpression, null, Precedence.None);
+		void Set(TokenKind kind, RuleFunction prefix, RuleFunction infix, Precedence precedence)
+		{
+			var index = (int)kind;
+			precedences[index] = precedence;
+			prefixRules[index] = prefix;
+			infixRules[index] = infix;
+		}
+
+		Set(TokenKind.OpenParenthesis, CompilerController.Grouping, CompilerController.Call, Precedence.Call);
+		Set(TokenKind.OpenCurlyBrackets, CompilerController.Block, null, Precedence.None);
+		Set(TokenKind.Minus, CompilerController.Unary, CompilerController.Binary, Precedence.Term);
+		Set(TokenKind.Plus, null, CompilerController.Binary, Precedence.Term);
+		Set(TokenKind.Slash, null, CompilerController.Binary, Precedence.Factor);
+		Set(TokenKind.Asterisk, null, CompilerController.Binary, Precedence.Factor);
+		Set(TokenKind.Bang, CompilerController.Unary, null, Precedence.None);
+		Set(TokenKind.BangEqual, null, CompilerController.Binary, Precedence.Equality);
+		Set(TokenKind.EqualEqual, null, CompilerController.Binary, Precedence.Equality);
+		Set(TokenKind.Greater, null, CompilerController.Binary, Precedence.Comparison);
+		Set(TokenKind.GreaterEqual, null, CompilerController.Binary, Precedence.Comparison);
+		Set(TokenKind.Less, null, CompilerController.Binary, Precedence.Comparison);
+		Set(TokenKind.LessEqual, null, CompilerController.Binary, Precedence.Comparison);
+		Set(TokenKind.Identifier, CompilerController.Variable, null, Precedence.None);
+		Set(TokenKind.StringLiteral, CompilerController.Literal, null, Precedence.None);
+		Set(TokenKind.IntLiteral, CompilerController.Literal, null, Precedence.None);
+		Set(TokenKind.And, null, CompilerController.And, Precedence.And);
+		Set(TokenKind.False, CompilerController.Literal, null, Precedence.None);
+		Set(TokenKind.If, CompilerController.If, null, Precedence.None);
+		Set(TokenKind.Or, null, CompilerController.Or, Precedence.Or);
+		Set(TokenKind.FloatLiteral, CompilerController.Literal, null, Precedence.None);
+		Set(TokenKind.True, CompilerController.Literal, null, Precedence.None);
+		Set(TokenKind.Function, CompilerController.FunctionExpression, null, Precedence.None);
 	}
 
-	private static void Set(ProgramCompiler c, TokenKind kind, ParseFunction prefix, ParseFunction infix, Precedence precedence)
+	public Precedence GetPrecedence(TokenKind kind)
 	{
-		c.parseRules[(int)kind] = new ParseRule(prefix, infix, precedence);
+		return precedences[(int)kind];
+	}
+
+	public RuleFunction GetPrefixRule(TokenKind kind)
+	{
+		return prefixRules[(int)kind];
+	}
+
+	public RuleFunction GetInfixRule(TokenKind kind)
+	{
+		return infixRules[(int)kind];
 	}
 }

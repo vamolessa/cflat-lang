@@ -7,7 +7,7 @@ public sealed class ExpressionTests
 		value = new ValueData();
 		type = new ValueType();
 
-		var compiler = new ProgramCompiler();
+		var compiler = new CompilerController();
 
 		var compileResult = compiler.CompileExpression(source);
 		if (!compileResult.isOk)
