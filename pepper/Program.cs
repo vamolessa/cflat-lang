@@ -1,5 +1,9 @@
 ﻿using System.IO;
 
+/*
+sysexits:
+https://www.freebsd.org/cgi/man.cgi?query=sysexits
+*/
 public static class Program
 {
 	public static void Main(string[] args)
@@ -17,8 +21,8 @@ public static class Program
 			return;
 		}
 
-		System.Console.Error.WriteLine("Invalid input");
-		return;
+		ConsoleHelper.Write("Usage: pepper [script]");
+		System.Environment.Exit(64);
 	}
 
 	public static string ReadFile(string filename)
@@ -30,7 +34,7 @@ public static class Program
 		catch (FileNotFoundException e)
 		{
 			System.Console.Error.WriteLine(e.Message);
-			System.Environment.Exit(-1);
+			System.Environment.Exit(74);
 			return null;
 		}
 	}

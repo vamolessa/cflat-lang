@@ -15,6 +15,8 @@ public static class Interpreter
 			ConsoleHelper.Error("COMPILER ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
+
+			System.Environment.ExitCode = 65;
 			return;
 		}
 
@@ -35,6 +37,12 @@ public static class Interpreter
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
 			ConsoleHelper.Error(VirtualMachineHelper.TraceCallStack(vm, source));
+
+			System.Environment.ExitCode = 70;
+		}
+		else
+		{
+			System.Environment.ExitCode = 0;
 		}
 
 		ConsoleHelper.LineBreak();
