@@ -18,19 +18,9 @@ public sealed class ExpressionTests
 		if (!runResult.isOk)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runResult.error, 1, 8);
 
-		type = vm.PeekType();
-		value = vm.PopValue();
+		type = runResult.ok.type;
+		value = runResult.ok.value;
 		return null;
-	}
-
-	[Theory]
-	[InlineData("3")]
-	public void Test(string source)
-	{
-		var error = RunExpression(source, out var v, out var t);
-		Assert.Null(error);
-		Assert.Equal(ValueType.Int, t);
-		Assert.Equal(new ValueData(3), v);
 	}
 
 	[Theory]
@@ -50,7 +40,7 @@ public sealed class ExpressionTests
 	[InlineData("{({4})}", 4)]
 	[InlineData("{let a=4 a}", 4)]
 	[InlineData("{let a=4 a+5}", 9)]
-	[InlineData("{let a=4 {let a=2 a+1} a+5}", 9)]
+	[InlineData("{let a=4 {let a=2 a+1 {}} a+5}", 9)]
 	public void BlockIntTests(string source, int expected)
 	{
 		var error = RunExpression(source, out var v, out var t);
