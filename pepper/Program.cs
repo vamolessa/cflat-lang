@@ -1,10 +1,6 @@
-﻿using System.Text;
-
-public sealed class Program
+﻿public static class Program
 {
-	private const int TabSize = 8;
-
-	public static void Main(string[] args)
+	static void Main(string[] args)
 	{
 		var source = System.IO.File.ReadAllText("script.txt");
 		var compiler = new CompilerController();
