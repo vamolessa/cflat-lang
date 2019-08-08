@@ -1,31 +1,37 @@
-﻿public static class Program
-{
-	static void Main(string[] args)
-	{
-		var source = System.IO.File.ReadAllText("script.txt");
-		var compiler = new CompilerController();
+﻿using System.IO;
 
-		var compileResult = compiler.Compile(source);
-		if (!compileResult.isOk)
+public static class Program
+{
+	public static void Main(string[] args)
+	{
+		if (args.Length == 0)
 		{
-			var error = CompilerHelper.FormatError(source, compileResult.error, 2, TabSize);
-			System.Console.WriteLine("COMPILE ERROR");
-			System.Console.WriteLine(error);
+			Repl.Start();
 			return;
 		}
 
-		var sb = new StringBuilder();
-		compileResult.ok.Disassemble(source, "script", sb);
-		System.Console.WriteLine(sb);
-
-		var vm = new VirtualMachine();
-		var runResult = vm.Run(compileResult.ok, "main");
-		if (!runResult.isOk)
+		if (args.Length == 1)
 		{
-			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2, TabSize);
-			System.Console.WriteLine("RUNTIME ERROR");
-			System.Console.WriteLine(error);
-			System.Console.WriteLine(VirtualMachineHelper.TraceCallStack(vm, source));
+			var source = ReadFile(args[0]);
+			Interpreter.RunSource(source);
+			return;
+		}
+
+		System.Console.Error.WriteLine("Invalid input");
+		return;
+	}
+
+	public static string ReadFile(string filename)
+	{
+		try
+		{
+			return File.ReadAllText(filename);
+		}
+		catch (FileNotFoundException e)
+		{
+			System.Console.Error.WriteLine(e.Message);
+			System.Environment.Exit(-1);
+			return null;
 		}
 	}
 }

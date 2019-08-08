@@ -5,9 +5,9 @@ VisualStudioVersion = 15.0.26124.0
 MinimumVisualStudioVersion = 15.0.26124.0
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", "{3220B421-112D-4A21-9F42-5CEC52588DAE}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "example", "example\example.csproj", "{A640980D-33E0-433D-B472-EE65365905F2}"
-EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib", "lib\lib.csproj", "{A7D4803A-E414-45DC-94BF-A1F67143A5DF}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "pepper", "pepper\pepper.csproj", "{18809835-FB3B-4B1A-AB12-9FA37CF3C318}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -70,5 +70,17 @@ Global
 		{CC669516-BFB5-430F-B9F6-3FC1C326DE5E}.Release|x64.Build.0 = Release|Any CPU
 		{CC669516-BFB5-430F-B9F6-3FC1C326DE5E}.Release|x86.ActiveCfg = Release|Any CPU
 		{CC669516-BFB5-430F-B9F6-3FC1C326DE5E}.Release|x86.Build.0 = Release|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Debug|x64.Build.0 = Debug|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Debug|x86.Build.0 = Debug|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|Any CPU.Build.0 = Release|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x64.ActiveCfg = Release|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x64.Build.0 = Release|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x86.ActiveCfg = Release|Any CPU
+		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

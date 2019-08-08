@@ -14,7 +14,7 @@ public sealed class ExpressionTests
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);
 
 		var vm = new VirtualMachine();
-		var runResult = vm.Run(compileResult.ok, "main");
+		var runResult = vm.RunLastFunction(compileResult.ok);
 		if (!runResult.isOk)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runResult.error, 1, 8);
 

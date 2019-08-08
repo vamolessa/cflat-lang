@@ -49,7 +49,7 @@ public sealed class VirtualMachine
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
-	public Result<Return, RuntimeError> Run(ByteCodeChunk chunk, string functionName)
+	public Result<Return, RuntimeError> RunLastFunction(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
 		maybeError = Option.None;
@@ -58,28 +58,22 @@ public sealed class VirtualMachine
 		valueStack.count = 0;
 		callframeStack.count = 0;
 
-		for (var i = 0; i < chunk.functions.count; i++)
-		{
-			var function = chunk.functions.buffer[i];
-			if (function.name == functionName)
-			{
-				PushValue(
-					new ValueData(i),
-					ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex)
-				);
-				callframeStack.PushBack(new CallFrame(i, function.codeIndex, 1));
-				break;
-			}
-		}
-
-		if (callframeStack.count == 0)
+		if (chunk.functions.count == 0)
 		{
 			return Result.Error(new RuntimeError(
 				0,
 				new Slice(),
-				string.Format("Could not find '{0}' function", functionName)
+				"No function defined"
 			));
 		}
+
+		var functionIndex = chunk.functions.count - 1;
+		var function = chunk.functions.buffer[functionIndex];
+		PushValue(
+			new ValueData(functionIndex),
+			ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex)
+		);
+		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
 
 		heap = new Buffer<object>
 		{

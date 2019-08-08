@@ -32,7 +32,7 @@ public sealed class CompilerController
 			compiler.typeStack.PopLast(),
 			0
 		));
-		compiler.chunk.functions.PushBack(new Function("main", 0, 0));
+		compiler.chunk.functions.PushBack(new Function(string.Empty, 0, 0));
 
 		compiler.EmitInstruction(Instruction.Halt);
 
