@@ -40,7 +40,7 @@ public sealed class ExpressionTests
 	[InlineData("{({4})}", 4)]
 	[InlineData("{let a=4 a}", 4)]
 	[InlineData("{let a=4 a+5}", 9)]
-	[InlineData("{let a=4 {let a=2 a+1 {}} a+5}", 9)]
+	[InlineData("{let a=4 {let a=2 a+1} a+5}", 9)]
 	public void BlockIntTests(string source, int expected)
 	{
 		var error = RunExpression(source, out var v, out var t);

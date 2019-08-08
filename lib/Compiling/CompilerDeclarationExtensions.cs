@@ -41,7 +41,7 @@ public static class CompilerDeclarationExtensions
 	{
 		var source = self.parser.tokenizer.source;
 
-		for (var i = 0; i < self.localVariables.count; i++)
+		for (var i = self.localVariables.count - 1; i >= 0; i--)
 		{
 			var local = self.localVariables.buffer[i];
 			if (CompilerHelper.AreEqual(source, self.parser.previousToken.slice, local.slice))
