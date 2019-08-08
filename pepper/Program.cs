@@ -13,7 +13,7 @@ public static class Program
 		if (args.Length == 1)
 		{
 			var source = ReadFile(args[0]);
-			Interpreter.RunSource(source);
+			Interpreter.RunSource(source, true);
 			return;
 		}
 

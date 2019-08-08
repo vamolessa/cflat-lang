@@ -8,6 +8,8 @@ public static class Repl
 
 		while (true)
 		{
+			ConsoleHelper.Warning("enter code\n\n");
+
 			sb.Clear();
 			var lastLineEmpty = false;
 
@@ -28,11 +30,7 @@ public static class Repl
 			if (source.Length == 0)
 				break;
 
-			Interpreter.RunSource(source);
-			if (System.Console.Read() < 0)
-				break;
-
-			System.Console.Write("\n\n----\n\n");
+			Interpreter.RunSource(source, false);
 		}
 	}
 }

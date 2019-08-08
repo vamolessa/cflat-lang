@@ -4,7 +4,7 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public static void RunSource(string source)
+	public static void RunSource(string source, bool printDisassembled)
 	{
 		var compiler = new CompilerController();
 
@@ -12,23 +12,31 @@ public static class Interpreter
 		if (!compileResult.isOk)
 		{
 			var error = CompilerHelper.FormatError(source, compileResult.error, 2, TabSize);
-			System.Console.WriteLine("COMPILE ERROR");
-			System.Console.WriteLine(error);
+			ConsoleHelper.Error("COMPILER ERROR\n");
+			ConsoleHelper.Error(error);
+			ConsoleHelper.LineBreak();
 			return;
 		}
 
-		var sb = new StringBuilder();
-		compileResult.ok.Disassemble(source, "script", sb);
-		System.Console.WriteLine(sb);
+		if (printDisassembled)
+		{
+			var sb = new StringBuilder();
+			compileResult.ok.Disassemble(source, "script", sb);
+			ConsoleHelper.Write(sb.ToString());
+			ConsoleHelper.LineBreak();
+		}
 
 		var vm = new VirtualMachine();
 		var runResult = vm.RunLastFunction(compileResult.ok);
 		if (!runResult.isOk)
 		{
 			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2, TabSize);
-			System.Console.WriteLine("RUNTIME ERROR");
-			System.Console.WriteLine(error);
-			System.Console.WriteLine(VirtualMachineHelper.TraceCallStack(vm, source));
+			ConsoleHelper.Error("RUNTIME ERROR\n");
+			ConsoleHelper.Error(error);
+			ConsoleHelper.LineBreak();
+			ConsoleHelper.Error(VirtualMachineHelper.TraceCallStack(vm, source));
 		}
+
+		ConsoleHelper.LineBreak();
 	}
 }
