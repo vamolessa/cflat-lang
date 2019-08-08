@@ -36,6 +36,13 @@ public static class VirtualMachineHelper
 				vm.chunk.FormatFunction(idx, sb);
 				return;
 			}
+		case ValueType.NativeFunction:
+			{
+				var idx = vm.valueStack.buffer[index].asInt;
+				sb.Append("native-function ");
+				sb.Append(idx);
+				return;
+			}
 		case ValueType.Struct:
 			{
 				var idx = ValueTypeHelper.GetIndex(type);

@@ -41,6 +41,7 @@ public enum ValueType : int
 	Float,
 	String,
 	Function,
+	NativeFunction,
 	Struct,
 	Custom,
 }
@@ -84,6 +85,8 @@ public static class ValueTypeHelper
 				chunk.FormatFunctionType(index, sb);
 				return sb.ToString();
 			}
+		case ValueType.NativeFunction:
+			return "native-function";
 		case ValueType.Struct:
 			{
 				var index = GetIndex(type);

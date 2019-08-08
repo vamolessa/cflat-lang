@@ -32,6 +32,8 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
+		case Instruction.CallNative:
+			break;
 		case Instruction.Return:
 			{
 				vm.callframeStack.count -= 1;

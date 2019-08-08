@@ -2,6 +2,7 @@ public enum Instruction
 {
 	Halt,
 	Call,
+	CallNative,
 	Return,
 	Print,
 	Pop,

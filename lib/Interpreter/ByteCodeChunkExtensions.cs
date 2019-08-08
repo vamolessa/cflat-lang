@@ -142,6 +142,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LessFloat:
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.Call:
+		case Instruction.CallNative:
 		case Instruction.Return:
 		case Instruction.PopMultiple:
 		case Instruction.LoadLocal:
