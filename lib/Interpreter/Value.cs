@@ -86,7 +86,13 @@ public static class ValueTypeHelper
 				return sb.ToString();
 			}
 		case ValueType.NativeFunction:
-			return "native-function";
+			{
+				var index = GetIndex(type);
+				var sb = new StringBuilder();
+				sb.Append("native ");
+				chunk.FormatFunctionType(index, sb);
+				return sb.ToString();
+			}
 		case ValueType.Struct:
 			{
 				var index = GetIndex(type);
@@ -102,20 +108,6 @@ public static class ValueTypeHelper
 	}
 }
 
-public readonly struct Function
-{
-	public readonly string name;
-	public readonly int codeIndex;
-	public readonly int typeIndex;
-
-	public Function(string name, int codeIndex, int typeIndex)
-	{
-		this.name = name;
-		this.codeIndex = codeIndex;
-		this.typeIndex = typeIndex;
-	}
-}
-
 public readonly struct FunctionType
 {
 	public readonly Slice parameters;
@@ -127,6 +119,36 @@ public readonly struct FunctionType
 		this.parameters = parameters;
 		this.returnType = returnType;
 		this.parametersTotalSize = parametersTotalSize;
+	}
+}
+
+public readonly struct Function
+{
+	public readonly string name;
+	public readonly int typeIndex;
+	public readonly int codeIndex;
+
+	public Function(string name, int typeIndex, int codeIndex)
+	{
+		this.name = name;
+		this.typeIndex = typeIndex;
+		this.codeIndex = codeIndex;
+	}
+}
+
+public readonly struct NativeFunction
+{
+	public delegate int Callback(VirtualMachine vm);
+
+	public readonly string name;
+	public readonly int typeIndex;
+	public readonly Callback callback;
+
+	public NativeFunction(string name, int typeIndex, Callback callback)
+	{
+		this.name = name;
+		this.typeIndex = typeIndex;
+		this.callback = callback;
 	}
 }
 

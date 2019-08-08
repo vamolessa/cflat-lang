@@ -4,11 +4,22 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
+	public static int TestFunction(VirtualMachine vm)
+	{
+		System.Console.WriteLine("HELLO FROM C#");
+		return 0;
+	}
+
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var compiler = new CompilerController();
 
-		var compileResult = compiler.Compile(source);
+		var chunk = new ByteCodeChunk();
+		var builder = chunk.BeginAddFunctionType();
+		var functionType = chunk.EndAddFunctionType(builder);
+		chunk.nativeFunctions.PushBack(new NativeFunction("testFunction", functionType, TestFunction));
+
+		var compileResult = compiler.Compile(source, chunk);
 		if (!compileResult.isOk)
 		{
 			var error = CompilerHelper.FormatError(source, compileResult.error, 2, TabSize);

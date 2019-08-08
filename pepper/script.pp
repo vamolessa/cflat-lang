@@ -11,6 +11,14 @@ fn newVector(x: int, y: int): Vector {
 	}
 }
 
+fn someFoo() {
+	print "YEAH"
+}
+
+fn getThatFoo(): fn() {
+	testFunction
+}
+
 fn printVector(header: string, v: Vector): bool {
 	print header
 	print v
@@ -24,4 +32,9 @@ fn main() {
 	print a
 	a = 10
 	print a
+
+	print testFunction
+	testFunction()
+
+	getThatFoo()()
 }

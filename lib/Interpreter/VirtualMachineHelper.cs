@@ -2,6 +2,25 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
+	public static void Return(VirtualMachine vm, int size)
+	{
+		vm.callframeStack.count -= 1;
+		var stackTop = vm.callframeStack.buffer[vm.callframeStack.count].baseStackIndex - 1;
+
+		var dstIdx = stackTop;
+		var srcIdx = vm.valueStack.count - size;
+
+		while (srcIdx < vm.valueStack.count)
+		{
+			vm.valueStack.buffer[dstIdx] = vm.valueStack.buffer[srcIdx];
+			vm.typeStack.buffer[dstIdx++] = vm.typeStack.buffer[srcIdx++];
+		}
+
+		stackTop += size;
+		vm.valueStack.count = stackTop;
+		vm.typeStack.count = stackTop;
+	}
+
 	public static void ValueToString(VirtualMachine vm, int index, Option<ValueType> overrideType, StringBuilder sb)
 	{
 		var type = overrideType.isSome ?
@@ -39,8 +58,8 @@ public static class VirtualMachineHelper
 		case ValueType.NativeFunction:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
-				sb.Append("native-function ");
-				sb.Append(idx);
+				sb.Append("native ");
+				vm.chunk.FormatNativeFunction(idx, sb);
 				return;
 			}
 		case ValueType.Struct:

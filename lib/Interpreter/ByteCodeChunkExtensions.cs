@@ -22,6 +22,14 @@ public static class ByteCodeChunkExtensions
 		FormatFunctionType(self, function.typeIndex, sb);
 	}
 
+	public static void FormatNativeFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
+	{
+		var function = self.nativeFunctions.buffer[functionIndex];
+		sb.Append(function.name);
+		sb.Append(' ');
+		FormatFunctionType(self, function.typeIndex, sb);
+	}
+
 	public static void FormatFunctionType(this ByteCodeChunk self, int functionTypeIndex, StringBuilder sb)
 	{
 		var type = self.functionTypes.buffer[functionTypeIndex];
@@ -158,6 +166,8 @@ public static class ByteCodeChunkExtensions
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadFunction:
 			return LoadFunctionInstruction(self, instruction, index, sb);
+		case Instruction.LoadNativeFunction:
+			return LoadNativeFunctionInstruction(self, instruction, index, sb);
 		case Instruction.ConvertToStruct:
 			return ConvertToStructInstruction(self, instruction, index, sb);
 		case Instruction.JumpForward:
@@ -231,6 +241,19 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		FormatFunction(chunk, functionIndex, sb);
+		sb.AppendLine();
+		return index + 3;
+	}
+
+	private static int LoadNativeFunctionInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		var functionIndex = BytesHelper.BytesToShort(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2]
+		);
+		FormatNativeFunction(chunk, functionIndex, sb);
 		sb.AppendLine();
 		return index + 3;
 	}

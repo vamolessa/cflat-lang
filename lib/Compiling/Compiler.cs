@@ -26,10 +26,10 @@ public sealed class Compiler
 
 		var tokenizer = new Tokenizer(PepperScanners.scanners);
 		this.parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(string.Empty);
+		Reset(null, null);
 	}
 
-	public void Reset(string source)
+	public void Reset(string source, ByteCodeChunk chunk)
 	{
 		parser.tokenizer.Reset(source);
 		parser.Reset();
@@ -37,7 +37,7 @@ public sealed class Compiler
 		errors.Clear();
 
 		isInPanicMode = false;
-		chunk = new ByteCodeChunk();
+		this.chunk = chunk;
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;

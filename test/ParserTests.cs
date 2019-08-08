@@ -5,7 +5,7 @@ public sealed class ParserTest
 	public static string CopmileExpression(string source)
 	{
 		var compiler = new CompilerController();
-		var compileResult = compiler.CompileExpression(source);
+		var compileResult = compiler.CompileExpression(source, new ByteCodeChunk());
 		if (!compileResult.isOk)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);
 		return null;

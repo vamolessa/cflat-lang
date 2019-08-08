@@ -89,6 +89,25 @@ public static class CompilerDeclarationExtensions
 		return false;
 	}
 
+	// NATIVE FUNCTIONS
+	public static bool ResolveToNativeFunctionIndex(this Compiler self, out int index)
+	{
+		index = 0;
+		var source = self.parser.tokenizer.source;
+
+		for (var i = 0; i < self.chunk.nativeFunctions.count; i++)
+		{
+			var f = self.chunk.nativeFunctions.buffer[i];
+			if (CompilerHelper.AreEqual(source, self.parser.previousToken.slice, f.name))
+			{
+				index = i;
+				return true;
+			}
+		}
+
+		return false;
+	}
+
 	// STRUCTS
 	public static ByteCodeChunk.StructTypeBuilder BeginStructDeclaration(this Compiler self)
 	{

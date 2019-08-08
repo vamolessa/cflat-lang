@@ -33,26 +33,27 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.CallNative:
-			break;
+			{
+				var size = NextByte(vm, ref frame);
+				var stackTop = vm.valueStack.count - size;
+				var functionIndex = vm.valueStack.buffer[stackTop - 1].asInt;
+				var function = vm.chunk.nativeFunctions.buffer[functionIndex];
+
+				vm.callframeStack.PushBack(
+					new VirtualMachine.CallFrame(
+						functionIndex,
+						-1,
+						stackTop
+					)
+				);
+				var returnSize = function.callback(vm);
+				VirtualMachineHelper.Return(vm, returnSize);
+				break;
+			}
 		case Instruction.Return:
 			{
-				vm.callframeStack.count -= 1;
-				var stackTop = vm.callframeStack.buffer[vm.callframeStack.count].baseStackIndex - 1;
-
 				var size = NextByte(vm, ref frame);
-				var dstIdx = stackTop;
-				var srcIdx = vm.valueStack.count - size;
-
-				while (srcIdx < vm.valueStack.count)
-				{
-					vm.valueStack.buffer[dstIdx] = vm.valueStack.buffer[srcIdx];
-					vm.typeStack.buffer[dstIdx++] = vm.typeStack.buffer[srcIdx++];
-				}
-
-				stackTop += size;
-				vm.valueStack.count = stackTop;
-				vm.typeStack.count = stackTop;
-
+				VirtualMachineHelper.Return(vm, size);
 				if (vm.callframeStack.count == 0)
 					return true;
 				break;
@@ -128,6 +129,16 @@ internal static class VirtualMachineInstructions
 				vm.PushValue(
 					new ValueData(index),
 					ValueTypeHelper.SetIndex(ValueType.Function, typeIndex)
+				);
+				break;
+			}
+		case Instruction.LoadNativeFunction:
+			{
+				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
+				var typeIndex = vm.chunk.nativeFunctions.buffer[index].typeIndex;
+				vm.PushValue(
+					new ValueData(index),
+					ValueTypeHelper.SetIndex(ValueType.NativeFunction, typeIndex)
 				);
 				break;
 			}

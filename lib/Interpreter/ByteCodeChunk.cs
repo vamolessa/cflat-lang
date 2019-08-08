@@ -49,6 +49,7 @@ public sealed class ByteCodeChunk
 	public Buffer<FunctionType> functionTypes = new Buffer<FunctionType>(16);
 	public Buffer<ValueType> functionTypeParams = new Buffer<ValueType>(16);
 	public Buffer<Function> functions = new Buffer<Function>(8);
+	public Buffer<NativeFunction> nativeFunctions = new Buffer<NativeFunction>(8);
 	public Buffer<StructType> structTypes = new Buffer<StructType>(8);
 	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(32);
 
@@ -138,7 +139,7 @@ public sealed class ByteCodeChunk
 
 	public void AddFunction(string name, int typeIndex)
 	{
-		functions.PushBack(new Function(name, bytes.count, typeIndex));
+		functions.PushBack(new Function(name, typeIndex, bytes.count));
 	}
 
 	public StructTypeBuilder BeginAddStructType()

@@ -18,9 +18,9 @@ public static class CompilerEmitExtensions
 		return self.EmitByte((byte)index);
 	}
 
-	public static Compiler EmitLoadFunction(this Compiler self, int functionIndex)
+	public static Compiler EmitLoadFunction(this Compiler self, Instruction instruction, int functionIndex)
 	{
-		self.EmitInstruction(Instruction.LoadFunction);
+		self.EmitInstruction(instruction);
 		BytesHelper.ShortToBytes((ushort)functionIndex, out var b0, out var b1);
 		self.EmitByte(b0);
 		return self.EmitByte(b1);

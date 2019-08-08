@@ -5,9 +5,9 @@ public sealed class CompilerController
 	public Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 
-	public Result<ByteCodeChunk, List<CompileError>> Compile(string source)
+	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ByteCodeChunk chunk)
 	{
-		compiler.Reset(source);
+		compiler.Reset(source, chunk);
 
 		compiler.parser.Next();
 		while (!compiler.parser.Match(TokenKind.End))
@@ -20,9 +20,9 @@ public sealed class CompilerController
 		return Result.Ok(compiler.chunk);
 	}
 
-	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source)
+	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, ByteCodeChunk chunk)
 	{
-		compiler.Reset(source);
+		compiler.Reset(source, chunk);
 
 		compiler.parser.Next();
 		Expression(this);
@@ -118,7 +118,7 @@ public sealed class CompilerController
 		var functionIndex = self.compiler.chunk.functions.count - 1;
 		var function = self.compiler.chunk.functions.buffer[functionIndex];
 
-		self.compiler.EmitLoadFunction(functionIndex);
+		self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
 		self.compiler.typeStack.PushBack(ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex));
 	}
 
@@ -664,9 +664,16 @@ public sealed class CompilerController
 			{
 				if (self.compiler.ResolveToFunctionIndex(out var functionIndex))
 				{
-					self.compiler.EmitLoadFunction(functionIndex);
+					self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
 					var function = self.compiler.chunk.functions.buffer[functionIndex];
 					var type = ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex);
+					self.compiler.typeStack.PushBack(type);
+				}
+				else if (self.compiler.ResolveToNativeFunctionIndex(out var nativeFunctionIndex))
+				{
+					self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
+					var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
+					var type = ValueTypeHelper.SetIndex(ValueType.NativeFunction, function.typeIndex);
 					self.compiler.typeStack.PushBack(type);
 				}
 				else if (self.compiler.ResolveToStructTypeIndex(out var structIndex))
@@ -732,12 +739,12 @@ public sealed class CompilerController
 	public static void Call(CompilerController self, Precedence precedence)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
-
 		var functionType = new FunctionType();
 		var type = self.compiler.typeStack.PopLast();
+		var typeKind = ValueTypeHelper.GetKind(type);
 
 		var hasFunction = false;
-		if (ValueTypeHelper.GetKind(type) == ValueType.Function)
+		if (typeKind == ValueType.Function || typeKind == ValueType.NativeFunction)
 		{
 			functionType = self.compiler.chunk.functionTypes.buffer[ValueTypeHelper.GetIndex(type)];
 			hasFunction = true;
@@ -781,7 +788,11 @@ public sealed class CompilerController
 		if (hasFunction && argIndex != functionType.parameters.length)
 			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
-		self.compiler.EmitInstruction(Instruction.Call);
+		if (typeKind == ValueType.Function)
+			self.compiler.EmitInstruction(Instruction.Call);
+		else if (typeKind == ValueType.NativeFunction)
+			self.compiler.EmitInstruction(Instruction.CallNative);
+
 		self.compiler.EmitByte((byte)(hasFunction ? functionType.parametersTotalSize : 0));
 		self.compiler.typeStack.PushBack(
 			hasFunction ? functionType.returnType : ValueType.Unit
