@@ -25,9 +25,13 @@ public sealed class CompilerController
 		compiler.parser.Next();
 		Expression(this);
 
+		var topType = compiler.typeStack.count > 0 ?
+			compiler.typeStack.PopLast() :
+			new ValueType(ValueKind.Unit);
+
 		compiler.chunk.functionTypes.PushBack(new FunctionType(
 			new Slice(),
-			compiler.typeStack.PopLast(),
+			topType,
 			0
 		));
 		compiler.chunk.functions.PushBack(new Function(string.Empty, 0, 0));
@@ -840,6 +844,20 @@ public sealed class CompilerController
 				self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			}
+			break;
+		case TokenKind.Int:
+			if (type.IsKind(ValueKind.Float))
+				self.compiler.EmitInstruction(Instruction.FloatToInt);
+			else
+				self.compiler.AddSoftError(opToken.slice, "Can only convert floats to int. Got {0}", type.ToString(self.compiler.chunk));
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Int));
+			break;
+		case TokenKind.Float:
+			if (type.IsKind(ValueKind.Int))
+				self.compiler.EmitInstruction(Instruction.IntToFloat);
+			else
+				self.compiler.AddSoftError(opToken.slice, "Can only convert ints to float. Got {0}", type.ToString(self.compiler.chunk));
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Float));
 			break;
 		default:
 			self.compiler.AddHardError(

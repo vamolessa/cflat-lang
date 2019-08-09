@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Globalization;
 using System.Text;
 
 public readonly struct LineAndColumn
@@ -62,13 +63,19 @@ public static class CompilerHelper
 	public static int GetInt(Compiler compiler)
 	{
 		var sub = GetPreviousSlice(compiler);
-		return int.Parse(sub);
+		int.TryParse(sub, out var value);
+		return value;
 	}
 
 	public static float GetFloat(Compiler compiler)
 	{
 		var sub = GetPreviousSlice(compiler);
-		return float.Parse(sub);
+		float.TryParse(
+			sub,
+			NumberStyles.Float,
+			CultureInfo.InvariantCulture.NumberFormat,
+			out var value);
+		return value;
 	}
 
 	public static string GetString(Compiler compiler)

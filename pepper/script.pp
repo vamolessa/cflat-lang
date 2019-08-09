@@ -1,15 +1,3 @@
-fn otherFoo() {
-	print "OH NO"
-}
-
-fn someFoo() {
-	print "YEAH"
-}
-
-fn getThatFoo(): fn() {
-	fn(){testFunction()}
-}
-
 fn main() {
-	getThatFoo()()
+	print int 8.1
 }

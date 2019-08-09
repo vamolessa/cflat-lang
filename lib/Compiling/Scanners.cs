@@ -103,8 +103,7 @@ public sealed class IntegerNumberScanner : Scanner
 {
 	public override int Scan(string input, int index)
 	{
-		var firstCh = input[index];
-		if (!char.IsDigit(firstCh))
+		if (!char.IsDigit(input, index))
 			return 0;
 
 		for (var i = index + 1; i < input.Length; i++)
@@ -121,11 +120,23 @@ public sealed class RealNumberScanner : Scanner
 {
 	public override int Scan(string input, int index)
 	{
-		var firstCh = input[index];
-		if (!char.IsDigit(firstCh))
+		if (!char.IsDigit(input, index))
 			return 0;
 
-		for (var i = index + 1; i < input.Length; i++)
+		var i = index + 1;
+		for (; i < input.Length; i++)
+		{
+			if (!char.IsDigit(input, i))
+				break;
+		}
+
+		if (i >= input.Length || input[i] != '.')
+			return 0;
+		i += 1;
+		if (i >= input.Length || !char.IsDigit(input, i))
+			return 0;
+
+		for (; i < input.Length; i++)
 		{
 			if (!char.IsDigit(input, i))
 				return i - index;

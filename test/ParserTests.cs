@@ -13,7 +13,18 @@ public sealed class ParserTest
 	}
 
 	[Theory]
+	[InlineData(".")]
+	[InlineData(".1")]
+	public void TestFailExpressions(string source)
+	{
+		var result = CopmileExpression(source);
+		Assert.NotNull(result);
+	}
+
+	[Theory]
 	[InlineData("-1")]
+	[InlineData("1.0")]
+	[InlineData("3341.1234")]
 	[InlineData("1 + 2")]
 	[InlineData("1 * -2")]
 	[InlineData("1 + 2 * 3")]

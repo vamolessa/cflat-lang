@@ -45,8 +45,8 @@ public static class PepperScanners
 		new ExactScanner("<=").ForToken(TokenKind.LessEqual),
 		new ExactScanner(">=").ForToken(TokenKind.GreaterEqual),
 
-		new IntegerNumberScanner().ForToken(TokenKind.IntLiteral),
 		new RealNumberScanner().ForToken(TokenKind.FloatLiteral),
+		new IntegerNumberScanner().ForToken(TokenKind.IntLiteral),
 		new EnclosedScanner("\"", "\"").ForToken(TokenKind.StringLiteral),
 		new ExactScanner("true").ForToken(TokenKind.True),
 		new ExactScanner("false").ForToken(TokenKind.False),
