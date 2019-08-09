@@ -4,22 +4,20 @@ public sealed class ExpressionTests
 {
 	public static string RunExpression(string source, out ValueData value, out ValueType type)
 	{
+		const int TabSize = 8;
 		value = new ValueData();
 		type = new ValueType();
 
-		var compiler = new CompilerController();
+		var pepper = new Pepper();
+		var compileErrors = pepper.CompileExpression(source);
+		if (compileErrors.Count > 0)
+			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
 
-		var compileResult = compiler.CompileExpression(source, new ByteCodeChunk());
-		if (!compileResult.isOk)
-			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);
+		var runError = pepper.Run();
+		if (runError.isSome)
+			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		var vm = new VirtualMachine();
-		var runResult = vm.RunLastFunction(compileResult.ok);
-		if (!runResult.isOk)
-			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runResult.error, 1, 8);
-
-		type = runResult.ok.type;
-		value = runResult.ok.value;
+		pepper.PopSimple(out value, out type);
 		return null;
 	}
 

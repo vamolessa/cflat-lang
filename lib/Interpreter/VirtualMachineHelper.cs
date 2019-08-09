@@ -112,31 +112,6 @@ public static class VirtualMachineHelper
 		sb.AppendLine();
 	}
 
-	public static string TraceCallStack(VirtualMachine vm, string source)
-	{
-		var sb = new StringBuilder();
-
-		sb.AppendLine("callstack:");
-		for (var i = vm.callframeStack.count - 1; i >= 0; i--)
-		{
-			var callframe = vm.callframeStack.buffer[i];
-			var sourceIndex = vm.chunk.slices.buffer[callframe.codeIndex - 1].index;
-
-			var pos = CompilerHelper.GetLineAndColumn(source, sourceIndex, 1);
-			sb.Append("[line ");
-			sb.Append(pos.line);
-			sb.Append("] ");
-
-			vm.chunk.FormatFunction(callframe.functionIndex, sb);
-
-			sb.Append(" => ");
-			var line = CompilerHelper.GetLines(source, pos.line - 1, pos.line - 1);
-			sb.AppendLine(line.TrimStart());
-		}
-
-		return sb.ToString();
-	}
-
 	public static string FormatError(string source, RuntimeError error, int contextSize, int tabSize)
 	{
 		var sb = new StringBuilder();

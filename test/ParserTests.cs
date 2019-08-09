@@ -4,10 +4,11 @@ public sealed class ParserTest
 {
 	public static string CopmileExpression(string source)
 	{
+		const int TabSize = 8;
 		var compiler = new CompilerController();
-		var compileResult = compiler.CompileExpression(source, new ByteCodeChunk());
-		if (!compileResult.isOk)
-			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileResult.error, 1, 8);
+		var compileErrors = compiler.CompileExpression(source, new ByteCodeChunk());
+		if (compileErrors.Count > 0)
+			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
 		return null;
 	}
 

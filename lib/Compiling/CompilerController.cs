@@ -5,7 +5,7 @@ public sealed class CompilerController
 	public Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 
-	public Result<ByteCodeChunk, List<CompileError>> Compile(string source, ByteCodeChunk chunk)
+	public List<CompileError> Compile(string source, ByteCodeChunk chunk)
 	{
 		compiler.Reset(source, chunk);
 
@@ -15,12 +15,10 @@ public sealed class CompilerController
 
 		compiler.EmitInstruction(Instruction.Halt);
 
-		if (compiler.errors.Count > 0)
-			return Result.Error(compiler.errors);
-		return Result.Ok(compiler.chunk);
+		return compiler.errors;
 	}
 
-	public Result<ByteCodeChunk, List<CompileError>> CompileExpression(string source, ByteCodeChunk chunk)
+	public List<CompileError> CompileExpression(string source, ByteCodeChunk chunk)
 	{
 		compiler.Reset(source, chunk);
 
@@ -36,9 +34,7 @@ public sealed class CompilerController
 
 		compiler.EmitInstruction(Instruction.Halt);
 
-		if (compiler.errors.Count > 0)
-			return Result.Error(compiler.errors);
-		return Result.Ok(compiler.chunk);
+		return compiler.errors;
 	}
 
 	public static void ParseWithPrecedence(CompilerController self, Precedence precedence)

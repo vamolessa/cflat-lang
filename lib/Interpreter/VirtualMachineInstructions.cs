@@ -2,7 +2,34 @@ using System.Text;
 
 internal static class VirtualMachineInstructions
 {
-	public static byte NextByte(VirtualMachine vm, ref VirtualMachine.CallFrame frame)
+	private static void PushValue(VirtualMachine vm, ValueData value, ValueType type)
+	{
+		vm.typeStack.PushBack(type);
+		vm.valueStack.PushBack(value);
+	}
+
+	private static ValueData PopValue(VirtualMachine vm)
+	{
+		vm.typeStack.count -= 1;
+		return vm.valueStack.PopLast();
+	}
+
+	private static ref ValueData Peek(VirtualMachine vm)
+	{
+		return ref vm.valueStack.buffer[vm.valueStack.count - 1];
+	}
+
+	private static ref ValueData PeekBefore(VirtualMachine vm)
+	{
+		return ref vm.valueStack.buffer[vm.valueStack.count - 2];
+	}
+
+	private static ValueType PeekType(VirtualMachine vm)
+	{
+		return vm.typeStack.buffer[vm.typeStack.count - 1];
+	}
+
+	private static byte NextByte(VirtualMachine vm, ref VirtualMachine.CallFrame frame)
 	{
 		return vm.chunk.bytes.buffer[frame.codeIndex++];
 	}
@@ -61,7 +88,7 @@ internal static class VirtualMachineInstructions
 		case Instruction.Print:
 			{
 				var sb = new StringBuilder();
-				var size = vm.chunk.GetTypeSize(vm.PeekType());
+				var size = vm.chunk.GetTypeSize(PeekType(vm));
 
 				VirtualMachineHelper.ValueToString(
 					vm,
@@ -105,18 +132,19 @@ internal static class VirtualMachineInstructions
 			}
 			break;
 		case Instruction.LoadUnit:
-			vm.PushValue(new ValueData(), ValueType.Unit);
+			PushValue(vm, new ValueData(), ValueType.Unit);
 			break;
 		case Instruction.LoadFalse:
-			vm.PushValue(new ValueData(false), ValueType.Bool);
+			PushValue(vm, new ValueData(false), ValueType.Bool);
 			break;
 		case Instruction.LoadTrue:
-			vm.PushValue(new ValueData(true), ValueType.Bool);
+			PushValue(vm, new ValueData(true), ValueType.Bool);
 			break;
 		case Instruction.LoadLiteral:
 			{
 				var index = NextByte(vm, ref frame);
-				vm.PushValue(
+				PushValue(
+					vm,
 					vm.chunk.literalData.buffer[index],
 					vm.chunk.literalTypes.buffer[index]
 				);
@@ -126,7 +154,8 @@ internal static class VirtualMachineInstructions
 			{
 				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				var typeIndex = vm.chunk.functions.buffer[index].typeIndex;
-				vm.PushValue(
+				PushValue(
+					vm,
 					new ValueData(index),
 					ValueTypeHelper.SetIndex(ValueType.Function, typeIndex)
 				);
@@ -136,7 +165,8 @@ internal static class VirtualMachineInstructions
 			{
 				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				var typeIndex = vm.chunk.nativeFunctions.buffer[index].typeIndex;
-				vm.PushValue(
+				PushValue(
+					vm,
 					new ValueData(index),
 					ValueTypeHelper.SetIndex(ValueType.NativeFunction, typeIndex)
 				);
@@ -157,16 +187,13 @@ internal static class VirtualMachineInstructions
 		case Instruction.AssignLocal:
 			{
 				var index = frame.baseStackIndex + NextByte(vm, ref frame);
-				vm.valueStack.buffer[index] = vm.Peek();
+				vm.valueStack.buffer[index] = Peek(vm);
 				break;
 			}
 		case Instruction.LoadLocal:
 			{
 				var index = frame.baseStackIndex + NextByte(vm, ref frame);
-				vm.PushValue(
-					vm.valueStack.buffer[index],
-					vm.typeStack.buffer[index]
-				);
+				PushValue(vm, vm.valueStack.buffer[index], vm.typeStack.buffer[index]);
 				break;
 			}
 		case Instruction.AssignLocalMultiple:
@@ -201,92 +228,100 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.IntToFloat:
-			vm.PushValue(new ValueData((float)vm.PopValue().asInt), ValueType.Float);
+			PushValue(vm, new ValueData((float)PopValue(vm).asInt), ValueType.Float);
 			break;
 		case Instruction.FloatToInt:
-			vm.PushValue(new ValueData((int)vm.PopValue().asFloat), ValueType.Int);
+			PushValue(vm, new ValueData((int)PopValue(vm).asFloat), ValueType.Int);
 			break;
 		case Instruction.NegateInt:
-			vm.Peek().asInt = -vm.Peek().asInt;
+			Peek(vm).asInt = -Peek(vm).asInt;
 			break;
 		case Instruction.NegateFloat:
-			vm.Peek().asFloat = -vm.Peek().asFloat;
+			Peek(vm).asFloat = -Peek(vm).asFloat;
 			break;
 		case Instruction.AddInt:
-			vm.PeekBefore().asInt += vm.PopValue().asInt;
+			PeekBefore(vm).asInt += PopValue(vm).asInt;
 			break;
 		case Instruction.AddFloat:
-			vm.PeekBefore().asFloat += vm.PopValue().asFloat;
+			PeekBefore(vm).asFloat += PopValue(vm).asFloat;
 			break;
 		case Instruction.SubtractInt:
-			vm.PeekBefore().asInt -= vm.PopValue().asInt;
+			PeekBefore(vm).asInt -= PopValue(vm).asInt;
 			break;
 		case Instruction.SubtractFloat:
-			vm.PeekBefore().asFloat -= vm.PopValue().asFloat;
+			PeekBefore(vm).asFloat -= PopValue(vm).asFloat;
 			break;
 		case Instruction.MultiplyInt:
-			vm.PeekBefore().asInt *= vm.PopValue().asInt;
+			PeekBefore(vm).asInt *= PopValue(vm).asInt;
 			break;
 		case Instruction.MultiplyFloat:
-			vm.PeekBefore().asFloat *= vm.PopValue().asFloat;
+			PeekBefore(vm).asFloat *= PopValue(vm).asFloat;
 			break;
 		case Instruction.DivideInt:
-			vm.PeekBefore().asInt /= vm.PopValue().asInt;
+			PeekBefore(vm).asInt /= PopValue(vm).asInt;
 			break;
 		case Instruction.DivideFloat:
-			vm.PeekBefore().asFloat /= vm.PopValue().asFloat;
+			PeekBefore(vm).asFloat /= PopValue(vm).asFloat;
 			break;
 		case Instruction.Not:
-			vm.Peek().asBool = !vm.Peek().asBool;
+			Peek(vm).asBool = !Peek(vm).asBool;
 			break;
 		case Instruction.EqualBool:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asBool == vm.PopValue().asBool),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asBool == PopValue(vm).asBool),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.EqualInt:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asInt == vm.PopValue().asInt),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asInt == PopValue(vm).asInt),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.EqualFloat:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asFloat == vm.PopValue().asFloat),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asFloat == PopValue(vm).asFloat),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.EqualString:
-			vm.PushValue(
+			PushValue(
+				vm,
 				new ValueData(
-					(vm.heap.buffer[vm.PopValue().asInt] as string).Equals(
-					vm.heap.buffer[vm.PopValue().asInt] as string)
+					(vm.heap.buffer[PopValue(vm).asInt] as string).Equals(
+					vm.heap.buffer[PopValue(vm).asInt] as string)
 				),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.GreaterInt:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asInt < vm.PopValue().asInt),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asInt < PopValue(vm).asInt),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.GreaterFloat:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asFloat < vm.PopValue().asFloat),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asFloat < PopValue(vm).asFloat),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.LessInt:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asInt > vm.PopValue().asInt),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asInt > PopValue(vm).asInt),
 				ValueType.Bool
 			);
 			break;
 		case Instruction.LessFloat:
-			vm.PushValue(
-				new ValueData(vm.PopValue().asFloat > vm.PopValue().asFloat),
+			PushValue(
+				vm,
+				new ValueData(PopValue(vm).asFloat > PopValue(vm).asFloat),
 				ValueType.Bool
 			);
 			break;
@@ -319,7 +354,7 @@ internal static class VirtualMachineInstructions
 		case Instruction.PopAndJumpForwardIfFalse:
 			{
 				var offset = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
-				if (!vm.PopValue().asBool)
+				if (!PopValue(vm).asBool)
 					frame.codeIndex += offset;
 				break;
 			}
@@ -327,10 +362,7 @@ internal static class VirtualMachineInstructions
 			{
 				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
-				vm.PushValue(
-					new ValueData(less),
-					ValueType.Bool
-				);
+				PushValue(vm, new ValueData(less), ValueType.Bool);
 				break;
 			}
 		default:

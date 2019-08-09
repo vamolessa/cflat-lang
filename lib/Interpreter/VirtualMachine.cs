@@ -16,18 +16,6 @@ public readonly struct RuntimeError
 
 public sealed class VirtualMachine
 {
-	public readonly struct Return
-	{
-		public readonly ValueData value;
-		public readonly ValueType type;
-
-		public Return(ValueData value, ValueType type)
-		{
-			this.value = value;
-			this.type = type;
-		}
-	}
-
 	internal struct CallFrame
 	{
 		public int functionIndex;
@@ -49,7 +37,7 @@ public sealed class VirtualMachine
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
-	public Result<Return, RuntimeError> RunLastFunction(ByteCodeChunk chunk)
+	public Option<RuntimeError> RunLastFunction(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
 		maybeError = Option.None;
@@ -60,7 +48,7 @@ public sealed class VirtualMachine
 
 		if (chunk.functions.count == 0)
 		{
-			return Result.Error(new RuntimeError(
+			return Option.Some(new RuntimeError(
 				0,
 				new Slice(),
 				"No function defined"
@@ -69,17 +57,17 @@ public sealed class VirtualMachine
 
 		var functionIndex = chunk.functions.count - 1;
 		var function = chunk.functions.buffer[functionIndex];
-		PushValue(
-			new ValueData(functionIndex),
-			ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex)
-		);
+		valueStack.PushBack(new ValueData(functionIndex));
+		typeStack.PushBack(ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex));
 		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
 
 		heap = new Buffer<object>
 		{
-			buffer = chunk.stringLiterals.buffer,
+			buffer = new object[chunk.stringLiterals.buffer.Length],
 			count = chunk.stringLiterals.count
 		};
+		for (var i = 0; i < heap.count; i++)
+			heap.buffer[i] = chunk.stringLiterals.buffer[i];
 
 		var sb = new StringBuilder();
 
@@ -98,12 +86,7 @@ public sealed class VirtualMachine
 				break;
 		}
 
-		if (maybeError.isSome)
-			return Result.Error(maybeError.value);
-
-		var type = PeekType();
-		var value = PopValue();
-		return Result.Ok(new Return(value, type));
+		return maybeError;
 	}
 
 	public bool Error(string message)
@@ -115,32 +98,5 @@ public sealed class VirtualMachine
 			message
 		));
 		return true;
-	}
-
-	public void PushValue(ValueData value, ValueType type)
-	{
-		typeStack.PushBack(type);
-		valueStack.PushBack(value);
-	}
-
-	public ValueData PopValue()
-	{
-		typeStack.count -= 1;
-		return valueStack.PopLast();
-	}
-
-	public ref ValueData Peek()
-	{
-		return ref valueStack.buffer[valueStack.count - 1];
-	}
-
-	public ref ValueData PeekBefore()
-	{
-		return ref valueStack.buffer[valueStack.count - 2];
-	}
-
-	public ValueType PeekType()
-	{
-		return typeStack.buffer[typeStack.count - 1];
 	}
 }

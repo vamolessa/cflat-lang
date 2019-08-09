@@ -1,5 +1,3 @@
-using System.Text;
-
 public static class Interpreter
 {
 	public const int TabSize = 8;
@@ -7,22 +5,17 @@ public static class Interpreter
 	public static int TestFunction(VirtualMachine vm)
 	{
 		System.Console.WriteLine("HELLO FROM C#");
-		return 0;
+		return 1;
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
-		var compiler = new CompilerController();
-
-		var chunk = new ByteCodeChunk();
-		var builder = chunk.BeginAddFunctionType();
-		var functionType = chunk.EndAddFunctionType(builder);
-		chunk.nativeFunctions.PushBack(new NativeFunction("testFunction", functionType, TestFunction));
-
-		var compileResult = compiler.Compile(source, chunk);
-		if (!compileResult.isOk)
+		var pepper = new Pepper();
+		pepper.AddFunction("testFunction", TestFunction, ValueType.Unit);
+		var compileErrors = pepper.CompileSource(source);
+		if (compileErrors.Count > 0)
 		{
-			var error = CompilerHelper.FormatError(source, compileResult.error, 2, TabSize);
+			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
 			ConsoleHelper.Error("COMPILER ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
@@ -33,21 +26,18 @@ public static class Interpreter
 
 		if (printDisassembled)
 		{
-			var sb = new StringBuilder();
-			compileResult.ok.Disassemble(source, "script", sb);
-			ConsoleHelper.Write(sb.ToString());
+			ConsoleHelper.Write(pepper.Disassemble());
 			ConsoleHelper.LineBreak();
 		}
 
-		var vm = new VirtualMachine();
-		var runResult = vm.RunLastFunction(compileResult.ok);
-		if (!runResult.isOk)
+		var runError = pepper.Run();
+		if (runError.isSome)
 		{
-			var error = VirtualMachineHelper.FormatError(source, runResult.error, 2, TabSize);
+			var error = VirtualMachineHelper.FormatError(source, runError.value, 2, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
-			ConsoleHelper.Error(VirtualMachineHelper.TraceCallStack(vm, source));
+			ConsoleHelper.Error(pepper.TraceCallStack());
 
 			System.Environment.ExitCode = 70;
 		}
