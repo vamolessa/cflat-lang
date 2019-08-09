@@ -16,7 +16,7 @@ fn someFoo() {
 }
 
 fn getThatFoo(): fn() {
-	testFunction
+	someFoo
 }
 
 fn printVector(header: string, v: Vector): bool {
