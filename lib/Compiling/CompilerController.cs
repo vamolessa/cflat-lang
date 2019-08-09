@@ -335,7 +335,7 @@ public sealed class CompilerController
 		var loopJump = compiler.BeginEmitBackwardJump();
 		Expression(this);
 
-		if (!compiler.typeStack.PopLast().Equals(ValueKind.Bool))
+		if (!compiler.typeStack.PopLast().IsKind(ValueKind.Bool))
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Expected bool expression as while condition");
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
