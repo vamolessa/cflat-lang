@@ -8,11 +8,8 @@ fn someFoo() {
 
 fn getThatFoo(): fn() {
 	fn(){testFunction()}
-	//someFoo
 }
 
 fn main() {
-	print testFunction
-	testFunction()
 	getThatFoo()()
 }

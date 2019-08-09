@@ -110,7 +110,10 @@ public sealed class CompilerController
 
 	public static void FunctionExpression(CompilerController self, Precedence precedence)
 	{
+		var functionJump = self.compiler.BeginEmitForwardJump(Instruction.JumpForward);
 		self.ConsumeFunction(new Slice());
+		self.compiler.EndEmitForwardJump(functionJump);
+
 		var functionIndex = self.compiler.chunk.functions.count - 1;
 		var function = self.compiler.chunk.functions.buffer[functionIndex];
 

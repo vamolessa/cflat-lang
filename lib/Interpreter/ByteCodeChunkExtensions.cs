@@ -17,7 +17,10 @@ public static class ByteCodeChunkExtensions
 	public static void FormatFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
 	{
 		var function = self.functions.buffer[functionIndex];
-		sb.Append(function.name);
+		if (string.IsNullOrEmpty(function.name))
+			sb.Append("<anonymous>");
+		else
+			sb.Append(function.name);
 		sb.Append(' ');
 		FormatFunctionType(self, function.typeIndex, sb);
 	}
@@ -125,13 +128,12 @@ public static class ByteCodeChunkExtensions
 			var function = self.functions.buffer[i];
 			if (function.codeIndex == codeIndex)
 			{
-				sb.Append("   // ");
+				sb.Append("  // ");
 				self.FormatFunction(i, sb);
 				sb.AppendLine();
 				break;
 			}
 		}
-
 	}
 
 	public static int DisassembleInstruction(this ByteCodeChunk self, int index, StringBuilder sb)
