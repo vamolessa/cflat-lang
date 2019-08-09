@@ -5,4 +5,10 @@ public static class PepperStackExtensions
 		value = pepper.virtualMachine.valueStack.PopLast();
 		type = pepper.virtualMachine.typeStack.PopLast();
 	}
+
+	public static void PushSimple(this Pepper pepper, ValueData value, ValueType type)
+	{
+		pepper.virtualMachine.valueStack.PushBack(value);
+		pepper.virtualMachine.typeStack.PushBack(type);
+	}
 }

@@ -2,9 +2,10 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public static int TestFunction(VirtualMachine vm)
+	public static int TestFunction(Pepper pepper)
 	{
 		System.Console.WriteLine("HELLO FROM C#");
+		//pepper.PushSimple(new ValueData(), new ValueType(ValueKind.Unit));
 		return 1;
 	}
 

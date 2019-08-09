@@ -174,7 +174,7 @@ public readonly struct Function
 
 public readonly struct NativeFunction
 {
-	public delegate int Callback(VirtualMachine vm);
+	public delegate int Callback(Pepper pepper);
 
 	public readonly string name;
 	public readonly int typeIndex;
