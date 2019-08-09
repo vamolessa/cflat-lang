@@ -38,7 +38,7 @@ public static class ByteCodeChunkExtensions
 		{
 			var paramIndex = type.parameters.index + i;
 			var paramType = self.functionTypeParams.buffer[paramIndex];
-			sb.Append(ValueTypeHelper.ToString(paramType, self));
+			sb.Append(paramType.ToString(self));
 			if (i < type.parameters.length - 1)
 				sb.Append(',');
 		}
@@ -56,7 +56,7 @@ public static class ByteCodeChunkExtensions
 			var field = self.structTypeFields.buffer[fieldIndex];
 			sb.Append(field.name);
 			sb.Append(':');
-			sb.Append(ValueTypeHelper.ToString(field.type, self));
+			sb.Append(field.type.ToString(self));
 			if (i < type.fields.length - 1)
 				sb.Append(' ');
 		}
@@ -213,18 +213,18 @@ public static class ByteCodeChunkExtensions
 	{
 		var literalIndex = chunk.bytes.buffer[index + 1];
 		var value = chunk.literalData.buffer[literalIndex];
-		var type = chunk.literalTypes.buffer[literalIndex];
+		var type = chunk.literalKinds.buffer[literalIndex];
 
 		sb.Append(instruction.ToString());
 		switch (type)
 		{
-		case ValueType.Int:
+		case ValueKind.Int:
 			sb.AppendFormat(" {0}\n", value.asInt);
 			break;
-		case ValueType.Float:
+		case ValueKind.Float:
 			sb.AppendFormat(" {0}\n", value.asFloat);
 			break;
-		case ValueType.String:
+		case ValueKind.String:
 			sb.AppendFormat(" \"{0}\"\n", chunk.stringLiterals.buffer[value.asInt]);
 			break;
 		}

@@ -5,19 +5,19 @@ public static class CompilerTypeExtensions
 		if (recursionLevel > 8)
 		{
 			self.AddSoftError(self.parser.previousToken.slice, "Type is nested too deeply");
-			return ValueType.Unit;
+			return new ValueType(ValueKind.Unit);
 		}
 
 		var type = new Option<ValueType>();
 
 		if (self.parser.Match(TokenKind.Bool))
-			type = Option.Some(ValueType.Bool);
+			type = Option.Some(new ValueType(ValueKind.Bool));
 		else if (self.parser.Match(TokenKind.Int))
-			type = Option.Some(ValueType.Int);
+			type = Option.Some(new ValueType(ValueKind.Int));
 		else if (self.parser.Match(TokenKind.Float))
-			type = Option.Some(ValueType.Float);
+			type = Option.Some(new ValueType(ValueKind.Float));
 		else if (self.parser.Match(TokenKind.String))
-			type = Option.Some(ValueType.String);
+			type = Option.Some(new ValueType(ValueKind.String));
 		else if (self.parser.Match(TokenKind.Identifier))
 			type = self.ResolveStructType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Function))
@@ -27,7 +27,7 @@ public static class CompilerTypeExtensions
 			return type.value;
 
 		self.AddSoftError(self.parser.previousToken.slice, error);
-		return ValueType.Unit;
+		return new ValueType(ValueKind.Unit);
 	}
 
 	private static Option<ValueType> ResolveStructType(this Compiler self, int recursionLevel)
@@ -39,7 +39,7 @@ public static class CompilerTypeExtensions
 		{
 			var structName = self.chunk.structTypes.buffer[i].name;
 			if (CompilerHelper.AreEqual(source, slice, structName))
-				return Option.Some(ValueTypeHelper.SetIndex(ValueType.Struct, i));
+				return Option.Some(new ValueType(ValueKind.Struct, i));
 		}
 
 		return Option.None;
@@ -63,7 +63,7 @@ public static class CompilerTypeExtensions
 			declaration.returnType = self.ConsumeType("Expected function return type", recursionLevel);
 
 		var functionTypeIndex = self.chunk.EndAddFunctionType(declaration);
-		var type = ValueTypeHelper.SetIndex(ValueType.Function, functionTypeIndex);
+		var type = new ValueType(ValueKind.Function, functionTypeIndex);
 
 		return Option.Some(type);
 	}

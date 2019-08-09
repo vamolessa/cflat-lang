@@ -11,7 +11,7 @@ public static class Interpreter
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
-		pepper.AddFunction("testFunction", TestFunction, ValueType.Unit);
+		pepper.AddFunction("testFunction", TestFunction, new ValueType(ValueKind.Unit));
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.Count > 0)
 		{

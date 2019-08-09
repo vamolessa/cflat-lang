@@ -115,7 +115,7 @@ public sealed class CompilerController
 		var function = self.compiler.chunk.functions.buffer[functionIndex];
 
 		self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
-		self.compiler.typeStack.PushBack(ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex));
+		self.compiler.typeStack.PushBack(new ValueType(ValueKind.Function, function.typeIndex));
 	}
 
 	private void ConsumeFunction(Slice slice)
@@ -173,7 +173,7 @@ public sealed class CompilerController
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
-		if (declaration.returnType == ValueType.Unit)
+		if (declaration.returnType.kind == ValueKind.Unit)
 		{
 			BlockStatement();
 			compiler.EmitInstruction(Instruction.LoadUnit);
@@ -182,7 +182,7 @@ public sealed class CompilerController
 		{
 			Block(this, Precedence.None);
 			var type = compiler.typeStack.PopLast();
-			if (declaration.returnType != type)
+			if (!declaration.returnType.IsEqualTo(type))
 				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
 
@@ -292,7 +292,7 @@ public sealed class CompilerController
 		Expression(this);
 		var type = compiler.typeStack.count > 0 ?
 			compiler.typeStack.PopLast() :
-			ValueType.Unit;
+			new ValueType(ValueKind.Unit);
 
 		var size = compiler.chunk.GetTypeSize(type);
 
@@ -335,7 +335,7 @@ public sealed class CompilerController
 		var loopJump = compiler.BeginEmitBackwardJump();
 		Expression(this);
 
-		if (compiler.typeStack.PopLast() != ValueType.Bool)
+		if (!compiler.typeStack.PopLast().Equals(ValueKind.Bool))
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Expected bool expression as while condition");
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
@@ -355,14 +355,14 @@ public sealed class CompilerController
 		var itVarIndex = VariableDeclaration(true);
 		compiler.localVariables.buffer[itVarIndex].isUsed = true;
 		var itVar = compiler.localVariables.buffer[itVarIndex];
-		if (itVar.type != ValueType.Int)
+		if (!itVar.type.IsKind(ValueKind.Int))
 			compiler.AddSoftError(itVar.slice, "Expected variable of type int in for loop");
 
 		compiler.parser.Consume(TokenKind.Comma, "Expected comma after begin expression");
 		Expression(this);
 		var toVarIndex = compiler.DeclareLocalVariable(compiler.parser.previousToken.slice, false);
 		compiler.localVariables.buffer[toVarIndex].isUsed = true;
-		if (compiler.localVariables.buffer[toVarIndex].type != ValueType.Int)
+		if (!compiler.localVariables.buffer[toVarIndex].type.IsKind(ValueKind.Int))
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Expected expression of type int");
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
@@ -417,9 +417,9 @@ public sealed class CompilerController
 	private ValueType ReturnStatement()
 	{
 		var expectedType = compiler.functionReturnTypeStack.buffer[compiler.functionReturnTypeStack.count - 1];
-		var returnType = ValueType.Unit;
+		var returnType = new ValueType(ValueKind.Unit);
 
-		if (expectedType != ValueType.Unit)
+		if (!expectedType.IsKind(ValueKind.Unit))
 		{
 			Expression(this);
 			if (compiler.typeStack.count > 0)
@@ -433,7 +433,7 @@ public sealed class CompilerController
 		compiler.EmitInstruction(Instruction.Return);
 		compiler.EmitByte((byte)compiler.chunk.GetTypeSize(expectedType));
 
-		if (expectedType != returnType)
+		if (!expectedType.IsEqualTo(returnType))
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
 
 		return returnType;
@@ -487,7 +487,7 @@ public sealed class CompilerController
 		}
 		else
 		{
-			self.compiler.typeStack.PushBack(ValueType.Unit);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Unit));
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
 		}
 	}
@@ -496,7 +496,7 @@ public sealed class CompilerController
 	{
 		Expression(self);
 
-		if (self.compiler.typeStack.PopLast() != ValueType.Bool)
+		if (!self.compiler.typeStack.PopLast().IsKind(ValueKind.Bool))
 			self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "Expected bool expression as if condition");
 
 		self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
@@ -521,13 +521,13 @@ public sealed class CompilerController
 			}
 
 			var elseType = self.compiler.typeStack.PopLast();
-			if (thenType != elseType)
+			if (!thenType.IsEqualTo(elseType))
 				self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "If expression must produce values of the same type on both branches. Found types: {0} and {1}", thenType, elseType);
 		}
 		else
 		{
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
-			if (thenType != ValueType.Unit)
+			if (!thenType.IsKind(ValueKind.Unit))
 				self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "If expression must not produce a value when there is no else branch. Found type: {0}. Try ending with '{}'", thenType);
 		}
 
@@ -537,7 +537,7 @@ public sealed class CompilerController
 
 	public static void And(CompilerController self, Precedence precedence)
 	{
-		if (self.compiler.typeStack.PopLast() != ValueType.Bool)
+		if (!self.compiler.typeStack.PopLast().IsKind(ValueKind.Bool))
 			self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "Expected bool expression before and");
 
 		var jump = self.compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
@@ -545,15 +545,15 @@ public sealed class CompilerController
 		ParseWithPrecedence(self, Precedence.And);
 		self.compiler.EndEmitForwardJump(jump);
 
-		if (self.compiler.typeStack.PopLast() != ValueType.Bool)
+		if (!self.compiler.typeStack.PopLast().IsKind(ValueKind.Bool))
 			self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "Expected bool expression after and");
 
-		self.compiler.typeStack.PushBack(ValueType.Bool);
+		self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 	}
 
 	public static void Or(CompilerController self, Precedence precedence)
 	{
-		if (self.compiler.typeStack.PopLast() != ValueType.Bool)
+		if (!self.compiler.typeStack.PopLast().IsKind(ValueKind.Bool))
 			self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "Expected bool expression before or");
 
 		var jump = self.compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
@@ -561,10 +561,10 @@ public sealed class CompilerController
 		ParseWithPrecedence(self, Precedence.Or);
 		self.compiler.EndEmitForwardJump(jump);
 
-		if (self.compiler.typeStack.PopLast() != ValueType.Bool)
+		if (!self.compiler.typeStack.PopLast().IsKind(ValueKind.Bool))
 			self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "Expected bool expression after or");
 
-		self.compiler.typeStack.PushBack(ValueType.Bool);
+		self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 	}
 
 	public static void Literal(CompilerController self, Precedence precedence)
@@ -573,36 +573,36 @@ public sealed class CompilerController
 		{
 		case TokenKind.True:
 			self.compiler.EmitInstruction(Instruction.LoadTrue);
-			self.compiler.typeStack.PushBack(ValueType.Bool);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.False:
 			self.compiler.EmitInstruction(Instruction.LoadFalse);
-			self.compiler.typeStack.PushBack(ValueType.Bool);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.IntLiteral:
 			self.compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetInt(self.compiler)),
-				ValueType.Int
+				ValueKind.Int
 			);
-			self.compiler.typeStack.PushBack(ValueType.Int);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Int));
 			break;
 		case TokenKind.FloatLiteral:
 			self.compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetFloat(self.compiler)),
-				ValueType.Float
+				ValueKind.Float
 			);
-			self.compiler.typeStack.PushBack(ValueType.Float);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Float));
 			break;
 		case TokenKind.StringLiteral:
 			self.compiler.EmitLoadStringLiteral(CompilerHelper.GetString(self.compiler));
-			self.compiler.typeStack.PushBack(ValueType.String);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.String));
 			break;
 		default:
 			self.compiler.AddHardError(
 				self.compiler.parser.previousToken.slice,
 				string.Format("Expected literal. Got {0}", self.compiler.parser.previousToken.kind)
 			);
-			self.compiler.typeStack.PushBack(ValueType.Unit);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Unit));
 			break;
 		}
 	}
@@ -628,7 +628,7 @@ public sealed class CompilerController
 					self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
 				var expressionType = self.compiler.typeStack.PopLast();
-				if (expressionType != localVar.type)
+				if (!expressionType.IsEqualTo(localVar.type))
 				{
 					self.compiler.AddSoftError(
 						self.compiler.parser.previousToken.slice,
@@ -639,10 +639,9 @@ public sealed class CompilerController
 				}
 				self.compiler.typeStack.PushBack(expressionType);
 
-				if (ValueTypeHelper.GetKind(localVar.type) == ValueType.Struct)
+				if (localVar.type.kind == ValueKind.Struct)
 				{
-					var structIndex = ValueTypeHelper.GetIndex(localVar.type);
-					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+					var structType = self.compiler.chunk.structTypes.buffer[localVar.type.index];
 					self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
 					self.compiler.EmitByte((byte)localVar.stackIndex);
 					self.compiler.EmitByte((byte)structType.size);
@@ -662,14 +661,14 @@ public sealed class CompilerController
 				{
 					self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
 					var function = self.compiler.chunk.functions.buffer[functionIndex];
-					var type = ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex);
+					var type = new ValueType(ValueKind.Function, function.typeIndex);
 					self.compiler.typeStack.PushBack(type);
 				}
 				else if (self.compiler.ResolveToNativeFunctionIndex(out var nativeFunctionIndex))
 				{
 					self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
 					var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
-					var type = ValueTypeHelper.SetIndex(ValueType.NativeFunction, function.typeIndex);
+					var type = new ValueType(ValueKind.NativeFunction, function.typeIndex);
 					self.compiler.typeStack.PushBack(type);
 				}
 				else if (self.compiler.ResolveToStructTypeIndex(out var structIndex))
@@ -685,7 +684,7 @@ public sealed class CompilerController
 
 						Expression(self);
 						var expressionType = self.compiler.typeStack.PopLast();
-						if (expressionType != field.type)
+						if (!expressionType.IsEqualTo(field.type))
 						{
 							self.compiler.AddSoftError(
 								self.compiler.parser.previousToken.slice,
@@ -699,13 +698,13 @@ public sealed class CompilerController
 					self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
 
 					self.compiler.EmitConvertToStruct(structIndex);
-					var type = ValueTypeHelper.SetIndex(ValueType.Struct, structIndex);
+					var type = new ValueType(ValueKind.Struct, structIndex);
 					self.compiler.typeStack.PushBack(type);
 				}
 				else
 				{
 					self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-					self.compiler.typeStack.PushBack(ValueType.Unit);
+					self.compiler.typeStack.PushBack(new ValueType(ValueKind.Unit));
 				}
 			}
 			else
@@ -713,10 +712,9 @@ public sealed class CompilerController
 				ref var localVar = ref self.compiler.localVariables.buffer[index];
 				localVar.isUsed = true;
 
-				if (ValueTypeHelper.GetKind(localVar.type) == ValueType.Struct)
+				if (localVar.type.kind == ValueKind.Struct)
 				{
-					var structIndex = ValueTypeHelper.GetIndex(localVar.type);
-					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+					var structType = self.compiler.chunk.structTypes.buffer[localVar.type.index];
 					self.compiler.EmitInstruction(Instruction.LoadLocalMultiple);
 					self.compiler.EmitByte((byte)localVar.stackIndex);
 					self.compiler.EmitByte((byte)structType.size);
@@ -737,12 +735,11 @@ public sealed class CompilerController
 		var slice = self.compiler.parser.previousToken.slice;
 		var functionType = new FunctionType();
 		var type = self.compiler.typeStack.PopLast();
-		var typeKind = ValueTypeHelper.GetKind(type);
 
 		var hasFunction = false;
-		if (typeKind == ValueType.Function || typeKind == ValueType.NativeFunction)
+		if (type.kind == ValueKind.Function || type.kind == ValueKind.NativeFunction)
 		{
-			functionType = self.compiler.chunk.functionTypes.buffer[ValueTypeHelper.GetIndex(type)];
+			functionType = self.compiler.chunk.functionTypes.buffer[type.index];
 			hasFunction = true;
 		}
 		else
@@ -763,7 +760,7 @@ public sealed class CompilerController
 				)
 				{
 					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.parameters.index + argIndex];
-					if (argType != paramType)
+					if (!argType.IsEqualTo(paramType))
 					{
 						self.compiler.AddSoftError(
 							self.compiler.parser.previousToken.slice,
@@ -784,14 +781,14 @@ public sealed class CompilerController
 		if (hasFunction && argIndex != functionType.parameters.length)
 			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
-		if (typeKind == ValueType.Function)
+		if (type.kind == ValueKind.Function)
 			self.compiler.EmitInstruction(Instruction.Call);
-		else if (typeKind == ValueType.NativeFunction)
+		else if (type.kind == ValueKind.NativeFunction)
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
 		self.compiler.EmitByte((byte)(hasFunction ? functionType.parametersTotalSize : 0));
 		self.compiler.typeStack.PushBack(
-			hasFunction ? functionType.returnType : ValueType.Unit
+			hasFunction ? functionType.returnType : new ValueType(ValueKind.Unit)
 		);
 	}
 
@@ -805,15 +802,15 @@ public sealed class CompilerController
 		switch (opToken.kind)
 		{
 		case TokenKind.Minus:
-			switch (type)
+			switch (type.kind)
 			{
-			case ValueType.Int:
+			case ValueKind.Int:
 				self.compiler.EmitInstruction(Instruction.NegateInt);
-				self.compiler.typeStack.PushBack(ValueType.Int);
+				self.compiler.typeStack.PushBack(new ValueType(ValueKind.Int));
 				break;
-			case ValueType.Float:
+			case ValueKind.Float:
 				self.compiler.EmitInstruction(Instruction.NegateFloat);
-				self.compiler.typeStack.PushBack(ValueType.Float);
+				self.compiler.typeStack.PushBack(new ValueType(ValueKind.Float));
 				break;
 			default:
 				self.compiler.AddSoftError(opToken.slice, "Unary minus operator can only be applied to ints or floats");
@@ -822,22 +819,22 @@ public sealed class CompilerController
 			}
 			break;
 		case TokenKind.Bang:
-			switch (type)
+			switch (type.kind)
 			{
-			case ValueType.Bool:
+			case ValueKind.Bool:
 				self.compiler.EmitInstruction(Instruction.Not);
-				self.compiler.typeStack.PushBack(ValueType.Bool);
+				self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
-			case ValueType.Int:
-			case ValueType.Float:
-			case ValueType.String:
+			case ValueKind.Int:
+			case ValueKind.Float:
+			case ValueKind.String:
 				self.compiler.EmitInstruction(Instruction.Pop);
 				self.compiler.EmitInstruction(Instruction.LoadFalse);
-				self.compiler.typeStack.PushBack(ValueType.Bool);
+				self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			default:
 				self.compiler.AddSoftError(opToken.slice, "Not operator can only be applied to bools, ints, floats or strings");
-				self.compiler.typeStack.PushBack(ValueType.Bool);
+				self.compiler.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			}
 			break;
@@ -846,7 +843,7 @@ public sealed class CompilerController
 					opToken.slice,
 					string.Format("Expected unary operator. Got {0}", opToken.kind)
 				);
-			self.compiler.typeStack.PushBack(ValueType.Unit);
+			self.compiler.typeStack.PushBack(new ValueType(ValueKind.Unit));
 			break;
 		}
 	}
@@ -865,85 +862,85 @@ public sealed class CompilerController
 		switch (opToken.kind)
 		{
 		case TokenKind.Plus:
-			if (aType == ValueType.Int && bType == ValueType.Int)
-				c.EmitInstruction(Instruction.AddInt).typeStack.PushBack(ValueType.Int);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
-				c.EmitInstruction(Instruction.AddFloat).typeStack.PushBack(ValueType.Float);
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
+				c.EmitInstruction(Instruction.AddInt).typeStack.PushBack(new ValueType(ValueKind.Int));
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
+				c.EmitInstruction(Instruction.AddFloat).typeStack.PushBack(new ValueType(ValueKind.Float));
 			else
 				c.AddSoftError(opToken.slice, "Plus operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.Minus:
-			if (aType == ValueType.Int && bType == ValueType.Int)
-				c.EmitInstruction(Instruction.SubtractInt).typeStack.PushBack(ValueType.Int);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
-				c.EmitInstruction(Instruction.SubtractFloat).typeStack.PushBack(ValueType.Float);
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
+				c.EmitInstruction(Instruction.SubtractInt).typeStack.PushBack(new ValueType(ValueKind.Int));
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
+				c.EmitInstruction(Instruction.SubtractFloat).typeStack.PushBack(new ValueType(ValueKind.Float));
 			else
 				c.AddSoftError(opToken.slice, "Minus operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.Asterisk:
-			if (aType == ValueType.Int && bType == ValueType.Int)
-				c.EmitInstruction(Instruction.MultiplyInt).typeStack.PushBack(ValueType.Int);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
-				c.EmitInstruction(Instruction.MultiplyFloat).typeStack.PushBack(ValueType.Float);
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
+				c.EmitInstruction(Instruction.MultiplyInt).typeStack.PushBack(new ValueType(ValueKind.Int));
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
+				c.EmitInstruction(Instruction.MultiplyFloat).typeStack.PushBack(new ValueType(ValueKind.Float));
 			else
 				c.AddSoftError(opToken.slice, "Multiply operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.Slash:
-			if (aType == ValueType.Int && bType == ValueType.Int)
-				c.EmitInstruction(Instruction.DivideInt).typeStack.PushBack(ValueType.Int);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
-				c.EmitInstruction(Instruction.DivideFloat).typeStack.PushBack(ValueType.Float);
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
+				c.EmitInstruction(Instruction.DivideInt).typeStack.PushBack(new ValueType(ValueKind.Int));
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
+				c.EmitInstruction(Instruction.DivideFloat).typeStack.PushBack(new ValueType(ValueKind.Float));
 			else
 				c.AddSoftError(opToken.slice, "Divide operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
 		case TokenKind.EqualEqual:
-			if (aType != bType)
+			if (!aType.IsEqualTo(bType))
 			{
 				c.AddSoftError(opToken.slice, "Equal operator can only be applied to same type values");
-				c.typeStack.PushBack(ValueType.Bool);
+				c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			}
 
-			switch (aType)
+			switch (aType.kind)
 			{
-			case ValueType.Bool:
+			case ValueKind.Bool:
 				c.EmitInstruction(Instruction.EqualBool);
 				break;
-			case ValueType.Int:
+			case ValueKind.Int:
 				c.EmitInstruction(Instruction.EqualInt);
 				break;
-			case ValueType.Float:
+			case ValueKind.Float:
 				c.EmitInstruction(Instruction.EqualFloat);
 				break;
-			case ValueType.String:
+			case ValueKind.String:
 				c.EmitInstruction(Instruction.EqualString);
 				break;
 			default:
 				c.AddSoftError(opToken.slice, "Equal operator can only be applied to bools, ints and floats");
 				break;
 			}
-			c.typeStack.PushBack(ValueType.Bool);
+			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.BangEqual:
-			if (aType != bType)
+			if (!aType.IsEqualTo(bType))
 			{
 				c.AddSoftError(opToken.slice, "NotEqual operator can only be applied to same type values");
-				c.typeStack.PushBack(ValueType.Bool);
+				c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			}
 
-			switch (aType)
+			switch (aType.kind)
 			{
-			case ValueType.Bool:
+			case ValueKind.Bool:
 				c.EmitInstruction(Instruction.EqualBool);
 				break;
-			case ValueType.Int:
+			case ValueKind.Int:
 				c.EmitInstruction(Instruction.EqualInt);
 				break;
-			case ValueType.Float:
+			case ValueKind.Float:
 				c.EmitInstruction(Instruction.EqualFloat);
 				break;
-			case ValueType.String:
+			case ValueKind.String:
 				c.EmitInstruction(Instruction.EqualString);
 				break;
 			default:
@@ -951,51 +948,51 @@ public sealed class CompilerController
 				break;
 			}
 			c.EmitInstruction(Instruction.Not);
-			c.typeStack.PushBack(ValueType.Bool);
+			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.Greater:
-			if (aType == ValueType.Int && bType == ValueType.Int)
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
 				c.EmitInstruction(Instruction.GreaterInt);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
 				c.EmitInstruction(Instruction.GreaterFloat);
 			else
 				c.AddSoftError(opToken.slice, "Greater operator can only be applied to ints or floats");
-			c.typeStack.PushBack(ValueType.Bool);
+			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.GreaterEqual:
-			if (aType == ValueType.Int && bType == ValueType.Int)
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
 				c
 					.EmitInstruction(Instruction.LessInt)
 					.EmitInstruction(Instruction.Not);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
 				c
 					.EmitInstruction(Instruction.LessFloat)
 					.EmitInstruction(Instruction.Not);
 			else
 				c.AddSoftError(opToken.slice, "GreaterOrEqual operator can only be applied to ints or floats");
-			c.typeStack.PushBack(ValueType.Bool);
+			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.Less:
-			if (aType == ValueType.Int && bType == ValueType.Int)
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
 				c.EmitInstruction(Instruction.LessInt);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
 				c.EmitInstruction(Instruction.LessFloat);
 			else
 				c.AddSoftError(opToken.slice, "Less operator can only be applied to ints or floats");
-			c.typeStack.PushBack(ValueType.Bool);
+			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		case TokenKind.LessEqual:
-			if (aType == ValueType.Int && bType == ValueType.Int)
+			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
 				c
 					.EmitInstruction(Instruction.GreaterInt)
 					.EmitInstruction(Instruction.Not);
-			else if (aType == ValueType.Float && bType == ValueType.Float)
+			else if (aType.IsKind(ValueKind.Float) && bType.IsKind(ValueKind.Float))
 				c
 					.EmitInstruction(Instruction.GreaterFloat)
 					.EmitInstruction(Instruction.Not);
 			else
 				c.AddSoftError(opToken.slice, "LessOrEqual operator can only be applied to ints or floats");
-			c.typeStack.PushBack(ValueType.Bool);
+			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 			break;
 		default:
 			return;

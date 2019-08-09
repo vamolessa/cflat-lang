@@ -27,21 +27,21 @@ public static class VirtualMachineHelper
 			overrideType.value :
 			vm.typeStack.buffer[index];
 
-		switch (ValueTypeHelper.GetKind(type))
+		switch (type.kind)
 		{
-		case ValueType.Unit:
+		case ValueKind.Unit:
 			sb.Append("{}");
 			return;
-		case ValueType.Bool:
+		case ValueKind.Bool:
 			sb.Append(vm.valueStack.buffer[index].asBool ? "true" : "false");
 			return;
-		case ValueType.Int:
+		case ValueKind.Int:
 			sb.Append(vm.valueStack.buffer[index].asInt);
 			return;
-		case ValueType.Float:
+		case ValueKind.Float:
 			sb.Append(vm.valueStack.buffer[index].asFloat);
 			return;
-		case ValueType.String:
+		case ValueKind.String:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				sb.Append('"');
@@ -49,23 +49,22 @@ public static class VirtualMachineHelper
 				sb.Append('"');
 				return;
 			}
-		case ValueType.Function:
+		case ValueKind.Function:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				vm.chunk.FormatFunction(idx, sb);
 				return;
 			}
-		case ValueType.NativeFunction:
+		case ValueKind.NativeFunction:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				sb.Append("native ");
 				vm.chunk.FormatNativeFunction(idx, sb);
 				return;
 			}
-		case ValueType.Struct:
+		case ValueKind.Struct:
 			{
-				var idx = ValueTypeHelper.GetIndex(type);
-				var structType = vm.chunk.structTypes.buffer[idx];
+				var structType = vm.chunk.structTypes.buffer[type.index];
 				sb.Append(structType.name);
 				sb.Append('{');
 				for (var i = 0; i < structType.fields.length; i++)
@@ -81,7 +80,7 @@ public static class VirtualMachineHelper
 				sb.Append('}');
 				return;
 			}
-		case ValueType.Custom:
+		case ValueKind.Custom:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				var obj = vm.heap.buffer[idx];

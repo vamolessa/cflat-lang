@@ -13,7 +13,7 @@ public sealed class ByteCodeChunk
 		{
 			this.chunk = chunk;
 			this.parameterCount = 0;
-			this.returnType = ValueType.Unit;
+			this.returnType = new ValueType(ValueKind.Unit);
 		}
 
 		public void AddParam(ValueType type)
@@ -44,7 +44,7 @@ public sealed class ByteCodeChunk
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<Slice> slices = new Buffer<Slice>(256);
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
-	public Buffer<ValueType> literalTypes = new Buffer<ValueType>(64);
+	public Buffer<ValueKind> literalKinds = new Buffer<ValueKind>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
 	public Buffer<FunctionType> functionTypes = new Buffer<FunctionType>(16);
 	public Buffer<ValueType> functionTypeParams = new Buffer<ValueType>(16);
@@ -59,14 +59,14 @@ public sealed class ByteCodeChunk
 		slices.PushBack(slice);
 	}
 
-	public int AddValueLiteral(ValueData value, ValueType type)
+	public int AddValueLiteral(ValueData value, ValueKind kind)
 	{
-		var index = FindValueIndex(value, type);
+		var index = FindValueIndex(value, kind);
 		if (index < 0)
 		{
 			index = literalData.count;
 			literalData.PushBack(value);
-			literalTypes.PushBack(type);
+			literalKinds.PushBack(kind);
 		}
 
 		return index;
@@ -81,7 +81,7 @@ public sealed class ByteCodeChunk
 			stringLiterals.PushBack(literal);
 		}
 
-		return AddValueLiteral(new ValueData(stringIndex), ValueType.String);
+		return AddValueLiteral(new ValueData(stringIndex), ValueKind.String);
 	}
 
 	public FunctionTypeBuilder BeginAddFunctionType()
@@ -96,7 +96,7 @@ public sealed class ByteCodeChunk
 		for (var i = 0; i < functionTypes.count; i++)
 		{
 			var function = functionTypes.buffer[i];
-			if (function.returnType != builder.returnType || function.parameters.length != builder.parameterCount)
+			if (!function.returnType.IsEqualTo(builder.returnType) || function.parameters.length != builder.parameterCount)
 				continue;
 
 			var match = true;
@@ -104,7 +104,7 @@ public sealed class ByteCodeChunk
 			{
 				var a = functionTypeParams.buffer[function.parameters.index + j];
 				var b = functionTypeParams.buffer[parametersIndex + j];
-				if (a != b)
+				if (!a.IsEqualTo(b))
 				{
 					match = false;
 					break;
@@ -175,38 +175,31 @@ public sealed class ByteCodeChunk
 
 	public int GetTypeSize(ValueType type)
 	{
-		var kind = ValueTypeHelper.GetKind(type);
-
-		if (kind == ValueType.Struct)
-		{
-			var index = ValueTypeHelper.GetIndex(type);
-			return structTypes.buffer[index].size;
-		}
+		if (type.kind == ValueKind.Struct)
+			return structTypes.buffer[type.index].size;
 		else
-		{
 			return 1;
-		}
 	}
 
-	private int FindValueIndex(ValueData value, ValueType type)
+	private int FindValueIndex(ValueData value, ValueKind kind)
 	{
 		for (var i = 0; i < literalData.count; i++)
 		{
-			if (type != literalTypes.buffer[i])
+			if (kind != literalKinds.buffer[i])
 				continue;
 
 			var v = literalData.buffer[i];
-			switch (type)
+			switch (kind)
 			{
-			case ValueType.Bool:
+			case ValueKind.Bool:
 				if (v.asBool == value.asBool)
 					return i;
 				break;
-			case ValueType.Int:
+			case ValueKind.Int:
 				if (v.asInt == value.asInt)
 					return i;
 				break;
-			case ValueType.Float:
+			case ValueKind.Float:
 				if (v.asFloat == value.asFloat)
 					return i;
 				break;

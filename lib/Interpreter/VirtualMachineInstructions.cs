@@ -132,13 +132,13 @@ internal static class VirtualMachineInstructions
 			}
 			break;
 		case Instruction.LoadUnit:
-			PushValue(vm, new ValueData(), ValueType.Unit);
+			PushValue(vm, new ValueData(), new ValueType(ValueKind.Unit));
 			break;
 		case Instruction.LoadFalse:
-			PushValue(vm, new ValueData(false), ValueType.Bool);
+			PushValue(vm, new ValueData(false), new ValueType(ValueKind.Bool));
 			break;
 		case Instruction.LoadTrue:
-			PushValue(vm, new ValueData(true), ValueType.Bool);
+			PushValue(vm, new ValueData(true), new ValueType(ValueKind.Bool));
 			break;
 		case Instruction.LoadLiteral:
 			{
@@ -146,7 +146,7 @@ internal static class VirtualMachineInstructions
 				PushValue(
 					vm,
 					vm.chunk.literalData.buffer[index],
-					vm.chunk.literalTypes.buffer[index]
+					new ValueType(vm.chunk.literalKinds.buffer[index])
 				);
 				break;
 			}
@@ -157,7 +157,7 @@ internal static class VirtualMachineInstructions
 				PushValue(
 					vm,
 					new ValueData(index),
-					ValueTypeHelper.SetIndex(ValueType.Function, typeIndex)
+					new ValueType(ValueKind.Function, typeIndex)
 				);
 				break;
 			}
@@ -168,7 +168,7 @@ internal static class VirtualMachineInstructions
 				PushValue(
 					vm,
 					new ValueData(index),
-					ValueTypeHelper.SetIndex(ValueType.NativeFunction, typeIndex)
+					new ValueType(ValueKind.NativeFunction, typeIndex)
 				);
 				break;
 			}
@@ -177,7 +177,7 @@ internal static class VirtualMachineInstructions
 				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				var structType = vm.chunk.structTypes.buffer[index];
 
-				var type = ValueTypeHelper.SetIndex(ValueType.Struct, index);
+				var type = new ValueType(ValueKind.Struct, index);
 				var idx = vm.typeStack.count - structType.size;
 
 				while (idx < vm.typeStack.count)
@@ -228,10 +228,10 @@ internal static class VirtualMachineInstructions
 				break;
 			}
 		case Instruction.IntToFloat:
-			PushValue(vm, new ValueData((float)PopValue(vm).asInt), ValueType.Float);
+			PushValue(vm, new ValueData((float)PopValue(vm).asInt), new ValueType(ValueKind.Float));
 			break;
 		case Instruction.FloatToInt:
-			PushValue(vm, new ValueData((int)PopValue(vm).asFloat), ValueType.Int);
+			PushValue(vm, new ValueData((int)PopValue(vm).asFloat), new ValueType(ValueKind.Int));
 			break;
 		case Instruction.NegateInt:
 			Peek(vm).asInt = -Peek(vm).asInt;
@@ -270,21 +270,21 @@ internal static class VirtualMachineInstructions
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asBool == PopValue(vm).asBool),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.EqualInt:
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asInt == PopValue(vm).asInt),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.EqualFloat:
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asFloat == PopValue(vm).asFloat),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.EqualString:
@@ -294,35 +294,35 @@ internal static class VirtualMachineInstructions
 					(vm.heap.buffer[PopValue(vm).asInt] as string).Equals(
 					vm.heap.buffer[PopValue(vm).asInt] as string)
 				),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.GreaterInt:
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asInt < PopValue(vm).asInt),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.GreaterFloat:
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asFloat < PopValue(vm).asFloat),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.LessInt:
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asInt > PopValue(vm).asInt),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.LessFloat:
 			PushValue(
 				vm,
 				new ValueData(PopValue(vm).asFloat > PopValue(vm).asFloat),
-				ValueType.Bool
+				new ValueType(ValueKind.Bool)
 			);
 			break;
 		case Instruction.JumpForward:
@@ -362,7 +362,7 @@ internal static class VirtualMachineInstructions
 			{
 				var index = frame.baseStackIndex + NextByte(vm, ref frame);
 				var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
-				PushValue(vm, new ValueData(less), ValueType.Bool);
+				PushValue(vm, new ValueData(less), new ValueType(ValueKind.Bool));
 				break;
 			}
 		default:

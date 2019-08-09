@@ -58,7 +58,7 @@ public sealed class VirtualMachine
 		var functionIndex = chunk.functions.count - 1;
 		var function = chunk.functions.buffer[functionIndex];
 		valueStack.PushBack(new ValueData(functionIndex));
-		typeStack.PushBack(ValueTypeHelper.SetIndex(ValueType.Function, function.typeIndex));
+		typeStack.PushBack(new ValueType(ValueKind.Function, function.typeIndex));
 		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
 
 		heap = new Buffer<object>

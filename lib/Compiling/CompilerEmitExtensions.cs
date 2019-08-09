@@ -11,7 +11,7 @@ public static class CompilerEmitExtensions
 		return self.EmitByte((byte)instruction);
 	}
 
-	public static Compiler EmitLoadLiteral(this Compiler self, ValueData value, ValueType type)
+	public static Compiler EmitLoadLiteral(this Compiler self, ValueData value, ValueKind type)
 	{
 		var index = self.chunk.AddValueLiteral(value, type);
 		self.EmitInstruction(Instruction.LoadLiteral);

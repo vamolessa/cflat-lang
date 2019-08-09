@@ -33,7 +33,7 @@ public struct ValueData
 	}
 }
 
-public enum ValueType : int
+public enum ValueKind : byte
 {
 	Unit,
 	Bool,
@@ -46,61 +46,82 @@ public enum ValueType : int
 	Custom,
 }
 
-public static class ValueTypeHelper
+public readonly struct ValueType
 {
-	public static ValueType GetKind(ValueType type)
+	public static readonly ValueType Unit = new ValueType(ValueKind.Unit);
+
+	public readonly ushort index;
+	public readonly ValueKind kind;
+	public readonly bool isReference;
+
+	public ValueType(ValueKind kind)
 	{
-		return (ValueType)((int)type & 0b1111);
+		this.kind = kind;
+		this.isReference = false;
+		this.index = 0;
 	}
 
-	public static int GetIndex(ValueType type)
+	public ValueType(ValueKind kind, int index)
 	{
-		return (int)type >> 4;
+		this.kind = kind;
+		this.isReference = false;
+		this.index = (ushort)index;
 	}
 
-	public static ValueType SetIndex(ValueType type, int index)
+	public ValueType(ValueKind kind, bool isReference, ushort index)
 	{
-		return (ValueType)(((int)type & 0b1111) | (index << 4));
+		this.kind = kind;
+		this.isReference = isReference;
+		this.index = index;
 	}
 
-	public static string ToString(this ValueType type, ByteCodeChunk chunk)
+	public bool IsEqualTo(ValueType other)
 	{
-		var kind = GetKind(type);
+		return
+			kind == other.kind &&
+			isReference == other.isReference &&
+			index == other.index;
+	}
+
+	public bool IsKind(ValueKind kind)
+	{
+		return this.kind == kind && isReference == false && index == 0;
+	}
+
+	public string ToString(ByteCodeChunk chunk)
+	{
 		switch (kind)
 		{
-		case ValueType.Unit:
+		case ValueKind.Unit:
 			return "{}";
-		case ValueType.Bool:
+		case ValueKind.Bool:
 			return "bool";
-		case ValueType.Int:
+		case ValueKind.Int:
 			return "int";
-		case ValueType.Float:
+		case ValueKind.Float:
 			return "float";
-		case ValueType.String:
+		case ValueKind.String:
 			return "string";
-		case ValueType.Function:
+		case ValueKind.Function:
 			{
-				var index = GetIndex(type);
 				var sb = new StringBuilder();
 				chunk.FormatFunctionType(index, sb);
 				return sb.ToString();
 			}
-		case ValueType.NativeFunction:
+		case ValueKind.NativeFunction:
 			{
-				var index = GetIndex(type);
 				var sb = new StringBuilder();
 				sb.Append("native ");
 				chunk.FormatFunctionType(index, sb);
 				return sb.ToString();
 			}
-		case ValueType.Struct:
+		case ValueKind.Struct:
 			{
-				var index = GetIndex(type);
 				var sb = new StringBuilder();
 				chunk.FormatStructType(index, sb);
 				return sb.ToString();
 			}
-		case ValueType.Custom:
+		case ValueKind.Custom:
 			return "custom";
 		default:
 			return "unreachable";
