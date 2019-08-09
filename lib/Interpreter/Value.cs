@@ -83,13 +83,14 @@ public readonly struct ValueType
 
 	public bool IsCompatibleWith(ValueType other)
 	{
-		if (isReference != other.isReference || index != other.index)
-			return false;
+		return IsEqualTo(other);
+		// if (isReference != other.isReference || index != other.index)
+		// 	return false;
 
-		if (other.kind == ValueKind.Function || other.kind == ValueKind.NativeFunction)
-			return kind == ValueKind.Function || kind == ValueKind.NativeFunction;
+		// if (other.kind == ValueKind.Function || other.kind == ValueKind.NativeFunction)
+		// 	return kind == ValueKind.Function || kind == ValueKind.NativeFunction;
 
-		return kind == other.kind;
+		// return kind == other.kind;
 	}
 
 	public bool IsSimple()
