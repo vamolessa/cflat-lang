@@ -1,14 +1,5 @@
-struct Vector
-{
-	x: int
-	y: int
-}
-
-fn newVector(x: int, y: int): Vector {
-	Vector {
-		x = x
-		y = y
-	}
+fn anotherFoo() {
+	print "Whoopsies!"
 }
 
 fn someFoo() {
@@ -16,25 +7,11 @@ fn someFoo() {
 }
 
 fn getThatFoo(): fn() {
-	someFoo
-}
-
-fn printVector(header: string, v: Vector): bool {
-	print header
-	print v
-	true
+	testFunction
 }
 
 fn main() {
-	mut a = 3
-	let v = newVector(31, 17)
-	printVector("hey!", v)
-	print a
-	a = 10
-	print a
-
 	print testFunction
 	testFunction()
-
 	getThatFoo()()
 }

@@ -48,8 +48,6 @@ public enum ValueKind : byte
 
 public readonly struct ValueType
 {
-	public static readonly ValueType Unit = new ValueType(ValueKind.Unit);
-
 	public readonly ushort index;
 	public readonly ValueKind kind;
 	public readonly bool isReference;
@@ -81,6 +79,22 @@ public readonly struct ValueType
 			kind == other.kind &&
 			isReference == other.isReference &&
 			index == other.index;
+	}
+
+	public bool IsCompatibleWith(ValueType other)
+	{
+		if (isReference != other.isReference || index != other.index)
+			return false;
+
+		if (other.kind == ValueKind.Function || other.kind == ValueKind.NativeFunction)
+			return kind == ValueKind.Function || kind == ValueKind.NativeFunction;
+
+		return kind == other.kind;
+	}
+
+	public bool IsSimple()
+	{
+		return isReference == false && index == 0;
 	}
 
 	public bool IsKind(ValueKind kind)

@@ -182,7 +182,7 @@ public sealed class CompilerController
 		{
 			Block(this, Precedence.None);
 			var type = compiler.typeStack.PopLast();
-			if (!declaration.returnType.IsEqualTo(type))
+			if (!type.IsCompatibleWith(declaration.returnType))
 				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
 
@@ -433,7 +433,7 @@ public sealed class CompilerController
 		compiler.EmitInstruction(Instruction.Return);
 		compiler.EmitByte((byte)compiler.chunk.GetTypeSize(expectedType));
 
-		if (!expectedType.IsEqualTo(returnType))
+		if (!returnType.IsCompatibleWith(expectedType))
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
 
 		return returnType;
@@ -521,7 +521,7 @@ public sealed class CompilerController
 			}
 
 			var elseType = self.compiler.typeStack.PopLast();
-			if (!thenType.IsEqualTo(elseType))
+			if (!elseType.IsCompatibleWith(thenType))
 				self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "If expression must produce values of the same type on both branches. Found types: {0} and {1}", thenType, elseType);
 		}
 		else
@@ -628,7 +628,7 @@ public sealed class CompilerController
 					self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
 				var expressionType = self.compiler.typeStack.PopLast();
-				if (!expressionType.IsEqualTo(localVar.type))
+				if (!expressionType.IsCompatibleWith(localVar.type))
 				{
 					self.compiler.AddSoftError(
 						self.compiler.parser.previousToken.slice,
@@ -684,7 +684,7 @@ public sealed class CompilerController
 
 						Expression(self);
 						var expressionType = self.compiler.typeStack.PopLast();
-						if (!expressionType.IsEqualTo(field.type))
+						if (!expressionType.IsCompatibleWith(field.type))
 						{
 							self.compiler.AddSoftError(
 								self.compiler.parser.previousToken.slice,
@@ -760,7 +760,7 @@ public sealed class CompilerController
 				)
 				{
 					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.parameters.index + argIndex];
-					if (!argType.IsEqualTo(paramType))
+					if (!argType.IsCompatibleWith(paramType))
 					{
 						self.compiler.AddSoftError(
 							self.compiler.parser.previousToken.slice,
@@ -900,6 +900,11 @@ public sealed class CompilerController
 				c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			}
+			if (!aType.IsSimple() || !bType.IsSimple())
+			{
+				c.AddSoftError(opToken.slice, "Equal operator can only be applied to bools, ints and floats");
+				break;
+			}
 
 			switch (aType.kind)
 			{
@@ -926,6 +931,11 @@ public sealed class CompilerController
 			{
 				c.AddSoftError(opToken.slice, "NotEqual operator can only be applied to same type values");
 				c.typeStack.PushBack(new ValueType(ValueKind.Bool));
+				break;
+			}
+			if (!aType.IsSimple() || !bType.IsSimple())
+			{
+				c.AddSoftError(opToken.slice, "NotEqual operator can only be applied to bools, ints and floats");
 				break;
 			}
 
