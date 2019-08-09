@@ -13,11 +13,11 @@ public sealed class ExpressionTests
 		if (compileErrors.Count > 0)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
 
-		var runError = pepper.Run();
+		var runError = pepper.RunLastFunction();
 		if (runError.isSome)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		pepper.PopSimple(out value, out type);
+		pepper.virtualMachine.PopSimple(out value, out type);
 		return null;
 	}
 

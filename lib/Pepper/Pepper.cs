@@ -2,8 +2,8 @@ using System.Collections.Generic;
 
 public sealed class Pepper
 {
-	internal CompilerController compiler = new CompilerController();
-	internal VirtualMachine virtualMachine = new VirtualMachine();
+	public readonly VirtualMachine virtualMachine = new VirtualMachine();
+	internal readonly CompilerController compiler = new CompilerController();
 	internal ByteCodeChunk byteCode = new ByteCodeChunk();
 	internal string source;
 
@@ -19,8 +19,17 @@ public sealed class Pepper
 		return compiler.CompileExpression(source, byteCode);
 	}
 
-	public Option<RuntimeError> Run()
+	public Option<RuntimeError> RunLastFunction()
 	{
-		return virtualMachine.RunLastFunction(byteCode);
+		if (byteCode.functions.count == 0)
+		{
+			return Option.Some(new RuntimeError(
+				0,
+				new Slice(),
+				"No function defined"
+			));
+		}
+
+		return virtualMachine.RunFunction(byteCode, byteCode.functions.count - 1);
 	}
 }

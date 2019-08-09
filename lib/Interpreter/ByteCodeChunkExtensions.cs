@@ -71,7 +71,11 @@ public static class ByteCodeChunkExtensions
 		sb.AppendLine("byte instruction");
 
 		for (var index = 0; index < self.bytes.count;)
+		{
+			PrintFunctionName(self, index, sb);
 			index = DisassembleInstruction(self, index, sb);
+			sb.AppendLine();
+		}
 		sb.AppendLine("== end ==");
 	}
 
@@ -86,8 +90,10 @@ public static class ByteCodeChunkExtensions
 
 		for (var index = 0; index < self.bytes.count;)
 		{
+			PrintFunctionName(self, index, sb);
 			PrintLineNumber(self, source, index, sb);
 			index = DisassembleInstruction(self, index, sb);
+			sb.AppendLine();
 		}
 
 		sb.Append("== ");
@@ -95,7 +101,7 @@ public static class ByteCodeChunkExtensions
 		sb.AppendLine(" end ==");
 	}
 
-	public static void PrintLineNumber(this ByteCodeChunk self, string source, int index, StringBuilder sb)
+	private static void PrintLineNumber(ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
 		var currentSourceIndex = self.slices.buffer[index].index;
 		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex, 1);
@@ -110,6 +116,22 @@ public static class ByteCodeChunkExtensions
 			sb.Append("   | ");
 		else
 			sb.AppendFormat("{0,4} ", currentPosition.line);
+	}
+
+	private static void PrintFunctionName(ByteCodeChunk self, int codeIndex, StringBuilder sb)
+	{
+		for (var i = 0; i < self.functions.count; i++)
+		{
+			var function = self.functions.buffer[i];
+			if (function.codeIndex == codeIndex)
+			{
+				sb.Append("   // ");
+				self.FormatFunction(i, sb);
+				sb.AppendLine();
+				break;
+			}
+		}
+
 	}
 
 	public static int DisassembleInstruction(this ByteCodeChunk self, int index, StringBuilder sb)
@@ -178,14 +200,15 @@ public static class ByteCodeChunkExtensions
 		case Instruction.JumpBackward:
 			return JumpInstruction(self, instruction, -1, index, sb);
 		default:
-			sb.AppendFormat("Unknown instruction '{0}'\n", instruction.ToString());
+			sb.Append("Unknown instruction ");
+			sb.Append(instruction.ToString());
 			return index + 1;
 		}
 	}
 
 	private static int SimpleInstruction(Instruction instruction, int index, StringBuilder sb)
 	{
-		sb.AppendLine(instruction.ToString());
+		sb.Append(instruction.ToString());
 		return index + 1;
 	}
 
@@ -194,7 +217,6 @@ public static class ByteCodeChunkExtensions
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
 		sb.Append(chunk.bytes.buffer[index + 1]);
-		sb.AppendLine();
 		return index + 2;
 	}
 
@@ -205,7 +227,6 @@ public static class ByteCodeChunkExtensions
 		sb.Append(chunk.bytes.buffer[index + 1]);
 		sb.Append(", ");
 		sb.Append(chunk.bytes.buffer[index + 2]);
-		sb.AppendLine();
 		return index + 3;
 	}
 
@@ -216,16 +237,19 @@ public static class ByteCodeChunkExtensions
 		var type = chunk.literalKinds.buffer[literalIndex];
 
 		sb.Append(instruction.ToString());
+		sb.Append(' ');
 		switch (type)
 		{
 		case ValueKind.Int:
-			sb.AppendFormat(" {0}\n", value.asInt);
+			sb.Append(value.asInt);
 			break;
 		case ValueKind.Float:
-			sb.AppendFormat(" {0}\n", value.asFloat);
+			sb.Append(value.asFloat);
 			break;
 		case ValueKind.String:
-			sb.AppendFormat(" \"{0}\"\n", chunk.stringLiterals.buffer[value.asInt]);
+			sb.Append('"');
+			sb.Append(chunk.stringLiterals.buffer[value.asInt]);
+			sb.Append('"');
 			break;
 		}
 
@@ -241,7 +265,6 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		FormatFunction(chunk, functionIndex, sb);
-		sb.AppendLine();
 		return index + 3;
 	}
 
@@ -254,7 +277,6 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		FormatNativeFunction(chunk, functionIndex, sb);
-		sb.AppendLine();
 		return index + 3;
 	}
 
@@ -267,7 +289,6 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		sb.Append(chunk.structTypes.buffer[structIndex].name);
-		sb.AppendLine();
 		return index + 3;
 	}
 
@@ -282,7 +303,7 @@ public static class ByteCodeChunkExtensions
 		sb.Append(offset);
 		sb.Append(" (goto ");
 		sb.Append(index + 3 + offset * sign);
-		sb.AppendLine(")");
+		sb.Append(")");
 		return index + 3;
 	}
 }

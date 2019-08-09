@@ -73,8 +73,7 @@ internal static class VirtualMachineInstructions
 						stackTop
 					)
 				);
-				var returnSize = function.callback(null);
-				PushValue(vm, new ValueData(), new ValueType(ValueKind.Unit));
+				var returnSize = function.callback(vm);
 				VirtualMachineHelper.Return(vm, returnSize);
 				break;
 			}

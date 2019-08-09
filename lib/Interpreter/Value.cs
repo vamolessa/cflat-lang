@@ -81,18 +81,6 @@ public readonly struct ValueType
 			index == other.index;
 	}
 
-	public bool IsCompatibleWith(ValueType other)
-	{
-		return IsEqualTo(other);
-		// if (isReference != other.isReference || index != other.index)
-		// 	return false;
-
-		// if (other.kind == ValueKind.Function || other.kind == ValueKind.NativeFunction)
-		// 	return kind == ValueKind.Function || kind == ValueKind.NativeFunction;
-
-		// return kind == other.kind;
-	}
-
 	public bool IsSimple()
 	{
 		return isReference == false && index == 0;
@@ -174,7 +162,7 @@ public readonly struct Function
 
 public readonly struct NativeFunction
 {
-	public delegate int Callback(Pepper pepper);
+	public delegate int Callback(VirtualMachine vm);
 
 	public readonly string name;
 	public readonly int typeIndex;

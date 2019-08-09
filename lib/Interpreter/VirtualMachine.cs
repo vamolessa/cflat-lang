@@ -37,7 +37,7 @@ public sealed class VirtualMachine
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
-	public Option<RuntimeError> RunLastFunction(ByteCodeChunk chunk)
+	public Option<RuntimeError> RunFunction(ByteCodeChunk chunk, int functionIndex)
 	{
 		this.chunk = chunk;
 		maybeError = Option.None;
@@ -46,16 +46,6 @@ public sealed class VirtualMachine
 		valueStack.count = 0;
 		callframeStack.count = 0;
 
-		if (chunk.functions.count == 0)
-		{
-			return Option.Some(new RuntimeError(
-				0,
-				new Slice(),
-				"No function defined"
-			));
-		}
-
-		var functionIndex = chunk.functions.count - 1;
 		var function = chunk.functions.buffer[functionIndex];
 		valueStack.PushBack(new ValueData(functionIndex));
 		typeStack.PushBack(new ValueType(ValueKind.Function, function.typeIndex));
@@ -78,6 +68,7 @@ public sealed class VirtualMachine
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
 				chunk.DisassembleInstruction(ip, sb);
+				sb.AppendLine();
 				//System.Console.Write(sb);
 			}
 

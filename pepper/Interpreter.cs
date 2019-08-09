@@ -2,10 +2,10 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public static int TestFunction(Pepper pepper)
+	public static int TestFunction(VirtualMachine vm)
 	{
 		System.Console.WriteLine("HELLO FROM C#");
-		//pepper.PushSimple(new ValueData(), new ValueType(ValueKind.Unit));
+		vm.PushSimple(new ValueData(), new ValueType(ValueKind.Unit));
 		return 1;
 	}
 
@@ -31,7 +31,7 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		var runError = pepper.Run();
+		var runError = pepper.RunLastFunction();
 		if (runError.isSome)
 		{
 			var error = VirtualMachineHelper.FormatError(source, runError.value, 2, TabSize);
