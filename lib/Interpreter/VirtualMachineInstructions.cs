@@ -96,7 +96,7 @@ internal static class VirtualMachineInstructions
 				VirtualMachineHelper.ValueToString(
 					vm,
 					vm.valueStack.count - size,
-					Option.None,
+					Option.Some(type),
 					sb
 				);
 				vm.typeStack.count -= size;

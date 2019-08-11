@@ -451,6 +451,13 @@ public sealed class CompilerController
 	{
 		Expression(this);
 		compiler.EmitInstruction(Instruction.Print);
+
+		var type = compiler.typeStack.buffer[compiler.typeStack.count - 1];
+		var bytes = new byte[4];
+		type.Write(bytes, 0);
+		foreach (var b in bytes)
+			compiler.EmitByte(b);
+
 		compiler.typeStack.PopLast();
 	}
 
