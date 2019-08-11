@@ -14,7 +14,6 @@ public enum Instruction
 	LoadLiteral,
 	LoadFunction,
 	LoadNativeFunction,
-	ConvertToStruct,
 	AssignLocal,
 	LoadLocal,
 	AssignLocalMultiple,

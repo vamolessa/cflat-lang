@@ -191,8 +191,6 @@ public static class ByteCodeChunkExtensions
 			return LoadFunctionInstruction(self, instruction, index, sb);
 		case Instruction.LoadNativeFunction:
 			return LoadNativeFunctionInstruction(self, instruction, index, sb);
-		case Instruction.ConvertToStruct:
-			return ConvertToStructInstruction(self, instruction, index, sb);
 		case Instruction.JumpForward:
 		case Instruction.JumpForwardIfFalse:
 		case Instruction.JumpForwardIfTrue:
@@ -283,18 +281,6 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 2]
 		);
 		FormatNativeFunction(chunk, functionIndex, sb);
-		return index + 3;
-	}
-
-	private static int ConvertToStructInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
-	{
-		sb.Append(instruction.ToString());
-		sb.Append(' ');
-		var structIndex = BytesHelper.BytesToShort(
-			chunk.bytes.buffer[index + 1],
-			chunk.bytes.buffer[index + 2]
-		);
-		sb.Append(chunk.structTypes.buffer[structIndex].name);
 		return index + 3;
 	}
 

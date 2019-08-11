@@ -39,12 +39,6 @@ public static class CompilerEmitExtensions
 		return self.EmitUShort((ushort)functionIndex);
 	}
 
-	public static Compiler EmitConvertToStruct(this Compiler self, int structTypeIndex)
-	{
-		self.EmitInstruction(Instruction.ConvertToStruct);
-		return self.EmitUShort((ushort)structTypeIndex);
-	}
-
 	public static int BeginEmitBackwardJump(this Compiler self)
 	{
 		return self.chunk.bytes.count;

@@ -179,18 +179,6 @@ internal static class VirtualMachineInstructions
 				);
 				break;
 			}
-		case Instruction.ConvertToStruct:
-			{
-				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
-				var structType = vm.chunk.structTypes.buffer[index];
-
-				var type = new ValueType(ValueKind.Struct, index);
-				var idx = vm.typeStack.count - structType.size;
-
-				while (idx < vm.typeStack.count)
-					vm.typeStack.buffer[idx++] = type;
-				break;
-			}
 		case Instruction.AssignLocal:
 			{
 				var index = frame.baseStackIndex + NextByte(vm, ref frame);

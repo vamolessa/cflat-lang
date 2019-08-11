@@ -713,7 +713,6 @@ public sealed class CompilerController
 					}
 					self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
 
-					//self.compiler.EmitConvertToStruct(structIndex);
 					var type = new ValueType(ValueKind.Struct, structIndex);
 					self.compiler.typeStack.PushBack(type);
 				}
