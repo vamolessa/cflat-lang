@@ -244,13 +244,13 @@ public static class ByteCodeChunkExtensions
 		sb.Append(' ');
 		switch (type)
 		{
-		case ValueKind.Int:
+		case TypeKind.Int:
 			sb.Append(value.asInt);
 			break;
-		case ValueKind.Float:
+		case TypeKind.Float:
 			sb.Append(value.asFloat);
 			break;
-		case ValueKind.String:
+		case TypeKind.String:
 			sb.Append('"');
 			sb.Append(chunk.stringLiterals.buffer[value.asInt]);
 			sb.Append('"');

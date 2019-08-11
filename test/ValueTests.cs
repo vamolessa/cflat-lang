@@ -3,13 +3,13 @@ using Xunit;
 public sealed class ValueTests
 {
 	[Theory]
-	[InlineData(ValueKind.Unit, 0, false)]
-	[InlineData(ValueKind.Int, 0, false)]
-	[InlineData(ValueKind.Struct, 0, false)]
-	[InlineData(ValueKind.Struct, 99, false)]
-	[InlineData(ValueKind.Struct, 99, true)]
-	[InlineData(ValueKind.Unit, 0, true)]
-	public void ValueTypeTests(ValueKind kind, ushort index, bool isReference)
+	[InlineData(TypeKind.Unit, 0, false)]
+	[InlineData(TypeKind.Int, 0, false)]
+	[InlineData(TypeKind.Struct, 0, false)]
+	[InlineData(TypeKind.Struct, 99, false)]
+	[InlineData(TypeKind.Struct, 99, true)]
+	[InlineData(TypeKind.Unit, 0, true)]
+	public void ValueTypeTests(TypeKind kind, ushort index, bool isReference)
 	{
 		byte b0, b1, b2, b3;
 		var type = new ValueType(index, kind, isReference);

@@ -29,7 +29,7 @@ public sealed class ExpressionTests
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(new ValueType(ValueKind.Unit), t);
+		Assert.Equal(new ValueType(TypeKind.Unit), t);
 	}
 
 	[Theory]
@@ -43,7 +43,7 @@ public sealed class ExpressionTests
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(new ValueType(ValueKind.Int), t);
+		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
 	}
 
@@ -58,7 +58,7 @@ public sealed class ExpressionTests
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(new ValueType(ValueKind.Unit), t);
+		Assert.Equal(new ValueType(TypeKind.Unit), t);
 	}
 
 	[Theory]
@@ -72,7 +72,7 @@ public sealed class ExpressionTests
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(new ValueType(ValueKind.Int), t);
+		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
 	}
 
@@ -91,7 +91,7 @@ public sealed class ExpressionTests
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(new ValueType(ValueKind.Bool), t);
+		Assert.Equal(new ValueType(TypeKind.Bool), t);
 		Assert.Equal(expected, v.asBool);
 	}
 
@@ -104,7 +104,7 @@ public sealed class ExpressionTests
 	{
 		var error = RunExpression(source, out var v, out var t);
 		Assert.Null(error);
-		Assert.Equal(new ValueType(ValueKind.Int), t);
+		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
 	}
 }

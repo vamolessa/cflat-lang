@@ -30,7 +30,7 @@ public static class CompilerDeclarationExtensions
 			return -1;
 		}
 
-		var type = new ValueType(ValueKind.Unit);
+		var type = new ValueType(TypeKind.Unit);
 		if (self.typeStack.count > 0)
 			type = self.typeStack.buffer[self.typeStack.count - 1];
 

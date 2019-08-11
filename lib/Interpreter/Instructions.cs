@@ -19,6 +19,7 @@ public enum Instruction
 	AssignLocalMultiple,
 	LoadLocalMultiple,
 	IncrementLocalInt,
+	LoadField,
 	IntToFloat,
 	FloatToInt,
 	NegateInt,

@@ -5,14 +5,14 @@ public static class Interpreter
 	public static int TestFunction(VirtualMachine vm)
 	{
 		System.Console.WriteLine("HELLO FROM C#");
-		vm.PushSimple(new ValueData(), new ValueType(ValueKind.Unit));
+		vm.PushSimple(new ValueData(), new ValueType(TypeKind.Unit));
 		return 1;
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
-		pepper.AddFunction("testFunction", TestFunction, new ValueType(ValueKind.Unit));
+		pepper.AddFunction("testFunction", TestFunction, new ValueType(TypeKind.Unit));
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.Count > 0)
 		{

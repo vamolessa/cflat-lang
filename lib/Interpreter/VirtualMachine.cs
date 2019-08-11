@@ -48,7 +48,7 @@ public sealed class VirtualMachine
 
 		var function = chunk.functions.buffer[functionIndex];
 		valueStack.PushBack(new ValueData(functionIndex));
-		typeStack.PushBack(new ValueType(ValueKind.Function, function.typeIndex));
+		typeStack.PushBack(new ValueType(TypeKind.Function, function.typeIndex));
 		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
 
 		heap = new Buffer<object>
@@ -69,7 +69,7 @@ public sealed class VirtualMachine
 				VirtualMachineHelper.TraceStack(this, sb);
 				chunk.DisassembleInstruction(ip, sb);
 				sb.AppendLine();
-				//System.Console.Write(sb);
+				System.Console.Write(sb);
 			}
 
 			var done = VirtualMachineInstructions.Tick(this);

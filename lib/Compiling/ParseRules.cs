@@ -17,6 +17,7 @@ public sealed class ParseRules
 			infixRules[index] = infix;
 		}
 
+		Set(TokenKind.Dot, null, CompilerController.FieldAccess, Precedence.Call);
 		Set(TokenKind.OpenParenthesis, CompilerController.Grouping, CompilerController.Call, Precedence.Call);
 		Set(TokenKind.OpenCurlyBrackets, CompilerController.Block, null, Precedence.None);
 		Set(TokenKind.Minus, CompilerController.Unary, CompilerController.Binary, Precedence.Term);

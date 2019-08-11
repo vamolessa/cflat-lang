@@ -33,7 +33,7 @@ public struct ValueData
 	}
 }
 
-public enum ValueKind : byte
+public enum TypeKind : byte
 {
 	Unit,
 	Bool,
@@ -49,33 +49,33 @@ public enum ValueKind : byte
 public readonly struct ValueType
 {
 	public readonly ushort index;
-	public readonly ValueKind kind;
+	public readonly TypeKind kind;
 	public readonly bool isReference;
 
 	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
 	{
 		return new ValueType(
 			BytesHelper.BytesToShort(b0, b1),
-			(ValueKind)b2,
+			(TypeKind)b2,
 			b3 != 0
 		);
 	}
 
-	public ValueType(ValueKind kind)
+	public ValueType(TypeKind kind)
 	{
 		this.kind = kind;
 		this.isReference = false;
 		this.index = 0;
 	}
 
-	public ValueType(ValueKind kind, int index)
+	public ValueType(TypeKind kind, int index)
 	{
 		this.kind = kind;
 		this.isReference = false;
 		this.index = (ushort)index;
 	}
 
-	public ValueType(ushort index, ValueKind kind, bool isReference)
+	public ValueType(ushort index, TypeKind kind, bool isReference)
 	{
 		this.kind = kind;
 		this.isReference = isReference;
@@ -95,7 +95,7 @@ public readonly struct ValueType
 		return isReference == false && index == 0;
 	}
 
-	public bool IsKind(ValueKind kind)
+	public bool IsKind(TypeKind kind)
 	{
 		return this.kind == kind && isReference == false && index == 0;
 	}
@@ -116,36 +116,36 @@ public readonly struct ValueType
 	{
 		switch (kind)
 		{
-		case ValueKind.Unit:
+		case TypeKind.Unit:
 			return "{}";
-		case ValueKind.Bool:
+		case TypeKind.Bool:
 			return "bool";
-		case ValueKind.Int:
+		case TypeKind.Int:
 			return "int";
-		case ValueKind.Float:
+		case TypeKind.Float:
 			return "float";
-		case ValueKind.String:
+		case TypeKind.String:
 			return "string";
-		case ValueKind.Function:
+		case TypeKind.Function:
 			{
 				var sb = new StringBuilder();
 				chunk.FormatFunctionType(index, sb);
 				return sb.ToString();
 			}
-		case ValueKind.NativeFunction:
+		case TypeKind.NativeFunction:
 			{
 				var sb = new StringBuilder();
 				sb.Append("native ");
 				chunk.FormatFunctionType(index, sb);
 				return sb.ToString();
 			}
-		case ValueKind.Struct:
+		case TypeKind.Struct:
 			{
 				var sb = new StringBuilder();
 				chunk.FormatStructType(index, sb);
 				return sb.ToString();
 			}
-		case ValueKind.Custom:
+		case TypeKind.Custom:
 			return "custom";
 		default:
 			return "unreachable";

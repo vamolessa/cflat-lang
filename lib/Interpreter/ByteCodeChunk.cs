@@ -13,7 +13,7 @@ public sealed class ByteCodeChunk
 		{
 			this.chunk = chunk;
 			this.parameterCount = 0;
-			this.returnType = new ValueType(ValueKind.Unit);
+			this.returnType = new ValueType(TypeKind.Unit);
 		}
 
 		public void AddParam(ValueType type)
@@ -44,7 +44,7 @@ public sealed class ByteCodeChunk
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<Slice> slices = new Buffer<Slice>(256);
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
-	public Buffer<ValueKind> literalKinds = new Buffer<ValueKind>(64);
+	public Buffer<TypeKind> literalKinds = new Buffer<TypeKind>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
 	public Buffer<FunctionType> functionTypes = new Buffer<FunctionType>(16);
 	public Buffer<ValueType> functionTypeParams = new Buffer<ValueType>(16);
@@ -59,7 +59,7 @@ public sealed class ByteCodeChunk
 		slices.PushBack(slice);
 	}
 
-	public int AddValueLiteral(ValueData value, ValueKind kind)
+	public int AddValueLiteral(ValueData value, TypeKind kind)
 	{
 		var index = FindValueIndex(value, kind);
 		if (index < 0)
@@ -81,7 +81,7 @@ public sealed class ByteCodeChunk
 			stringLiterals.PushBack(literal);
 		}
 
-		return AddValueLiteral(new ValueData(stringIndex), ValueKind.String);
+		return AddValueLiteral(new ValueData(stringIndex), TypeKind.String);
 	}
 
 	public FunctionTypeBuilder BeginAddFunctionType()
@@ -175,13 +175,13 @@ public sealed class ByteCodeChunk
 
 	public int GetTypeSize(ValueType type)
 	{
-		if (type.kind == ValueKind.Struct)
+		if (type.kind == TypeKind.Struct)
 			return structTypes.buffer[type.index].size;
 		else
 			return 1;
 	}
 
-	private int FindValueIndex(ValueData value, ValueKind kind)
+	private int FindValueIndex(ValueData value, TypeKind kind)
 	{
 		for (var i = 0; i < literalData.count; i++)
 		{
@@ -191,15 +191,15 @@ public sealed class ByteCodeChunk
 			var v = literalData.buffer[i];
 			switch (kind)
 			{
-			case ValueKind.Bool:
+			case TypeKind.Bool:
 				if (v.asBool == value.asBool)
 					return i;
 				break;
-			case ValueKind.Int:
+			case TypeKind.Int:
 				if (v.asInt == value.asInt)
 					return i;
 				break;
-			case ValueKind.Float:
+			case TypeKind.Float:
 				if (v.asFloat == value.asFloat)
 					return i;
 				break;
