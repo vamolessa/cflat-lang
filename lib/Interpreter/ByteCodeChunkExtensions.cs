@@ -315,7 +315,13 @@ public static class ByteCodeChunkExtensions
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
 
-		var type = ValueType.Read(chunk.bytes.buffer, index + 1);
+		var type = ValueType.Read(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2],
+			chunk.bytes.buffer[index + 3],
+			chunk.bytes.buffer[index + 4]
+		);
+
 		sb.Append(type.ToString(chunk));
 
 		return index + 5;

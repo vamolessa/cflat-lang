@@ -52,12 +52,12 @@ public readonly struct ValueType
 	public readonly ValueKind kind;
 	public readonly bool isReference;
 
-	public static ValueType Read(byte[] bytes, int startIndex)
+	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
 	{
 		return new ValueType(
-			BytesHelper.BytesToShort(bytes[startIndex++], bytes[startIndex++]),
-			(ValueKind)bytes[startIndex++],
-			bytes[startIndex++] != 0
+			BytesHelper.BytesToShort(b0, b1),
+			(ValueKind)b2,
+			b3 != 0
 		);
 	}
 
@@ -100,16 +100,16 @@ public readonly struct ValueType
 		return this.kind == kind && isReference == false && index == 0;
 	}
 
-	public void Write(byte[] bytes, int startIndex)
+	public void Write(out byte b0, out byte b1, out byte b2, out byte b3)
 	{
 		BytesHelper.ShortToBytes(
 			index,
-			out bytes[startIndex++],
-			out bytes[startIndex++]
+			out b0,
+			out b1
 		);
 
-		bytes[startIndex++] = (byte)kind;
-		bytes[startIndex++] = isReference ? (byte)1 : (byte)0;
+		b2 = (byte)kind;
+		b3 = isReference ? (byte)1 : (byte)0;
 	}
 
 	public string ToString(ByteCodeChunk chunk)
