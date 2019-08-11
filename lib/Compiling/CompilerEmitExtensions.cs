@@ -6,6 +6,14 @@ public static class CompilerEmitExtensions
 		return self;
 	}
 
+	public static Compiler EmitUShort(this Compiler self, ushort value)
+	{
+		BytesHelper.ShortToBytes(value, out var b0, out var b1);
+		self.chunk.WriteByte(b0, self.parser.previousToken.slice);
+		self.chunk.WriteByte(b1, self.parser.previousToken.slice);
+		return self;
+	}
+
 	public static Compiler EmitInstruction(this Compiler self, Instruction instruction)
 	{
 		return self.EmitByte((byte)instruction);
@@ -15,30 +23,26 @@ public static class CompilerEmitExtensions
 	{
 		var index = self.chunk.AddValueLiteral(value, type);
 		self.EmitInstruction(Instruction.LoadLiteral);
-		return self.EmitByte((byte)index);
-	}
-
-	public static Compiler EmitLoadFunction(this Compiler self, Instruction instruction, int functionIndex)
-	{
-		self.EmitInstruction(instruction);
-		BytesHelper.ShortToBytes((ushort)functionIndex, out var b0, out var b1);
-		self.EmitByte(b0);
-		return self.EmitByte(b1);
-	}
-
-	public static Compiler EmitConvertToStruct(this Compiler self, int structTypeIndex)
-	{
-		self.EmitInstruction(Instruction.ConvertToStruct);
-		BytesHelper.ShortToBytes((ushort)structTypeIndex, out var b0, out var b1);
-		self.EmitByte(b0);
-		return self.EmitByte(b1);
+		return self.EmitUShort((ushort)index);
 	}
 
 	public static Compiler EmitLoadStringLiteral(this Compiler self, string value)
 	{
 		var index = self.chunk.AddStringLiteral(value);
 		self.EmitInstruction(Instruction.LoadLiteral);
-		return self.EmitByte((byte)index);
+		return self.EmitUShort((ushort)index);
+	}
+
+	public static Compiler EmitLoadFunction(this Compiler self, Instruction instruction, int functionIndex)
+	{
+		self.EmitInstruction(instruction);
+		return self.EmitUShort((ushort)functionIndex);
+	}
+
+	public static Compiler EmitConvertToStruct(this Compiler self, int structTypeIndex)
+	{
+		self.EmitInstruction(Instruction.ConvertToStruct);
+		return self.EmitUShort((ushort)structTypeIndex);
 	}
 
 	public static int BeginEmitBackwardJump(this Compiler self)
@@ -57,16 +61,13 @@ public static class CompilerEmitExtensions
 			return;
 		}
 
-		BytesHelper.ShortToBytes((ushort)offset, out var b0, out var b1);
-		self.EmitByte(b0);
-		self.EmitByte(b1);
+		self.EmitUShort((ushort)offset);
 	}
 
 	public static int BeginEmitForwardJump(this Compiler self, Instruction instruction)
 	{
 		self.EmitInstruction(instruction);
-		self.EmitByte(0);
-		self.EmitByte(0);
+		self.EmitUShort(0);
 
 		return self.chunk.bytes.count - 2;
 	}

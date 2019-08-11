@@ -1,9 +1,9 @@
-struct P {
+struct Point {
 	x:int
 	y:int
 }
 
 fn main() {
-	let p = P{x=3 y=9}
+	let p = Point{x=3 y=9}
 	print p
 }

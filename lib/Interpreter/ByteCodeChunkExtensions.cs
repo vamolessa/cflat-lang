@@ -235,7 +235,10 @@ public static class ByteCodeChunkExtensions
 
 	private static int LoadLiteralInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
-		var literalIndex = chunk.bytes.buffer[index + 1];
+		var literalIndex = BytesHelper.BytesToShort(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2]
+		);
 		var value = chunk.literalData.buffer[literalIndex];
 		var type = chunk.literalKinds.buffer[literalIndex];
 
@@ -256,7 +259,7 @@ public static class ByteCodeChunkExtensions
 			break;
 		}
 
-		return index + 2;
+		return index + 3;
 	}
 
 	private static int LoadFunctionInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)

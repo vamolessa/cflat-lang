@@ -149,7 +149,7 @@ internal static class VirtualMachineInstructions
 			break;
 		case Instruction.LoadLiteral:
 			{
-				var index = NextByte(vm, ref frame);
+				var index = BytesHelper.BytesToShort(NextByte(vm, ref frame), NextByte(vm, ref frame));
 				PushValue(
 					vm,
 					vm.chunk.literalData.buffer[index],
