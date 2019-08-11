@@ -2,7 +2,7 @@ public enum TokenKind
 {
 	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
 	Function, Struct, For, If, Else, While, Return, Break,
-	And, Or, Dot, Comma, Colon,
+	Dot, Comma, Colon, Not, And, Or, Is,
 
 	Let, Mut,
 	Bool, Int, Float, String,
@@ -12,8 +12,7 @@ public enum TokenKind
 	OpenParenthesis, CloseParenthesis, OpenCurlyBrackets, CloseCurlyBrackets,
 
 	Plus, Minus, Asterisk, Slash,
-	Equal, EqualEqual, BangEqual, Bang,
-	Less, Greater, LessEqual, GreaterEqual,
+	Equal, Less, Greater, LessEqual, GreaterEqual,
 
 	COUNT,
 	End,

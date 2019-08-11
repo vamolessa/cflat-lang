@@ -9,8 +9,10 @@ public static class PepperScanners
 		new ExactScanner("while").ForToken(TokenKind.While),
 		new ExactScanner("return").ForToken(TokenKind.Return),
 		new ExactScanner("break").ForToken(TokenKind.Break),
+		new ExactScanner("not").ForToken(TokenKind.Not),
 		new ExactScanner("and").ForToken(TokenKind.And),
 		new ExactScanner("or").ForToken(TokenKind.Or),
+		new ExactScanner("is").ForToken(TokenKind.Is),
 
 		new ExactScanner("let").ForToken(TokenKind.Let),
 		new ExactScanner("mut").ForToken(TokenKind.Mut),
@@ -36,10 +38,6 @@ public static class PepperScanners
 		new CharScanner('/').ForToken(TokenKind.Slash),
 
 		new CharScanner('=').ForToken(TokenKind.Equal),
-		new ExactScanner("==").ForToken(TokenKind.EqualEqual),
-		new ExactScanner("!=").ForToken(TokenKind.BangEqual),
-		new ExactScanner("!").ForToken(TokenKind.Bang),
-
 		new CharScanner('<').ForToken(TokenKind.Less),
 		new CharScanner('>').ForToken(TokenKind.Greater),
 		new ExactScanner("<=").ForToken(TokenKind.LessEqual),

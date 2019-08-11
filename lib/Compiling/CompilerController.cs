@@ -825,7 +825,7 @@ public sealed class CompilerController
 				break;
 			}
 			break;
-		case TokenKind.Bang:
+		case TokenKind.Not:
 			switch (type.kind)
 			{
 			case ValueKind.Bool:
@@ -873,6 +873,9 @@ public sealed class CompilerController
 	{
 		var c = self.compiler;
 		var opToken = c.parser.previousToken;
+		var hasNotAfterIs =
+			opToken.kind == TokenKind.Is &&
+			c.parser.Match(TokenKind.Not);
 
 		var opPrecedence = self.parseRules.GetPrecedence(opToken.kind);
 		ParseWithPrecedence(self, opPrecedence + 1);
@@ -914,73 +917,46 @@ public sealed class CompilerController
 			else
 				c.AddSoftError(opToken.slice, "Divide operator can only be applied to ints or floats").typeStack.PushBack(aType);
 			break;
-		case TokenKind.EqualEqual:
-			if (!aType.IsEqualTo(bType))
+		case TokenKind.Is:
 			{
-				c.AddSoftError(opToken.slice, "Equal operator can only be applied to same type values");
+				var opName = hasNotAfterIs ? "IsNot" : "Is";
+
+				if (!aType.IsEqualTo(bType))
+				{
+					c.AddSoftError(opToken.slice, "{0} operator can only be applied to same type values", opName);
+					c.typeStack.PushBack(new ValueType(ValueKind.Bool));
+					break;
+				}
+				if (!aType.IsSimple() || !bType.IsSimple())
+				{
+					c.AddSoftError(opToken.slice, "{0} operator can only be applied to bools, ints and floats", opName);
+					break;
+				}
+
+				switch (aType.kind)
+				{
+				case ValueKind.Bool:
+					c.EmitInstruction(Instruction.EqualBool);
+					break;
+				case ValueKind.Int:
+					c.EmitInstruction(Instruction.EqualInt);
+					break;
+				case ValueKind.Float:
+					c.EmitInstruction(Instruction.EqualFloat);
+					break;
+				case ValueKind.String:
+					c.EmitInstruction(Instruction.EqualString);
+					break;
+				default:
+					c.AddSoftError(opToken.slice, "{0} operator can only be applied to bools, ints and floats", opName);
+					break;
+				}
+
+				if (hasNotAfterIs)
+					c.EmitInstruction(Instruction.Not);
 				c.typeStack.PushBack(new ValueType(ValueKind.Bool));
 				break;
 			}
-			if (!aType.IsSimple() || !bType.IsSimple())
-			{
-				c.AddSoftError(opToken.slice, "Equal operator can only be applied to bools, ints and floats");
-				break;
-			}
-
-			switch (aType.kind)
-			{
-			case ValueKind.Bool:
-				c.EmitInstruction(Instruction.EqualBool);
-				break;
-			case ValueKind.Int:
-				c.EmitInstruction(Instruction.EqualInt);
-				break;
-			case ValueKind.Float:
-				c.EmitInstruction(Instruction.EqualFloat);
-				break;
-			case ValueKind.String:
-				c.EmitInstruction(Instruction.EqualString);
-				break;
-			default:
-				c.AddSoftError(opToken.slice, "Equal operator can only be applied to bools, ints and floats");
-				break;
-			}
-			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
-			break;
-		case TokenKind.BangEqual:
-			if (!aType.IsEqualTo(bType))
-			{
-				c.AddSoftError(opToken.slice, "NotEqual operator can only be applied to same type values");
-				c.typeStack.PushBack(new ValueType(ValueKind.Bool));
-				break;
-			}
-			if (!aType.IsSimple() || !bType.IsSimple())
-			{
-				c.AddSoftError(opToken.slice, "NotEqual operator can only be applied to bools, ints and floats");
-				break;
-			}
-
-			switch (aType.kind)
-			{
-			case ValueKind.Bool:
-				c.EmitInstruction(Instruction.EqualBool);
-				break;
-			case ValueKind.Int:
-				c.EmitInstruction(Instruction.EqualInt);
-				break;
-			case ValueKind.Float:
-				c.EmitInstruction(Instruction.EqualFloat);
-				break;
-			case ValueKind.String:
-				c.EmitInstruction(Instruction.EqualString);
-				break;
-			default:
-				c.AddSoftError(opToken.slice, "NotEqual operator can only be applied to bools, ints and floats");
-				break;
-			}
-			c.EmitInstruction(Instruction.Not);
-			c.typeStack.PushBack(new ValueType(ValueKind.Bool));
-			break;
 		case TokenKind.Greater:
 			if (aType.IsKind(ValueKind.Int) && bType.IsKind(ValueKind.Int))
 				c.EmitInstruction(Instruction.GreaterInt);
