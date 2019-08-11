@@ -1,3 +1,12 @@
 fn main() {
-	print int 8.1
+	testFunction()
+}
+
+a
+
+fn f() {
+}
+
+fn b():int {
+	false
 }

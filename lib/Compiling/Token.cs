@@ -4,7 +4,7 @@ public enum TokenKind
 	Function, Struct, For, If, Else, While, Return, Break,
 	Dot, Comma, Colon, Not, And, Or, Is,
 
-	Let, Mut,
+	Let, Mut, Ref,
 	Bool, Int, Float, String,
 
 	Print,

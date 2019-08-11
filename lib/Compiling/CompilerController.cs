@@ -85,6 +85,7 @@ public sealed class CompilerController
 			{
 			case TokenKind.Function:
 			case TokenKind.Struct:
+				compiler.typeStack.count = 0;
 				compiler.isInPanicMode = false;
 				return;
 			default:
@@ -102,7 +103,7 @@ public sealed class CompilerController
 		else if (compiler.parser.Match(TokenKind.Struct))
 			StructDeclaration();
 		else
-			compiler.AddHardError(compiler.parser.previousToken.slice, "Expected function or struct declaration");
+			compiler.AddHardError(compiler.parser.currentToken.slice, "Expected function or struct declaration");
 		Syncronize();
 	}
 

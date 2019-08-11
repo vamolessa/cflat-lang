@@ -16,6 +16,7 @@ public static class PepperScanners
 
 		new ExactScanner("let").ForToken(TokenKind.Let),
 		new ExactScanner("mut").ForToken(TokenKind.Mut),
+		new ExactScanner("ref").ForToken(TokenKind.Ref),
 
 		new ExactScanner("bool").ForToken(TokenKind.Bool),
 		new ExactScanner("int").ForToken(TokenKind.Int),

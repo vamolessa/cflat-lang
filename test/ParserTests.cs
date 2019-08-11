@@ -25,6 +25,8 @@ public sealed class ParserTest
 	[InlineData("-1")]
 	[InlineData("1.0")]
 	[InlineData("3341.1234")]
+	[InlineData("int 3341.1234")]
+	[InlineData("float 3341")]
 	[InlineData("1 + 2")]
 	[InlineData("1 * -2")]
 	[InlineData("1 + 2 * 3")]
