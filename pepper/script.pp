@@ -1,12 +1,9 @@
+struct P {
+	x:int
+	y:int
+}
+
 fn main() {
-	testFunction()
-}
-
-a
-
-fn f() {
-}
-
-fn b():int {
-	false
+	let p = P{x=3 y=9}
+	print p
 }

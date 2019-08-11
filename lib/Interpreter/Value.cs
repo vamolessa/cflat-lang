@@ -52,6 +52,15 @@ public readonly struct ValueType
 	public readonly ValueKind kind;
 	public readonly bool isReference;
 
+	public static ValueType Read(byte[] bytes, int startIndex)
+	{
+		return new ValueType(
+			BytesHelper.BytesToShort(bytes[startIndex++], bytes[startIndex++]),
+			(ValueKind)bytes[startIndex++],
+			bytes[startIndex++] != 0
+		);
+	}
+
 	public ValueType(ValueKind kind)
 	{
 		this.kind = kind;
@@ -66,7 +75,7 @@ public readonly struct ValueType
 		this.index = (ushort)index;
 	}
 
-	public ValueType(ValueKind kind, bool isReference, ushort index)
+	public ValueType(ushort index, ValueKind kind, bool isReference)
 	{
 		this.kind = kind;
 		this.isReference = isReference;
@@ -89,6 +98,18 @@ public readonly struct ValueType
 	public bool IsKind(ValueKind kind)
 	{
 		return this.kind == kind && isReference == false && index == 0;
+	}
+
+	public void Write(byte[] bytes, int startIndex)
+	{
+		BytesHelper.ShortToBytes(
+			index,
+			out bytes[startIndex++],
+			out bytes[startIndex++]
+		);
+
+		bytes[startIndex++] = (byte)kind;
+		bytes[startIndex++] = isReference ? (byte)1 : (byte)0;
 	}
 
 	public string ToString(ByteCodeChunk chunk)

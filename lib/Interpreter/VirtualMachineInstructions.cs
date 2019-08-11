@@ -87,8 +87,11 @@ internal static class VirtualMachineInstructions
 			}
 		case Instruction.Print:
 			{
+				var type = ValueType.Read(vm.chunk.bytes.buffer, frame.codeIndex);
+				frame.codeIndex += 4;
+
 				var sb = new StringBuilder();
-				var size = vm.chunk.GetTypeSize(PeekType(vm));
+				var size = vm.chunk.GetTypeSize(type);
 
 				VirtualMachineHelper.ValueToString(
 					vm,

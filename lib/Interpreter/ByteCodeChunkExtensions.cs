@@ -146,7 +146,6 @@ public static class ByteCodeChunkExtensions
 		switch (instruction)
 		{
 		case Instruction.Halt:
-		case Instruction.Print:
 		case Instruction.Pop:
 		case Instruction.LoadUnit:
 		case Instruction.LoadFalse:
@@ -201,6 +200,8 @@ public static class ByteCodeChunkExtensions
 			return JumpInstruction(self, instruction, 1, index, sb);
 		case Instruction.JumpBackward:
 			return JumpInstruction(self, instruction, -1, index, sb);
+		case Instruction.Print:
+			return PrintInstruction(self, instruction, index, sb);
 		default:
 			sb.Append("Unknown instruction ");
 			sb.Append(instruction.ToString());
@@ -307,5 +308,16 @@ public static class ByteCodeChunkExtensions
 		sb.Append(index + 3 + offset * sign);
 		sb.Append(")");
 		return index + 3;
+	}
+
+	private static int PrintInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+
+		var type = ValueType.Read(chunk.bytes.buffer, index + 1);
+		sb.Append(type.ToString(chunk));
+
+		return index + 5;
 	}
 }
