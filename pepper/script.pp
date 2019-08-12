@@ -10,5 +10,5 @@ struct Point {
 
 fn main() {
 	let p = Point{xy=XY{x=3 y=9} z=7}
-	print p
+	print p.xy
 }

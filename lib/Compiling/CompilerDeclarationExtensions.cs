@@ -37,18 +37,22 @@ public static class CompilerDeclarationExtensions
 		return self.AddLocalVariable(slice, type, mutable, false);
 	}
 
-	public static int ResolveToLocalVariableIndex(this Compiler self)
+	public static bool ResolveToLocalVariableIndex(this Compiler self, Slice slice, out int index)
 	{
 		var source = self.parser.tokenizer.source;
 
 		for (var i = self.localVariables.count - 1; i >= 0; i--)
 		{
 			var local = self.localVariables.buffer[i];
-			if (CompilerHelper.AreEqual(source, self.parser.previousToken.slice, local.slice))
-				return i;
+			if (CompilerHelper.AreEqual(source, slice, local.slice))
+			{
+				index = i;
+				return true;
+			}
 		}
 
-		return -1;
+		index = 0;
+		return false;
 	}
 
 	// FUNCTIONS
@@ -71,40 +75,40 @@ public static class CompilerDeclarationExtensions
 		self.chunk.AddFunction(name, typeIndex);
 	}
 
-	public static bool ResolveToFunctionIndex(this Compiler self, out int index)
+	public static bool ResolveToFunctionIndex(this Compiler self, Slice slice, out int index)
 	{
-		index = 0;
 		var source = self.parser.tokenizer.source;
 
 		for (var i = 0; i < self.chunk.functions.count; i++)
 		{
 			var f = self.chunk.functions.buffer[i];
-			if (CompilerHelper.AreEqual(source, self.parser.previousToken.slice, f.name))
+			if (CompilerHelper.AreEqual(source, slice, f.name))
 			{
 				index = i;
 				return true;
 			}
 		}
 
+		index = 0;
 		return false;
 	}
 
 	// NATIVE FUNCTIONS
-	public static bool ResolveToNativeFunctionIndex(this Compiler self, out int index)
+	public static bool ResolveToNativeFunctionIndex(this Compiler self, Slice slice, out int index)
 	{
-		index = 0;
 		var source = self.parser.tokenizer.source;
 
 		for (var i = 0; i < self.chunk.nativeFunctions.count; i++)
 		{
 			var f = self.chunk.nativeFunctions.buffer[i];
-			if (CompilerHelper.AreEqual(source, self.parser.previousToken.slice, f.name))
+			if (CompilerHelper.AreEqual(source, slice, f.name))
 			{
 				index = i;
 				return true;
 			}
 		}
 
+		index = 0;
 		return false;
 	}
 
@@ -148,21 +152,21 @@ public static class CompilerDeclarationExtensions
 		}
 	}
 
-	public static bool ResolveToStructTypeIndex(this Compiler self, out int index)
+	public static bool ResolveToStructTypeIndex(this Compiler self, Slice slice, out int index)
 	{
-		index = 0;
 		var source = self.parser.tokenizer.source;
 
 		for (var i = 0; i < self.chunk.structTypes.count; i++)
 		{
 			var s = self.chunk.structTypes.buffer[i];
-			if (CompilerHelper.AreEqual(source, self.parser.previousToken.slice, s.name))
+			if (CompilerHelper.AreEqual(source, slice, s.name))
 			{
 				index = i;
 				return true;
 			}
 		}
 
+		index = 0;
 		return false;
 	}
 }

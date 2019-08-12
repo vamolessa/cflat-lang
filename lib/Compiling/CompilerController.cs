@@ -625,122 +625,124 @@ public sealed class CompilerController
 	public static void Identifier(CompilerController self, Precedence precedence)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
-		var index = self.compiler.ResolveToLocalVariableIndex();
 
 		var canAssign = precedence <= Precedence.Assignment;
 		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
-		{
-			Expression(self);
+			Assignment(self, slice);
+		else
+			Access(self, slice);
+	}
 
-			if (index < 0)
+	public static void Assignment(CompilerController self, Slice slice)
+	{
+		Expression(self);
+
+		if (self.compiler.ResolveToLocalVariableIndex(slice, out var index))
+		{
+			var localVar = self.compiler.localVariables.buffer[index];
+			if (!localVar.isMutable)
+				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
+
+			var expressionType = self.compiler.typeStack.PopLast();
+			if (!expressionType.IsEqualTo(localVar.type))
 			{
-				self.compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let' or 'mut'");
+				self.compiler.AddSoftError(
+					self.compiler.parser.previousToken.slice,
+					"Wrong type for assignment. Expected {0}. Got {1}",
+					localVar.type.ToString(self.compiler.chunk),
+					expressionType.ToString(self.compiler.chunk)
+				);
+			}
+			self.compiler.typeStack.PushBack(expressionType);
+
+			var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
+			if (varTypeSize > 1)
+			{
+				self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
+				self.compiler.EmitByte((byte)localVar.stackIndex);
+				self.compiler.EmitByte((byte)varTypeSize);
 			}
 			else
 			{
-				var localVar = self.compiler.localVariables.buffer[index];
-				if (!localVar.isMutable)
-					self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
-
-				var expressionType = self.compiler.typeStack.PopLast();
-				if (!expressionType.IsEqualTo(localVar.type))
-				{
-					self.compiler.AddSoftError(
-						self.compiler.parser.previousToken.slice,
-						"Wrong type for assignment. Expected {0}. Got {1}",
-						localVar.type.ToString(self.compiler.chunk),
-						expressionType.ToString(self.compiler.chunk)
-					);
-				}
-				self.compiler.typeStack.PushBack(expressionType);
-
-				var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
-				if (varTypeSize > 1)
-				{
-					self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
-					self.compiler.EmitByte((byte)localVar.stackIndex);
-					self.compiler.EmitByte((byte)varTypeSize);
-				}
-				else
-				{
-					self.compiler.EmitInstruction(Instruction.AssignLocal);
-					self.compiler.EmitByte((byte)localVar.stackIndex);
-				}
+				self.compiler.EmitInstruction(Instruction.AssignLocal);
+				self.compiler.EmitByte((byte)localVar.stackIndex);
 			}
 		}
 		else
 		{
-			if (index < 0)
+			self.compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let' or 'mut'");
+		}
+	}
+
+	public static void Access(CompilerController self, Slice slice)
+	{
+		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
+		{
+			ref var localVar = ref self.compiler.localVariables.buffer[variableIndex];
+			localVar.isUsed = true;
+
+			var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
+			if (varTypeSize > 1)
 			{
-				if (self.compiler.ResolveToFunctionIndex(out var functionIndex))
-				{
-					self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
-					var function = self.compiler.chunk.functions.buffer[functionIndex];
-					var type = new ValueType(TypeKind.Function, function.typeIndex);
-					self.compiler.typeStack.PushBack(type);
-				}
-				else if (self.compiler.ResolveToNativeFunctionIndex(out var nativeFunctionIndex))
-				{
-					self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
-					var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
-					var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
-					self.compiler.typeStack.PushBack(type);
-				}
-				else if (self.compiler.ResolveToStructTypeIndex(out var structIndex))
-				{
-					var structType = self.compiler.chunk.structTypes.buffer[structIndex];
-					self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct initializer");
-					for (var i = 0; i < structType.fields.length; i++)
-					{
-						var fieldIndex = structType.fields.index + i;
-						var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
-						self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name '{0}'. Don't forget to initialize them in order of declaration", field.name);
-						self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
-
-						Expression(self);
-						var expressionType = self.compiler.typeStack.PopLast();
-						if (!expressionType.IsEqualTo(field.type))
-						{
-							self.compiler.AddSoftError(
-								self.compiler.parser.previousToken.slice,
-								"Wrong type for field '{0}' initializer. Expected {1}. Got {2}",
-								field.name,
-								field.type.ToString(self.compiler.chunk),
-								expressionType.ToString(self.compiler.chunk)
-							);
-						}
-					}
-					self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
-
-					var type = new ValueType(TypeKind.Struct, structIndex);
-					self.compiler.typeStack.PushBack(type);
-				}
-				else
-				{
-					self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-					self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-				}
+				self.compiler.EmitInstruction(Instruction.LoadLocalMultiple);
+				self.compiler.EmitByte((byte)localVar.stackIndex);
+				self.compiler.EmitByte((byte)varTypeSize);
 			}
 			else
 			{
-				ref var localVar = ref self.compiler.localVariables.buffer[index];
-				localVar.isUsed = true;
-
-				var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
-				if (varTypeSize > 1)
-				{
-					self.compiler.EmitInstruction(Instruction.LoadLocalMultiple);
-					self.compiler.EmitByte((byte)localVar.stackIndex);
-					self.compiler.EmitByte((byte)varTypeSize);
-				}
-				else
-				{
-					self.compiler.EmitInstruction(Instruction.LoadLocal);
-					self.compiler.EmitByte((byte)localVar.stackIndex);
-				}
-
-				self.compiler.typeStack.PushBack(localVar.type);
+				self.compiler.EmitInstruction(Instruction.LoadLocal);
+				self.compiler.EmitByte((byte)localVar.stackIndex);
 			}
+
+			self.compiler.typeStack.PushBack(localVar.type);
+		}
+		else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
+		{
+			self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
+			var function = self.compiler.chunk.functions.buffer[functionIndex];
+			var type = new ValueType(TypeKind.Function, function.typeIndex);
+			self.compiler.typeStack.PushBack(type);
+		}
+		else if (self.compiler.ResolveToNativeFunctionIndex(slice, out var nativeFunctionIndex))
+		{
+			self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
+			var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
+			var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
+			self.compiler.typeStack.PushBack(type);
+		}
+		else if (self.compiler.ResolveToStructTypeIndex(slice, out var structIndex))
+		{
+			var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+			self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct initializer");
+			for (var i = 0; i < structType.fields.length; i++)
+			{
+				var fieldIndex = structType.fields.index + i;
+				var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
+				self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name '{0}'. Don't forget to initialize them in order of declaration", field.name);
+				self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
+
+				Expression(self);
+				var expressionType = self.compiler.typeStack.PopLast();
+				if (!expressionType.IsEqualTo(field.type))
+				{
+					self.compiler.AddSoftError(
+						self.compiler.parser.previousToken.slice,
+						"Wrong type for field '{0}' initializer. Expected {1}. Got {2}",
+						field.name,
+						field.type.ToString(self.compiler.chunk),
+						expressionType.ToString(self.compiler.chunk)
+					);
+				}
+			}
+			self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
+
+			var type = new ValueType(TypeKind.Struct, structIndex);
+			self.compiler.typeStack.PushBack(type);
+		}
+		else
+		{
+			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 		}
 	}
 
