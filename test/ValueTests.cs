@@ -20,4 +20,22 @@ public sealed class ValueTests
 		Assert.Equal(index, type.index);
 		Assert.Equal(isReference, type.isReference);
 	}
+
+	[Theory]
+	[InlineData("struct A{a:int}", 1)]
+	[InlineData("struct A{a:int b:int}", 2)]
+	[InlineData("struct A{a:int b:int c:int}", 3)]
+	[InlineData("struct A{a:int b:int} struct B{a:A b:int}", 3)]
+	[InlineData("struct A{a:int b:int} struct B{a:A b:A}", 4)]
+	public void ValueSizeTests(string source, int expectedSize)
+	{
+		var cc = new CompilerController();
+		var chunk = new ByteCodeChunk();
+		var errors = cc.Compile(source, chunk);
+		Assert.Empty(errors);
+
+		var type = new ValueType(TypeKind.Struct, chunk.structTypes.count - 1);
+		var typeSize = chunk.GetTypeSize(type);
+		Assert.Equal(expectedSize, typeSize);
+	}
 }
