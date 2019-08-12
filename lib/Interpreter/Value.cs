@@ -112,6 +112,13 @@ public readonly struct ValueType
 		b3 = isReference ? (byte)1 : (byte)0;
 	}
 
+	public int GetSize(ByteCodeChunk chunk)
+	{
+		return kind == TypeKind.Struct ?
+			chunk.structTypes.buffer[index].size :
+			1;
+	}
+
 	public string ToString(ByteCodeChunk chunk)
 	{
 		switch (kind)

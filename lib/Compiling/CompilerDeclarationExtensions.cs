@@ -7,7 +7,7 @@ public static class CompilerDeclarationExtensions
 		if (self.localVariables.count > 0)
 		{
 			var lastVar = self.localVariables.buffer[self.localVariables.count - 1];
-			stackIndex = lastVar.stackIndex + self.chunk.GetTypeSize(lastVar.type);
+			stackIndex = lastVar.stackIndex + lastVar.type.GetSize(self.chunk);
 		}
 
 		self.localVariables.PushBack(new LocalVariable(

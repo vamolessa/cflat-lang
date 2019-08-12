@@ -195,7 +195,7 @@ public sealed class CompilerController
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte((byte)compiler.chunk.GetTypeSize(declaration.returnType));
+		compiler.EmitByte((byte)declaration.returnType.GetSize(compiler.chunk));
 
 		compiler.functionReturnTypeStack.PopLast();
 		compiler.localVariables.count -= declaration.parameterCount;
@@ -302,7 +302,7 @@ public sealed class CompilerController
 			compiler.typeStack.PopLast() :
 			new ValueType(TypeKind.Unit);
 
-		var size = compiler.chunk.GetTypeSize(type);
+		var size = type.GetSize(compiler.chunk);
 		if (size > 1)
 			compiler.EmitInstruction(Instruction.PopMultiple).EmitByte((byte)size);
 		else
@@ -438,7 +438,7 @@ public sealed class CompilerController
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte((byte)compiler.chunk.GetTypeSize(expectedType));
+		compiler.EmitByte((byte)expectedType.GetSize(compiler.chunk));
 
 		if (!returnType.IsEqualTo(expectedType))
 			compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", expectedType.ToString(compiler.chunk), returnType.ToString(compiler.chunk));
@@ -490,7 +490,7 @@ public sealed class CompilerController
 		var sizeLeftOnStack = 0;
 		if (maybeType.isSome)
 		{
-			sizeLeftOnStack = self.compiler.chunk.GetTypeSize(maybeType.value);
+			sizeLeftOnStack = maybeType.value.GetSize(self.compiler.chunk);
 			self.compiler.chunk.bytes.count -= sizeLeftOnStack > 1 ? 2 : 1;
 		}
 
@@ -654,7 +654,7 @@ public sealed class CompilerController
 				}
 				self.compiler.typeStack.PushBack(expressionType);
 
-				var varTypeSize = self.compiler.chunk.GetTypeSize(localVar.type);
+				var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
 				if (varTypeSize > 1)
 				{
 					self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
@@ -726,7 +726,7 @@ public sealed class CompilerController
 				ref var localVar = ref self.compiler.localVariables.buffer[index];
 				localVar.isUsed = true;
 
-				var varTypeSize = self.compiler.chunk.GetTypeSize(localVar.type);
+				var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
 				if (varTypeSize > 1)
 				{
 					self.compiler.EmitInstruction(Instruction.LoadLocalMultiple);
@@ -784,10 +784,10 @@ public sealed class CompilerController
 				{
 					var idx = structType.fields.index + j;
 					var f = self.compiler.chunk.structTypeFields.buffer[idx];
-					sizeAboveField += self.compiler.chunk.GetTypeSize(f.type);
+					sizeAboveField += f.type.GetSize(self.compiler.chunk);
 				}
 
-				var fieldTypeSize = self.compiler.chunk.GetTypeSize(field.type);
+				var fieldTypeSize = field.type.GetSize(self.compiler.chunk);
 
 				if (sizeAboveField > 1)
 				{
@@ -810,7 +810,7 @@ public sealed class CompilerController
 				return;
 			}
 
-			sizeUnderField += self.compiler.chunk.GetTypeSize(field.type);
+			sizeUnderField += field.type.GetSize(self.compiler.chunk);
 		}
 
 		self.compiler.AddSoftError(fieldSlice, "Could not find such field");

@@ -122,7 +122,7 @@ public sealed class ByteCodeChunk
 		for (var i = 0; i < builder.parameterCount; i++)
 		{
 			var param = functionTypeParams.buffer[parametersIndex + i];
-			parametersTotalSize += GetTypeSize(param);
+			parametersTotalSize += param.GetSize(this);
 		}
 
 		functionTypes.PushBack(new FunctionType(
@@ -155,7 +155,7 @@ public sealed class ByteCodeChunk
 		for (var i = 0; i < builder.fieldCount; i++)
 		{
 			var field = structTypeFields.buffer[fieldsIndex + i];
-			size += GetTypeSize(field.type);
+			size += field.type.GetSize(this);
 		}
 
 		if (size == 0)
@@ -171,14 +171,6 @@ public sealed class ByteCodeChunk
 		));
 
 		return structTypes.count - 1;
-	}
-
-	public int GetTypeSize(ValueType type)
-	{
-		if (type.kind == TypeKind.Struct)
-			return structTypes.buffer[type.index].size;
-		else
-			return 1;
 	}
 
 	private int FindValueIndex(ValueData value, TypeKind kind)

@@ -74,7 +74,7 @@ public static class VirtualMachineHelper
 					if (i < structType.fields.length - 1)
 						sb.Append(' ');
 
-					offset += vm.chunk.GetTypeSize(field.type);
+					offset += field.type.GetSize(vm.chunk);
 				}
 				sb.Append('}');
 				return;
@@ -105,7 +105,7 @@ public static class VirtualMachineHelper
 			sb.Append("[");
 			var type = vm.typeStack.buffer[i];
 			ValueToString(vm, i, type, sb);
-			i += vm.chunk.GetTypeSize(type);
+			i += type.GetSize(vm.chunk);
 			sb.Append("]");
 		}
 		sb.AppendLine();

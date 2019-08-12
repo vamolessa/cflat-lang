@@ -35,7 +35,7 @@ public sealed class ValueTests
 		Assert.Empty(errors);
 
 		var type = new ValueType(TypeKind.Struct, chunk.structTypes.count - 1);
-		var typeSize = chunk.GetTypeSize(type);
+		var typeSize = type.GetSize(chunk);
 		Assert.Equal(expectedSize, typeSize);
 	}
 }

@@ -95,7 +95,7 @@ internal static class VirtualMachineInstructions
 				);
 
 				var sb = new StringBuilder();
-				var size = vm.chunk.GetTypeSize(type);
+				var size = type.GetSize(vm.chunk);
 
 				VirtualMachineHelper.ValueToString(
 					vm,

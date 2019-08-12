@@ -25,7 +25,7 @@ public static class CompilerFlowExtensions
 		for (var i = scope.localVariablesStartIndex; i < self.localVariables.count; i++)
 		{
 			var type = self.localVariables.buffer[i].type;
-			localVarsSize += self.chunk.GetTypeSize(type);
+			localVarsSize += type.GetSize(self.chunk);
 		}
 
 		if (sizeLeftOnStack > 0)
