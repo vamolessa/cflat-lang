@@ -154,7 +154,7 @@ public sealed class ByteCodeChunk
 		var size = 0;
 		for (var i = 0; i < builder.fieldCount; i++)
 		{
-			var field = structTypeFields.buffer[fieldsIndex + 1];
+			var field = structTypeFields.buffer[fieldsIndex + i];
 			size += GetTypeSize(field.type);
 		}
 

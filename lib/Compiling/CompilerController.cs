@@ -775,8 +775,8 @@ public sealed class CompilerController
 
 		for (var i = 0; i < structType.fields.length; i++)
 		{
-			var index = structType.fields.index + i;
-			var field = self.compiler.chunk.structTypeFields.buffer[index];
+			var fieldIndex = structType.fields.index + i;
+			var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
 			if (CompilerHelper.AreEqual(source, fieldSlice, field.name))
 			{
 				var sizeAboveField = 0;

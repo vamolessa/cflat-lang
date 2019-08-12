@@ -21,12 +21,8 @@ public static class VirtualMachineHelper
 		vm.typeStack.count = stackTop;
 	}
 
-	public static void ValueToString(VirtualMachine vm, int index, Option<ValueType> overrideType, StringBuilder sb)
+	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 	{
-		var type = overrideType.isSome ?
-			overrideType.value :
-			vm.typeStack.buffer[index];
-
 		switch (type.kind)
 		{
 		case TypeKind.Unit:
@@ -67,15 +63,18 @@ public static class VirtualMachineHelper
 				var structType = vm.chunk.structTypes.buffer[type.index];
 				sb.Append(structType.name);
 				sb.Append('{');
+				var offset = 0;
 				for (var i = 0; i < structType.fields.length; i++)
 				{
 					var fieldIndex = structType.fields.index + i;
 					var field = vm.chunk.structTypeFields.buffer[fieldIndex];
 					sb.Append(field.name);
 					sb.Append('=');
-					ValueToString(vm, index + i, Option.Some(field.type), sb);
+					ValueToString(vm, index + offset, field.type, sb);
 					if (i < structType.fields.length - 1)
 						sb.Append(' ');
+
+					offset += vm.chunk.GetTypeSize(field.type);
 				}
 				sb.Append('}');
 				return;
@@ -104,8 +103,9 @@ public static class VirtualMachineHelper
 		for (var i = 0; i < vm.valueStack.count;)
 		{
 			sb.Append("[");
-			ValueToString(vm, i, Option.None, sb);
-			i += vm.chunk.GetTypeSize(vm.typeStack.buffer[i]);
+			var type = vm.typeStack.buffer[i];
+			ValueToString(vm, i, type, sb);
+			i += vm.chunk.GetTypeSize(type);
 			sb.Append("]");
 		}
 		sb.AppendLine();
