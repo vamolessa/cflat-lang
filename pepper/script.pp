@@ -5,10 +5,10 @@ struct XY {
 
 struct Point {
 	xy:XY
-	z:int
+	xy2:XY
 }
 
 fn main() {
-	let p = Point{xy=XY{x=3 y=9} z=7}
-	print p.xy
+	let p = Point{xy=XY{x=3 y=9} xy2=XY{x=11 y=13}}
+	print p.xy2.x
 }

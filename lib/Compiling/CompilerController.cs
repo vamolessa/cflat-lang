@@ -142,7 +142,7 @@ public sealed class CompilerController
 				compiler.parser.Consume(TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.parser.previousToken.slice;
 				compiler.parser.Consume(TokenKind.Colon, "Expected ':' after parameter name");
-				var paramType = compiler.ConsumeType("Expected parameter type", 0);
+				var paramType = compiler.ParseType("Expected parameter type", 0);
 
 				if (declaration.parameterCount >= MaxParamCount)
 				{
@@ -174,7 +174,7 @@ public sealed class CompilerController
 		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.parser.Match(TokenKind.Colon))
-			declaration.returnType = compiler.ConsumeType("Expected function return type", 0);
+			declaration.returnType = compiler.ParseType("Expected function return type", 0);
 
 		compiler.EndFunctionDeclaration(declaration, slice);
 		compiler.functionReturnTypeStack.PushBack(declaration.returnType);
@@ -219,7 +219,7 @@ public sealed class CompilerController
 			compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
 			var fieldSlice = compiler.parser.previousToken.slice;
 			compiler.parser.Consume(TokenKind.Colon, "Expected ':' after field name");
-			var fieldType = compiler.ConsumeType("Expected field type", 0);
+			var fieldType = compiler.ParseType("Expected field type", 0);
 
 			var hasDuplicate = false;
 			for (var i = 0; i < declaration.fieldCount; i++)
@@ -681,20 +681,33 @@ public sealed class CompilerController
 			ref var localVar = ref self.compiler.localVariables.buffer[variableIndex];
 			localVar.isUsed = true;
 
-			var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
-			if (varTypeSize > 1)
+			if (self.compiler.parser.Match(TokenKind.Dot))
 			{
-				self.compiler.EmitInstruction(Instruction.LoadLocalMultiple);
-				self.compiler.EmitByte((byte)localVar.stackIndex);
-				self.compiler.EmitByte((byte)varTypeSize);
+				var type = localVar.type;
+				var stackIndex = localVar.stackIndex;
+
+				do
+				{
+					if (!FieldAccess(
+						self,
+						ref slice,
+						ref type,
+						ref stackIndex
+					))
+					{
+						self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+						return;
+					}
+				} while (self.compiler.parser.Match(TokenKind.Dot));
+
+				self.compiler.EmitLoadLocal(stackIndex, type);
+				self.compiler.typeStack.PushBack(type);
 			}
 			else
 			{
-				self.compiler.EmitInstruction(Instruction.LoadLocal);
-				self.compiler.EmitByte((byte)localVar.stackIndex);
+				self.compiler.EmitLoadLocal(localVar.stackIndex, localVar.type);
+				self.compiler.typeStack.PushBack(localVar.type);
 			}
-
-			self.compiler.typeStack.PushBack(localVar.type);
 		}
 		else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
 		{
@@ -746,31 +759,51 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void FieldAccess(CompilerController self, Precedence precedence)
+	public static bool FieldAccess(CompilerController self, ref Slice slice, ref ValueType type, ref int stackIndex)
 	{
-		var slice = self.compiler.parser.previousToken.slice;
-		var structType = new StructType();
-		var type = self.compiler.typeStack.PopLast();
-
-		var hasStruct = false;
-		if (type.kind == TypeKind.Struct)
-		{
-			structType = self.compiler.chunk.structTypes.buffer[type.index];
-			hasStruct = true;
-		}
-		else
+		if (!self.compiler.chunk.GetStructType(type, out var structType))
 		{
 			self.compiler.AddSoftError(slice, "Callee must be a struct");
+			return false;
+		}
+
+		self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
+		slice = self.compiler.parser.previousToken.slice;
+
+		var offset = 0;
+		var source = self.compiler.parser.tokenizer.source;
+
+		for (var i = 0; i < structType.fields.length; i++)
+		{
+			var fieldIndex = structType.fields.index + i;
+			var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
+			if (CompilerHelper.AreEqual(source, slice, field.name))
+			{
+				type = field.type;
+				stackIndex += offset;
+				return true;
+			}
+
+			offset += field.type.GetSize(self.compiler.chunk);
+		}
+
+		self.compiler.AddSoftError(slice, "Could not find such field");
+		return false;
+	}
+
+	public static void FieldAccess2(CompilerController self, Precedence precedence)
+	{
+		var slice = self.compiler.parser.previousToken.slice;
+		var type = self.compiler.typeStack.PopLast();
+		if (!self.compiler.chunk.GetStructType(type, out var structType))
+		{
+			self.compiler.AddSoftError(slice, "Callee must be a struct");
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+			return;
 		}
 
 		self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
 		var fieldSlice = self.compiler.parser.previousToken.slice;
-
-		if (!hasStruct)
-		{
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			return;
-		}
 
 		var sizeUnderField = 0;
 		var source = self.compiler.parser.tokenizer.source;
@@ -822,19 +855,11 @@ public sealed class CompilerController
 	public static void Call(CompilerController self, Precedence precedence)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
-		var functionType = new FunctionType();
-		var type = self.compiler.typeStack.PopLast();
 
-		var hasFunction = false;
-		if (type.kind == TypeKind.Function || type.kind == TypeKind.NativeFunction)
-		{
-			functionType = self.compiler.chunk.functionTypes.buffer[type.index];
-			hasFunction = true;
-		}
-		else
-		{
+		var type = self.compiler.typeStack.PopLast();
+		var functionType = self.compiler.chunk.GetFunctionType(type);
+		if (!functionType.isSome)
 			self.compiler.AddSoftError(slice, "Callee must be a function");
-		}
 
 		var argIndex = 0;
 		if (!self.compiler.parser.Check(TokenKind.CloseParenthesis))
@@ -844,11 +869,11 @@ public sealed class CompilerController
 				Expression(self);
 				var argType = self.compiler.typeStack.PopLast();
 				if (
-					hasFunction &&
-					argIndex < functionType.parameters.length
+					functionType.isSome &&
+					argIndex < functionType.value.parameters.length
 				)
 				{
-					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.parameters.index + argIndex];
+					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.value.parameters.index + argIndex];
 					if (!argType.IsEqualTo(paramType))
 					{
 						self.compiler.AddSoftError(
@@ -867,17 +892,17 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expect ')' after function argument list");
 
-		if (hasFunction && argIndex != functionType.parameters.length)
-			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
+		if (functionType.isSome && argIndex != functionType.value.parameters.length)
+			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.value.parameters.length, argIndex);
 
 		if (type.kind == TypeKind.Function)
 			self.compiler.EmitInstruction(Instruction.Call);
 		else if (type.kind == TypeKind.NativeFunction)
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
-		self.compiler.EmitByte((byte)(hasFunction ? functionType.parametersTotalSize : 0));
+		self.compiler.EmitByte((byte)(functionType.isSome ? functionType.value.parametersTotalSize : 0));
 		self.compiler.typeStack.PushBack(
-			hasFunction ? functionType.returnType : new ValueType(TypeKind.Unit)
+			functionType.isSome ? functionType.value.returnType : new ValueType(TypeKind.Unit)
 		);
 	}
 

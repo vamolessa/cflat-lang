@@ -1,6 +1,6 @@
 public static class CompilerTypeExtensions
 {
-	public static ValueType ConsumeType(this Compiler self, string error, int recursionLevel)
+	public static ValueType ParseType(this Compiler self, string error, int recursionLevel)
 	{
 		if (recursionLevel > 8)
 		{
@@ -19,9 +19,9 @@ public static class CompilerTypeExtensions
 		else if (self.parser.Match(TokenKind.String))
 			type = Option.Some(new ValueType(TypeKind.String));
 		else if (self.parser.Match(TokenKind.Identifier))
-			type = self.ResolveStructType(recursionLevel + 1);
+			type = self.ParseStructType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Function))
-			type = self.ResolveFunctionType(recursionLevel + 1);
+			type = self.ParseFunctionType(recursionLevel + 1);
 
 		if (type.isSome)
 			return type.value;
@@ -30,7 +30,7 @@ public static class CompilerTypeExtensions
 		return new ValueType(TypeKind.Unit);
 	}
 
-	private static Option<ValueType> ResolveStructType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseStructType(this Compiler self, int recursionLevel)
 	{
 		var source = self.parser.tokenizer.source;
 		var slice = self.parser.previousToken.slice;
@@ -45,7 +45,7 @@ public static class CompilerTypeExtensions
 		return Option.None;
 	}
 
-	private static Option<ValueType> ResolveFunctionType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseFunctionType(this Compiler self, int recursionLevel)
 	{
 		var declaration = self.chunk.BeginAddFunctionType();
 
@@ -54,13 +54,13 @@ public static class CompilerTypeExtensions
 		{
 			do
 			{
-				var paramType = self.ConsumeType("Expected function parameter type", recursionLevel);
+				var paramType = self.ParseType("Expected function parameter type", recursionLevel);
 				declaration.AddParam(paramType);
 			} while (self.parser.Match(TokenKind.Comma));
 		}
 		self.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
 		if (self.parser.Match(TokenKind.Colon))
-			declaration.returnType = self.ConsumeType("Expected function return type", recursionLevel);
+			declaration.returnType = self.ParseType("Expected function return type", recursionLevel);
 
 		var functionTypeIndex = self.chunk.EndAddFunctionType(declaration);
 		var type = new ValueType(TypeKind.Function, functionTypeIndex);

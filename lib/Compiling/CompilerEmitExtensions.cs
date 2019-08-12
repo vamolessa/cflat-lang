@@ -33,6 +33,22 @@ public static class CompilerEmitExtensions
 		return self.EmitUShort((ushort)index);
 	}
 
+	public static Compiler EmitLoadLocal(this Compiler self, int stackIndex, ValueType type)
+	{
+		var typeSize = type.GetSize(self.chunk);
+		if (typeSize > 1)
+		{
+			self.EmitInstruction(Instruction.LoadLocalMultiple);
+			self.EmitByte((byte)stackIndex);
+			return self.EmitByte((byte)typeSize);
+		}
+		else
+		{
+			self.EmitInstruction(Instruction.LoadLocal);
+			return self.EmitByte((byte)stackIndex);
+		}
+	}
+
 	public static Compiler EmitLoadFunction(this Compiler self, Instruction instruction, int functionIndex)
 	{
 		self.EmitInstruction(instruction);

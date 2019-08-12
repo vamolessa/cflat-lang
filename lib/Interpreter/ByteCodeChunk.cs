@@ -173,6 +173,26 @@ public sealed class ByteCodeChunk
 		return structTypes.count - 1;
 	}
 
+	public Option<FunctionType> GetFunctionType(ValueType type)
+	{
+		if (type.kind == TypeKind.Function || type.kind == TypeKind.NativeFunction)
+			return Option.Some(functionTypes.buffer[type.index]);
+		else
+			return Option.None;
+	}
+
+	public bool GetStructType(ValueType type, out StructType structType)
+	{
+		if (type.kind == TypeKind.Struct)
+		{
+			structType = structTypes.buffer[type.index];
+			return true;
+		}
+
+		structType = new StructType();
+		return false;
+	}
+
 	private int FindValueIndex(ValueData value, TypeKind kind)
 	{
 		for (var i = 0; i < literalData.count; i++)
