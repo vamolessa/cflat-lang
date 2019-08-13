@@ -1,24 +1,34 @@
+using System.Runtime.InteropServices;
 using Xunit;
 
 public sealed class ValueTests
 {
+	[Fact]
+	public unsafe void SizeTest()
+	{
+		Assert.Equal(4, sizeof(ValueData));
+		Assert.Equal(4, Marshal.SizeOf(typeof(ValueData)));
+		Assert.Equal(4, sizeof(ValueType));
+		Assert.Equal(4, Marshal.SizeOf(typeof(ValueType)));
+	}
+
 	[Theory]
-	[InlineData(TypeKind.Unit, 0, false)]
-	[InlineData(TypeKind.Int, 0, false)]
-	[InlineData(TypeKind.Struct, 0, false)]
-	[InlineData(TypeKind.Struct, 99, false)]
-	[InlineData(TypeKind.Struct, 99, true)]
-	[InlineData(TypeKind.Unit, 0, true)]
-	public void ValueTypeTests(TypeKind kind, ushort index, bool isReference)
+	[InlineData(TypeKind.Unit, 0, 0)]
+	[InlineData(TypeKind.Int, 0, 0)]
+	[InlineData(TypeKind.Struct, 0, 0)]
+	[InlineData(TypeKind.Struct, 99, 0)]
+	[InlineData(TypeKind.Struct, 99, 1)]
+	[InlineData(TypeKind.Unit, 0, 1)]
+	public void ValueTypeTests(TypeKind kind, ushort index, byte flags)
 	{
 		byte b0, b1, b2, b3;
-		var type = new ValueType(index, kind, isReference);
+		var type = new ValueType(index, kind, flags);
 		type.Write(out b0, out b1, out b2, out b3);
 		type = ValueType.Read(b0, b1, b2, b3);
 
 		Assert.Equal(kind, type.kind);
 		Assert.Equal(index, type.index);
-		Assert.Equal(isReference, type.isReference);
+		Assert.Equal(flags, type.flags);
 	}
 
 	[Theory]

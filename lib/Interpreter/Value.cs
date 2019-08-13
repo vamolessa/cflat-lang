@@ -50,35 +50,35 @@ public readonly struct ValueType
 {
 	public readonly ushort index;
 	public readonly TypeKind kind;
-	public readonly bool isReference;
+	public readonly byte flags;
 
 	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
 	{
 		return new ValueType(
 			BytesHelper.BytesToShort(b0, b1),
 			(TypeKind)b2,
-			b3 != 0
+			b3
 		);
 	}
 
 	public ValueType(TypeKind kind)
 	{
 		this.kind = kind;
-		this.isReference = false;
+		this.flags = 0;
 		this.index = 0;
 	}
 
 	public ValueType(TypeKind kind, int index)
 	{
 		this.kind = kind;
-		this.isReference = false;
+		this.flags = 0;
 		this.index = (ushort)index;
 	}
 
-	public ValueType(ushort index, TypeKind kind, bool isReference)
+	public ValueType(ushort index, TypeKind kind, byte flags)
 	{
 		this.kind = kind;
-		this.isReference = isReference;
+		this.flags = flags;
 		this.index = index;
 	}
 
@@ -86,18 +86,18 @@ public readonly struct ValueType
 	{
 		return
 			kind == other.kind &&
-			isReference == other.isReference &&
+			flags == other.flags &&
 			index == other.index;
 	}
 
 	public bool IsSimple()
 	{
-		return isReference == false && index == 0;
+		return flags == 0 && index == 0;
 	}
 
 	public bool IsKind(TypeKind kind)
 	{
-		return this.kind == kind && isReference == false && index == 0;
+		return this.kind == kind && flags == 0 && index == 0;
 	}
 
 	public void Write(out byte b0, out byte b1, out byte b2, out byte b3)
@@ -109,7 +109,7 @@ public readonly struct ValueType
 		);
 
 		b2 = (byte)kind;
-		b3 = isReference ? (byte)1 : (byte)0;
+		b3 = flags;
 	}
 
 	public int GetSize(ByteCodeChunk chunk)
