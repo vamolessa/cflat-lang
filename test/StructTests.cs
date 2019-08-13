@@ -22,16 +22,34 @@ public sealed class StructTests
 	}
 
 	[Theory]
-	[InlineData("struct S{a:int} fn f():int{let s=S{a=3} s.a}", 3)]
-	[InlineData("struct S{a:int b:int} fn f():int{let s=S{a=3 b=7} s.a}", 3)]
-	[InlineData("struct S{a:int b:int} fn f():int{let s=S{a=3 b=7} s.b}", 7)]
-	[InlineData("struct S{a:int b:int c:int} fn f():int{let s=S{a=3 b=7 c=9} s.a}", 3)]
-	[InlineData("struct S{a:int b:int c:int} fn f():int{let s=S{a=3 b=7 c=9} s.b}", 7)]
-	[InlineData("struct S{a:int b:int c:int} fn f():int{let s=S{a=3 b=7 c=9} s.c}", 9)]
-	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9} t.s.a}", 3)]
-	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9} t.s.b}", 7)]
-	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9} t.c}", 9)]
-	public void StructFieldTests(string source, int expected)
+	[InlineData("struct S{a:int} fn f():int{let s=S{a=3}s.a}", 3)]
+	[InlineData("struct S{a:int b:int} fn f():int{let s=S{a=3 b=7}s.a}", 3)]
+	[InlineData("struct S{a:int b:int} fn f():int{let s=S{a=3 b=7}s.b}", 7)]
+	[InlineData("struct S{a:int b:int c:int} fn f():int{let s=S{a=3 b=7 c=9}s.a}", 3)]
+	[InlineData("struct S{a:int b:int c:int} fn f():int{let s=S{a=3 b=7 c=9}s.b}", 7)]
+	[InlineData("struct S{a:int b:int c:int} fn f():int{let s=S{a=3 b=7 c=9}s.c}", 9)]
+	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.s.a}", 3)]
+	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.s.b}", 7)]
+	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.c}", 9)]
+	public void StructGetFieldTests(string source, int expected)
+	{
+		var error = Run(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(new ValueType(TypeKind.Int), t);
+		Assert.Equal(expected, v.asInt);
+	}
+
+	[Theory]
+	[InlineData("struct S{a:int} fn f():int{mut s=S{a=0}s.a=3 s.a}", 3)]
+	[InlineData("struct S{a:int b:int} fn f():int{mut s=S{a=0 b=0}s.a=3 s.a}", 3)]
+	[InlineData("struct S{a:int b:int} fn f():int{mut s=S{a=0 b=0}s.b=7 s.b}", 7)]
+	[InlineData("struct S{a:int b:int c:int} fn f():int{mut s=S{a=0 b=0 c=0}s.a=3 s.a}", 3)]
+	[InlineData("struct S{a:int b:int c:int} fn f():int{mut s=S{a=0 b=0 c=0}s.b=7 s.b}", 7)]
+	[InlineData("struct S{a:int b:int c:int} fn f():int{mut s=S{a=0 b=0 c=0}s.c=9 s.c}", 9)]
+	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.s.a=3 t.s.a}", 3)]
+	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.s.b=7 t.s.b}", 7)]
+	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.c=9 t.c}", 9)]
+	public void StructSetFieldTests(string source, int expected)
 	{
 		var error = Run(source, out var v, out var t);
 		Assert.Null(error);
