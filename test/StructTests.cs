@@ -38,4 +38,48 @@ public sealed class StructTests
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
 	}
+
+	[Theory]
+	[InlineData("struct S{x:int} fn a():S{S{x=3}} fn b():int{a().x}", 3)]
+	[InlineData("struct S{x:int y:int} fn a():S{S{x=3 y=5}} fn b():int{a().x}", 3)]
+	[InlineData("struct S{x:int y:int} fn a():S{S{x=3 y=5}} fn b():int{a().y}", 5)]
+	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().x}", 3)]
+	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().y}", 5)]
+	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().z}", 7)]
+	public void FunctionStructReturnTests(string source, int expected)
+	{
+		var error = Run(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(new ValueType(TypeKind.Int), t);
+		Assert.Equal(expected, v.asInt);
+	}
+
+	[Theory]
+	[InlineData("fn b():int{p().xy1.x}", 3)]
+	[InlineData("fn b():int{p().xy1.y}", 9)]
+	[InlineData("fn b():int{p().xy2.x}", 11)]
+	[InlineData("fn b():int{p().xy2.y}", 13)]
+	public void FunctionStructInceptionReturnTests(string lastFunctionSource, int expected)
+	{
+		var source = string.Concat(@"
+			struct XY {
+				x:int
+				y:int
+			}
+
+			struct Point {
+				xy1:XY
+				xy2:XY
+			}
+
+			fn p():Point {
+				Point{xy1=XY{x=3 y=9} xy2=XY{x=11 y=13}}
+			}
+		", lastFunctionSource);
+
+		var error = Run(source, out var v, out var t);
+		Assert.Null(error);
+		Assert.Equal(new ValueType(TypeKind.Int), t);
+		Assert.Equal(expected, v.asInt);
+	}
 }
