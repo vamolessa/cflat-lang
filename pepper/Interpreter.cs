@@ -2,17 +2,26 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public static int TestFunction(VirtualMachine vm)
+	public static void TestFunction(VirtualMachine vm)
 	{
-		System.Console.WriteLine("HELLO FROM C#");
-		vm.PushSimple(new ValueData(), new ValueType(TypeKind.Unit));
-		return 1;
+		var x = vm.GetAt(0).asInt;
+		var y = vm.GetAt(1).asInt;
+		System.Console.WriteLine("HELLO FROM C# {0}, {1}", x, y);
+		vm.PushUnit();
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
-		pepper.AddFunction("testFunction", TestFunction, new ValueType(TypeKind.Unit));
+
+		pepper.AddFunction(
+			"testFunction",
+			TestFunction,
+			new ValueType(TypeKind.Unit),
+			new ValueType(TypeKind.Int),
+			new ValueType(TypeKind.Int)
+		);
+
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.Count > 0)
 		{

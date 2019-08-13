@@ -187,7 +187,7 @@ public readonly struct Function
 
 public readonly struct NativeFunction
 {
-	public delegate int Callback(VirtualMachine vm);
+	public delegate void Callback(VirtualMachine vm);
 
 	public readonly string name;
 	public readonly int typeIndex;

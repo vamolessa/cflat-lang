@@ -73,7 +73,10 @@ internal static class VirtualMachineInstructions
 						stackTop
 					)
 				);
-				var returnSize = function.callback(vm);
+
+				var returnType = vm.chunk.functionTypes.buffer[function.typeIndex].returnType;
+				var returnSize = returnType.GetSize(vm.chunk);
+				function.callback(vm);
 				VirtualMachineHelper.Return(vm, returnSize);
 				break;
 			}

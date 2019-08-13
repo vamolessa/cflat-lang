@@ -17,7 +17,7 @@ public sealed class ExpressionTests
 		if (runError.isSome)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		pepper.virtualMachine.PopSimple(out value, out type);
+		pepper.virtualMachine.Pop(out value, out type);
 		return null;
 	}
 
