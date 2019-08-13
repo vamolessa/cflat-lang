@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Text;
 
 public sealed class CompilerController
 {
@@ -622,92 +623,99 @@ public sealed class CompilerController
 		}
 	}
 
+	private struct Storage
+	{
+		public bool isValid;
+		public int variableIndex;
+		public ValueType type;
+		public int stackIndex;
+	}
+
 	public static void Identifier(CompilerController self, Precedence precedence)
 	{
+		var storage = new Storage();
+
 		var slice = self.compiler.parser.previousToken.slice;
-
-		var canAssign = precedence <= Precedence.Assignment;
-		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
-			Assign(self, slice);
-		else
-			Access(self, slice);
-	}
-
-	public static void Assign(CompilerController self, Slice slice)
-	{
-		Expression(self);
-
-		if (self.compiler.ResolveToLocalVariableIndex(slice, out var index))
+		if (self.compiler.ResolveToLocalVariableIndex(slice, out storage.variableIndex))
 		{
-			var localVar = self.compiler.localVariables.buffer[index];
-			if (!localVar.isMutable)
-				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
-
-			var expressionType = self.compiler.typeStack.PopLast();
-			if (!expressionType.IsEqualTo(localVar.type))
-			{
-				self.compiler.AddSoftError(
-					self.compiler.parser.previousToken.slice,
-					"Wrong type for assignment. Expected {0}. Got {1}",
-					localVar.type.ToString(self.compiler.chunk),
-					expressionType.ToString(self.compiler.chunk)
-				);
-			}
-			self.compiler.typeStack.PushBack(expressionType);
-
-			var varTypeSize = localVar.type.GetSize(self.compiler.chunk);
-			if (varTypeSize > 1)
-			{
-				self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
-				self.compiler.EmitByte((byte)localVar.stackIndex);
-				self.compiler.EmitByte((byte)varTypeSize);
-			}
-			else
-			{
-				self.compiler.EmitInstruction(Instruction.AssignLocal);
-				self.compiler.EmitByte((byte)localVar.stackIndex);
-			}
-		}
-		else
-		{
-			self.compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let' or 'mut'");
-		}
-	}
-
-	public static void Access(CompilerController self, Slice slice)
-	{
-		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
-		{
-			ref var localVar = ref self.compiler.localVariables.buffer[variableIndex];
-			localVar.isUsed = true;
+			ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
+			storage.isValid = true;
+			storage.type = localVar.type;
+			storage.stackIndex = localVar.stackIndex;
 
 			if (self.compiler.parser.Match(TokenKind.Dot))
 			{
-				var type = localVar.type;
-				var stackIndex = localVar.stackIndex;
-
 				do
 				{
 					if (!FieldAccess(
 						self,
 						ref slice,
-						ref type,
-						ref stackIndex
+						ref storage.type,
+						ref storage.stackIndex
 					))
 					{
 						self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-						return;
+						break;
 					}
 				} while (self.compiler.parser.Match(TokenKind.Dot));
+			}
+		}
 
-				self.compiler.EmitLoadLocal(stackIndex, type);
-				self.compiler.typeStack.PushBack(type);
+		var canAssign = precedence <= Precedence.Assignment;
+		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
+			Assign(self, slice, ref storage);
+		else
+			Access(self, slice, ref storage);
+	}
+
+	private static void Assign(CompilerController self, Slice slice, ref Storage storage)
+	{
+		if (storage.isValid)
+		{
+			if (!self.compiler.localVariables.buffer[storage.variableIndex].isMutable)
+				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
+
+			Expression(self);
+
+			var expressionType = self.compiler.typeStack.PopLast();
+			if (!expressionType.IsEqualTo(storage.type))
+			{
+				self.compiler.AddSoftError(
+					self.compiler.parser.previousToken.slice,
+					"Wrong type for assignment. Expected {0}. Got {1}",
+					storage.type.ToString(self.compiler.chunk),
+					expressionType.ToString(self.compiler.chunk)
+				);
+			}
+			self.compiler.typeStack.PushBack(expressionType);
+
+			var varTypeSize = storage.type.GetSize(self.compiler.chunk);
+			if (varTypeSize > 1)
+			{
+				self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
+				self.compiler.EmitByte((byte)storage.stackIndex);
+				self.compiler.EmitByte((byte)varTypeSize);
 			}
 			else
 			{
-				self.compiler.EmitLoadLocal(localVar.stackIndex, localVar.type);
-				self.compiler.typeStack.PushBack(localVar.type);
+				self.compiler.EmitInstruction(Instruction.AssignLocal);
+				self.compiler.EmitByte((byte)storage.stackIndex);
 			}
+		}
+		else
+		{
+			Expression(self);
+			self.compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let' or 'mut'");
+		}
+	}
+
+	private static void Access(CompilerController self, Slice slice, ref Storage storage)
+	{
+		if (storage.isValid)
+		{
+			self.compiler.localVariables.buffer[storage.variableIndex].isUsed = true;
+			self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
+			self.compiler.typeStack.PushBack(storage.type);
 		}
 		else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
 		{
@@ -767,6 +775,8 @@ public sealed class CompilerController
 			return false;
 		}
 
+		var structTypeIndex = type.index;
+
 		self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
 		slice = self.compiler.parser.previousToken.slice;
 
@@ -787,7 +797,9 @@ public sealed class CompilerController
 			offset += field.type.GetSize(self.compiler.chunk);
 		}
 
-		self.compiler.AddSoftError(slice, "Could not find such field for struct of type {0}", structType.name);
+		var sb = new StringBuilder();
+		self.compiler.chunk.FormatStructType(structTypeIndex, sb);
+		self.compiler.AddSoftError(slice, "Could not find such field for struct of type {0}", sb);
 		return false;
 	}
 

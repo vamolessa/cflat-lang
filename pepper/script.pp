@@ -3,8 +3,13 @@ struct Point {
 	y:int
 }
 
+struct A {
+	a:int
+	p:Point
+}
+
 fn main() {
-	mut p = Point{x=0 y=0}
-	//p.x = 2
-	print p
+	mut a = A{a=5 p=Point{x=0 y=0}}
+	a.p.x = 7
+	print a.p.y
 }
