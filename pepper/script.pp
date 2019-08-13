@@ -4,6 +4,7 @@ struct Point {
 }
 
 fn main() {
-	let p = Point{x=12 y=45}
-	testFunction(p.x, p.y)
+	mut p = Point{x=0 y=0}
+	//p.x = 2
+	print p
 }

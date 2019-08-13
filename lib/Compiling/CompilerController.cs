@@ -628,12 +628,12 @@ public sealed class CompilerController
 
 		var canAssign = precedence <= Precedence.Assignment;
 		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
-			Assignment(self, slice);
+			Assign(self, slice);
 		else
 			Access(self, slice);
 	}
 
-	public static void Assignment(CompilerController self, Slice slice)
+	public static void Assign(CompilerController self, Slice slice)
 	{
 		Expression(self);
 
