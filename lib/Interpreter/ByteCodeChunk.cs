@@ -193,6 +193,52 @@ public sealed class ByteCodeChunk
 		return false;
 	}
 
+	public StructType GetAnonymousStructType(StructTypeBuilder builder)
+	{
+		var fieldsIndex = structTypeFields.count - builder.fieldCount;
+
+		var size = 0;
+		for (var i = 0; i < builder.fieldCount; i++)
+		{
+			var field = structTypeFields.buffer[fieldsIndex + i];
+			size += field.type.GetSize(this);
+		}
+
+		if (size == 0)
+			size = 1;
+
+		for (var i = 0; i < structTypes.count; i++)
+		{
+			var other = structTypes.buffer[i];
+			if (
+				other.size != size ||
+				other.fields.length != builder.fieldCount ||
+				!string.IsNullOrEmpty(other.name)
+			)
+				continue;
+
+			var matched = true;
+			for (var j = 0; j < builder.fieldCount; j++)
+			{
+				var thisField = structTypeFields.buffer[fieldsIndex + j];
+				var otherField = structTypeFields.buffer[other.fields.index + j];
+				if (
+					!string.IsNullOrEmpty(otherField.name) ||
+					!thisField.type.IsEqualTo(otherField.type)
+				)
+				{
+					matched = false;
+					break;
+				}
+			}
+			if (!matched)
+				continue;
+
+			structTypeFields.count = fieldsIndex;
+			return other;
+		}
+	}
+
 	private int FindValueIndex(ValueData value, TypeKind kind)
 	{
 		for (var i = 0; i < literalData.count; i++)
