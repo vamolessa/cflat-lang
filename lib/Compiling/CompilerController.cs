@@ -763,7 +763,7 @@ public sealed class CompilerController
 	{
 		if (!self.compiler.chunk.GetStructType(type, out var structType))
 		{
-			self.compiler.AddSoftError(slice, "Callee must be a struct");
+			self.compiler.AddSoftError(slice, "Accessed value must be a struct");
 			return false;
 		}
 
@@ -787,69 +787,54 @@ public sealed class CompilerController
 			offset += field.type.GetSize(self.compiler.chunk);
 		}
 
-		self.compiler.AddSoftError(slice, "Could not find such field");
+		self.compiler.AddSoftError(slice, "Could not find such field for struct of type {0}", structType.name);
 		return false;
 	}
 
-	public static void FieldAccess2(CompilerController self, Precedence precedence)
+	public static void Dot(CompilerController self, Precedence precedence)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
 		var type = self.compiler.typeStack.PopLast();
-		if (!self.compiler.chunk.GetStructType(type, out var structType))
+		var offset = 0;
+
+		var structSize = type.GetSize(self.compiler.chunk);
+
+		do
 		{
-			self.compiler.AddSoftError(slice, "Callee must be a struct");
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			return;
-		}
-
-		self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
-		var fieldSlice = self.compiler.parser.previousToken.slice;
-
-		var sizeUnderField = 0;
-		var source = self.compiler.parser.tokenizer.source;
-
-		for (var i = 0; i < structType.fields.length; i++)
-		{
-			var fieldIndex = structType.fields.index + i;
-			var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
-			if (CompilerHelper.AreEqual(source, fieldSlice, field.name))
+			if (!FieldAccess(
+				self,
+				ref slice,
+				ref type,
+				ref offset
+			))
 			{
-				var sizeAboveField = 0;
-				for (var j = i + 1; j < structType.fields.length; j++)
-				{
-					var idx = structType.fields.index + j;
-					var f = self.compiler.chunk.structTypeFields.buffer[idx];
-					sizeAboveField += f.type.GetSize(self.compiler.chunk);
-				}
-
-				var fieldTypeSize = field.type.GetSize(self.compiler.chunk);
-
-				if (sizeAboveField > 1)
-				{
-					self.compiler.EmitInstruction(Instruction.PopMultiple);
-					self.compiler.EmitByte((byte)sizeAboveField);
-				}
-				else if (sizeAboveField > 0)
-				{
-					self.compiler.EmitInstruction(Instruction.Pop);
-				}
-
-				if (sizeUnderField > 0)
-				{
-					self.compiler.EmitInstruction(Instruction.Move);
-					self.compiler.EmitByte((byte)sizeUnderField);
-					self.compiler.EmitByte((byte)fieldTypeSize);
-				}
-
-				self.compiler.typeStack.PushBack(field.type);
+				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 				return;
 			}
+		} while (self.compiler.parser.Match(TokenKind.Dot));
 
-			sizeUnderField += field.type.GetSize(self.compiler.chunk);
+		var fieldSize = type.GetSize(self.compiler.chunk);
+		var sizeAboveField = structSize - offset - fieldSize;
+
+		if (sizeAboveField > 1)
+		{
+			self.compiler.EmitInstruction(Instruction.PopMultiple);
+			self.compiler.EmitByte((byte)sizeAboveField);
+		}
+		else if (sizeAboveField > 0)
+		{
+			self.compiler.EmitInstruction(Instruction.Pop);
 		}
 
-		self.compiler.AddSoftError(fieldSlice, "Could not find such field");
-		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+		if (offset > 0)
+		{
+			self.compiler.EmitInstruction(Instruction.Move);
+			self.compiler.EmitByte((byte)offset);
+			self.compiler.EmitByte((byte)fieldSize);
+		}
+
+		self.compiler.typeStack.PushBack(type);
+		return;
 	}
 
 	public static void Call(CompilerController self, Precedence precedence)
