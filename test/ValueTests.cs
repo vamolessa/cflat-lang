@@ -6,8 +6,13 @@ public sealed class ValueTests
 	[Fact]
 	public unsafe void SizeTest()
 	{
+		void AssertIsBlitable<T>() where T : unmanaged { }
+
+		AssertIsBlitable<ValueData>();
 		Assert.Equal(4, sizeof(ValueData));
 		Assert.Equal(4, Marshal.SizeOf(typeof(ValueData)));
+
+		AssertIsBlitable<ValueType>();
 		Assert.Equal(4, sizeof(ValueType));
 		Assert.Equal(4, Marshal.SizeOf(typeof(ValueType)));
 	}

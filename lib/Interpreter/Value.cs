@@ -13,22 +13,19 @@ public struct ValueData
 
 	public ValueData(bool value)
 	{
-		asInt = 0;
-		asFloat = 0;
+		this = default;
 		asBool = value;
 	}
 
 	public ValueData(int value)
 	{
-		asBool = false;
-		asFloat = 0.0f;
+		this = default;
 		asInt = value;
 	}
 
 	public ValueData(float value)
 	{
-		asBool = false;
-		asInt = 0;
+		this = default;
 		asFloat = value;
 	}
 }
