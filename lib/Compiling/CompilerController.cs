@@ -132,7 +132,7 @@ public sealed class CompilerController
 		const int MaxParamCount = 8;
 
 		var source = compiler.parser.tokenizer.source;
-		var declaration = compiler.BeginFunctionDeclaration();
+		var builder = compiler.BeginFunctionDeclaration();
 		var paramStartIndex = compiler.localVariables.count;
 
 		compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name");
@@ -145,14 +145,14 @@ public sealed class CompilerController
 				compiler.parser.Consume(TokenKind.Colon, "Expected ':' after parameter name");
 				var paramType = compiler.ParseType("Expected parameter type", 0);
 
-				if (declaration.parameterCount >= MaxParamCount)
+				if (builder.parameterCount >= MaxParamCount)
 				{
 					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", MaxParamCount);
 					continue;
 				}
 
 				var hasDuplicate = false;
-				for (var i = 0; i < declaration.parameterCount; i++)
+				for (var i = 0; i < builder.parameterCount; i++)
 				{
 					var otherSlice = compiler.localVariables.buffer[paramStartIndex + i].slice;
 					if (CompilerHelper.AreEqual(source, paramSlice, otherSlice))
@@ -164,25 +164,25 @@ public sealed class CompilerController
 
 				if (hasDuplicate)
 				{
-					compiler.AddSoftError(paramSlice, "Function already has a parameter with this name");
+					compiler.AddSoftError(paramSlice, "Function already has a parameter named '{0}'", CompilerHelper.GetSlice(compiler, paramSlice));
 					continue;
 				}
 
 				compiler.AddLocalVariable(paramSlice, paramType, false, true);
-				declaration.WithParam(paramType);
+				builder.WithParam(paramType);
 			} while (compiler.parser.Match(TokenKind.Comma));
 		}
 		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.parser.Match(TokenKind.Colon))
-			declaration.returnType = compiler.ParseType("Expected function return type", 0);
+			builder.returnType = compiler.ParseType("Expected function return type", 0);
 
-		compiler.EndFunctionDeclaration(declaration, slice);
-		compiler.functionReturnTypeStack.PushBack(declaration.returnType);
+		compiler.EndFunctionDeclaration(builder, slice);
+		compiler.functionReturnTypeStack.PushBack(builder.returnType);
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
-		if (declaration.returnType.kind == TypeKind.Unit)
+		if (builder.returnType.kind == TypeKind.Unit)
 		{
 			BlockStatement();
 			compiler.EmitInstruction(Instruction.LoadUnit);
@@ -191,15 +191,15 @@ public sealed class CompilerController
 		{
 			Block(this, Precedence.None);
 			var type = compiler.typeStack.PopLast();
-			if (!type.IsEqualTo(declaration.returnType))
-				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", declaration.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
+			if (!type.IsEqualTo(builder.returnType))
+				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", builder.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte((byte)declaration.returnType.GetSize(compiler.chunk));
+		compiler.EmitByte((byte)builder.returnType.GetSize(compiler.chunk));
 
 		compiler.functionReturnTypeStack.PopLast();
-		compiler.localVariables.count -= declaration.parameterCount;
+		compiler.localVariables.count -= builder.parameterCount;
 	}
 
 	public void StructDeclaration()
@@ -208,7 +208,7 @@ public sealed class CompilerController
 		var slice = compiler.parser.previousToken.slice;
 
 		var source = compiler.parser.tokenizer.source;
-		var declaration = compiler.BeginStructDeclaration();
+		var builder = compiler.BeginStructDeclaration();
 		var fieldStartIndex = compiler.chunk.structTypeFields.count;
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct fields");
@@ -223,7 +223,7 @@ public sealed class CompilerController
 			var fieldType = compiler.ParseType("Expected field type", 0);
 
 			var hasDuplicate = false;
-			for (var i = 0; i < declaration.fieldCount; i++)
+			for (var i = 0; i < builder.fieldCount; i++)
 			{
 				var otherName = compiler.chunk.structTypeFields.buffer[fieldStartIndex + i].name;
 				if (CompilerHelper.AreEqual(source, fieldSlice, otherName))
@@ -233,18 +233,18 @@ public sealed class CompilerController
 				}
 			}
 
+			var fieldName = CompilerHelper.GetSlice(compiler, fieldSlice);
 			if (hasDuplicate)
 			{
-				compiler.AddSoftError(fieldSlice, "Struct already has a field with this name");
+				compiler.AddSoftError(fieldSlice, "Struct already has a field named '{0}'", fieldName);
 				continue;
 			}
 
-			var fieldName = CompilerHelper.GetSlice(compiler, fieldSlice);
-			declaration.WithField(fieldName, fieldType);
+			builder.WithField(fieldName, fieldType);
 		}
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
 
-		compiler.EndStructDeclaration(declaration, slice);
+		compiler.EndStructDeclaration(builder, slice);
 	}
 
 	public Option<ValueType> Statement()

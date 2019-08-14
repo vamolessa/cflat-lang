@@ -134,7 +134,7 @@ public static class CompilerDeclarationExtensions
 			if (self.chunk.structTypes.buffer[i].name == name)
 			{
 				self.chunk.structTypes.count -= builder.fieldCount;
-				self.AddSoftError(slice, "There's already a struct with this name");
+				self.AddSoftError(slice, "There's already a struct named '{0}'", name);
 				return;
 			}
 		}

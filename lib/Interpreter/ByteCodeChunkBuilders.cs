@@ -127,7 +127,10 @@ public struct StructTypeBuilder
 			{
 				var thisField = chunk.structTypeFields.buffer[fieldsIndex + j];
 				var otherField = chunk.structTypeFields.buffer[other.fields.index + j];
-				if (!thisField.type.IsEqualTo(otherField.type))
+				if (
+					!thisField.type.IsEqualTo(otherField.type) ||
+					thisField.name != otherField.name
+				)
 				{
 					matched = false;
 					break;
