@@ -69,21 +69,21 @@ public struct FunctionTypeBuilder
 public struct StructTypeBuilder
 {
 	public ByteCodeChunk chunk;
-	public int nextFieldIndex;
+	public int startFieldIndex;
 	public int fieldCount;
 
 	public StructTypeBuilder(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
-		this.nextFieldIndex = chunk.structTypeFields.count;
+		this.startFieldIndex = chunk.structTypeFields.count;
 		this.fieldCount = 0;
 	}
 
 	public void WithField(string name, ValueType type)
 	{
+		var nextFieldIndex = startFieldIndex + fieldCount;
 		if (nextFieldIndex < chunk.structTypeFields.count)
 		{
-			var startFieldIndex = nextFieldIndex - fieldCount;
 			var swapCount = chunk.structTypeFields.count - startFieldIndex;
 			chunk.structTypeFields.buffer.SwapRanges(startFieldIndex, nextFieldIndex, swapCount);
 
@@ -104,12 +104,11 @@ public struct StructTypeBuilder
 				);
 			}
 
-			nextFieldIndex = chunk.structTypeFields.count;
+			startFieldIndex = chunk.structTypeFields.count - fieldCount;
 		}
 
 		chunk.structTypeFields.PushBack(new StructTypeField(name, type));
 		fieldCount += 1;
-		nextFieldIndex += 1;
 	}
 
 	public int Build(string name)

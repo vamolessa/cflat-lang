@@ -136,7 +136,7 @@ public sealed class StructTests
 			TypeKind.Int
 		}
 	)]
-	public void Nested1AnonymousStructTest(string source, int[] expectedSlices, TypeKind[] expectedFieldKinds)
+	public void NestedAnonymousStructTest(string source, int[] expectedSlices, TypeKind[] expectedFieldKinds)
 	{
 		var compiler = new CompilerController();
 		var chunk = new ByteCodeChunk();
