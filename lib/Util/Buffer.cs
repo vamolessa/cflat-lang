@@ -1,3 +1,6 @@
+using System.Diagnostics;
+
+[DebuggerTypeProxy(typeof(BufferDebugView<>))]
 public struct Buffer<T>
 {
 	public int count;
@@ -41,5 +44,16 @@ public struct Buffer<T>
 	public void SwapRemove(int index)
 	{
 		buffer[--count] = buffer[index];
+	}
+}
+
+public sealed class BufferDebugView<T>
+{
+	public readonly T[] elements;
+
+	public BufferDebugView(Buffer<T> buffer)
+	{
+		elements = new T[buffer.count];
+		System.Array.Copy(buffer.buffer, elements, buffer.count);
 	}
 }

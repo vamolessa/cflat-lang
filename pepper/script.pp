@@ -1,15 +1,9 @@
-struct Point {
-	x:int
-	y:int
-}
-
-struct A {
-	a:int
-	p:Point
+fn point(): struct{x:int s:struct{a:int b:int}} {
+	struct{x=4 s=struct{a=1 b=9}}
 }
 
 fn main() {
-	mut a = A{a=5 p=Point{x=0 y=0}}
-	a.p.x = 7
-	print a.p.y
+	mut p = point()
+	p.s.a = 13
+	print p
 }

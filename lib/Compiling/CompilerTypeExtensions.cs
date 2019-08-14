@@ -72,7 +72,7 @@ public static class CompilerTypeExtensions
 		self.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after anonymous struct fields");
 
 		var structTypeIndex = builder.BuildAnonymous();
-		var type = new ValueType(TypeKind.Function, structTypeIndex);
+		var type = new ValueType(TypeKind.Struct, structTypeIndex);
 
 		return Option.Some(type);
 	}

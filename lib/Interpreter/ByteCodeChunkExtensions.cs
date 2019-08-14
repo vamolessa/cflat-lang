@@ -51,7 +51,10 @@ public static class ByteCodeChunkExtensions
 	public static void FormatStructType(this ByteCodeChunk self, int structTypeIndex, StringBuilder sb)
 	{
 		var type = self.structTypes.buffer[structTypeIndex];
-		sb.Append(type.name);
+		if (string.IsNullOrEmpty(type.name))
+			sb.Append("struct");
+		else
+			sb.Append(type.name);
 		sb.Append('{');
 		for (var i = 0; i < type.fields.length; i++)
 		{
