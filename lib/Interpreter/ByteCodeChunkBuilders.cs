@@ -69,18 +69,27 @@ public struct FunctionTypeBuilder
 public struct StructTypeBuilder
 {
 	public ByteCodeChunk chunk;
+	public int nextFieldIndex;
 	public int fieldCount;
 
 	public StructTypeBuilder(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
+		this.nextFieldIndex = chunk.structTypeFields.count;
 		this.fieldCount = 0;
 	}
 
 	public void WithField(string name, ValueType type)
 	{
+		var offset = chunk.structTypeFields.count - nextFieldIndex;
+		if (offset > 1)
+		{
+			
+		}
+
 		chunk.structTypeFields.PushBack(new StructTypeField(name, type));
 		fieldCount += 1;
+		nextFieldIndex += 1;
 	}
 
 	public int Build(string name)
