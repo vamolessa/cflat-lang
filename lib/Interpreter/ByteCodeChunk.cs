@@ -197,21 +197,10 @@ public sealed class ByteCodeChunk
 	{
 		var fieldsIndex = structTypeFields.count - builder.fieldCount;
 
-		var size = 0;
-		for (var i = 0; i < builder.fieldCount; i++)
-		{
-			var field = structTypeFields.buffer[fieldsIndex + i];
-			size += field.type.GetSize(this);
-		}
-
-		if (size == 0)
-			size = 1;
-
 		for (var i = 0; i < structTypes.count; i++)
 		{
 			var other = structTypes.buffer[i];
 			if (
-				other.size != size ||
 				other.fields.length != builder.fieldCount ||
 				!string.IsNullOrEmpty(other.name)
 			)
@@ -222,10 +211,7 @@ public sealed class ByteCodeChunk
 			{
 				var thisField = structTypeFields.buffer[fieldsIndex + j];
 				var otherField = structTypeFields.buffer[other.fields.index + j];
-				if (
-					!string.IsNullOrEmpty(otherField.name) ||
-					!thisField.type.IsEqualTo(otherField.type)
-				)
+				if (!thisField.type.IsEqualTo(otherField.type))
 				{
 					matched = false;
 					break;
@@ -237,6 +223,9 @@ public sealed class ByteCodeChunk
 			structTypeFields.count = fieldsIndex;
 			return other;
 		}
+
+		var structIndex = EndAddStructType(builder, "");
+		return structTypes.buffer[structIndex];
 	}
 
 	private int FindValueIndex(ValueData value, TypeKind kind)
