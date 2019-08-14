@@ -46,6 +46,7 @@ public static class CompilerTypeExtensions
 		{
 			self.parser.Consume(TokenKind.Identifier, "Expected field name");
 			var fieldSlice = self.parser.previousToken.slice;
+			var fieldName = CompilerHelper.GetSlice(self, fieldSlice);
 			self.parser.Consume(TokenKind.Colon, "Expected ':' after field name");
 			var fieldType = self.ParseType("Expected field type", 0);
 
@@ -53,14 +54,13 @@ public static class CompilerTypeExtensions
 			for (var i = 0; i < builder.fieldCount; i++)
 			{
 				var otherName = self.chunk.structTypeFields.buffer[fieldStartIndex + i].name;
-				if (CompilerHelper.AreEqual(source, fieldSlice, otherName))
+				if (fieldName == otherName)
 				{
 					hasDuplicate = true;
 					break;
 				}
 			}
 
-			var fieldName = CompilerHelper.GetSlice(self, fieldSlice);
 			if (hasDuplicate)
 			{
 				self.AddSoftError(fieldSlice, "Struct already has a field named '{0}'", fieldName);
