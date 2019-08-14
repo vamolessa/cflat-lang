@@ -81,10 +81,30 @@ public struct StructTypeBuilder
 
 	public void WithField(string name, ValueType type)
 	{
-		var offset = chunk.structTypeFields.count - nextFieldIndex;
-		if (offset > 1)
+		if (nextFieldIndex < chunk.structTypeFields.count)
 		{
-			
+			var startFieldIndex = nextFieldIndex - fieldCount;
+			var swapCount = chunk.structTypeFields.count - startFieldIndex;
+			chunk.structTypeFields.buffer.SwapRanges(startFieldIndex, nextFieldIndex, swapCount);
+
+			for (var i = chunk.structTypes.count - 1; i >= 0; i++)
+			{
+				ref var structType = ref chunk.structTypes.buffer[i];
+				var fieldsSlice = structType.fields;
+				if (fieldsSlice.index < nextFieldIndex)
+					break;
+
+				structType = new StructType(
+					structType.name,
+					new Slice(
+						fieldsSlice.index - fieldCount,
+						fieldsSlice.length
+					),
+					structType.size
+				);
+			}
+
+			nextFieldIndex = chunk.structTypeFields.count;
 		}
 
 		chunk.structTypeFields.PushBack(new StructTypeField(name, type));

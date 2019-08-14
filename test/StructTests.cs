@@ -100,4 +100,47 @@ public sealed class StructTests
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
 	}
+
+	[Theory]
+	[InlineData(
+		"fn f(){struct{a=0 b=struct{c=true d=true} e=3}}",
+		new[] { 0, 2, 2, 3 },
+		new[] {
+			TypeKind.Bool,
+			TypeKind.Bool,
+			TypeKind.Int,
+			TypeKind.Struct,
+			TypeKind.Int
+		}
+	)]
+	public void Nested1AnonymousStructTest(string source, int[] slices, TypeKind[] fieldKinds)
+	{
+		var compiler = new CompilerController();
+		var chunk = new ByteCodeChunk();
+
+		string error = null;
+		var errors = compiler.Compile(source, chunk);
+		if (errors.Count > 0)
+			error = CompilerHelper.FormatError(source, errors, 1, 8);
+		Assert.Null(error);
+
+		var sliceCount = slices.Length / 2;
+		Assert.Equal(sliceCount, chunk.structTypes.count);
+		Assert.Equal(fieldKinds.Length, chunk.structTypeFields.count);
+
+		for (var i = 0; i < sliceCount; i++)
+		{
+			var structType = chunk.structTypes.buffer[i];
+			var slice = new Slice(slices[i * 2], slices[i * 2 + 1]);
+
+			Assert.Equal(slice.index, structType.fields.index);
+			Assert.Equal(slice.length, structType.fields.length);
+		}
+
+		for (var i = 0; i < fieldKinds.Length; i++)
+		{
+			var structTypeField = chunk.structTypeFields.buffer[i];
+			Assert.Equal(fieldKinds[i], structTypeField.type.kind);
+		}
+	}
 }
