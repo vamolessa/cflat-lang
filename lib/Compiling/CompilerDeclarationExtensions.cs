@@ -56,12 +56,12 @@ public static class CompilerDeclarationExtensions
 	}
 
 	// FUNCTIONS
-	public static ByteCodeChunk.FunctionTypeBuilder BeginFunctionDeclaration(this Compiler self)
+	public static FunctionTypeBuilder BeginFunctionDeclaration(this Compiler self)
 	{
-		return self.chunk.BeginAddFunctionType();
+		return self.chunk.BeginFunctionType();
 	}
 
-	public static void EndFunctionDeclaration(this Compiler self, ByteCodeChunk.FunctionTypeBuilder builder, Slice slice)
+	public static void EndFunctionDeclaration(this Compiler self, FunctionTypeBuilder builder, Slice slice)
 	{
 		if (self.chunk.functions.count >= ushort.MaxValue)
 		{
@@ -70,7 +70,7 @@ public static class CompilerDeclarationExtensions
 			return;
 		}
 
-		var typeIndex = self.chunk.EndAddFunctionType(builder);
+		var typeIndex = builder.Build();
 		var name = CompilerHelper.GetSlice(self, slice);
 		self.chunk.AddFunction(name, typeIndex);
 	}
@@ -113,12 +113,12 @@ public static class CompilerDeclarationExtensions
 	}
 
 	// STRUCTS
-	public static ByteCodeChunk.StructTypeBuilder BeginStructDeclaration(this Compiler self)
+	public static StructTypeBuilder BeginStructDeclaration(this Compiler self)
 	{
-		return self.chunk.BeginAddStructType();
+		return self.chunk.BeginStructType();
 	}
 
-	public static void EndStructDeclaration(this Compiler self, ByteCodeChunk.StructTypeBuilder builder, Slice slice)
+	public static void EndStructDeclaration(this Compiler self, StructTypeBuilder builder, Slice slice)
 	{
 		if (self.chunk.structTypes.count >= ushort.MaxValue)
 		{
@@ -139,7 +139,7 @@ public static class CompilerDeclarationExtensions
 			}
 		}
 
-		var index = self.chunk.EndAddStructType(builder, name);
+		var index = builder.Build(name);
 		var size = self.chunk.structTypes.buffer[index].size;
 		if (size >= byte.MaxValue)
 		{

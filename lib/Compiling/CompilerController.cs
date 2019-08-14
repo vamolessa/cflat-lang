@@ -169,7 +169,7 @@ public sealed class CompilerController
 				}
 
 				compiler.AddLocalVariable(paramSlice, paramType, false, true);
-				declaration.AddParam(paramType);
+				declaration.WithParam(paramType);
 			} while (compiler.parser.Match(TokenKind.Comma));
 		}
 		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
@@ -240,7 +240,7 @@ public sealed class CompilerController
 			}
 
 			var fieldName = CompilerHelper.GetSlice(compiler, fieldSlice);
-			declaration.AddField(fieldName, fieldType);
+			declaration.WithField(fieldName, fieldType);
 		}
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
 
@@ -854,8 +854,8 @@ public sealed class CompilerController
 		var slice = self.compiler.parser.previousToken.slice;
 
 		var type = self.compiler.typeStack.PopLast();
-		var functionType = self.compiler.chunk.GetFunctionType(type);
-		if (!functionType.isSome)
+		var isFunction = self.compiler.chunk.GetFunctionType(type, out var functionType);
+		if (!isFunction)
 			self.compiler.AddSoftError(slice, "Callee must be a function");
 
 		var argIndex = 0;
@@ -866,11 +866,11 @@ public sealed class CompilerController
 				Expression(self);
 				var argType = self.compiler.typeStack.PopLast();
 				if (
-					functionType.isSome &&
-					argIndex < functionType.value.parameters.length
+					isFunction &&
+					argIndex < functionType.parameters.length
 				)
 				{
-					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.value.parameters.index + argIndex];
+					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.parameters.index + argIndex];
 					if (!argType.IsEqualTo(paramType))
 					{
 						self.compiler.AddSoftError(
@@ -889,17 +889,17 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expect ')' after function argument list");
 
-		if (functionType.isSome && argIndex != functionType.value.parameters.length)
-			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.value.parameters.length, argIndex);
+		if (isFunction && argIndex != functionType.parameters.length)
+			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
 		if (type.kind == TypeKind.Function)
 			self.compiler.EmitInstruction(Instruction.Call);
 		else if (type.kind == TypeKind.NativeFunction)
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
-		self.compiler.EmitByte((byte)(functionType.isSome ? functionType.value.parametersTotalSize : 0));
+		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersTotalSize : 0));
 		self.compiler.typeStack.PushBack(
-			functionType.isSome ? functionType.value.returnType : new ValueType(TypeKind.Unit)
+			isFunction ? functionType.returnType : new ValueType(TypeKind.Unit)
 		);
 	}
 

@@ -47,7 +47,7 @@ public static class CompilerTypeExtensions
 
 	private static Option<ValueType> ParseFunctionType(this Compiler self, int recursionLevel)
 	{
-		var declaration = self.chunk.BeginAddFunctionType();
+		var declaration = self.chunk.BeginFunctionType();
 
 		self.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function type");
 		if (!self.parser.Check(TokenKind.CloseParenthesis))
@@ -55,14 +55,14 @@ public static class CompilerTypeExtensions
 			do
 			{
 				var paramType = self.ParseType("Expected function parameter type", recursionLevel);
-				declaration.AddParam(paramType);
+				declaration.WithParam(paramType);
 			} while (self.parser.Match(TokenKind.Comma));
 		}
 		self.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
 		if (self.parser.Match(TokenKind.Colon))
 			declaration.returnType = self.ParseType("Expected function return type", recursionLevel);
 
-		var functionTypeIndex = self.chunk.EndAddFunctionType(declaration);
+		var functionTypeIndex = declaration.Build();
 		var type = new ValueType(TypeKind.Function, functionTypeIndex);
 
 		return Option.Some(type);

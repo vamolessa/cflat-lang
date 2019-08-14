@@ -7,15 +7,16 @@ public sealed class ByteCodeChunkTests
 	{
 		var chunk = new ByteCodeChunk();
 
-		var builder = chunk.BeginAddStructType();
+		var builder = chunk.BeginStructType();
 		Assert.Equal(0, chunk.structTypes.count);
 		Assert.Equal(0, chunk.structTypeFields.count);
 
-		builder.AddField("a", new ValueType(TypeKind.Int));
-		builder.AddField("b", new ValueType(TypeKind.Int));
+		builder.WithField("a", new ValueType(TypeKind.Int));
+		builder.WithField("b", new ValueType(TypeKind.Int));
 		Assert.Equal(2, chunk.structTypeFields.count);
 
-		var type = chunk.GetAnonymousStructType(builder);
+		var typeIndex = builder.BuildAnonymous();
+		var type = chunk.structTypes.buffer[typeIndex];
 		Assert.Equal(1, chunk.structTypes.count);
 		Assert.Equal(2, chunk.structTypeFields.count);
 
@@ -23,15 +24,16 @@ public sealed class ByteCodeChunkTests
 		Assert.Equal(0, type.fields.index);
 		Assert.Equal(2, type.fields.length);
 
-		builder = chunk.BeginAddStructType();
+		builder = chunk.BeginStructType();
 		Assert.Equal(1, chunk.structTypes.count);
 		Assert.Equal(2, chunk.structTypeFields.count);
 
-		builder.AddField("a", new ValueType(TypeKind.Int));
-		builder.AddField("b", new ValueType(TypeKind.Int));
+		builder.WithField("a", new ValueType(TypeKind.Int));
+		builder.WithField("b", new ValueType(TypeKind.Int));
 		Assert.Equal(4, chunk.structTypeFields.count);
 
-		type = chunk.GetAnonymousStructType(builder);
+		typeIndex = builder.BuildAnonymous();
+		type = chunk.structTypes.buffer[typeIndex];
 		Assert.Equal(1, chunk.structTypes.count);
 		Assert.Equal(2, chunk.structTypeFields.count);
 
