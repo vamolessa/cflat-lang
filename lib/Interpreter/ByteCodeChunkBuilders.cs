@@ -87,7 +87,7 @@ public struct StructTypeBuilder
 			var swapCount = chunk.structTypeFields.count - startFieldIndex;
 			chunk.structTypeFields.buffer.SwapRanges(startFieldIndex, nextFieldIndex, swapCount);
 
-			for (var i = chunk.structTypes.count - 1; i >= 0; i++)
+			for (var i = chunk.structTypes.count - 1; i >= 0; i--)
 			{
 				ref var structType = ref chunk.structTypes.buffer[i];
 				var fieldsSlice = structType.fields;

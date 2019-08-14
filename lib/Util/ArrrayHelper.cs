@@ -13,7 +13,7 @@ public static class ArrayHelper
 		var j = index + count - 1;
 		while (i < j)
 		{
-			T temp = self[i];
+			var temp = self[i];
 			self[i] = self[j];
 			self[j] = temp;
 			i++;

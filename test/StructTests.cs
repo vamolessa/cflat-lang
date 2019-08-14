@@ -103,6 +103,16 @@ public sealed class StructTests
 
 	[Theory]
 	[InlineData(
+		"fn f(){struct{a=struct{b=true c=true} d=3}}",
+		new[] { 0, 2, 2, 2 },
+		new[] {
+			TypeKind.Bool,
+			TypeKind.Bool,
+			TypeKind.Struct,
+			TypeKind.Int
+		}
+	)]
+	[InlineData(
 		"fn f(){struct{a=0 b=struct{c=true d=true} e=3}}",
 		new[] { 0, 2, 2, 3 },
 		new[] {
@@ -113,7 +123,20 @@ public sealed class StructTests
 			TypeKind.Int
 		}
 	)]
-	public void Nested1AnonymousStructTest(string source, int[] slices, TypeKind[] fieldKinds)
+	[InlineData(
+		"fn f(){struct{a=0 b=struct{c=struct{d=1.0 e=2.0} f=true} g=3}}",
+		new[] { 0, 2, 2, 2, 4, 3 },
+		new[] {
+			TypeKind.Float,
+			TypeKind.Float,
+			TypeKind.Struct,
+			TypeKind.Bool,
+			TypeKind.Int,
+			TypeKind.Struct,
+			TypeKind.Int
+		}
+	)]
+	public void Nested1AnonymousStructTest(string source, int[] expectedSlices, TypeKind[] expectedFieldKinds)
 	{
 		var compiler = new CompilerController();
 		var chunk = new ByteCodeChunk();
@@ -124,23 +147,25 @@ public sealed class StructTests
 			error = CompilerHelper.FormatError(source, errors, 1, 8);
 		Assert.Null(error);
 
-		var sliceCount = slices.Length / 2;
+		var sliceCount = expectedSlices.Length / 2;
 		Assert.Equal(sliceCount, chunk.structTypes.count);
-		Assert.Equal(fieldKinds.Length, chunk.structTypeFields.count);
+		Assert.Equal(expectedFieldKinds.Length, chunk.structTypeFields.count);
 
+		var slices = new int[chunk.structTypes.count * 2];
 		for (var i = 0; i < sliceCount; i++)
 		{
 			var structType = chunk.structTypes.buffer[i];
-			var slice = new Slice(slices[i * 2], slices[i * 2 + 1]);
-
-			Assert.Equal(slice.index, structType.fields.index);
-			Assert.Equal(slice.length, structType.fields.length);
+			slices[i * 2] = structType.fields.index;
+			slices[i * 2 + 1] = structType.fields.length;
 		}
+		Assert.Equal(expectedSlices, slices);
 
+		var fieldKinds = new TypeKind[chunk.structTypeFields.count];
 		for (var i = 0; i < fieldKinds.Length; i++)
 		{
 			var structTypeField = chunk.structTypeFields.buffer[i];
-			Assert.Equal(fieldKinds[i], structTypeField.type.kind);
+			fieldKinds[i] = structTypeField.type.kind;
 		}
+		Assert.Equal(expectedFieldKinds, fieldKinds);
 	}
 }
