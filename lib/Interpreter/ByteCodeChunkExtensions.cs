@@ -40,7 +40,7 @@ public static class ByteCodeChunkExtensions
 		for (var i = 0; i < type.parameters.length; i++)
 		{
 			var paramIndex = type.parameters.index + i;
-			var paramType = self.functionTypeParams.buffer[paramIndex];
+			var paramType = self.functionParamTypes.buffer[paramIndex];
 			sb.Append(paramType.ToString(self));
 			if (i < type.parameters.length - 1)
 				sb.Append(',');

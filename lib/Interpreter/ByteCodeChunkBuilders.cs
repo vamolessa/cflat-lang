@@ -1,25 +1,53 @@
 public struct FunctionTypeBuilder
 {
 	public ByteCodeChunk chunk;
+	public int startParameterIndex;
 	public int parameterCount;
 	public ValueType returnType;
 
 	public FunctionTypeBuilder(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
+		this.startParameterIndex = chunk.functionParamTypes.count;
 		this.parameterCount = 0;
 		this.returnType = new ValueType(TypeKind.Unit);
 	}
 
 	public void WithParam(ValueType type)
 	{
-		chunk.functionTypeParams.PushBack(type);
+		var paramIndex = startParameterIndex + parameterCount;
+		if (paramIndex < chunk.functionParamTypes.count)
+		{
+			var swapCount = chunk.functionParamTypes.count - startParameterIndex;
+			chunk.functionParamTypes.buffer.SwapRanges(startParameterIndex, paramIndex, swapCount);
+
+			for (var i = chunk.functionTypes.count - 1; i >= 0; i--)
+			{
+				ref var functionType = ref chunk.functionTypes.buffer[i];
+				var parametersSlice = functionType.parameters;
+				if (parametersSlice.index < paramIndex)
+					break;
+
+				functionType = new FunctionType(
+					new Slice(
+						parametersSlice.index - parameterCount,
+						parametersSlice.length
+					),
+					functionType.returnType,
+					functionType.parametersSize
+				);
+			}
+
+			startParameterIndex = chunk.functionParamTypes.count - parameterCount;
+		}
+
+		chunk.functionParamTypes.PushBack(type);
 		parameterCount += 1;
 	}
 
 	public int Build()
 	{
-		var parametersIndex = chunk.functionTypeParams.count - parameterCount;
+		var parametersIndex = chunk.functionParamTypes.count - parameterCount;
 
 		for (var i = 0; i < chunk.functionTypes.count; i++)
 		{
@@ -30,8 +58,8 @@ public struct FunctionTypeBuilder
 			var match = true;
 			for (var j = 0; j < parameterCount; j++)
 			{
-				var a = chunk.functionTypeParams.buffer[function.parameters.index + j];
-				var b = chunk.functionTypeParams.buffer[parametersIndex + j];
+				var a = chunk.functionParamTypes.buffer[function.parameters.index + j];
+				var b = chunk.functionParamTypes.buffer[parametersIndex + j];
 				if (!a.IsEqualTo(b))
 				{
 					match = false;
@@ -41,7 +69,7 @@ public struct FunctionTypeBuilder
 
 			if (match)
 			{
-				chunk.functionTypeParams.count = parametersIndex;
+				chunk.functionParamTypes.count = parametersIndex;
 				return i;
 			}
 		}
@@ -49,7 +77,7 @@ public struct FunctionTypeBuilder
 		var parametersTotalSize = 0;
 		for (var i = 0; i < parameterCount; i++)
 		{
-			var param = chunk.functionTypeParams.buffer[parametersIndex + i];
+			var param = chunk.functionParamTypes.buffer[parametersIndex + i];
 			parametersTotalSize += param.GetSize(chunk);
 		}
 
@@ -81,17 +109,17 @@ public struct StructTypeBuilder
 
 	public void WithField(string name, ValueType type)
 	{
-		var nextFieldIndex = startFieldIndex + fieldCount;
-		if (nextFieldIndex < chunk.structTypeFields.count)
+		var fieldIndex = startFieldIndex + fieldCount;
+		if (fieldIndex < chunk.structTypeFields.count)
 		{
 			var swapCount = chunk.structTypeFields.count - startFieldIndex;
-			chunk.structTypeFields.buffer.SwapRanges(startFieldIndex, nextFieldIndex, swapCount);
+			chunk.structTypeFields.buffer.SwapRanges(startFieldIndex, fieldIndex, swapCount);
 
 			for (var i = chunk.structTypes.count - 1; i >= 0; i--)
 			{
 				ref var structType = ref chunk.structTypes.buffer[i];
 				var fieldsSlice = structType.fields;
-				if (fieldsSlice.index < nextFieldIndex)
+				if (fieldsSlice.index < fieldIndex)
 					break;
 
 				structType = new StructType(

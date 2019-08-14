@@ -9,7 +9,7 @@ public sealed class ByteCodeChunk
 	public Buffer<TypeKind> literalKinds = new Buffer<TypeKind>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
 	public Buffer<FunctionType> functionTypes = new Buffer<FunctionType>(16);
-	public Buffer<ValueType> functionTypeParams = new Buffer<ValueType>(16);
+	public Buffer<ValueType> functionParamTypes = new Buffer<ValueType>(16);
 	public Buffer<Function> functions = new Buffer<Function>(8);
 	public Buffer<NativeFunction> nativeFunctions = new Buffer<NativeFunction>(8);
 	public Buffer<StructType> structTypes = new Buffer<StructType>(8);

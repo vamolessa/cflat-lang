@@ -161,13 +161,13 @@ public readonly struct FunctionType
 {
 	public readonly Slice parameters;
 	public readonly ValueType returnType;
-	public readonly int parametersTotalSize;
+	public readonly int parametersSize;
 
 	public FunctionType(Slice parameters, ValueType returnType, int parametersTotalSize)
 	{
 		this.parameters = parameters;
 		this.returnType = returnType;
-		this.parametersTotalSize = parametersTotalSize;
+		this.parametersSize = parametersTotalSize;
 	}
 }
 

@@ -77,7 +77,7 @@ public sealed class StructTests
 	[InlineData("fn b():int{p().xy1.y}", 9)]
 	[InlineData("fn b():int{p().xy2.x}", 11)]
 	[InlineData("fn b():int{p().xy2.y}", 13)]
-	public void FunctionStructInceptionReturnTests(string lastFunctionSource, int expected)
+	public void FunctionNestedStructReturnTests(string lastFunctionSource, int expected)
 	{
 		var source = string.Concat(@"
 			struct XY {

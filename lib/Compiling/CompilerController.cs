@@ -919,7 +919,7 @@ public sealed class CompilerController
 					argIndex < functionType.parameters.length
 				)
 				{
-					var paramType = self.compiler.chunk.functionTypeParams.buffer[functionType.parameters.index + argIndex];
+					var paramType = self.compiler.chunk.functionParamTypes.buffer[functionType.parameters.index + argIndex];
 					if (!argType.IsEqualTo(paramType))
 					{
 						self.compiler.AddSoftError(
@@ -946,7 +946,7 @@ public sealed class CompilerController
 		else if (type.kind == TypeKind.NativeFunction)
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
-		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersTotalSize : 0));
+		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersSize : 0));
 		self.compiler.typeStack.PushBack(
 			isFunction ? functionType.returnType : new ValueType(TypeKind.Unit)
 		);

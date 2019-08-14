@@ -65,7 +65,7 @@ public static class CompilerDeclarationExtensions
 	{
 		if (self.chunk.functions.count >= ushort.MaxValue)
 		{
-			self.chunk.functionTypeParams.count -= builder.parameterCount;
+			self.chunk.functionParamTypes.count -= builder.parameterCount;
 			self.AddSoftError(slice, "Too many function declarations");
 			return;
 		}
