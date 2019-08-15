@@ -24,7 +24,7 @@ public sealed class Compiler
 			AddHardError(slice, message, args);
 		}
 
-		var tokenizer = new Tokenizer(PepperScanners.scanners);
+		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		this.parser = new Parser(tokenizer, AddTokenizerError);
 		Reset(null, null);
 	}
