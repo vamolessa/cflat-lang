@@ -19,6 +19,21 @@ public static class CompilerEmitExtensions
 		return self.EmitByte((byte)instruction);
 	}
 
+	public static Compiler EmitPop(this Compiler self, int size)
+	{
+		if (size > 1)
+		{
+			self.EmitInstruction(Instruction.PopMultiple);
+			self.EmitByte((byte)size);
+		}
+		else if (size == 1)
+		{
+			self.EmitInstruction(Instruction.Pop);
+		}
+
+		return self;
+	}
+
 	public static Compiler EmitLoadLiteral(this Compiler self, ValueData value, TypeKind type)
 	{
 		var index = self.chunk.AddValueLiteral(value, type);

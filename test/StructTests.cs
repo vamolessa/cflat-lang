@@ -2,25 +2,6 @@ using Xunit;
 
 public sealed class StructTests
 {
-	public static string Run(string source, out ValueData value, out ValueType type)
-	{
-		const int TabSize = 8;
-		value = new ValueData();
-		type = new ValueType();
-
-		var pepper = new Pepper();
-		var compileErrors = pepper.CompileSource(source);
-		if (compileErrors.Count > 0)
-			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
-
-		var runError = pepper.RunLastFunction();
-		if (runError.isSome)
-			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
-
-		pepper.virtualMachine.Pop(out value, out type);
-		return null;
-	}
-
 	[Theory]
 	[InlineData("struct S{a:int} fn f():int{let s=S{a=3}s.a}", 3)]
 	[InlineData("struct S{a:int b:int} fn f():int{let s=S{a=3 b=7}s.a}", 3)]
@@ -33,7 +14,7 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.c}", 9)]
 	public void StructGetFieldTests(string source, int expected)
 	{
-		var error = Run(source, out var v, out var t);
+		var error = TestHelper.Run(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
@@ -51,7 +32,7 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.c=9 t.c}", 9)]
 	public void StructSetFieldTests(string source, int expected)
 	{
-		var error = Run(source, out var v, out var t);
+		var error = TestHelper.Run(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
@@ -66,7 +47,7 @@ public sealed class StructTests
 	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().z}", 7)]
 	public void FunctionStructReturnTests(string source, int expected)
 	{
-		var error = Run(source, out var v, out var t);
+		var error = TestHelper.Run(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
@@ -95,7 +76,7 @@ public sealed class StructTests
 			}
 		", lastFunctionSource);
 
-		var error = Run(source, out var v, out var t);
+		var error = TestHelper.Run(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);

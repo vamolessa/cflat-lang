@@ -3,6 +3,13 @@ using System.Text;
 
 public sealed class CompilerController
 {
+	public enum StatementKind
+	{
+		Other,
+		Expression,
+		Return,
+	}
+
 	public Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 
@@ -296,53 +303,29 @@ public sealed class CompilerController
 		}
 	}
 
-	public Option<ValueType> Statement()
+	public void Statement(out ValueType type, out StatementKind kind)
 	{
+		type = new ValueType(TypeKind.Unit);
+		kind = StatementKind.Other;
+
 		if (compiler.parser.Match(TokenKind.OpenCurlyBrackets))
-		{
 			BlockStatement();
-			return Option.None;
-		}
 		else if (compiler.parser.Match(TokenKind.Let))
-		{
 			VariableDeclaration(false);
-			return Option.None;
-		}
 		else if (compiler.parser.Match(TokenKind.Mut))
-		{
 			VariableDeclaration(true);
-			return Option.None;
-		}
 		else if (compiler.parser.Match(TokenKind.While))
-		{
 			WhileStatement();
-			return Option.None;
-		}
 		else if (compiler.parser.Match(TokenKind.For))
-		{
 			ForStatement();
-			return Option.None;
-		}
 		else if (compiler.parser.Match(TokenKind.Break))
-		{
 			BreakStatement();
-			return Option.None;
-		}
 		else if (compiler.parser.Match(TokenKind.Return))
-		{
-			var type = ReturnStatement();
-			return Option.Some(type);
-		}
+			(type, kind) = (ReturnStatement(), StatementKind.Return);
 		else if (compiler.parser.Match(TokenKind.Print))
-		{
 			PrintStatement();
-			return Option.None;
-		}
 		else
-		{
-			var type = ExpressionStatement();
-			return Option.Some(type);
-		}
+			(type, kind) = (ExpressionStatement(), StatementKind.Expression);
 	}
 
 	public ValueType ExpressionStatement()
@@ -352,11 +335,7 @@ public sealed class CompilerController
 			compiler.typeStack.PopLast() :
 			new ValueType(TypeKind.Unit);
 
-		var size = type.GetSize(compiler.chunk);
-		if (size > 1)
-			compiler.EmitInstruction(Instruction.PopMultiple).EmitByte((byte)size);
-		else
-			compiler.EmitInstruction(Instruction.Pop);
+		compiler.EmitPop(type.GetSize(compiler.chunk));
 
 		return type;
 	}
@@ -369,7 +348,7 @@ public sealed class CompilerController
 			!compiler.parser.Check(TokenKind.End)
 		)
 		{
-			Statement();
+			Statement(out var _, out var _);
 		}
 
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
@@ -476,15 +455,15 @@ public sealed class CompilerController
 		var expectedType = compiler.functionReturnTypeStack.buffer[compiler.functionReturnTypeStack.count - 1];
 		var returnType = new ValueType(TypeKind.Unit);
 
-		if (!expectedType.IsKind(TypeKind.Unit))
+		if (expectedType.IsKind(TypeKind.Unit))
+		{
+			compiler.EmitInstruction(Instruction.LoadUnit);
+		}
+		else
 		{
 			Expression(this);
 			if (compiler.typeStack.count > 0)
 				returnType = compiler.typeStack.PopLast();
-		}
-		else
-		{
-			compiler.EmitInstruction(Instruction.LoadUnit);
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
@@ -525,35 +504,36 @@ public sealed class CompilerController
 	public static void Block(CompilerController self, Precedence precedence)
 	{
 		var scope = self.compiler.BeginScope();
-		var maybeType = new Option<ValueType>();
+		var lastStatementType = new ValueType(TypeKind.Unit);
+		var statementKind = StatementKind.Other;
 
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
 			!self.compiler.parser.Check(TokenKind.End)
 		)
 		{
-			maybeType = self.Statement();
+			self.Statement(out lastStatementType, out statementKind);
 		}
 
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
 		var sizeLeftOnStack = 0;
-		if (maybeType.isSome)
+		if (statementKind == StatementKind.Expression)
 		{
-			sizeLeftOnStack = maybeType.value.GetSize(self.compiler.chunk);
+			sizeLeftOnStack = lastStatementType.GetSize(self.compiler.chunk);
 			self.compiler.chunk.bytes.count -= sizeLeftOnStack > 1 ? 2 : 1;
 		}
 
 		self.compiler.EndScope(scope, sizeLeftOnStack);
 
-		if (maybeType.isSome)
-		{
-			self.compiler.typeStack.PushBack(maybeType.value);
-		}
-		else
+		if (statementKind == StatementKind.Other)
 		{
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
+		}
+		else
+		{
+			self.compiler.typeStack.PushBack(lastStatementType);
 		}
 	}
 
@@ -569,11 +549,20 @@ public sealed class CompilerController
 		var elseJump = self.compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		Block(self, precedence);
 		var thenType = self.compiler.typeStack.PopLast();
+		var hasElse = self.compiler.parser.Match(TokenKind.Else);
+
+		if (!hasElse && !thenType.IsKind(TypeKind.Unit))
+		{
+			var size = thenType.GetSize(self.compiler.chunk);
+			self.compiler.EmitPop(size);
+			self.compiler.EmitInstruction(Instruction.LoadUnit);
+			thenType = new ValueType(TypeKind.Unit);
+		}
 
 		var thenJump = self.compiler.BeginEmitForwardJump(Instruction.JumpForward);
 		self.compiler.EndEmitForwardJump(elseJump);
 
-		if (self.compiler.parser.Match(TokenKind.Else))
+		if (hasElse)
 		{
 			if (self.compiler.parser.Match(TokenKind.If))
 			{
@@ -592,8 +581,6 @@ public sealed class CompilerController
 		else
 		{
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
-			if (!thenType.IsKind(TypeKind.Unit))
-				self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "If expression must not produce a value when there is no else branch. Found type: {0}. Try ending with '{}'", thenType);
 		}
 
 		self.compiler.EndEmitForwardJump(thenJump);
@@ -877,15 +864,7 @@ public sealed class CompilerController
 		var fieldSize = type.GetSize(self.compiler.chunk);
 		var sizeAboveField = structSize - offset - fieldSize;
 
-		if (sizeAboveField > 1)
-		{
-			self.compiler.EmitInstruction(Instruction.PopMultiple);
-			self.compiler.EmitByte((byte)sizeAboveField);
-		}
-		else if (sizeAboveField > 0)
-		{
-			self.compiler.EmitInstruction(Instruction.Pop);
-		}
+		self.compiler.EmitPop(sizeAboveField);
 
 		if (offset > 0)
 		{

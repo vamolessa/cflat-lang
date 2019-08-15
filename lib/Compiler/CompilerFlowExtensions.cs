@@ -36,8 +36,7 @@ public static class CompilerFlowExtensions
 		}
 		else
 		{
-			self.EmitInstruction(Instruction.PopMultiple);
-			self.EmitByte((byte)localVarsSize);
+			self.EmitPop(localVarsSize);
 		}
 
 		self.localVariables.count -= localCount;

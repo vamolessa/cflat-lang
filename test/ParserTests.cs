@@ -2,7 +2,7 @@ using Xunit;
 
 public sealed class ParserTest
 {
-	public static string CopmileExpression(string source)
+	public static string CompileExpression(string source)
 	{
 		const int TabSize = 8;
 		var compiler = new CompilerController();
@@ -17,7 +17,7 @@ public sealed class ParserTest
 	[InlineData(".1")]
 	public void TestFailExpressions(string source)
 	{
-		var result = CopmileExpression(source);
+		var result = CompileExpression(source);
 		Assert.NotNull(result);
 	}
 
@@ -39,7 +39,7 @@ public sealed class ParserTest
 	[InlineData("{let assign = true or false assign}")]
 	public void TestExpressions(string source)
 	{
-		var result = CopmileExpression(source);
+		var result = CompileExpression(source);
 		Assert.Null(result);
 	}
 
@@ -51,7 +51,7 @@ public sealed class ParserTest
 	[InlineData("if if true { false } else { true } { 4 is not 6 {} }")]
 	public void TestComplexExpressions(string source)
 	{
-		var result = CopmileExpression(source);
+		var result = CompileExpression(source);
 		Assert.Null(result);
 	}
 
@@ -61,7 +61,7 @@ public sealed class ParserTest
 	[InlineData("{let a=if true{1<2}else{let b=3+4 b is not 0} not a}")]
 	public void TestMultiExpressions(string source)
 	{
-		var result = CopmileExpression(source);
+		var result = CompileExpression(source);
 		Assert.Null(result);
 	}
 
@@ -74,7 +74,7 @@ public sealed class ParserTest
 	[InlineData("fn(a:int,b:int):bool{fn(){return{}} true}")]
 	public void TestFunctionDeclaration(string source)
 	{
-		var result = CopmileExpression(source);
+		var result = CompileExpression(source);
 		Assert.Null(result);
 	}
 }

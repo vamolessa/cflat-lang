@@ -69,4 +69,29 @@ public sealed class FunctionTests
 		}
 		Assert.Equal(expectedParamsKinds, fieldKinds);
 	}
+
+	[Theory]
+	[InlineData("fn f():int{if true{1}else{0}}", 1)]
+	[InlineData("fn f():int{if true{return 1}else{return 0}}", 1)]
+	[InlineData("fn f():int{if true{1}else{return 0}}", 1)]
+	[InlineData("fn f():int{if true{return 1}else{0}}", 1)]
+	[InlineData("fn f():int{let a=if true{return 1}else{0} a}", 1)]
+	[InlineData("fn f():int{let a=if true{1}else{return 0} a}", 1)]
+	[InlineData("fn f():int{if true{return 1} 0}", 1)]
+	private void ReturnIntTest(string source, int expected)
+	{
+		var error = TestHelper.Run(source, out var value, out var type);
+		Assert.Null(error);
+		Assert.Equal(TypeKind.Int, type.kind);
+		Assert.Equal(expected, value.asInt);
+	}
+
+	[Theory]
+	[InlineData("fn f():int{let a=if true{return 1} a}")]
+	[InlineData("fn f():int{let a=if true{1} a}")]
+	private void ReturnIntTestError(string source)
+	{
+		var error = TestHelper.Run(source, out var value, out var type);
+		Assert.NotNull(error);
+	}
 }
