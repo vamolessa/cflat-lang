@@ -6,9 +6,9 @@ public struct Point : IMarshalable
 
 	public void Read(VirtualMachine vm, ref int index)
 	{
-		x = Marshal.ReadInt(vm, ref index);
-		y = Marshal.ReadInt(vm, ref index);
-		z = Marshal.ReadInt(vm, ref index);
+		x = Marshaler.ReadInt(vm, ref index);
+		y = Marshaler.ReadInt(vm, ref index);
+		z = Marshaler.ReadInt(vm, ref index);
 	}
 }
 
@@ -17,7 +17,7 @@ public interface IMarshalable
 	void Read(VirtualMachine vm, ref int index);
 }
 
-public static class Marshal
+public static class Marshaler
 {
 	public static bool ReadBool(VirtualMachine vm, ref int index)
 	{
