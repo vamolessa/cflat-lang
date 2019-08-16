@@ -191,12 +191,14 @@ public readonly struct NativeFunction
 
 	public readonly string name;
 	public readonly int typeIndex;
+	public readonly int returnSize;
 	public readonly Callback callback;
 
-	public NativeFunction(string name, int typeIndex, Callback callback)
+	public NativeFunction(string name, int typeIndex, int returnSize, Callback callback)
 	{
 		this.name = name;
 		this.typeIndex = typeIndex;
+		this.returnSize = returnSize;
 		this.callback = callback;
 	}
 }

@@ -44,8 +44,7 @@ internal static class VirtualMachineInstructions
 			}
 		case Instruction.CallNative:
 			{
-				var size = NextByte(vm, ref frame);
-				var stackTop = vm.valueStack.count - size;
+				var stackTop = vm.valueStack.count - NextByte(vm, ref frame);
 				var functionIndex = vm.valueStack.buffer[stackTop - 1].asInt;
 				var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
@@ -57,10 +56,8 @@ internal static class VirtualMachineInstructions
 					)
 				);
 
-				var returnType = vm.chunk.functionTypes.buffer[function.typeIndex].returnType;
-				var returnSize = returnType.GetSize(vm.chunk);
 				function.callback(vm);
-				VirtualMachineHelper.Return(vm, returnSize);
+				VirtualMachineHelper.Return(vm, function.returnSize);
 				break;
 			}
 		case Instruction.Return:

@@ -10,6 +10,7 @@ public static class PepperFunctionExtensions
 		self.byteCode.nativeFunctions.PushBack(new NativeFunction(
 			functionName,
 			functionTypeIndex,
+			returnType.GetSize(self.byteCode),
 			functionCallback
 		));
 	}
