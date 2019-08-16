@@ -29,4 +29,9 @@ public static class VirtualMachineStackExtensions
 		var baseIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
 		return vm.valueStack.buffer[baseIndex + index];
 	}
+
+	public static ValueData GetArg(this VirtualMachine vm, int index)
+	{
+		return new ValueData();
+	}
 }
