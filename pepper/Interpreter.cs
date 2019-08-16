@@ -8,28 +8,34 @@ public static class Interpreter
 		public int y;
 		public int z;
 
-		int IMarshalable.Size { get { return 3; } }
-
-		void IMarshalable.Read(ref Marshal marshal)
+		void IMarshalable.Read(ref StackReader reader)
 		{
-			marshal.Read(out x);
-			marshal.Read(out y);
-			marshal.Read(out z);
+			x = reader.ReadInt();
+			y = reader.ReadInt();
+			z = reader.ReadInt();
 		}
 
-		void IMarshalable.Write(ref Marshal marshal)
+		void IMarshalable.Push(VirtualMachine vm)
 		{
-			marshal.Write(x);
-			marshal.Write(y);
-			marshal.Write(z);
+			vm.PushInt(x);
+			vm.PushInt(y);
+			vm.PushInt(z);
+		}
+
+		void IMarshalable.Pop(VirtualMachine vm)
+		{
+			z = vm.PopInt();
+			y = vm.PopInt();
+			x = vm.PopInt();
 		}
 	}
 
 	public static void TestFunction(VirtualMachine vm)
 	{
-		vm.MarshalArgs().Read(out Point p);
+		var reader = vm.ReadArgs();
+		var p = reader.ReadStruct<Point>();
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
-		vm.Marshal().Push("hey!!");
+		vm.PushString("HEEEY YEAHAH!");
 	}
 
 	public static void RunSource(string source, bool printDisassembled)

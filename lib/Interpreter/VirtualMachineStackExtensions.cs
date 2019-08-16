@@ -1,3 +1,10 @@
+public interface IMarshalable
+{
+	void Read(ref StackReader reader);
+	void Push(VirtualMachine vm);
+	void Pop(VirtualMachine vm);
+}
+
 public static class VirtualMachineStackExtensions
 {
 	public static void PushUnit(this VirtualMachine vm)
@@ -24,14 +31,67 @@ public static class VirtualMachineStackExtensions
 		value = vm.valueStack.PopLast();
 	}
 
-	public static Marshal MarshalArgs(this VirtualMachine vm)
+	public static void PushBool(this VirtualMachine vm, bool value)
 	{
-		var baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
-		return new Marshal(vm, baseStackIndex);
+		vm.Push(new ValueData(value), new ValueType(TypeKind.Bool));
 	}
 
-	public static Marshal Marshal(this VirtualMachine vm)
+	public static void PushInt(this VirtualMachine vm, int value)
 	{
-		return new Marshal(vm, vm.valueStack.count);
+		vm.Push(new ValueData(value), new ValueType(TypeKind.Int));
+	}
+
+	public static void PushFloat(this VirtualMachine vm, float value)
+	{
+		vm.Push(new ValueData(value), new ValueType(TypeKind.Float));
+	}
+
+	public static void PushString(this VirtualMachine vm, string value)
+	{
+		vm.Push(
+			new ValueData(vm.heap.count),
+			new ValueType(TypeKind.String)
+		);
+		vm.heap.PushBack(value);
+	}
+
+	public static void PushStruct<T>(this VirtualMachine vm, T value) where T : struct, IMarshalable
+	{
+		value.Push(vm);
+	}
+
+	public static bool PopBool(this VirtualMachine vm)
+	{
+		return vm.Pop().asBool;
+	}
+
+	public static int PopInt(this VirtualMachine vm)
+	{
+		return vm.Pop().asInt;
+	}
+
+	public static float PopFloat(this VirtualMachine vm)
+	{
+		return vm.Pop().asFloat;
+	}
+
+	public static string PopString(this VirtualMachine vm)
+	{
+		return vm.heap.buffer[vm.Pop().asInt] as string;
+	}
+
+	public static T PopStruct<T>(this VirtualMachine vm) where T : struct, IMarshalable
+	{
+		var value = default(T);
+		value.Pop(vm);
+		return value;
+	}
+
+	public static StackReader ReadArgs(this VirtualMachine vm)
+	{
+		return new StackReader(
+			vm,
+			vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex
+		);
 	}
 }
