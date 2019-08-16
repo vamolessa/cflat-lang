@@ -2,12 +2,34 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
+	public struct Point : IMarshalable
+	{
+		public int x;
+		public int y;
+		public int z;
+
+		int IMarshalable.Size { get { return 3; } }
+
+		void IMarshalable.Read(ref Marshal marshal)
+		{
+			marshal.Read(out x);
+			marshal.Read(out y);
+			marshal.Read(out z);
+		}
+
+		void IMarshalable.Write(ref Marshal marshal)
+		{
+			marshal.Write(x);
+			marshal.Write(y);
+			marshal.Write(z);
+		}
+	}
+
 	public static void TestFunction(VirtualMachine vm)
 	{
-		var x = vm.GetAt(0).asInt;
-		var y = vm.GetAt(1).asInt;
-		System.Console.WriteLine("HELLO FROM C# {0}, {1}", x, y);
-		vm.PushUnit();
+		vm.MarshalArgs().Read(out Point p);
+		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
+		vm.Marshal().Push("hey!!");
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
@@ -17,7 +39,8 @@ public static class Interpreter
 		pepper.AddFunction(
 			"testFunction",
 			TestFunction,
-			new ValueType(TypeKind.Unit),
+			new ValueType(TypeKind.String),
+			new ValueType(TypeKind.Int),
 			new ValueType(TypeKind.Int),
 			new ValueType(TypeKind.Int)
 		);

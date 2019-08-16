@@ -24,14 +24,14 @@ public static class VirtualMachineStackExtensions
 		value = vm.valueStack.PopLast();
 	}
 
-	public static ValueData GetAt(this VirtualMachine vm, int index)
+	public static Marshal MarshalArgs(this VirtualMachine vm)
 	{
-		var baseIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
-		return vm.valueStack.buffer[baseIndex + index];
+		var baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+		return new Marshal(vm, baseStackIndex);
 	}
 
-	public static ValueData GetArgs(this VirtualMachine vm)
+	public static Marshal Marshal(this VirtualMachine vm)
 	{
-		return new ValueData();
+		return new Marshal(vm, vm.valueStack.count);
 	}
 }
