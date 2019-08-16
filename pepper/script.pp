@@ -1,3 +1,7 @@
+fn foo():int {
+	3
+}
+
 fn main() {
-	print testFunction(2, 4, 9)
+	print foo()
 }

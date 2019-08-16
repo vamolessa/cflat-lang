@@ -4,7 +4,7 @@ public sealed class Pepper
 {
 	public readonly VirtualMachine virtualMachine = new VirtualMachine();
 	internal readonly CompilerController compiler = new CompilerController();
-	internal ByteCodeChunk byteCode = new ByteCodeChunk();
+	public readonly ByteCodeChunk byteCode = new ByteCodeChunk();
 	internal string source;
 
 	public List<CompileError> CompileSource(string source)

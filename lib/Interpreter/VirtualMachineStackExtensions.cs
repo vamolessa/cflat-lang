@@ -9,49 +9,37 @@ public static class VirtualMachineStackExtensions
 {
 	public static void PushUnit(this VirtualMachine vm)
 	{
-		vm.typeStack.PushBack(new ValueType(TypeKind.Unit));
 		vm.valueStack.PushBack(new ValueData());
 	}
 
-	public static void Push(this VirtualMachine vm, ValueData value, ValueType type)
+	public static void Push(this VirtualMachine vm, ValueData value)
 	{
-		vm.typeStack.PushBack(type);
 		vm.valueStack.PushBack(value);
 	}
 
 	public static ValueData Pop(this VirtualMachine vm)
 	{
-		vm.typeStack.count -= 1;
 		return vm.valueStack.PopLast();
-	}
-
-	public static void Pop(this VirtualMachine vm, out ValueData value, out ValueType type)
-	{
-		type = vm.typeStack.PopLast();
-		value = vm.valueStack.PopLast();
 	}
 
 	public static void PushBool(this VirtualMachine vm, bool value)
 	{
-		vm.Push(new ValueData(value), new ValueType(TypeKind.Bool));
+		vm.Push(new ValueData(value));
 	}
 
 	public static void PushInt(this VirtualMachine vm, int value)
 	{
-		vm.Push(new ValueData(value), new ValueType(TypeKind.Int));
+		vm.Push(new ValueData(value));
 	}
 
 	public static void PushFloat(this VirtualMachine vm, float value)
 	{
-		vm.Push(new ValueData(value), new ValueType(TypeKind.Float));
+		vm.Push(new ValueData(value));
 	}
 
 	public static void PushString(this VirtualMachine vm, string value)
 	{
-		vm.Push(
-			new ValueData(vm.heap.count),
-			new ValueType(TypeKind.String)
-		);
+		vm.Push(new ValueData(vm.heap.count));
 		vm.heap.PushBack(value);
 	}
 

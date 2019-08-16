@@ -15,7 +15,10 @@ public static class TestHelper
 		if (runError.isSome)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		pepper.virtualMachine.Pop(out value, out type);
+		value = pepper.virtualMachine.Pop();
+		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
+		type = pepper.byteCode.functionTypes.buffer[lastFunction.typeIndex].returnType;
+
 		return null;
 	}
 
@@ -34,7 +37,10 @@ public static class TestHelper
 		if (runError.isSome)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		pepper.virtualMachine.Pop(out value, out type);
+		value = pepper.virtualMachine.Pop();
+		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
+		type = pepper.byteCode.functionTypes.buffer[lastFunction.typeIndex].returnType;
+
 		return null;
 	}
 }

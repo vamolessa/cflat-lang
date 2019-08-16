@@ -31,7 +31,6 @@ public sealed class VirtualMachine
 	}
 
 	internal ByteCodeChunk chunk;
-	internal Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
 	internal Buffer<object> heap;
@@ -42,13 +41,11 @@ public sealed class VirtualMachine
 		this.chunk = chunk;
 		maybeError = Option.None;
 
-		typeStack.count = 0;
 		valueStack.count = 0;
 		callframeStack.count = 0;
 
 		var function = chunk.functions.buffer[functionIndex];
 		valueStack.PushBack(new ValueData(functionIndex));
-		typeStack.PushBack(new ValueType(TypeKind.Function, function.typeIndex));
 		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
 
 		heap = new Buffer<object>
