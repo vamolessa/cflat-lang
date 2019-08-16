@@ -4,45 +4,52 @@ public struct Point : IMarshalable
 	public int y;
 	public int z;
 
-	public void Read(VirtualMachine vm, ref int index)
+	public void Read(ref Marshaler marshaler)
 	{
-		x = Marshaler.ReadInt(vm, ref index);
-		y = Marshaler.ReadInt(vm, ref index);
-		z = Marshaler.ReadInt(vm, ref index);
+		marshaler.Read(out x);
+		marshaler.Read(out y);
+		marshaler.Read(out z);
 	}
 }
 
 public interface IMarshalable
 {
-	void Read(VirtualMachine vm, ref int index);
+	void Read(ref Marshaler marshaler);
 }
 
-public static class Marshaler
+public struct Marshaler
 {
-	public static bool ReadBool(VirtualMachine vm, ref int index)
+	private VirtualMachine vm;
+	private int index;
+
+	public Marshaler Read(out bool value)
 	{
-		return vm.valueStack.buffer[index++].asBool;
+		value = vm.valueStack.buffer[index++].asBool;
+		return this;
 	}
 
-	public static int ReadInt(VirtualMachine vm, ref int index)
+	public Marshaler Read(out int value)
 	{
-		return vm.valueStack.buffer[index++].asInt;
+		value = vm.valueStack.buffer[index++].asInt;
+		return this;
 	}
 
-	public static float ReadFloat(VirtualMachine vm, ref int index)
+	public Marshaler Read(out float value)
 	{
-		return vm.valueStack.buffer[index++].asFloat;
+		value = vm.valueStack.buffer[index++].asFloat;
+		return this;
 	}
 
-	public static string ReadString(VirtualMachine vm, ref int index)
+	public Marshaler Read(out string value)
 	{
-		return vm.heap.buffer[vm.valueStack.buffer[index++].asInt] as string;
+		value = vm.heap.buffer[vm.valueStack.buffer[index++].asInt] as string;
+		return this;
 	}
 
-	public static T ReadStruct<T>(VirtualMachine vm, ref int index) where T : struct, IMarshalable
+	public Marshaler Read<T>(out T value) where T : struct, IMarshalable
 	{
-		var value = new T();
-		value.Read(vm, ref index);
-		return value;
+		value = default(T);
+		value.Read(ref this);
+		return this;
 	}
 }

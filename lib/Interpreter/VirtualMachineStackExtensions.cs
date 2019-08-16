@@ -30,7 +30,7 @@ public static class VirtualMachineStackExtensions
 		return vm.valueStack.buffer[baseIndex + index];
 	}
 
-	public static ValueData GetArg(this VirtualMachine vm, int index)
+	public static ValueData GetArgs(this VirtualMachine vm)
 	{
 		return new ValueData();
 	}
