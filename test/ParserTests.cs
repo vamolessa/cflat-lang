@@ -35,6 +35,7 @@ public sealed class ParserTest
 	[InlineData("1 < 2 is not 3 >= 4")]
 	[InlineData("true is not false")]
 	[InlineData("true or false")]
+	[InlineData("true and not false")]
 	[InlineData("true and false or 3 > 2")]
 	[InlineData("{let assign = true or false assign}")]
 	public void TestExpressions(string source)

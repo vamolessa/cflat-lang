@@ -38,6 +38,26 @@ public static class Interpreter
 		vm.PushString("HEEEY YEAHAH!");
 	}
 
+	struct FunctionDefinition : System.IDisposable
+	{
+		public FunctionDefinition([System.Runtime.CompilerServices.CallerMemberName] string functionName = "")
+		{
+		}
+
+		void System.IDisposable.Dispose()
+		{
+		}
+	}
+
+/*
+	public static void OtherFunction<F>(VirtualMachine vm, F f)
+	{
+		f.Arg(out int x);
+		f.Arg(out Point p);
+		f.ReturnsInt();
+	}
+*/
+
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
