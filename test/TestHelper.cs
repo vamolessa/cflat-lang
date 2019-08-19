@@ -3,7 +3,8 @@ public static class TestHelper
 	public static T[] BufferToArray<T>(Buffer<T> buffer)
 	{
 		var array = new T[buffer.count];
-		System.Array.Copy(buffer.buffer, 0, array, 0, array.Length);
+		if (buffer.count > 0)
+			System.Array.Copy(buffer.buffer, 0, array, 0, array.Length);
 		return array;
 	}
 

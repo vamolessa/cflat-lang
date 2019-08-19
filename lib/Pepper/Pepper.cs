@@ -41,6 +41,6 @@ public sealed class Pepper
 
 	public RuntimeContext GetContext()
 	{
-		return new RuntimeContext(virtualMachine);
+		return new RuntimeContext(virtualMachine, 0);
 	}
 }

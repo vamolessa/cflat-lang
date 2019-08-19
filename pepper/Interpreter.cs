@@ -8,7 +8,7 @@ public static class Interpreter
 		public int y;
 		public int z;
 
-		public int Size => 2;
+		public int Size => 3;
 
 		public void Read<M>(ref M marshal) where M : IMarshal
 		{

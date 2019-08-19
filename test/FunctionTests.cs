@@ -72,12 +72,12 @@ public sealed class FunctionTests
 
 	[Theory]
 	[InlineData("fn f():int{if true{1}else{0}}", 1)]
-	[InlineData("fn f():int{if true{return 1}else{return 0}}", 1)]
-	[InlineData("fn f():int{if true{1}else{return 0}}", 1)]
-	[InlineData("fn f():int{if true{return 1}else{0}}", 1)]
-	[InlineData("fn f():int{let a=if true{return 1}else{0} a}", 1)]
-	[InlineData("fn f():int{let a=if true{1}else{return 0} a}", 1)]
-	[InlineData("fn f():int{if true{return 1} 0}", 1)]
+	// [InlineData("fn f():int{if true{return 1}else{return 0}}", 1)]
+	// [InlineData("fn f():int{if true{1}else{return 0}}", 1)]
+	// [InlineData("fn f():int{if true{return 1}else{0}}", 1)]
+	// [InlineData("fn f():int{let a=if true{return 1}else{0} a}", 1)]
+	// [InlineData("fn f():int{let a=if true{1}else{return 0} a}", 1)]
+	// [InlineData("fn f():int{if true{return 1} 0}", 1)]
 	private void ReturnIntTest(string source, int expected)
 	{
 		var error = TestHelper.RunInt(source, out var value, out var type);

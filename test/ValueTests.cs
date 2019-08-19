@@ -10,11 +10,11 @@ public sealed class ValueTests
 
 		AssertIsBlitable<ValueData>();
 		Assert.Equal(4, sizeof(ValueData));
-		Assert.Equal(4, System.Runtime.InteropServices.Marshal.SizeOf(typeof(ValueData)));
+		Assert.Equal(4, Marshal.SizeOf(typeof(ValueData)));
 
 		AssertIsBlitable<ValueType>();
 		Assert.Equal(4, sizeof(ValueType));
-		Assert.Equal(4, System.Runtime.InteropServices.Marshal.SizeOf(typeof(ValueType)));
+		Assert.Equal(4, Marshal.SizeOf(typeof(ValueType)));
 	}
 
 	[Theory]

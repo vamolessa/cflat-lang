@@ -35,10 +35,10 @@ public struct RuntimeContext : IContext
 	private VirtualMachine vm;
 	private int argStackIndex;
 
-	public RuntimeContext(VirtualMachine vm)
+	public RuntimeContext(VirtualMachine vm, int argStackIndex)
 	{
 		this.vm = vm;
-		this.argStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+		this.argStackIndex = argStackIndex;
 	}
 
 	public void Arg(out bool value) => value = vm.valueStack.buffer[argStackIndex++].asBool;
@@ -60,10 +60,10 @@ public struct RuntimeContext : IContext
 	public void ReturnsStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable { }
 
 	public void Pop() => vm.valueStack.count--;
-	public void Pop(out bool value) => value = vm.valueStack.buffer[vm.valueStack.count--].asBool;
-	public void Pop(out int value) => value = vm.valueStack.buffer[vm.valueStack.count--].asInt;
-	public void Pop(out float value) => value = vm.valueStack.buffer[vm.valueStack.count--].asFloat;
-	public void Pop(out string value) => value = vm.heap.buffer[vm.valueStack.buffer[vm.valueStack.count--].asInt] as string;
+	public void Pop(out bool value) => value = vm.valueStack.buffer[--vm.valueStack.count].asBool;
+	public void Pop(out int value) => value = vm.valueStack.buffer[--vm.valueStack.count].asInt;
+	public void Pop(out float value) => value = vm.valueStack.buffer[--vm.valueStack.count].asFloat;
+	public void Pop(out string value) => value = vm.heap.buffer[vm.valueStack.buffer[--vm.valueStack.count].asInt] as string;
 	public void Pop<T>(out T value) where T : struct, IMarshalable
 	{
 		value = default;
