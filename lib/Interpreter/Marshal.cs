@@ -19,11 +19,18 @@ public sealed class WrongStructSizeException : System.Exception
 
 public static class MarshalHelper
 {
-	public static ValueType GetStructType<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
+	public static ValueType RegisterStruct<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
 	{
+		var name = typeof(T).Name;
+		for (var i = 0; i < chunk.structTypes.count; i++)
+		{
+			if (chunk.structTypes.buffer[i].name == name)
+				return new ValueType(TypeKind.Struct, i);
+		}
+
 		var marshal = new DefinitionMarshal(chunk);
 		default(T).Write(ref marshal);
-		var structTypeIndex = marshal.builder.BuildAnonymous();
+		var structTypeIndex = marshal.builder.Build(name);
 		var size = chunk.structTypes.buffer[structTypeIndex].size;
 		if (size == default(T).Size)
 			return new ValueType(TypeKind.Struct, structTypeIndex);
@@ -108,5 +115,5 @@ public struct DefinitionMarshal : IMarshal
 	public void Write(int value, string name) => builder.WithField(name, new ValueType(TypeKind.Int));
 	public void Write(float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
 	public void Write(string value, string name) => builder.WithField(name, new ValueType(TypeKind.String));
-	public void Write<T>(T value, string name) where T : struct, IMarshalable => builder.WithField(name, MarshalHelper.GetStructType<T>(chunk));
+	public void Write<T>(T value, string name) where T : struct, IMarshalable => builder.WithField(name, MarshalHelper.RegisterStruct<T>(chunk));
 }

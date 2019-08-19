@@ -56,10 +56,11 @@ internal static class VirtualMachineInstructions
 					)
 				);
 
-				function.callback(new RuntimeContext(
+				var context = new RuntimeContext(
 					vm,
 					vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex
-				));
+				);
+				function.callback(ref context);
 				VirtualMachineHelper.Return(vm, function.returnSize);
 				break;
 			}

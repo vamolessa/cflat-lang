@@ -1,7 +1,3 @@
-fn foo():int {
-	3
-}
-
 fn main() {
-	print foo()
+	TestFunction(Point{x=1 y=3 z=11})
 }

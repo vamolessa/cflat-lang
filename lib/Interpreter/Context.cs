@@ -136,7 +136,7 @@ public struct DefinitionContext : IContext
 	public void Arg<T>(out T value) where T : struct, IMarshalable
 	{
 		value = default(T);
-		builder.WithParam(MarshalHelper.GetStructType<T>(chunk));
+		builder.WithParam(MarshalHelper.RegisterStruct<T>(chunk));
 	}
 
 	private void Returns(string functionName, ValueType returnType)
@@ -149,7 +149,7 @@ public struct DefinitionContext : IContext
 	public void ReturnsInt([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.Int));
 	public void ReturnsFloat([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.Float));
 	public void ReturnsString([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.String));
-	public void ReturnsStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable => Returns(functionName, MarshalHelper.GetStructType<T>(chunk));
+	public void ReturnsStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable => Returns(functionName, MarshalHelper.RegisterStruct<T>(chunk));
 
 	public void Pop() { }
 	public void Pop(out bool value) => value = default;

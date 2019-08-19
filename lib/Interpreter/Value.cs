@@ -187,7 +187,7 @@ public readonly struct Function
 
 public readonly struct NativeFunction
 {
-	public delegate void Callback<C>(C context) where C : IContext;
+	public delegate void Callback<C>(ref C context) where C : IContext;
 
 	public readonly string name;
 	public readonly int typeIndex;

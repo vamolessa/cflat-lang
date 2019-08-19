@@ -5,7 +5,7 @@ public static class PepperFunctionExtensions
 		var context = new DefinitionContext(self.byteCode);
 		try
 		{
-			definitionFunction(context);
+			definitionFunction(ref context);
 			context.builder.Cancel();
 			return false;
 		}

@@ -25,7 +25,7 @@ public static class Interpreter
 		}
 	}
 
-	public static void TestFunction<C>(C context) where C : IContext
+	public static void TestFunction<C>(ref C context) where C : IContext
 	{
 		context.Arg(out Point p);
 		context.ReturnsUnit();
