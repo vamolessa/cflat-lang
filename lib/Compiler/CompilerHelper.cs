@@ -131,15 +131,13 @@ public static class CompilerHelper
 		return "";
 	}
 
-	public static string FormatError(string source, List<CompileError> errors, int contextSize, int tabSize)
+	public static string FormatError(string source, Buffer<CompileError> errors, int contextSize, int tabSize)
 	{
-		if (errors == null)
-			return "";
-
 		var sb = new StringBuilder();
 
-		foreach (var e in errors)
+		for (var i = 0; i < errors.count; i++)
 		{
+			var e = errors.buffer[i];
 			var position = GetLineAndColumn(source, e.slice.index, tabSize);
 			var lines = GetLines(
 				source,

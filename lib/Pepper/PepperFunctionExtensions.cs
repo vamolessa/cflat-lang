@@ -23,7 +23,11 @@ public static class PepperFunctionExtensions
 		catch (WrongStructSizeException e)
 		{
 			context.builder.Cancel();
-			System.Console.WriteLine("WRONG STRUCT SIZE FOR TYPE {0}, EXPECTED {1}", e.type.Name, e.expectedSize);
+			self.errors.PushBack(new RuntimeError(
+				0,
+				new Slice(),
+				string.Format("Wrong marshaled size for stuct {0}. Expected size {1}", e.type.Name, e.expectedSize)
+			));
 			return false;
 		}
 		catch

@@ -1,9 +1,7 @@
-using System.Collections.Generic;
-
 public sealed class Compiler
 {
-	public readonly List<CompileError> errors = new List<CompileError>();
 	public readonly Parser parser;
+	public Buffer<CompileError> errors = new Buffer<CompileError>();
 
 	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
@@ -34,7 +32,7 @@ public sealed class Compiler
 		parser.tokenizer.Reset(source);
 		parser.Reset();
 
-		errors.Clear();
+		errors.count = 0;
 
 		isInPanicMode = false;
 		this.chunk = chunk;
@@ -46,7 +44,7 @@ public sealed class Compiler
 	public Compiler AddSoftError(Slice slice, string format, params object[] args)
 	{
 		if (!isInPanicMode)
-			errors.Add(new CompileError(slice, string.Format(format, args)));
+			errors.PushBack(new CompileError(slice, string.Format(format, args)));
 		return this;
 	}
 
@@ -56,9 +54,9 @@ public sealed class Compiler
 		{
 			isInPanicMode = true;
 			if (args == null || args.Length == 0)
-				errors.Add(new CompileError(slice, format));
+				errors.PushBack(new CompileError(slice, format));
 			else
-				errors.Add(new CompileError(slice, string.Format(format, args)));
+				errors.PushBack(new CompileError(slice, string.Format(format, args)));
 		}
 		return this;
 	}

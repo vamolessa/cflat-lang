@@ -3,18 +3,23 @@ using System.Diagnostics;
 [DebuggerTypeProxy(typeof(BufferDebugView<>))]
 public struct Buffer<T>
 {
+	public const int MinCapacity = 2;
+
 	public int count;
 	public T[] buffer;
 
 	public Buffer(int capacity)
 	{
-		buffer = new T[capacity];
+		buffer = new T[capacity >= MinCapacity ? capacity : MinCapacity];
 		count = 0;
 	}
 
 	public void Grow(int size)
 	{
 		count += size;
+
+		if (buffer == null)
+			buffer = new T[MinCapacity];
 
 		if (count > buffer.Length)
 		{
@@ -26,6 +31,9 @@ public struct Buffer<T>
 
 	public void PushBack(T element)
 	{
+		if (buffer == null)
+			buffer = new T[MinCapacity];
+
 		if (count >= buffer.Length)
 		{
 			var temp = new T[buffer.Length * 2];

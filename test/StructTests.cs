@@ -124,7 +124,7 @@ public sealed class StructTests
 
 		string error = null;
 		var errors = compiler.Compile(source, chunk);
-		if (errors.Count > 0)
+		if (errors.count > 0)
 			error = CompilerHelper.FormatError(source, errors, 1, 8);
 		Assert.Null(error);
 

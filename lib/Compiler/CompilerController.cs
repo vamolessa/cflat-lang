@@ -13,7 +13,7 @@ public sealed class CompilerController
 	public Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 
-	public List<CompileError> Compile(string source, ByteCodeChunk chunk)
+	public Buffer<CompileError> Compile(string source, ByteCodeChunk chunk)
 	{
 		compiler.Reset(source, chunk);
 
@@ -26,7 +26,7 @@ public sealed class CompilerController
 		return compiler.errors;
 	}
 
-	public List<CompileError> CompileExpression(string source, ByteCodeChunk chunk)
+	public Buffer<CompileError> CompileExpression(string source, ByteCodeChunk chunk)
 	{
 		compiler.Reset(source, chunk);
 

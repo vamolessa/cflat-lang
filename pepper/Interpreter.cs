@@ -40,7 +40,7 @@ public static class Interpreter
 		pepper.AddFunction(TestFunction, TestFunction);
 
 		var compileErrors = pepper.CompileSource(source);
-		if (compileErrors.Count > 0)
+		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
 			ConsoleHelper.Error("COMPILER ERROR\n");
@@ -57,10 +57,10 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		var runError = pepper.RunLastFunction();
-		if (runError.isSome)
+		var runtimeErrors = pepper.RunLastFunction();
+		if (runtimeErrors.count > 0)
 		{
-			var error = VirtualMachineHelper.FormatError(source, runError.value, 2, TabSize);
+			var error = VirtualMachineHelper.FormatError(source, runtimeErrors, 2, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
