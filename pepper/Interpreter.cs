@@ -28,7 +28,7 @@ public static class Interpreter
 	public static void TestFunction<C>(ref C context) where C : IContext
 	{
 		context.Arg(out Point p);
-		var body = context.BodyStruct<Point>();
+		var body = context.Body<Point>();
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
 		p.x += 1;
 		p.y += 1;

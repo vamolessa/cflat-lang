@@ -1,93 +1,46 @@
-public struct FunctionBodyUnit
+public readonly struct FunctionBody<T>
 {
-	private VirtualMachine vm;
+	internal readonly VirtualMachine vm;
 
-	public FunctionBodyUnit(VirtualMachine vm)
+	public FunctionBody(VirtualMachine vm)
 	{
 		this.vm = vm;
-	}
-
-	public void Return()
-	{
-		vm.valueStack.PushBack(new ValueData());
 	}
 }
 
-public struct FunctionBodyBool
+public static class FunctionBodyExtensions
 {
-	private VirtualMachine vm;
-
-	public FunctionBodyBool(VirtualMachine vm)
+	public static void Return(this FunctionBody<Unit> self)
 	{
-		this.vm = vm;
+		self.vm.valueStack.PushBack(new ValueData());
 	}
 
-	public void Return(bool value)
+	public static void Return(this FunctionBody<bool> self, bool value)
 	{
-		vm.valueStack.PushBack(new ValueData(value));
-	}
-}
-
-public struct FunctionBodyInt
-{
-	private VirtualMachine vm;
-
-	public FunctionBodyInt(VirtualMachine vm)
-	{
-		this.vm = vm;
+		self.vm.valueStack.PushBack(new ValueData(value));
 	}
 
-	public void Return(int value)
+	public static void Return(this FunctionBody<int> self, int value)
 	{
-		vm.valueStack.PushBack(new ValueData(value));
-	}
-}
-
-public struct FunctionBodyFloat
-{
-	private VirtualMachine vm;
-
-	public FunctionBodyFloat(VirtualMachine vm)
-	{
-		this.vm = vm;
+		self.vm.valueStack.PushBack(new ValueData(value));
 	}
 
-	public void Return(float value)
+	public static void Return(this FunctionBody<float> self, float value)
 	{
-		vm.valueStack.PushBack(new ValueData(value));
-	}
-}
-
-public struct FunctionBodyString
-{
-	private VirtualMachine vm;
-
-	public FunctionBodyString(VirtualMachine vm)
-	{
-		this.vm = vm;
+		self.vm.valueStack.PushBack(new ValueData(value));
 	}
 
-	public void Return(string value)
+	public static void Return(this FunctionBody<string> self, string value)
 	{
-		vm.valueStack.PushBack(new ValueData(vm.heap.count));
-		vm.heap.PushBack(value);
-	}
-}
-
-public struct FunctionBodyStruct<T> where T : struct, IMarshalable
-{
-	private VirtualMachine vm;
-
-	public FunctionBodyStruct(VirtualMachine vm)
-	{
-		this.vm = vm;
+		self.vm.valueStack.PushBack(new ValueData(self.vm.heap.count));
+		self.vm.heap.PushBack(value);
 	}
 
-	public void Return(T value)
+	public static void Return<T>(this FunctionBody<T> self, T value) where T : struct, IMarshalable
 	{
-		var stackIndex = vm.valueStack.count;
-		vm.valueStack.Grow(value.Size);
-		var marshal = new RuntimeMarshal(vm, stackIndex);
+		var stackIndex = self.vm.valueStack.count;
+		self.vm.valueStack.Grow(value.Size);
+		var marshal = new RuntimeMarshal(self.vm, stackIndex);
 		value.Write(ref marshal);
 	}
 }

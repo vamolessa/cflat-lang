@@ -21,7 +21,13 @@ public static class MarshalHelper
 {
 	public static ValueType RegisterStruct<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
 	{
-		var name = typeof(T).Name;
+		return RegisterStruct(chunk, default(T));
+	}
+
+	public static ValueType RegisterStruct<T>(ByteCodeChunk chunk, T value) where T : IMarshalable
+	{
+		var type = value.GetType();
+		var name = type.Name;
 		for (var i = 0; i < chunk.structTypes.count; i++)
 		{
 			if (chunk.structTypes.buffer[i].name == name)
@@ -29,13 +35,13 @@ public static class MarshalHelper
 		}
 
 		var marshal = new DefinitionMarshal(chunk);
-		default(T).Write(ref marshal);
+		value.Write(ref marshal);
 		var structTypeIndex = marshal.builder.Build(name);
 		var size = chunk.structTypes.buffer[structTypeIndex].size;
-		if (size == default(T).Size)
+		if (size == value.Size)
 			return new ValueType(TypeKind.Struct, structTypeIndex);
 
-		throw new WrongStructSizeException(typeof(T), size);
+		throw new WrongStructSizeException(type, size);
 	}
 }
 
