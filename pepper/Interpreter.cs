@@ -28,9 +28,13 @@ public static class Interpreter
 	public static void TestFunction<C>(ref C context) where C : IContext
 	{
 		context.Arg(out Point p);
-		context.ReturnsUnit();
+		context.ReturnsStruct<Point>();
+
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
-		context.Push();
+		p.x += 1;
+		p.y += 1;
+		p.z += 1;
+		context.Push(p);
 	}
 
 	public static void RunSource(string source, bool printDisassembled)

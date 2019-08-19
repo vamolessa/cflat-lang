@@ -7,6 +7,11 @@ public static class PepperFunctionExtensions
 		{
 			definitionFunction(ref context);
 			context.builder.Cancel();
+			self.errors.PushBack(new RuntimeError(
+				0,
+				new Slice(),
+				"No function body found"
+			));
 			return false;
 		}
 		catch (DefinitionContext.Definition definition)

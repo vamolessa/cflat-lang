@@ -21,7 +21,6 @@ public interface IContext
 	void Pop(out string value);
 	void Pop<T>(out T value) where T : struct, IMarshalable;
 
-
 	void Push();
 	void Push(bool value);
 	void Push(int value);
