@@ -5,6 +5,18 @@ public interface IMarshalable
 	void Write<M>(ref M marshal) where M : IMarshal;
 }
 
+public sealed class WrongStructSizeException : System.Exception
+{
+	public readonly System.Type type;
+	public readonly int expectedSize;
+
+	public WrongStructSizeException(System.Type type, int expectedSize)
+	{
+		this.type = type;
+		this.expectedSize = expectedSize;
+	}
+}
+
 public static class MarshalHelper
 {
 	public static ValueType GetStructType<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
@@ -12,7 +24,11 @@ public static class MarshalHelper
 		var marshal = new DefinitionMarshal(chunk);
 		default(T).Write(ref marshal);
 		var structTypeIndex = marshal.builder.BuildAnonymous();
-		return new ValueType(TypeKind.Struct, structTypeIndex);
+		var size = chunk.structTypes.buffer[structTypeIndex].size;
+		if (size == default(T).Size)
+			return new ValueType(TypeKind.Struct, structTypeIndex);
+
+		throw new WrongStructSizeException(typeof(T), size);
 	}
 }
 

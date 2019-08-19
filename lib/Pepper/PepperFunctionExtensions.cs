@@ -1,13 +1,13 @@
 public static class PepperFunctionExtensions
 {
-	public static void AddFunction(this Pepper self, NativeFunction.Callback<DefinitionContext> definitionFunction, NativeFunction.Callback<RuntimeContext> runtimeFunction)
+	public static bool AddFunction(this Pepper self, NativeFunction.Callback<DefinitionContext> definitionFunction, NativeFunction.Callback<RuntimeContext> runtimeFunction)
 	{
 		var context = new DefinitionContext(self.byteCode);
 		try
 		{
 			definitionFunction(context);
 			context.builder.Cancel();
-			return;
+			return false;
 		}
 		catch (DefinitionContext.Definition definition)
 		{
@@ -18,11 +18,18 @@ public static class PepperFunctionExtensions
 				context.builder.returnType.GetSize(self.byteCode),
 				runtimeFunction
 			));
+			return true;
+		}
+		catch (WrongStructSizeException e)
+		{
+			context.builder.Cancel();
+			System.Console.WriteLine("WRONG STRUCT SIZE FOR TYPE {0}, EXPECTED {1}", e.type.Name, e.expectedSize);
+			return false;
 		}
 		catch
 		{
 			context.builder.Cancel();
-			return;
+			return false;
 		}
 	}
 
