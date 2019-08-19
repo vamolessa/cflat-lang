@@ -39,8 +39,8 @@ public sealed class Pepper
 		return errors;
 	}
 
-	public RuntimeContext GetContext()
+	public ValueData Pop()
 	{
-		return new RuntimeContext(virtualMachine, 0);
+		return virtualMachine.valueStack.buffer[virtualMachine.valueStack.count - 1];
 	}
 }

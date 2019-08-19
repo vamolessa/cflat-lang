@@ -8,25 +8,12 @@ public interface IContext
 	void Arg(out string value);
 	void Arg<T>(out T value) where T : struct, IMarshalable;
 
-	void ReturnsUnit([CallerMemberName] string functionName = "");
-	void ReturnsInt([CallerMemberName] string functionName = "");
-	void ReturnsFloat([CallerMemberName] string functionName = "");
-	void ReturnsString([CallerMemberName] string functionName = "");
-	void ReturnsStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable;
-
-	void Pop();
-	void Pop(out bool value);
-	void Pop(out int value);
-	void Pop(out float value);
-	void Pop(out string value);
-	void Pop<T>(out T value) where T : struct, IMarshalable;
-
-	void Push();
-	void Push(bool value);
-	void Push(int value);
-	void Push(float value);
-	void Push(string value);
-	void Push<T>(T value) where T : struct, IMarshalable;
+	FunctionBodyUnit BodyUnit([CallerMemberName] string functionName = "");
+	FunctionBodyBool BodyBool([CallerMemberName] string functionName = "");
+	FunctionBodyInt BodyInt([CallerMemberName] string functionName = "");
+	FunctionBodyFloat BodyFloat([CallerMemberName] string functionName = "");
+	FunctionBodyString BodyString([CallerMemberName] string functionName = "");
+	FunctionBodyStruct<T> BodyStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable;
 }
 
 public struct RuntimeContext : IContext
@@ -52,41 +39,12 @@ public struct RuntimeContext : IContext
 		argStackIndex += value.Size;
 	}
 
-	public void ReturnsUnit([CallerMemberName] string functionName = "") { }
-	public void ReturnsInt([CallerMemberName] string functionName = "") { }
-	public void ReturnsFloat([CallerMemberName] string functionName = "") { }
-	public void ReturnsString([CallerMemberName] string functionName = "") { }
-	public void ReturnsStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable { }
-
-	public void Pop() => vm.valueStack.count--;
-	public void Pop(out bool value) => value = vm.valueStack.buffer[--vm.valueStack.count].asBool;
-	public void Pop(out int value) => value = vm.valueStack.buffer[--vm.valueStack.count].asInt;
-	public void Pop(out float value) => value = vm.valueStack.buffer[--vm.valueStack.count].asFloat;
-	public void Pop(out string value) => value = vm.heap.buffer[vm.valueStack.buffer[--vm.valueStack.count].asInt] as string;
-	public void Pop<T>(out T value) where T : struct, IMarshalable
-	{
-		value = default;
-		vm.valueStack.count -= value.Size;
-		var marshal = new RuntimeMarshal(vm, vm.valueStack.count);
-		value.Read(ref marshal);
-	}
-
-	public void Push() => vm.valueStack.PushBack(new ValueData());
-	public void Push(bool value) => vm.valueStack.PushBack(new ValueData(value));
-	public void Push(int value) => vm.valueStack.PushBack(new ValueData(value));
-	public void Push(float value) => vm.valueStack.PushBack(new ValueData(value));
-	public void Push(string value)
-	{
-		vm.valueStack.PushBack(new ValueData(vm.heap.count));
-		vm.heap.PushBack(value);
-	}
-	public void Push<T>(T value) where T : struct, IMarshalable
-	{
-		var stackIndex = vm.valueStack.count;
-		vm.valueStack.Grow(value.Size);
-		var marshal = new RuntimeMarshal(vm, stackIndex);
-		value.Write(ref marshal);
-	}
+	public FunctionBodyUnit BodyUnit([CallerMemberName] string functionName = "") => new FunctionBodyUnit(vm);
+	public FunctionBodyBool BodyBool([CallerMemberName] string functionName = "") => new FunctionBodyBool(vm);
+	public FunctionBodyInt BodyInt([CallerMemberName] string functionName = "") => new FunctionBodyInt(vm);
+	public FunctionBodyFloat BodyFloat([CallerMemberName] string functionName = "") => new FunctionBodyFloat(vm);
+	public FunctionBodyString BodyString([CallerMemberName] string functionName = "") => new FunctionBodyString(vm);
+	public FunctionBodyStruct<T> BodyStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable => new FunctionBodyStruct<T>(vm);
 }
 
 public struct DefinitionContext : IContext
@@ -138,29 +96,34 @@ public struct DefinitionContext : IContext
 		builder.WithParam(MarshalHelper.RegisterStruct<T>(chunk));
 	}
 
-	private void Returns(string functionName, ValueType returnType)
+	public FunctionBodyUnit BodyUnit([CallerMemberName] string functionName = "")
 	{
-		builder.returnType = returnType;
+		builder.returnType = new ValueType(TypeKind.Unit);
 		throw new Definition(functionName, builder);
 	}
-	public void ReturnsUnit([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.Unit));
-	public void ReturnsBool([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.Bool));
-	public void ReturnsInt([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.Int));
-	public void ReturnsFloat([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.Float));
-	public void ReturnsString([CallerMemberName] string functionName = "") => Returns(functionName, new ValueType(TypeKind.String));
-	public void ReturnsStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable => Returns(functionName, MarshalHelper.RegisterStruct<T>(chunk));
-
-	public void Pop() { }
-	public void Pop(out bool value) => value = default;
-	public void Pop(out int value) => value = default;
-	public void Pop(out float value) => value = default;
-	public void Pop(out string value) => value = default;
-	public void Pop<T>(out T value) where T : struct, IMarshalable => value = default;
-
-	public void Push() { }
-	public void Push(bool value) { }
-	public void Push(int value) { }
-	public void Push(float value) { }
-	public void Push(string value) { }
-	public void Push<T>(T value) where T : struct, IMarshalable { }
+	public FunctionBodyBool BodyBool([CallerMemberName] string functionName = "")
+	{
+		builder.returnType = new ValueType(TypeKind.Bool);
+		throw new Definition(functionName, builder);
+	}
+	public FunctionBodyInt BodyInt([CallerMemberName] string functionName = "")
+	{
+		builder.returnType = new ValueType(TypeKind.Int);
+		throw new Definition(functionName, builder);
+	}
+	public FunctionBodyFloat BodyFloat([CallerMemberName] string functionName = "")
+	{
+		builder.returnType = new ValueType(TypeKind.Float);
+		throw new Definition(functionName, builder);
+	}
+	public FunctionBodyString BodyString([CallerMemberName] string functionName = "")
+	{
+		builder.returnType = new ValueType(TypeKind.String);
+		throw new Definition(functionName, builder);
+	}
+	public FunctionBodyStruct<T> BodyStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable
+	{
+		builder.returnType = new ValueType(TypeKind.Struct);
+		throw new Definition(functionName, builder);
+	}
 }
