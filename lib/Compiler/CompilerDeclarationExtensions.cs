@@ -65,7 +65,7 @@ public static class CompilerDeclarationExtensions
 	{
 		if (self.chunk.functions.count >= ushort.MaxValue)
 		{
-			self.chunk.functionParamTypes.count -= builder.parameterCount;
+			builder.Cancel();
 			self.AddSoftError(slice, "Too many function declarations");
 			return;
 		}
@@ -122,7 +122,7 @@ public static class CompilerDeclarationExtensions
 	{
 		if (self.chunk.structTypes.count >= ushort.MaxValue)
 		{
-			self.chunk.structTypes.count -= builder.fieldCount;
+			builder.Cancel();
 			self.AddSoftError(slice, "Too many struct declarations");
 			return;
 		}

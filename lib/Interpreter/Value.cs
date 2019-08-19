@@ -187,14 +187,14 @@ public readonly struct Function
 
 public readonly struct NativeFunction
 {
-	public delegate void Callback(VirtualMachine vm);
+	public delegate void Callback<C>(C context) where C : IContext;
 
 	public readonly string name;
 	public readonly int typeIndex;
 	public readonly int returnSize;
-	public readonly Callback callback;
+	public readonly Callback<RuntimeContext> callback;
 
-	public NativeFunction(string name, int typeIndex, int returnSize, Callback callback)
+	public NativeFunction(string name, int typeIndex, int returnSize, Callback<RuntimeContext> callback)
 	{
 		this.name = name;
 		this.typeIndex = typeIndex;

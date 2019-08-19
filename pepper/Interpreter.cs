@@ -8,68 +8,36 @@ public static class Interpreter
 		public int y;
 		public int z;
 
-		void IMarshalable.Read(ref StackReader reader)
+		public int Size => 3;
+
+		public void Read<M>(ref M marshal) where M : IMarshal
 		{
-			x = reader.ReadInt();
-			y = reader.ReadInt();
-			z = reader.ReadInt();
+			marshal.Read(out x);
+			marshal.Read(out y);
+			marshal.Read(out z);
 		}
 
-		void IMarshalable.Push(VirtualMachine vm)
+		public void Write<M>(ref M marshal) where M : IMarshal
 		{
-			vm.PushInt(x);
-			vm.PushInt(y);
-			vm.PushInt(z);
-		}
-
-		void IMarshalable.Pop(VirtualMachine vm)
-		{
-			z = vm.PopInt();
-			y = vm.PopInt();
-			x = vm.PopInt();
+			marshal.Write(x, nameof(x));
+			marshal.Write(y, nameof(y));
+			marshal.Write(z, nameof(z));
 		}
 	}
 
-	public static void TestFunction(VirtualMachine vm)
+	public static void TestFunction<C>(C context) where C : IContext
 	{
-		var reader = vm.ReadArgs();
-		var p = reader.ReadStruct<Point>();
+		context.Arg(out Point p);
+		context.ReturnsUnit();
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
-		vm.PushString("HEEEY YEAHAH!");
+		context.Push();
 	}
-
-	struct FunctionDefinition : System.IDisposable
-	{
-		public FunctionDefinition([System.Runtime.CompilerServices.CallerMemberName] string functionName = "")
-		{
-		}
-
-		void System.IDisposable.Dispose()
-		{
-		}
-	}
-
-/*
-	public static void OtherFunction<F>(VirtualMachine vm, F f)
-	{
-		f.Arg(out int x);
-		f.Arg(out Point p);
-		f.ReturnsInt();
-	}
-*/
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
 
-		pepper.AddFunction(
-			"testFunction",
-			TestFunction,
-			new ValueType(TypeKind.String),
-			new ValueType(TypeKind.Int),
-			new ValueType(TypeKind.Int),
-			new ValueType(TypeKind.Int)
-		);
+		pepper.AddFunction(TestFunction, TestFunction);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.Count > 0)

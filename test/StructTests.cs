@@ -14,7 +14,7 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.c}", 9)]
 	public void StructGetFieldTests(string source, int expected)
 	{
-		var error = TestHelper.Run(source, out var v, out var t);
+		var error = TestHelper.RunInt(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
@@ -32,7 +32,7 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.c=9 t.c}", 9)]
 	public void StructSetFieldTests(string source, int expected)
 	{
-		var error = TestHelper.Run(source, out var v, out var t);
+		var error = TestHelper.RunInt(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
@@ -47,7 +47,7 @@ public sealed class StructTests
 	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().z}", 7)]
 	public void FunctionStructReturnTests(string source, int expected)
 	{
-		var error = TestHelper.Run(source, out var v, out var t);
+		var error = TestHelper.RunInt(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);
@@ -76,7 +76,7 @@ public sealed class StructTests
 			}
 		", lastFunctionSource);
 
-		var error = TestHelper.Run(source, out var v, out var t);
+		var error = TestHelper.RunInt(source, out var v, out var t);
 		Assert.Null(error);
 		Assert.Equal(new ValueType(TypeKind.Int), t);
 		Assert.Equal(expected, v.asInt);

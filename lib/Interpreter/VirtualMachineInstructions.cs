@@ -56,7 +56,7 @@ internal static class VirtualMachineInstructions
 					)
 				);
 
-				function.callback(vm);
+				function.callback(new RuntimeContext(vm));
 				VirtualMachineHelper.Return(vm, function.returnSize);
 				break;
 			}

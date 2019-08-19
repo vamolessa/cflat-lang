@@ -1,6 +1,6 @@
 public static class TestHelper
 {
-	public static string Run(string source, out ValueData value, out ValueType type)
+	public static string RunInt(string source, out ValueData value, out ValueType type)
 	{
 		const int TabSize = 8;
 		value = new ValueData();
@@ -15,14 +15,14 @@ public static class TestHelper
 		if (runError.isSome)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		value = pepper.virtualMachine.Pop();
+		new RuntimeContext(pepper.virtualMachine).Pop(out value.asInt);
 		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
 		type = pepper.byteCode.functionTypes.buffer[lastFunction.typeIndex].returnType;
 
 		return null;
 	}
 
-	public static string RunExpression(string source, out ValueData value, out ValueType type)
+	public static string RunExpressionInt(string source, out ValueData value, out ValueType type)
 	{
 		const int TabSize = 8;
 		value = new ValueData();
@@ -37,7 +37,7 @@ public static class TestHelper
 		if (runError.isSome)
 			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
-		value = pepper.virtualMachine.Pop();
+		new RuntimeContext(pepper.virtualMachine).Pop(out value.asInt);
 		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
 		type = pepper.byteCode.functionTypes.buffer[lastFunction.typeIndex].returnType;
 

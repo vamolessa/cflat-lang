@@ -45,6 +45,11 @@ public struct FunctionTypeBuilder
 		parameterCount += 1;
 	}
 
+	public void Cancel()
+	{
+		chunk.functionParamTypes.count -= parameterCount;
+	}
+
 	public int Build()
 	{
 		var parametersIndex = chunk.functionParamTypes.count - parameterCount;
@@ -137,6 +142,11 @@ public struct StructTypeBuilder
 
 		chunk.structTypeFields.PushBack(new StructTypeField(name, type));
 		fieldCount += 1;
+	}
+
+	public void Cancel()
+	{
+		chunk.structTypes.count -= fieldCount;
 	}
 
 	public int Build(string name)
