@@ -29,8 +29,8 @@ public struct RuntimeContext : IContext
 	public void Arg<T>(out T value) where T : struct, IMarshalable
 	{
 		value = default;
-		var marshal = new RuntimeMarshal(vm, argStackIndex);
-		value.Read(ref marshal);
+		var marshal = new ReaderMarshaler(vm, argStackIndex);
+		value.Marshal(ref marshal);
 		argStackIndex += value.Size;
 	}
 

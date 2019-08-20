@@ -40,7 +40,7 @@ public static class FunctionBodyExtensions
 	{
 		var stackIndex = self.vm.valueStack.count;
 		self.vm.valueStack.Grow(value.Size);
-		var marshal = new RuntimeMarshal(self.vm, stackIndex);
-		value.Write(ref marshal);
+		var marshal = new WriterMarshaler(self.vm, stackIndex);
+		value.Marshal(ref marshal);
 	}
 }
