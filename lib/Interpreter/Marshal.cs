@@ -1,7 +1,7 @@
 public interface IMarshalable
 {
 	int Size { get; }
-	void Marshal<M>(ref M marshal) where M : IMarshaler;
+	void Marshal<M>(ref M marshaler) where M : IMarshaler;
 }
 
 public sealed class WrongStructSizeException : System.Exception

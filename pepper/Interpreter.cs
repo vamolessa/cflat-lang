@@ -10,11 +10,11 @@ public static class Interpreter
 
 		public int Size => 3;
 
-		public void Marshal<M>(ref M marshal) where M : IMarshaler
+		public void Marshal<M>(ref M marshaler) where M : IMarshaler
 		{
-			marshal.Marshal(ref x, nameof(x));
-			marshal.Marshal(ref y, nameof(y));
-			marshal.Marshal(ref z, nameof(z));
+			marshaler.Marshal(ref x, nameof(x));
+			marshaler.Marshal(ref y, nameof(y));
+			marshaler.Marshal(ref z, nameof(z));
 		}
 	}
 
