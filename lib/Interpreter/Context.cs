@@ -2,12 +2,12 @@ using System.Runtime.CompilerServices;
 
 public interface IContext
 {
-	void Arg(out bool value);
-	void Arg(out int value);
-	void Arg(out float value);
-	void Arg(out string value);
-	void Arg<T>(out T value) where T : struct, IMarshalable;
-	void Arg(out object value);
+	bool ArgBool();
+	int ArgInt();
+	float ArgFloat();
+	string ArgString();
+	T ArgStruct<T>() where T : struct, IMarshalable;
+	T ArgObject<T>() where T : class;
 
 	FunctionBody<Unit> Body([CallerMemberName] string functionName = "");
 	FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "");
@@ -29,18 +29,19 @@ public struct RuntimeContext : IContext
 		this.argStackIndex = argStackIndex;
 	}
 
-	public void Arg(out bool value) => value = vm.valueStack.buffer[argStackIndex++].asBool;
-	public void Arg(out int value) => value = vm.valueStack.buffer[argStackIndex++].asInt;
-	public void Arg(out float value) => value = vm.valueStack.buffer[argStackIndex++].asFloat;
-	public void Arg(out string value) => value = vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as string;
-	public void Arg<T>(out T value) where T : struct, IMarshalable
+	public bool ArgBool() => vm.valueStack.buffer[argStackIndex++].asBool;
+	public int ArgInt() => vm.valueStack.buffer[argStackIndex++].asInt;
+	public float ArgFloat() => vm.valueStack.buffer[argStackIndex++].asFloat;
+	public string ArgString() => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as string;
+	public T ArgStruct<T>() where T : struct, IMarshalable
 	{
-		value = default;
+		var value = default(T);
 		var marshal = new ReaderMarshaler(vm, argStackIndex);
 		value.Marshal(ref marshal);
 		argStackIndex += MarshalSizeOf<T>.size;
+		return value;
 	}
-	public void Arg(out object value) => value = vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt];
+	public T ArgObject<T>() where T : class => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
 
 	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "") => new FunctionBody<Unit>(vm);
 	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "") => new FunctionBody<bool>(vm);
@@ -74,35 +75,35 @@ public struct DefinitionContext : IContext
 		this.builder = chunk.BeginFunctionType();
 	}
 
-	public void Arg(out bool value)
+	public bool ArgBool()
 	{
-		value = default;
 		builder.WithParam(new ValueType(TypeKind.Bool));
+		return default;
 	}
-	public void Arg(out int value)
+	public int ArgInt()
 	{
-		value = default;
 		builder.WithParam(new ValueType(TypeKind.Int));
+		return default;
 	}
-	public void Arg(out float value)
+	public float ArgFloat()
 	{
-		value = default;
 		builder.WithParam(new ValueType(TypeKind.Float));
+		return default;
 	}
-	public void Arg(out string value)
+	public string ArgString()
 	{
-		value = default;
 		builder.WithParam(new ValueType(TypeKind.String));
+		return default;
 	}
-	public void Arg<T>(out T value) where T : struct, IMarshalable
+	public T ArgStruct<T>() where T : struct, IMarshalable
 	{
-		value = default;
 		builder.WithParam(MarshalHelper.RegisterStruct<T>(chunk));
+		return default;
 	}
-	public void Arg(out object value)
+	public T ArgObject<T>() where T : class
 	{
-		value = default;
 		builder.WithParam(new ValueType(TypeKind.NativeObject));
+		return default;
 	}
 
 	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "")

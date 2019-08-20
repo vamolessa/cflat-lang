@@ -18,7 +18,7 @@ public static class Interpreter
 
 	public static Return TestFunction<C>(ref C context) where C : IContext
 	{
-		context.Arg(out Point p);
+		var p = context.ArgStruct<Point>();
 		var body = context.BodyOfStruct<Point>();
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
 		p.x += 1;
@@ -27,11 +27,20 @@ public static class Interpreter
 		return body.Return(p);
 	}
 
+	public sealed class SomeTestClass { }
+
+	public static Return OtherFunction<C>(ref C context) where C : IContext
+	{
+		var body = context.BodyOfObject<SomeTestClass>();
+		return body.Return(new SomeTestClass());
+	}
+
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
 
 		pepper.AddFunction(TestFunction, TestFunction);
+		pepper.AddFunction(OtherFunction, OtherFunction);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)

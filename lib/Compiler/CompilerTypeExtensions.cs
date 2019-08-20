@@ -18,6 +18,8 @@ public static class CompilerTypeExtensions
 			type = Option.Some(new ValueType(TypeKind.Float));
 		else if (self.parser.Match(TokenKind.String))
 			type = Option.Some(new ValueType(TypeKind.String));
+		else if (self.parser.Match(TokenKind.Object))
+			type = Option.Some(new ValueType(TypeKind.NativeObject));
 		else if (self.parser.Match(TokenKind.Struct))
 			type = self.ParseAnonymousStructType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Identifier))

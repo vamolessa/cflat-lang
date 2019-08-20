@@ -22,6 +22,7 @@ public static class TokenScanners
 		new ExactScanner("int").ForToken(TokenKind.Int),
 		new ExactScanner("float").ForToken(TokenKind.Float),
 		new ExactScanner("string").ForToken(TokenKind.String),
+		new ExactScanner("object").ForToken(TokenKind.Object),
 
 		new ExactScanner("print").ForToken(TokenKind.Print),
 
