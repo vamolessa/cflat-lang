@@ -40,7 +40,7 @@ public enum TypeKind : byte
 	Function,
 	NativeFunction,
 	Struct,
-	Custom,
+	NativeObject,
 }
 
 public readonly struct ValueType
@@ -149,7 +149,7 @@ public readonly struct ValueType
 				chunk.FormatStructType(index, sb);
 				return sb.ToString();
 			}
-		case TypeKind.Custom:
+		case TypeKind.NativeObject:
 			return "custom";
 		default:
 			return "unreachable";
@@ -187,7 +187,7 @@ public readonly struct Function
 
 public readonly struct NativeFunction
 {
-	public delegate void Callback<C>(ref C context) where C : IContext;
+	public delegate Return Callback<C>(ref C context) where C : IContext;
 
 	public readonly string name;
 	public readonly int typeIndex;

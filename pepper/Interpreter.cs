@@ -16,15 +16,15 @@ public static class Interpreter
 		}
 	}
 
-	public static void TestFunction<C>(ref C context) where C : IContext
+	public static Return TestFunction<C>(ref C context) where C : IContext
 	{
 		context.Arg(out Point p);
-		var body = context.Body<Point>();
+		var body = context.BodyOfStruct<Point>();
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
 		p.x += 1;
 		p.y += 1;
 		p.z += 1;
-		body.Return(p);
+		return body.Return(p);
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
@@ -51,10 +51,10 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		var runtimeErrors = pepper.RunLastFunction();
-		if (runtimeErrors.count > 0)
+		var runtimeError = pepper.RunLastFunction();
+		if (runtimeError.isSome)
 		{
-			var error = VirtualMachineHelper.FormatError(source, runtimeErrors, 2, TabSize);
+			var error = VirtualMachineHelper.FormatError(source, runtimeError.value, 2, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();

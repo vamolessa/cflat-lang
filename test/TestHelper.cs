@@ -19,9 +19,9 @@ public static class TestHelper
 		if (compileErrors.count > 0)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
 
-		var runErrors = pepper.RunLastFunction();
-		if (runErrors.count > 0)
-			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runErrors, 1, TabSize);
+		var runError = pepper.RunLastFunction();
+		if (runError.isSome)
+			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
 		value = pepper.Pop();
 		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
@@ -41,9 +41,9 @@ public static class TestHelper
 		if (compileErrors.count > 0)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
 
-		var runErrors = pepper.RunLastFunction();
-		if (runErrors.count > 0)
-			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runErrors, 1, TabSize);
+		var runError = pepper.RunLastFunction();
+		if (runError.isSome)
+			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
 
 		value = pepper.Pop();
 		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];

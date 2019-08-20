@@ -7,12 +7,10 @@ public static class PepperFunctionExtensions
 		{
 			definitionFunction(ref context);
 			context.builder.Cancel();
-			self.errors.PushBack(new RuntimeError(
-				0,
+			self.registerErrors.PushBack(new CompileError(
 				new Slice(),
 				"No native function body found"
 			));
-			return false;
 		}
 		catch (DefinitionContext.Definition definition)
 		{
@@ -25,16 +23,16 @@ public static class PepperFunctionExtensions
 			));
 			return true;
 		}
-		catch
+		catch (System.Exception e)
 		{
 			context.builder.Cancel();
-			self.errors.PushBack(new RuntimeError(
-				0,
+			self.registerErrors.PushBack(new CompileError(
 				new Slice(),
-				"Could not add native function"
+				"Error when adding native function\n" + e.Message
 			));
-			return false;
 		}
+
+		return false;
 	}
 
 	public static void AddFunction(this Pepper self, string functionName, NativeFunction.Callback<RuntimeContext> functionCallback, ValueType returnType, params ValueType[] paramTypes)

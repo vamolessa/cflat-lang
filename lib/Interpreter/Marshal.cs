@@ -1,9 +1,20 @@
+public struct Anonymous<T> : IMarshalable
+	where T : struct, IMarshalable
+{
+	public T value;
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		value.Marshal(ref marshaler);
+	}
+}
+
 public interface IMarshalable
 {
 	void Marshal<M>(ref M marshaler) where M : IMarshaler;
 }
 
-public static class MarshalSizeOf<T>
+internal static class MarshalSizeOf<T> where T : struct, IMarshalable
 {
 	public static int size = 1;
 }
@@ -12,13 +23,7 @@ public static class MarshalHelper
 {
 	public static ValueType RegisterStruct<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
 	{
-		return RegisterStruct(chunk, default(T));
-	}
-
-	public static ValueType RegisterStruct<T>(ByteCodeChunk chunk, T value) where T : IMarshalable
-	{
-		var type = value.GetType();
-		var name = type.Name;
+		var name = typeof(T).Name;
 		for (var i = 0; i < chunk.structTypes.count; i++)
 		{
 			if (chunk.structTypes.buffer[i].name == name)
@@ -26,7 +31,7 @@ public static class MarshalHelper
 		}
 
 		var marshal = new DefinitionMarshaler(chunk);
-		value.Marshal(ref marshal);
+		default(T).Marshal(ref marshal);
 		var structTypeIndex = marshal.builder.Build(name);
 		MarshalSizeOf<T>.size = chunk.structTypes.buffer[structTypeIndex].size;
 		return new ValueType(TypeKind.Struct, structTypeIndex);

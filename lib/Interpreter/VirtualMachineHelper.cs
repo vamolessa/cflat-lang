@@ -50,7 +50,7 @@ public static class VirtualMachineHelper
 		case TypeKind.NativeFunction:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
-				sb.Append("native ");
+				sb.Append("native-function ");
 				vm.chunk.FormatNativeFunction(idx, sb);
 				return;
 			}
@@ -75,11 +75,11 @@ public static class VirtualMachineHelper
 				sb.Append('}');
 				return;
 			}
-		case TypeKind.Custom:
+		case TypeKind.NativeObject:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				var obj = vm.heap.buffer[idx];
-				sb.Append("CustomType [");
+				sb.Append("native-object [");
 				sb.Append(obj.GetType().Name);
 				sb.Append("] ");
 				sb.Append(obj);
@@ -108,32 +108,27 @@ public static class VirtualMachineHelper
 		sb.AppendLine();
 	}
 
-	public static string FormatError(string source, Buffer<RuntimeError> errors, int contextSize, int tabSize)
+	public static string FormatError(string source, RuntimeError error, int contextSize, int tabSize)
 	{
 		var sb = new StringBuilder();
+		var position = CompilerHelper.GetLineAndColumn(source, (int)error.slice.index, tabSize);
 
-		for (var i = 0; i < errors.count; i++)
-		{
-			var e = errors.buffer[i];
-			var position = CompilerHelper.GetLineAndColumn(source, e.slice.index, tabSize);
+		sb.Append((string)error.message);
+		sb.Append(" (line: ");
+		sb.Append(position.line);
+		sb.Append(", column: ");
+		sb.Append(position.column);
+		sb.AppendLine(")");
 
-			sb.Append(e.message);
-			sb.Append(" (line: ");
-			sb.Append(position.line);
-			sb.Append(", column: ");
-			sb.Append(position.column);
-			sb.AppendLine(")");
-
-			sb.Append(CompilerHelper.GetLines(
-				source,
-				System.Math.Max(position.line - contextSize, 0),
-				System.Math.Max(position.line - 1, 0)
-			));
-			sb.AppendLine();
-			sb.Append(' ', position.column - 1);
-			sb.Append('^', e.slice.length > 0 ? e.slice.length : 1);
-			sb.Append(" here\n\n");
-		}
+		sb.Append(CompilerHelper.GetLines(
+			source,
+			System.Math.Max(position.line - contextSize, 0),
+			System.Math.Max(position.line - 1, 0)
+		));
+		sb.AppendLine();
+		sb.Append(' ', position.column - 1);
+		sb.Append('^', (int)(error.slice.length > 0 ? error.slice.length : 1));
+		sb.Append(" here\n\n");
 
 		return sb.ToString();
 	}

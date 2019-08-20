@@ -4,10 +4,13 @@ public sealed class Pepper
 	internal readonly CompilerController compiler = new CompilerController();
 	public readonly ByteCodeChunk byteCode = new ByteCodeChunk();
 	internal string source;
-	internal Buffer<RuntimeError> errors = new Buffer<RuntimeError>();
+	internal Buffer<CompileError> registerErrors = new Buffer<CompileError>();
 
 	public Buffer<CompileError> CompileSource(string source)
 	{
+		if (registerErrors.count > 0)
+			return registerErrors;
+
 		this.source = source;
 		return compiler.Compile(source, byteCode);
 	}
@@ -18,25 +21,18 @@ public sealed class Pepper
 		return compiler.CompileExpression(source, byteCode);
 	}
 
-	public Buffer<RuntimeError> RunLastFunction()
+	public Option<RuntimeError> RunLastFunction()
 	{
 		if (byteCode.functions.count == 0)
 		{
-			errors.PushBack(new RuntimeError(
+			return Option.Some(new RuntimeError(
 				0,
 				new Slice(),
 				"No function defined"
 			));
 		}
 
-		if (errors.count > 0)
-			return errors;
-
-		var error = virtualMachine.RunFunction(byteCode, byteCode.functions.count - 1);
-		if (error.isSome)
-			errors.PushBack(error.value);
-
-		return errors;
+		return virtualMachine.RunFunction(byteCode, byteCode.functions.count - 1);
 	}
 
 	public ValueData Pop()

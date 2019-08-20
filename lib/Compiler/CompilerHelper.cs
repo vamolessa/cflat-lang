@@ -138,6 +138,11 @@ public static class CompilerHelper
 		for (var i = 0; i < errors.count; i++)
 		{
 			var e = errors.buffer[i];
+			sb.Append(e.message);
+
+			if (e.slice.index == 0 && e.slice.length == 0)
+				continue;
+
 			var position = GetLineAndColumn(source, e.slice.index, tabSize);
 			var lines = GetLines(
 				source,
@@ -145,7 +150,6 @@ public static class CompilerHelper
 				System.Math.Max(position.line - 1, 0)
 			);
 
-			sb.Append(e.message);
 			sb.Append(" (line: ");
 			sb.Append(position.line);
 			sb.Append(", column: ");
