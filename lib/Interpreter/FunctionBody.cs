@@ -39,7 +39,7 @@ public static class FunctionBodyExtensions
 	public static void Return<T>(this FunctionBody<T> self, T value) where T : struct, IMarshalable
 	{
 		var stackIndex = self.vm.valueStack.count;
-		self.vm.valueStack.Grow(value.Size);
+		self.vm.valueStack.Grow(MarshalSizeOf<T>.size);
 		var marshal = new WriterMarshaler(self.vm, stackIndex);
 		value.Marshal(ref marshal);
 	}

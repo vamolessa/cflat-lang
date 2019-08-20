@@ -10,7 +10,7 @@ public static class PepperFunctionExtensions
 			self.errors.PushBack(new RuntimeError(
 				0,
 				new Slice(),
-				"No function body found"
+				"No native function body found"
 			));
 			return false;
 		}
@@ -25,19 +25,14 @@ public static class PepperFunctionExtensions
 			));
 			return true;
 		}
-		catch (WrongStructSizeException e)
+		catch
 		{
 			context.builder.Cancel();
 			self.errors.PushBack(new RuntimeError(
 				0,
 				new Slice(),
-				string.Format("Wrong marshaled size for stuct {0}. Expected size {1}", e.type.Name, e.expectedSize)
+				"Could not add native function"
 			));
-			return false;
-		}
-		catch
-		{
-			context.builder.Cancel();
 			return false;
 		}
 	}

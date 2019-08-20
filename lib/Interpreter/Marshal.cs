@@ -1,19 +1,11 @@
 public interface IMarshalable
 {
-	int Size { get; }
 	void Marshal<M>(ref M marshaler) where M : IMarshaler;
 }
 
-public sealed class WrongStructSizeException : System.Exception
+public static class MarshalSizeOf<T>
 {
-	public readonly System.Type type;
-	public readonly int expectedSize;
-
-	public WrongStructSizeException(System.Type type, int expectedSize)
-	{
-		this.type = type;
-		this.expectedSize = expectedSize;
-	}
+	public static int size = 1;
 }
 
 public static class MarshalHelper
@@ -36,11 +28,8 @@ public static class MarshalHelper
 		var marshal = new DefinitionMarshaler(chunk);
 		value.Marshal(ref marshal);
 		var structTypeIndex = marshal.builder.Build(name);
-		var size = chunk.structTypes.buffer[structTypeIndex].size;
-		if (size == value.Size)
-			return new ValueType(TypeKind.Struct, structTypeIndex);
-
-		throw new WrongStructSizeException(type, size);
+		MarshalSizeOf<T>.size = chunk.structTypes.buffer[structTypeIndex].size;
+		return new ValueType(TypeKind.Struct, structTypeIndex);
 	}
 }
 

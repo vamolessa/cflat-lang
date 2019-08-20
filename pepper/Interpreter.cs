@@ -8,8 +8,6 @@ public static class Interpreter
 		public int y;
 		public int z;
 
-		public int Size => 3;
-
 		public void Marshal<M>(ref M marshaler) where M : IMarshaler
 		{
 			marshaler.Marshal(ref x, nameof(x));

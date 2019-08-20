@@ -31,7 +31,7 @@ public struct RuntimeContext : IContext
 		value = default;
 		var marshal = new ReaderMarshaler(vm, argStackIndex);
 		value.Marshal(ref marshal);
-		argStackIndex += value.Size;
+		argStackIndex += MarshalSizeOf<T>.size;
 	}
 
 	public FunctionBody<T> Body<T>([CallerMemberName] string functionName = "") => new FunctionBody<T>(vm);
