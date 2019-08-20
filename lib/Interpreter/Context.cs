@@ -101,6 +101,8 @@ public struct DefinitionContext : IContext
 			builder.returnType = new ValueType(TypeKind.String);
 		else if (type.IsValueType && typeof(IMarshalable).IsAssignableFrom(type))
 			builder.returnType = MarshalHelper.RegisterStruct<IMarshalable>(chunk, (IMarshalable)default(T));
+		else
+			builder.returnType = new ValueType(TypeKind.Unit);
 
 		throw new Definition(functionName, builder);
 	}
