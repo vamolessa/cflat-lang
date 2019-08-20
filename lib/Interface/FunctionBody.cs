@@ -8,6 +8,27 @@ public readonly struct FunctionBody<T>
 	{
 		this.vm = vm;
 	}
+
+	public FunctionCall Call(string functionName)
+	{
+		for (var i = 0; i < vm.chunk.functions.count; i++)
+		{
+			var function = vm.chunk.functions.buffer[i];
+			if (function.name == functionName)
+			{
+				vm.valueStack.PushBack(new ValueData(i));
+				vm.callframeStack.PushBack(new VirtualMachine.CallFrame(
+					i,
+					function.codeIndex,
+					vm.valueStack.count
+				));
+				return new FunctionCall(vm, i);
+			}
+		}
+
+		vm.Error(string.Format("Could not find function named '{0}'", functionName));
+		return new FunctionCall(vm, ushort.MaxValue);
+	}
 }
 
 public static class FunctionBodyExtensions
@@ -45,10 +66,8 @@ public static class FunctionBodyExtensions
 
 	public static Return Return<T>(this FunctionBody<T> self, T value) where T : struct, IMarshalable
 	{
-		var stackIndex = self.vm.valueStack.count;
-		self.vm.valueStack.Grow(MarshalSizeOf<T>.size);
-		var marshal = new WriterMarshaler(self.vm, stackIndex);
-		value.Marshal(ref marshal);
+		var marshaler = new WriteMarshaler<T>(self.vm);
+		value.Marshal(ref marshaler);
 		return default;
 	}
 

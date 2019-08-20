@@ -35,6 +35,13 @@ public static class Interpreter
 		return body.Return(new SomeTestClass());
 	}
 
+	public static Return CallingFunction<C>(ref C context) where C : IContext
+	{
+		var body = context.Body();
+		body.Call("the_function");
+		return body.Return();
+	}
+
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();

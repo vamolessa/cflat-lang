@@ -36,9 +36,8 @@ public struct RuntimeContext : IContext
 	public T ArgStruct<T>() where T : struct, IMarshalable
 	{
 		var value = default(T);
-		var marshal = new ReaderMarshaler(vm, argStackIndex);
-		value.Marshal(ref marshal);
-		argStackIndex += MarshalSizeOf<T>.size;
+		var marshaler = new ReadMarshaler<T>(vm, ref argStackIndex);
+		value.Marshal(ref marshaler);
 		return value;
 	}
 	public T ArgObject<T>() where T : class => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
@@ -97,7 +96,7 @@ public struct DefinitionContext : IContext
 	}
 	public T ArgStruct<T>() where T : struct, IMarshalable
 	{
-		builder.WithParam(MarshalHelper.RegisterStruct<T>(chunk));
+		builder.WithParam(Marshal.ReflectOn<T>(chunk).type);
 		return default;
 	}
 	public T ArgObject<T>() where T : class
@@ -133,7 +132,7 @@ public struct DefinitionContext : IContext
 	}
 	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable
 	{
-		builder.returnType = MarshalHelper.RegisterStruct<T>(chunk);
+		builder.returnType = Marshal.ReflectOn<T>(chunk).type;
 		throw new Definition(functionName, builder);
 	}
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
