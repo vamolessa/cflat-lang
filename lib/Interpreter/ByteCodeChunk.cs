@@ -12,8 +12,10 @@ public sealed class ByteCodeChunk
 	public Buffer<ValueType> functionParamTypes = new Buffer<ValueType>(16);
 	public Buffer<Function> functions = new Buffer<Function>(8);
 	public Buffer<NativeFunction> nativeFunctions = new Buffer<NativeFunction>(8);
+	public Buffer<TupleType> tupleTypes = new Buffer<TupleType>(8);
+	public Buffer<ValueType> tupleElementTypes = new Buffer<ValueType>(16);
 	public Buffer<StructType> structTypes = new Buffer<StructType>(8);
-	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(32);
+	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(16);
 
 	public void WriteByte(byte value, Slice slice)
 	{
@@ -53,7 +55,12 @@ public sealed class ByteCodeChunk
 
 	public void AddFunction(string name, ushort typeIndex)
 	{
-		functions.PushBack(new Function(name, typeIndex, bytes.count));
+		functions.PushBack(new Function(name, typeIndex, (ushort)bytes.count));
+	}
+
+	public TupleTypeBuilder BeginTupleType()
+	{
+		return new TupleTypeBuilder(this);
 	}
 
 	public StructTypeBuilder BeginStructType()

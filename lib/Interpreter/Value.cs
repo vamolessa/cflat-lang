@@ -39,6 +39,7 @@ public enum TypeKind : byte
 	String,
 	Function,
 	NativeFunction,
+	Tuple,
 	Struct,
 	NativeObject,
 }
@@ -109,11 +110,11 @@ public readonly struct ValueType
 		b3 = flags;
 	}
 
-	public int GetSize(ByteCodeChunk chunk)
+	public byte GetSize(ByteCodeChunk chunk)
 	{
 		return kind == TypeKind.Struct ?
 			chunk.structTypes.buffer[index].size :
-			1;
+			(byte)1;
 	}
 
 	public void Format(ByteCodeChunk chunk, StringBuilder sb)
@@ -141,6 +142,9 @@ public readonly struct ValueType
 		case TypeKind.NativeFunction:
 			sb.Append("native ");
 			chunk.FormatFunctionType(index, sb);
+			break;
+		case TypeKind.Tuple:
+			chunk.FormatTupleType(index, sb);
 			break;
 		case TypeKind.Struct:
 			chunk.FormatStructType(index, sb);
@@ -179,14 +183,14 @@ public readonly struct FunctionType
 public readonly struct Function
 {
 	public readonly string name;
-	public readonly int typeIndex;
 	public readonly int codeIndex;
+	public readonly ushort typeIndex;
 
-	public Function(string name, int typeIndex, int codeIndex)
+	public Function(string name, int codeIndex, ushort typeIndex)
 	{
 		this.name = name;
-		this.typeIndex = typeIndex;
 		this.codeIndex = codeIndex;
+		this.typeIndex = typeIndex;
 	}
 }
 
@@ -195,16 +199,28 @@ public readonly struct NativeFunction
 	public delegate Return Callback<C>(ref C context) where C : IContext;
 
 	public readonly string name;
-	public readonly int typeIndex;
-	public readonly int returnSize;
+	public readonly ushort typeIndex;
+	public readonly byte returnSize;
 	public readonly Callback<RuntimeContext> callback;
 
-	public NativeFunction(string name, int typeIndex, int returnSize, Callback<RuntimeContext> callback)
+	public NativeFunction(string name, ushort typeIndex, byte returnSize, Callback<RuntimeContext> callback)
 	{
 		this.name = name;
-		this.typeIndex = typeIndex;
 		this.returnSize = returnSize;
+		this.typeIndex = typeIndex;
 		this.callback = callback;
+	}
+}
+
+public readonly struct TupleType
+{
+	public readonly Slice elements;
+	public readonly byte size;
+
+	public TupleType(Slice elements, byte size)
+	{
+		this.elements = elements;
+		this.size = size;
 	}
 }
 
@@ -212,9 +228,9 @@ public readonly struct StructType
 {
 	public readonly string name;
 	public readonly Slice fields;
-	public readonly int size;
+	public readonly byte size;
 
-	public StructType(string name, Slice fields, int size)
+	public StructType(string name, Slice fields, byte size)
 	{
 		this.name = name;
 		this.fields = fields;

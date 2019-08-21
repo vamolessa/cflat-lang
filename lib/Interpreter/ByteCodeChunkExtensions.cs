@@ -33,7 +33,7 @@ public static class ByteCodeChunkExtensions
 		FormatFunctionType(self, function.typeIndex, sb);
 	}
 
-	public static void FormatFunctionType(this ByteCodeChunk self, int functionTypeIndex, StringBuilder sb)
+	public static void FormatFunctionType(this ByteCodeChunk self, ushort functionTypeIndex, StringBuilder sb)
 	{
 		var type = self.functionTypes.buffer[functionTypeIndex];
 		sb.Append("fn(");
@@ -53,7 +53,11 @@ public static class ByteCodeChunkExtensions
 		}
 	}
 
-	public static void FormatStructType(this ByteCodeChunk self, int structTypeIndex, StringBuilder sb)
+	public static void FormatTupleType(this ByteCodeChunk self, ushort tupleTypeIndex, StringBuilder sb)
+	{
+	}
+
+	public static void FormatStructType(this ByteCodeChunk self, ushort structTypeIndex, StringBuilder sb)
 	{
 		var type = self.structTypes.buffer[structTypeIndex];
 		if (string.IsNullOrEmpty(type.name))

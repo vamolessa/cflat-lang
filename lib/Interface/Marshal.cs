@@ -1,5 +1,3 @@
-public struct Anonymous<T> { }
-
 public interface IMarshalable
 {
 	void Marshal<M>(ref M marshaler) where M : IMarshaler;

@@ -1,14 +1,14 @@
 public struct FunctionTypeBuilder
 {
 	public ByteCodeChunk chunk;
-	public int startParameterIndex;
-	public int parameterCount;
+	public ushort startParameterIndex;
+	public ushort parameterCount;
 	public ValueType returnType;
 
 	public FunctionTypeBuilder(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
-		this.startParameterIndex = chunk.functionParamTypes.count;
+		this.startParameterIndex = (ushort)chunk.functionParamTypes.count;
 		this.parameterCount = 0;
 		this.returnType = new ValueType(TypeKind.Unit);
 	}
@@ -38,7 +38,7 @@ public struct FunctionTypeBuilder
 				);
 			}
 
-			startParameterIndex = chunk.functionParamTypes.count - parameterCount;
+			startParameterIndex = (ushort)(chunk.functionParamTypes.count - parameterCount);
 		}
 
 		chunk.functionParamTypes.PushBack(type);
@@ -99,16 +99,91 @@ public struct FunctionTypeBuilder
 	}
 }
 
+public struct TupleTypeBuilder
+{
+	public ByteCodeChunk chunk;
+	public ushort startElementIndex;
+	public ushort elementCount;
+
+	public TupleTypeBuilder(ByteCodeChunk chunk)
+	{
+		this.chunk = chunk;
+		this.startElementIndex = (ushort)chunk.structTypeFields.count;
+		this.elementCount = 0;
+	}
+
+	public void WithElement(ValueType type)
+	{
+		var elementsIndex = startElementIndex + elementCount;
+		if (elementsIndex < chunk.tupleElementTypes.count)
+		{
+			var swapCount = chunk.tupleElementTypes.count - startElementIndex;
+			chunk.tupleElementTypes.buffer.SwapRanges(startElementIndex, elementsIndex, swapCount);
+
+			for (var i = chunk.tupleTypes.count - 1; i >= 0; i--)
+			{
+				ref var tupleType = ref chunk.tupleTypes.buffer[i];
+				var fieldsSlice = tupleType.elements;
+				if (fieldsSlice.index < elementsIndex)
+					break;
+
+				tupleType = new TupleType(
+					new Slice(
+						fieldsSlice.index - elementCount,
+						fieldsSlice.length
+					),
+					tupleType.size
+				);
+			}
+
+			startElementIndex = (ushort)(chunk.tupleElementTypes.count - elementCount);
+		}
+
+		chunk.tupleElementTypes.PushBack(type);
+		elementCount += 1;
+	}
+
+	public void Cancel()
+	{
+		chunk.tupleTypes.count -= elementCount;
+	}
+
+	public ushort Build(string name)
+	{
+		var elementsIndex = chunk.tupleElementTypes.count - elementCount;
+
+		var size = (byte)0;
+		for (var i = 0; i < elementCount; i++)
+		{
+			var element = chunk.tupleElementTypes.buffer[elementsIndex + i];
+			size += element.GetSize(chunk);
+		}
+
+		if (size == 0)
+			size = 1;
+
+		chunk.tupleTypes.PushBack(new TupleType(
+			new Slice(
+				elementsIndex,
+				elementCount
+			),
+			size
+		));
+
+		return (ushort)(chunk.tupleTypes.count - 1);
+	}
+}
+
 public struct StructTypeBuilder
 {
 	public ByteCodeChunk chunk;
-	public int startFieldIndex;
-	public int fieldCount;
+	public ushort startFieldIndex;
+	public ushort fieldCount;
 
 	public StructTypeBuilder(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
-		this.startFieldIndex = chunk.structTypeFields.count;
+		this.startFieldIndex = (ushort)chunk.structTypeFields.count;
 		this.fieldCount = 0;
 	}
 
@@ -137,7 +212,7 @@ public struct StructTypeBuilder
 				);
 			}
 
-			startFieldIndex = chunk.structTypeFields.count - fieldCount;
+			startFieldIndex = (ushort)(chunk.structTypeFields.count - fieldCount);
 		}
 
 		chunk.structTypeFields.PushBack(new StructTypeField(name, type));
@@ -153,7 +228,7 @@ public struct StructTypeBuilder
 	{
 		var fieldsIndex = chunk.structTypeFields.count - fieldCount;
 
-		var size = 0;
+		var size = (byte)0;
 		for (var i = 0; i < fieldCount; i++)
 		{
 			var field = chunk.structTypeFields.buffer[fieldsIndex + i];
