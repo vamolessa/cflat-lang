@@ -111,9 +111,12 @@ public static class VirtualMachineHelper
 	public static string FormatError(string source, RuntimeError error, int contextSize, int tabSize)
 	{
 		var sb = new StringBuilder();
+		sb.Append((string)error.message);
+		if (error.instructionIndex < 0)
+			return sb.ToString();
+
 		var position = CompilerHelper.GetLineAndColumn(source, (int)error.slice.index, tabSize);
 
-		sb.Append((string)error.message);
 		sb.Append(" (line: ");
 		sb.Append(position.line);
 		sb.Append(", column: ");

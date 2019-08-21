@@ -116,9 +116,14 @@ public struct FunctionCall
 		paramIndex = ushort.MaxValue;
 	}
 
+	public bool Get()
+	{
+		return CallAndCheckReturn(new ValueType(TypeKind.Unit));
+	}
+
 	public bool GetBool(out bool value)
 	{
-		if (HasReturn(new ValueType(TypeKind.Bool)))
+		if (CallAndCheckReturn(new ValueType(TypeKind.Bool)))
 		{
 			value = vm.valueStack.PopLast().asBool;
 			return true;
@@ -132,7 +137,7 @@ public struct FunctionCall
 
 	public bool GetInt(out int value)
 	{
-		if (HasReturn(new ValueType(TypeKind.Int)))
+		if (CallAndCheckReturn(new ValueType(TypeKind.Int)))
 		{
 			value = vm.valueStack.PopLast().asInt;
 			return true;
@@ -146,7 +151,7 @@ public struct FunctionCall
 
 	public bool GetFloat(out float value)
 	{
-		if (HasReturn(new ValueType(TypeKind.Float)))
+		if (CallAndCheckReturn(new ValueType(TypeKind.Float)))
 		{
 			value = vm.valueStack.PopLast().asFloat;
 			return true;
@@ -160,7 +165,7 @@ public struct FunctionCall
 
 	public bool GetString(out string value)
 	{
-		if (HasReturn(new ValueType(TypeKind.String)))
+		if (CallAndCheckReturn(new ValueType(TypeKind.String)))
 		{
 			value = vm.heap.buffer[vm.valueStack.PopLast().asInt] as string;
 			return true;
@@ -175,7 +180,7 @@ public struct FunctionCall
 	public bool GetStruct<T>(out T value) where T : struct, IMarshalable
 	{
 		value = default;
-		if (HasReturn(Marshal.ReflectOn<T>(vm.chunk).type))
+		if (CallAndCheckReturn(Marshal.ReflectOn<T>(vm.chunk).type))
 		{
 			var marshaler = ReadMarshaler.For<T>(vm);
 			value.Marshal(ref marshaler);
@@ -189,7 +194,7 @@ public struct FunctionCall
 
 	public bool GetObject<T>(out T value) where T : class
 	{
-		if (HasReturn(new ValueType(TypeKind.NativeObject)))
+		if (CallAndCheckReturn(new ValueType(TypeKind.NativeObject)))
 		{
 			value = vm.heap.buffer[vm.valueStack.PopLast().asInt] as T;
 			return true;
@@ -201,7 +206,7 @@ public struct FunctionCall
 		}
 	}
 
-	private bool HasReturn(ValueType valueType)
+	private bool CallAndCheckReturn(ValueType valueType)
 	{
 		if (paramIndex == ushort.MaxValue)
 			return false;
@@ -221,8 +226,8 @@ public struct FunctionCall
 			vm.Error(string.Format(
 				"Wrong return type for function '{0}'. Expected {1}. Got {2}",
 				function.name,
-				returnType,
-				valueType
+				returnType.ToString(vm.chunk),
+				valueType.ToString(vm.chunk)
 			));
 			return false;
 		}

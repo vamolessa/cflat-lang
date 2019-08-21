@@ -12,7 +12,7 @@ internal static class VirtualMachineInstructions
 		return ref vm.valueStack.buffer[vm.valueStack.count - 2];
 	}
 
-	private static byte NextByte(VirtualMachine vm, ref VirtualMachine.CallFrame frame)
+	private static byte NextByte(VirtualMachine vm, ref CallFrame frame)
 	{
 		return vm.chunk.bytes.buffer[frame.codeIndex++];
 	}
@@ -25,7 +25,7 @@ internal static class VirtualMachineInstructions
 		switch (nextInstruction)
 		{
 		case Instruction.Halt:
-			return false;
+			return true;
 		case Instruction.Call:
 			{
 				var size = NextByte(vm, ref frame);
@@ -34,7 +34,7 @@ internal static class VirtualMachineInstructions
 				var function = vm.chunk.functions.buffer[functionIndex];
 
 				vm.callframeStack.PushBack(
-					new VirtualMachine.CallFrame(
+					new CallFrame(
 						functionIndex,
 						function.codeIndex,
 						stackTop
@@ -49,7 +49,7 @@ internal static class VirtualMachineInstructions
 				var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
 				vm.callframeStack.PushBack(
-					new VirtualMachine.CallFrame(
+					new CallFrame(
 						functionIndex,
 						-1,
 						stackTop
@@ -69,7 +69,7 @@ internal static class VirtualMachineInstructions
 				var size = NextByte(vm, ref frame);
 				VirtualMachineHelper.Return(vm, size);
 				if (vm.callframeStack.count == 0)
-					return false;
+					return true;
 				break;
 			}
 		case Instruction.Print:
@@ -294,6 +294,6 @@ internal static class VirtualMachineInstructions
 			break;
 		}
 
-		return true;
+		return false;
 	}
 }

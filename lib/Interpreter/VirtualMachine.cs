@@ -14,22 +14,22 @@ public readonly struct RuntimeError
 	}
 }
 
+internal struct CallFrame
+{
+	public int functionIndex;
+	public int codeIndex;
+	public int baseStackIndex;
+
+	public CallFrame(int functionIndex, int codeIndex, int baseStackIndex)
+	{
+		this.functionIndex = functionIndex;
+		this.codeIndex = codeIndex;
+		this.baseStackIndex = baseStackIndex;
+	}
+}
+
 public sealed class VirtualMachine
 {
-	internal struct CallFrame
-	{
-		public int functionIndex;
-		public int codeIndex;
-		public int baseStackIndex;
-
-		public CallFrame(int functionIndex, int codeIndex, int baseStackIndex)
-		{
-			this.functionIndex = functionIndex;
-			this.codeIndex = codeIndex;
-			this.baseStackIndex = baseStackIndex;
-		}
-	}
-
 	internal ByteCodeChunk chunk;
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
@@ -87,7 +87,7 @@ public sealed class VirtualMachine
 		var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
 		maybeError = Option.Some(new RuntimeError(
 			ip,
-			chunk.slices.buffer[ip],
+			ip >= 0 ? chunk.slices.buffer[ip] : new Slice(),
 			message
 		));
 		return true;

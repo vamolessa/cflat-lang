@@ -38,7 +38,7 @@ public static class Interpreter
 	public static Return CallingFunction<C>(ref C context) where C : IContext
 	{
 		var body = context.Body();
-		body.Call("the_function");
+		body.Call("some_function").WithInt(6).Get();
 		return body.Return();
 	}
 
@@ -48,6 +48,7 @@ public static class Interpreter
 
 		pepper.AddFunction(TestFunction, TestFunction);
 		pepper.AddFunction(OtherFunction, OtherFunction);
+		pepper.AddFunction(CallingFunction, CallingFunction);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)
