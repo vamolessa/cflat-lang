@@ -53,6 +53,14 @@ public static class VirtualMachineHelper
 				vm.chunk.FormatNativeFunction(idx, sb);
 				return;
 			}
+		case TypeKind.Tuple:
+			{
+				var tupleType = vm.chunk.tupleTypes.buffer[type.index];
+				sb.Append('(');
+				sb.Append("rest of tuple's body goes here");
+				sb.Append(')');
+				return;
+			}
 		case TypeKind.Struct:
 			{
 				var structType = vm.chunk.structTypes.buffer[type.index];
