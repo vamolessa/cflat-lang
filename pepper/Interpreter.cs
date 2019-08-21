@@ -38,7 +38,8 @@ public static class Interpreter
 	public static Return CallingFunction<C>(ref C context) where C : IContext
 	{
 		var body = context.Body();
-		body.Call("some_function").WithInt(6).GetInt(out var n);
+		var success = body.Call("some_function").WithInt(6).GetInt(out var n);
+		System.Console.WriteLine("CALLED FUNCTION success:{0} return:{1}", success, n);
 		return body.Return();
 	}
 

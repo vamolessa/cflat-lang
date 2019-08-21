@@ -73,9 +73,11 @@ public sealed class VirtualMachine
 				sb.Clear();
 				VirtualMachineHelper.TraceStack(this, sb);
 				chunk.DisassembleInstruction(ip, sb);
-				sb.AppendLine();
-				System.Console.Write(sb);
+				System.Console.WriteLine(sb);
 			} while (VirtualMachineInstructions.Tick(this));
+			sb.Clear();
+			VirtualMachineHelper.TraceStack(this, sb);
+			System.Console.WriteLine(sb);
 
 			return maybeError;
 		}
