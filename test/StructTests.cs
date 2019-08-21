@@ -14,10 +14,9 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.c}", 9)]
 	public void StructGetFieldTests(string source, int expected)
 	{
-		var error = TestHelper.Run(source, out var v, out var t);
-		Assert.Null(error);
-		Assert.Equal(new ValueType(TypeKind.Int), t);
-		Assert.Equal(expected, v.asInt);
+		TestHelper.Run(source, out var a).GetInt(out var v);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v);
 	}
 
 	[Theory]
@@ -32,10 +31,9 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.c=9 t.c}", 9)]
 	public void StructSetFieldTests(string source, int expected)
 	{
-		var error = TestHelper.Run(source, out var v, out var t);
-		Assert.Null(error);
-		Assert.Equal(new ValueType(TypeKind.Int), t);
-		Assert.Equal(expected, v.asInt);
+		TestHelper.Run(source, out var a).GetInt(out var v);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v);
 	}
 
 	[Theory]
@@ -47,17 +45,16 @@ public sealed class StructTests
 	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().z}", 7)]
 	public void FunctionStructReturnTests(string source, int expected)
 	{
-		var error = TestHelper.Run(source, out var v, out var t);
-		Assert.Null(error);
-		Assert.Equal(new ValueType(TypeKind.Int), t);
-		Assert.Equal(expected, v.asInt);
+		TestHelper.Run(source, out var a).GetInt(out var v);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v);
 	}
 
 	[Theory]
-	[InlineData("fn b():int{p().xy1.x}", 3)]
-	[InlineData("fn b():int{p().xy1.y}", 9)]
-	[InlineData("fn b():int{p().xy2.x}", 11)]
-	[InlineData("fn b():int{p().xy2.y}", 13)]
+	[InlineData("fn f():int{p().xy1.x}", 3)]
+	[InlineData("fn f():int{p().xy1.y}", 9)]
+	[InlineData("fn f():int{p().xy2.x}", 11)]
+	[InlineData("fn f():int{p().xy2.y}", 13)]
 	public void FunctionNestedStructReturnTests(string lastFunctionSource, int expected)
 	{
 		var source = string.Concat(@"
@@ -76,10 +73,9 @@ public sealed class StructTests
 			}
 		", lastFunctionSource);
 
-		var error = TestHelper.Run(source, out var v, out var t);
-		Assert.Null(error);
-		Assert.Equal(new ValueType(TypeKind.Int), t);
-		Assert.Equal(expected, v.asInt);
+		TestHelper.Run(source, out var a).GetInt(out var v);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v);
 	}
 
 	[Theory]

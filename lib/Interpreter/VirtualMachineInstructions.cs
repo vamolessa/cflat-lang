@@ -68,8 +68,6 @@ internal static class VirtualMachineInstructions
 			{
 				var size = NextByte(vm, ref frame);
 				VirtualMachineHelper.Return(vm, size);
-				if (vm.callframeStack.count == 0 || vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex < 0)
-					return false;
 				break;
 			}
 		case Instruction.Print:

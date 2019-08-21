@@ -51,7 +51,7 @@ public sealed class ByteCodeChunk
 		return new FunctionTypeBuilder(this);
 	}
 
-	public void AddFunction(string name, int typeIndex)
+	public void AddFunction(string name, ushort typeIndex)
 	{
 		functions.PushBack(new Function(name, typeIndex, bytes.count));
 	}

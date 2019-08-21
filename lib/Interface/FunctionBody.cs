@@ -11,18 +11,7 @@ public readonly struct FunctionBody<T>
 
 	public FunctionCall Call(string functionName)
 	{
-		for (var i = 0; i < vm.chunk.functions.count; i++)
-		{
-			var function = vm.chunk.functions.buffer[i];
-			if (function.name == functionName)
-			{
-				vm.PushFunction(i);
-				return new FunctionCall(vm, i);
-			}
-		}
-
-		vm.Error(string.Format("Could not find function named '{0}'", functionName));
-		return new FunctionCall(vm, ushort.MaxValue);
+		return vm.CallFunction(functionName);
 	}
 }
 

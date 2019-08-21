@@ -2,7 +2,7 @@ public sealed class Pepper
 {
 	internal readonly VirtualMachine virtualMachine = new VirtualMachine();
 	internal readonly CompilerController compiler = new CompilerController();
-	public readonly ByteCodeChunk byteCode = new ByteCodeChunk();
+	internal readonly ByteCodeChunk byteCode = new ByteCodeChunk();
 	internal string source;
 	internal Buffer<CompileError> registerErrors = new Buffer<CompileError>();
 
@@ -18,33 +18,37 @@ public sealed class Pepper
 			return registerErrors;
 
 		this.source = source;
-		return compiler.Compile(source, byteCode);
+		var errors = compiler.Compile(source, byteCode);
+		if (errors.count == 0)
+			virtualMachine.Load(byteCode);
+		return errors;
 	}
 
 	public Buffer<CompileError> CompileExpression(string source)
 	{
+		if (registerErrors.count > 0)
+			return registerErrors;
+
 		this.source = source;
-		return compiler.CompileExpression(source, byteCode);
+		var errors = compiler.CompileExpression(source, byteCode);
+		if (errors.count == 0)
+			virtualMachine.Load(byteCode);
+		return errors;
 	}
 
-	public Option<RuntimeError> RunLastFunction()
+	public FunctionCall CallFunction(string functionName)
 	{
-		if (byteCode.functions.count == 0)
+		if (compiler.compiler.errors.count > 0 || registerErrors.count > 0)
 		{
-			return Option.Some(new RuntimeError(
-				0,
-				new Slice(),
-				"No function defined"
-			));
+			virtualMachine.Error("Has compile errors");
+			return new FunctionCall(virtualMachine, ushort.MaxValue);
 		}
 
-		virtualMachine.Load(byteCode);
-		virtualMachine.PushFunction(byteCode.functions.count - 1);
-		return virtualMachine.CallTopFunction();
+		return virtualMachine.CallFunction(functionName);
 	}
 
-	public ValueData Pop()
+	public Option<RuntimeError> GetError()
 	{
-		return virtualMachine.valueStack.buffer[virtualMachine.valueStack.count - 1];
+		return virtualMachine.error;
 	}
 }

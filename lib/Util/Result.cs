@@ -1,3 +1,5 @@
+using System.Runtime.InteropServices;
+
 public static class Result
 {
 	public static OkResult<T> Ok<T>(T ok)
@@ -31,10 +33,14 @@ public readonly struct ErrorResult<E>
 	}
 }
 
+[StructLayout(LayoutKind.Explicit)]
 public readonly struct Result<T, E>
 {
+	[FieldOffset(0)]
 	public readonly bool isOk;
+	[FieldOffset(4)]
 	public readonly T ok;
+	[FieldOffset(4)]
 	public readonly E error;
 
 	public Result(bool isOk, T ok, E error)

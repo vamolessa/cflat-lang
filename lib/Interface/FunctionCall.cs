@@ -5,10 +5,10 @@ public struct FunctionCall
 	private readonly ushort paramEnd;
 	private ushort paramIndex;
 
-	public FunctionCall(VirtualMachine vm, int functionIndex)
+	public FunctionCall(VirtualMachine vm, ushort functionIndex)
 	{
 		this.vm = vm;
-		this.functionIndex = (ushort)functionIndex;
+		this.functionIndex = functionIndex;
 
 		if (functionIndex < ushort.MaxValue)
 		{
@@ -205,6 +205,7 @@ public struct FunctionCall
 			return false;
 		}
 	}
+	
 
 	private bool CallAndCheckReturn(ValueType valueType)
 	{
@@ -232,7 +233,7 @@ public struct FunctionCall
 			return false;
 		}
 
-		var error = vm.CallTopFunction();
-		return !error.isSome;
+		vm.CallTopFunction();
+		return !vm.error.isSome;
 	}
 }

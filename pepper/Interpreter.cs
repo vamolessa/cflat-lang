@@ -70,7 +70,8 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		var runtimeError = pepper.RunLastFunction();
+		pepper.CallFunction("main").Get();
+		var runtimeError = pepper.GetError();
 		if (runtimeError.isSome)
 		{
 			var error = VirtualMachineHelper.FormatError(source, runtimeError.value, 2, TabSize);

@@ -50,7 +50,7 @@ public struct FunctionTypeBuilder
 		chunk.functionParamTypes.count -= parameterCount;
 	}
 
-	public int Build()
+	public ushort Build()
 	{
 		var parametersIndex = chunk.functionParamTypes.count - parameterCount;
 
@@ -75,7 +75,7 @@ public struct FunctionTypeBuilder
 			if (match)
 			{
 				chunk.functionParamTypes.count = parametersIndex;
-				return i;
+				return (ushort)i;
 			}
 		}
 
@@ -95,7 +95,7 @@ public struct FunctionTypeBuilder
 			parametersTotalSize
 		));
 
-		return chunk.functionTypes.count - 1;
+		return (ushort)(chunk.functionTypes.count - 1);
 	}
 }
 
@@ -149,7 +149,7 @@ public struct StructTypeBuilder
 		chunk.structTypes.count -= fieldCount;
 	}
 
-	public int Build(string name)
+	public ushort Build(string name)
 	{
 		var fieldsIndex = chunk.structTypeFields.count - fieldCount;
 
@@ -172,7 +172,7 @@ public struct StructTypeBuilder
 			size
 		));
 
-		return chunk.structTypes.count - 1;
+		return (ushort)(chunk.structTypes.count - 1);
 	}
 
 	public int BuildAnonymous()

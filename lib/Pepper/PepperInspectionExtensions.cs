@@ -13,6 +13,9 @@ public static class PepperInspectionExtensions
 			var callframe = vm.callframeStack.buffer[i];
 			var sourceIndex = vm.chunk.slices.buffer[callframe.codeIndex - 1].index;
 
+			if (callframe.functionIndex < 0)
+				continue;
+
 			if (sourceIndex >= 0)
 			{
 				var pos = CompilerHelper.GetLineAndColumn(
@@ -37,7 +40,7 @@ public static class PepperInspectionExtensions
 			else
 			{
 				sb.Append("[native function] ");
-				vm.chunk.FormatNativeFunction(-callframe.functionIndex, sb);
+				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
 				sb.AppendLine();
 			}
 		}

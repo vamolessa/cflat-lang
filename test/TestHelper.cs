@@ -1,5 +1,41 @@
+using Xunit;
+
 public static class TestHelper
 {
+	public const int TabSize = 8;
+
+	public readonly struct CallAssertion
+	{
+		private readonly string source;
+		private readonly Pepper pepper;
+
+		public CallAssertion(string source, Pepper pepper)
+		{
+			this.source = source;
+			this.pepper = pepper;
+		}
+
+		public void AssertSuccessCall()
+		{
+			string errorMessage = null;
+			var error = pepper.GetError();
+			if (error.isSome)
+				errorMessage = VirtualMachineHelper.FormatError(source, error.value, 1, TabSize);
+			Assert.Null(errorMessage);
+		}
+
+		public void AssertFailCall()
+		{
+			var error = pepper.GetError();
+			Assert.True(error.isSome);
+		}
+	}
+
+	public sealed class CompileErrorException : System.Exception
+	{
+		public CompileErrorException(string error) : base(error) { }
+	}
+
 	public static T[] BufferToArray<T>(Buffer<T> buffer)
 	{
 		var array = new T[buffer.count];
@@ -8,47 +44,25 @@ public static class TestHelper
 		return array;
 	}
 
-	public static string Run(string source, out ValueData value, out ValueType type)
+	public static FunctionCall Run(string source, out CallAssertion assertion)
 	{
-		const int TabSize = 8;
-		value = new ValueData();
-		type = new ValueType();
-
 		var pepper = new Pepper();
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)
-			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
+			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
-		var runError = pepper.RunLastFunction();
-		if (runError.isSome)
-			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
-
-		value = pepper.Pop();
-		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
-		type = pepper.byteCode.functionTypes.buffer[lastFunction.typeIndex].returnType;
-
-		return null;
+		assertion = new CallAssertion(source, pepper);
+		return pepper.CallFunction("f");
 	}
 
-	public static string RunExpression(string source, out ValueData value, out ValueType type)
+	public static FunctionCall RunExpression(string source, out CallAssertion assertion)
 	{
-		const int TabSize = 8;
-		value = new ValueData();
-		type = new ValueType();
-
 		var pepper = new Pepper();
 		var compileErrors = pepper.CompileExpression(source);
 		if (compileErrors.count > 0)
-			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
+			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
-		var runError = pepper.RunLastFunction();
-		if (runError.isSome)
-			return "RUNTIME ERROR: " + VirtualMachineHelper.FormatError(source, runError.value, 1, TabSize);
-
-		value = pepper.Pop();
-		var lastFunction = pepper.byteCode.functions.buffer[pepper.byteCode.functions.count - 1];
-		type = pepper.byteCode.functionTypes.buffer[lastFunction.typeIndex].returnType;
-
-		return null;
+		assertion = new CallAssertion(source, pepper);
+		return pepper.CallFunction(string.Empty);
 	}
 }

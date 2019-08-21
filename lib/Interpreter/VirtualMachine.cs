@@ -36,12 +36,12 @@ public sealed class VirtualMachine
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
 	internal Buffer<object> heap;
-	private Option<RuntimeError> maybeError;
+	internal Option<RuntimeError> error;
 
 	public void Load(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
-		maybeError = Option.None;
+		error = Option.None;
 
 		valueStack.count = 0;
 		callframeStack.count = 0;
@@ -55,14 +55,34 @@ public sealed class VirtualMachine
 			heap.buffer[i] = chunk.stringLiterals.buffer[i];
 	}
 
-	public void PushFunction(int functionIndex)
+	public FunctionCall CallFunction(string functionName)
 	{
-		var function = chunk.functions.buffer[functionIndex];
-		valueStack.PushBack(new ValueData(functionIndex));
-		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, valueStack.count));
+		for (var i = 0; i < chunk.functions.count; i++)
+		{
+			var function = chunk.functions.buffer[i];
+			if (function.name == functionName)
+			{
+				valueStack.PushBack(new ValueData(i));
+				callframeStack.PushBack(new CallFrame(
+					-1,
+					chunk.bytes.count - 1,
+					valueStack.count
+				));
+				callframeStack.PushBack(new CallFrame(
+					i,
+					function.codeIndex,
+					valueStack.count
+				));
+
+				return new FunctionCall(this, (ushort)i);
+			}
+		}
+
+		Error(string.Format("Could not find function named '{0}'", functionName));
+		return new FunctionCall(this, ushort.MaxValue);
 	}
 
-	public Option<RuntimeError> CallTopFunction()
+	public void CallTopFunction()
 	{
 		if (debugMode)
 		{
@@ -78,24 +98,20 @@ public sealed class VirtualMachine
 			sb.Clear();
 			VirtualMachineHelper.TraceStack(this, sb);
 			System.Console.WriteLine(sb);
-
-			return maybeError;
 		}
 		else
 		{
 			while (VirtualMachineInstructions.Tick(this)) { }
-			return maybeError;
 		}
 	}
 
-	public bool Error(string message)
+	public void Error(string message)
 	{
 		var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
-		maybeError = Option.Some(new RuntimeError(
+		error = Option.Some(new RuntimeError(
 			ip,
 			ip >= 0 ? chunk.slices.buffer[ip] : new Slice(),
 			message
 		));
-		return true;
 	}
 }
