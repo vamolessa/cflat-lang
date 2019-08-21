@@ -13,8 +13,7 @@ public static class VirtualMachineHelper
 		while (srcIdx < vm.valueStack.count)
 			vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
 
-		stackTop += size;
-		vm.valueStack.count = stackTop;
+		vm.valueStack.count = stackTop + size;
 	}
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
@@ -100,7 +99,7 @@ public static class VirtualMachineHelper
 		{
 			sb.Append("[");
 			//var type = vm.typeStack.buffer[i];
-			var type = new ValueType(TypeKind.Unit);
+			var type = new ValueType(TypeKind.Int);
 			ValueToString(vm, i, type, sb);
 			i += type.GetSize(vm.chunk);
 			sb.Append("]");

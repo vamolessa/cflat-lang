@@ -116,44 +116,49 @@ public readonly struct ValueType
 			1;
 	}
 
-	public string ToString(ByteCodeChunk chunk)
+	public void Format(ByteCodeChunk chunk, StringBuilder sb)
 	{
 		switch (kind)
 		{
 		case TypeKind.Unit:
-			return "{}";
+			sb.Append("{}");
+			break;
 		case TypeKind.Bool:
-			return "bool";
+			sb.Append("bool");
+			break;
 		case TypeKind.Int:
-			return "int";
+			sb.Append("int");
+			break;
 		case TypeKind.Float:
-			return "float";
+			sb.Append("float");
+			break;
 		case TypeKind.String:
-			return "string";
+			sb.Append("string");
+			break;
 		case TypeKind.Function:
-			{
-				var sb = new StringBuilder();
-				chunk.FormatFunctionType(index, sb);
-				return sb.ToString();
-			}
+			chunk.FormatFunctionType(index, sb);
+			break;
 		case TypeKind.NativeFunction:
-			{
-				var sb = new StringBuilder();
-				sb.Append("native ");
-				chunk.FormatFunctionType(index, sb);
-				return sb.ToString();
-			}
+			sb.Append("native ");
+			chunk.FormatFunctionType(index, sb);
+			break;
 		case TypeKind.Struct:
-			{
-				var sb = new StringBuilder();
-				chunk.FormatStructType(index, sb);
-				return sb.ToString();
-			}
+			chunk.FormatStructType(index, sb);
+			break;
 		case TypeKind.NativeObject:
-			return "custom";
+			sb.Append("custom");
+			break;
 		default:
-			return "unreachable";
+			sb.Append("unreachable");
+			break;
 		}
+	}
+
+	public string ToString(ByteCodeChunk chunk)
+	{
+		var sb = new StringBuilder();
+		Format(chunk, sb);
+		return sb.ToString();
 	}
 }
 

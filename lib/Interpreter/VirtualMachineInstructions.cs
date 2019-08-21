@@ -25,7 +25,7 @@ internal static class VirtualMachineInstructions
 		switch (nextInstruction)
 		{
 		case Instruction.Halt:
-			return true;
+			return false;
 		case Instruction.Call:
 			{
 				var size = NextByte(vm, ref frame);
@@ -69,7 +69,7 @@ internal static class VirtualMachineInstructions
 				var size = NextByte(vm, ref frame);
 				VirtualMachineHelper.Return(vm, size);
 				if (vm.callframeStack.count == 0)
-					return true;
+					return false;
 				break;
 			}
 		case Instruction.Print:
@@ -294,6 +294,6 @@ internal static class VirtualMachineInstructions
 			break;
 		}
 
-		return false;
+		return true;
 	}
 }

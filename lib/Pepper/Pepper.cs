@@ -6,6 +6,12 @@ public sealed class Pepper
 	internal string source;
 	internal Buffer<CompileError> registerErrors = new Buffer<CompileError>();
 
+	public bool DebugMode
+	{
+		get { return virtualMachine.debugMode; }
+		set { virtualMachine.debugMode = value; }
+	}
+
 	public Buffer<CompileError> CompileSource(string source)
 	{
 		if (registerErrors.count > 0)

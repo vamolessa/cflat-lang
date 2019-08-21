@@ -30,6 +30,8 @@ internal struct CallFrame
 
 public sealed class VirtualMachine
 {
+	public bool debugMode = false;
+
 	internal ByteCodeChunk chunk;
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
@@ -57,29 +59,31 @@ public sealed class VirtualMachine
 	{
 		var function = chunk.functions.buffer[functionIndex];
 		valueStack.PushBack(new ValueData(functionIndex));
-		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
+		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, valueStack.count));
 	}
 
 	public Option<RuntimeError> CallTopFunction()
 	{
-		while (VirtualMachineInstructions.Tick(this)) { }
-		return maybeError;
-	}
-
-	public Option<RuntimeError> CallTopFunctionDebug()
-	{
-		var sb = new StringBuilder();
-		do
+		if (debugMode)
 		{
-			var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
-			sb.Clear();
-			VirtualMachineHelper.TraceStack(this, sb);
-			chunk.DisassembleInstruction(ip, sb);
-			sb.AppendLine();
-			System.Console.Write(sb);
-		} while (VirtualMachineInstructions.Tick(this));
+			var sb = new StringBuilder();
+			do
+			{
+				var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
+				sb.Clear();
+				VirtualMachineHelper.TraceStack(this, sb);
+				chunk.DisassembleInstruction(ip, sb);
+				sb.AppendLine();
+				System.Console.Write(sb);
+			} while (VirtualMachineInstructions.Tick(this));
 
-		return maybeError;
+			return maybeError;
+		}
+		else
+		{
+			while (VirtualMachineInstructions.Tick(this)) { }
+			return maybeError;
+		}
 	}
 
 	public bool Error(string message)

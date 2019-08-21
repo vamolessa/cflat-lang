@@ -41,11 +41,16 @@ public static class ByteCodeChunkExtensions
 		{
 			var paramIndex = type.parameters.index + i;
 			var paramType = self.functionParamTypes.buffer[paramIndex];
-			sb.Append(paramType.ToString(self));
+			paramType.Format(self, sb);
 			if (i < type.parameters.length - 1)
 				sb.Append(',');
 		}
 		sb.Append(')');
+		if (!type.returnType.IsKind(TypeKind.Unit))
+		{
+			sb.Append(':');
+			type.returnType.Format(self, sb);
+		}
 	}
 
 	public static void FormatStructType(this ByteCodeChunk self, int structTypeIndex, StringBuilder sb)
@@ -62,7 +67,7 @@ public static class ByteCodeChunkExtensions
 			var field = self.structTypeFields.buffer[fieldIndex];
 			sb.Append(field.name);
 			sb.Append(':');
-			sb.Append(field.type.ToString(self));
+			field.type.Format(self, sb);
 			if (i < type.fields.length - 1)
 				sb.Append(' ');
 		}
@@ -314,7 +319,7 @@ public static class ByteCodeChunkExtensions
 			chunk.bytes.buffer[index + 4]
 		);
 
-		sb.Append(type.ToString(chunk));
+		type.Format(chunk, sb);
 
 		return index + 5;
 	}

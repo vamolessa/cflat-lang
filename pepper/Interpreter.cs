@@ -38,13 +38,14 @@ public static class Interpreter
 	public static Return CallingFunction<C>(ref C context) where C : IContext
 	{
 		var body = context.Body();
-		body.Call("some_function").WithInt(6).Get();
+		body.Call("some_function").WithInt(6).GetInt(out var n);
 		return body.Return();
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
+		pepper.DebugMode = true;
 
 		pepper.AddFunction(TestFunction, TestFunction);
 		pepper.AddFunction(OtherFunction, OtherFunction);
