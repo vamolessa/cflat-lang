@@ -16,12 +16,7 @@ public readonly struct FunctionBody<T>
 			var function = vm.chunk.functions.buffer[i];
 			if (function.name == functionName)
 			{
-				vm.valueStack.PushBack(new ValueData(i));
-				vm.callframeStack.PushBack(new VirtualMachine.CallFrame(
-					i,
-					function.codeIndex,
-					vm.valueStack.count
-				));
+				vm.PushFunction(i);
 				return new FunctionCall(vm, i);
 			}
 		}
@@ -66,7 +61,7 @@ public static class FunctionBodyExtensions
 
 	public static Return Return<T>(this FunctionBody<T> self, T value) where T : struct, IMarshalable
 	{
-		var marshaler = new WriteMarshaler<T>(self.vm);
+		var marshaler = WriteMarshaler.For<T>(self.vm);
 		value.Marshal(ref marshaler);
 		return default;
 	}

@@ -26,100 +26,82 @@ public struct FunctionCall
 
 	public FunctionCall WithBool(bool value)
 	{
-		PushArgument(new ValueData(value), new ValueType(TypeKind.Bool));
+		vm.valueStack.PushBack(new ValueData(value));
+		CheckArgument(new ValueType(TypeKind.Bool));
 		return this;
 	}
 
 	public FunctionCall WithInt(int value)
 	{
-		PushArgument(new ValueData(value), new ValueType(TypeKind.Int));
+		vm.valueStack.PushBack(new ValueData(value));
+		CheckArgument(new ValueType(TypeKind.Int));
 		return this;
 	}
 
 	public FunctionCall WithFloat(float value)
 	{
-		PushArgument(new ValueData(value), new ValueType(TypeKind.Float));
+		vm.valueStack.PushBack(new ValueData(value));
+		CheckArgument(new ValueType(TypeKind.Float));
 		return this;
 	}
 
 	public FunctionCall WithString(string value)
 	{
-		PushArgument(new ValueData(vm.heap.count), new ValueType(TypeKind.String));
+		vm.valueStack.PushBack(new ValueData(vm.heap.count));
 		vm.heap.PushBack(value);
+		CheckArgument(new ValueType(TypeKind.String));
 		return this;
 	}
 
 	public FunctionCall WithStruct<T>(T value) where T : struct, IMarshalable
 	{
-		if (paramIndex < ushort.MaxValue)
-		{
-			if (paramIndex < paramEnd)
-			{
-				var type = Marshal.ReflectOn<T>(vm.chunk).type;
-				var paramType = vm.chunk.functionParamTypes.buffer[paramIndex++];
-				if (paramType.IsEqualTo(type))
-				{
-					var marshaler = new WriteMarshaler<T>(vm);
-					value.Marshal(ref marshaler);
-				}
-				else
-				{
-					ArgumentTypeError(paramType, type);
-				}
-			}
-			else
-			{
-				ArgumentCountError();
-			}
-		}
-
+		var marshaler = WriteMarshaler.For<T>(vm);
+		value.Marshal(ref marshaler);
+		CheckArgument(Marshal.ReflectOn<T>(vm.chunk).type);
 		return this;
 	}
 
 	public FunctionCall WithObject<T>(T value) where T : class
 	{
-		PushArgument(new ValueData(vm.heap.count), new ValueType(TypeKind.NativeObject));
+		vm.valueStack.PushBack(new ValueData(vm.heap.count));
 		vm.heap.PushBack(value);
+		CheckArgument(new ValueType(TypeKind.NativeObject));
 		return this;
 	}
 
-	private void PushArgument(ValueData value, ValueType type)
+	private void CheckArgument(ValueType argumentType)
 	{
-		if (paramIndex < ushort.MaxValue)
+		if (paramIndex == ushort.MaxValue)
+			return;
+
+		if (paramIndex >= paramEnd)
 		{
-			if (paramIndex < paramEnd)
-			{
-				var paramType = vm.chunk.functionParamTypes.buffer[paramIndex++];
-				if (paramType.IsEqualTo(type))
-					vm.valueStack.PushBack(value);
-				else
-					ArgumentTypeError(paramType, type);
-			}
-			else
-			{
-				ArgumentCountError();
-			}
+			ArgumentCountError();
+			return;
 		}
-	}
 
-	private void ArgumentTypeError(ValueType parameterType, ValueType argumentType)
-	{
-		var function = vm.chunk.functions.buffer[functionIndex];
-		var paramsStartIndex = vm.chunk.functionTypes.buffer[function.typeIndex].parameters.index;
+		var parameterType = vm.chunk.functionParamTypes.buffer[paramIndex++];
+		if (!parameterType.IsEqualTo(argumentType))
+		{
+			vm.callframeStack.count -= 1;
+			var function = vm.chunk.functions.buffer[functionIndex];
+			var paramsStartIndex = vm.chunk.functionTypes.buffer[function.typeIndex].parameters.index;
 
-		vm.Error(string.Format(
-			"Wrong type for function '{0}' argument {1}. Expected {2}. Got {3}",
-			function.name,
-			paramIndex - paramsStartIndex,
-			parameterType.ToString(vm.chunk),
-			argumentType.ToString(vm.chunk)
-		));
+			vm.Error(string.Format(
+				"Wrong type for function '{0}' argument {1}. Expected {2}. Got {3}",
+				function.name,
+				paramIndex - paramsStartIndex,
+				parameterType.ToString(vm.chunk),
+				argumentType.ToString(vm.chunk)
+			));
 
-		paramIndex = ushort.MaxValue;
+			paramIndex = ushort.MaxValue;
+		}
 	}
 
 	private void ArgumentCountError()
 	{
+		vm.callframeStack.count -= 1;
 		var function = vm.chunk.functions.buffer[functionIndex];
 		var parameters = vm.chunk.functionTypes.buffer[function.typeIndex].parameters;
 		var argCount = paramIndex - parameters.index;
@@ -134,40 +116,118 @@ public struct FunctionCall
 		paramIndex = ushort.MaxValue;
 	}
 
-	public Option<bool> GetBool()
+	public bool GetBool(out bool value)
 	{
-		if (paramIndex < ushort.MaxValue)
+		if (HasReturn(new ValueType(TypeKind.Bool)))
 		{
-			var typeIndex = vm.chunk.functions.buffer[functionIndex].typeIndex;
-			var type = vm.chunk.functionTypes.buffer[typeIndex];
-			var argCount = paramIndex - type.parameters.index;
-			if (argCount == type.parameters.length)
-			{
-				var returnType = type.returnType;
-				var valueType = new ValueType(TypeKind.Bool);
-				if (returnType.IsEqualTo(valueType))
-					return Option.Some(vm.valueStack.PopLast().asBool);
-				else
-					ReturnError(returnType, valueType);
-			}
-			else
-			{
-				ArgumentCountError();
-			}
+			value = vm.valueStack.PopLast().asBool;
+			return true;
 		}
-
-		return Option.None;
+		else
+		{
+			value = default;
+			return false;
+		}
 	}
 
-	private void ReturnError(ValueType returnType, ValueType type)
+	public bool GetInt(out int value)
 	{
-		var function = vm.chunk.functions.buffer[functionIndex];
+		if (HasReturn(new ValueType(TypeKind.Int)))
+		{
+			value = vm.valueStack.PopLast().asInt;
+			return true;
+		}
+		else
+		{
+			value = default;
+			return false;
+		}
+	}
 
-		vm.Error(string.Format(
-			"Wrong return type for function '{0}'. Expected {1}. Got {2}",
-			function.name,
-			returnType,
-			type
-		));
+	public bool GetFloat(out float value)
+	{
+		if (HasReturn(new ValueType(TypeKind.Float)))
+		{
+			value = vm.valueStack.PopLast().asFloat;
+			return true;
+		}
+		else
+		{
+			value = default;
+			return false;
+		}
+	}
+
+	public bool GetString(out string value)
+	{
+		if (HasReturn(new ValueType(TypeKind.String)))
+		{
+			value = vm.heap.buffer[vm.valueStack.PopLast().asInt] as string;
+			return true;
+		}
+		else
+		{
+			value = default;
+			return false;
+		}
+	}
+
+	public bool GetStruct<T>(out T value) where T : struct, IMarshalable
+	{
+		value = default;
+		if (HasReturn(Marshal.ReflectOn<T>(vm.chunk).type))
+		{
+			var marshaler = ReadMarshaler.For<T>(vm);
+			value.Marshal(ref marshaler);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	public bool GetObject<T>(out T value) where T : class
+	{
+		if (HasReturn(new ValueType(TypeKind.NativeObject)))
+		{
+			value = vm.heap.buffer[vm.valueStack.PopLast().asInt] as T;
+			return true;
+		}
+		else
+		{
+			value = default;
+			return false;
+		}
+	}
+
+	private bool HasReturn(ValueType valueType)
+	{
+		if (paramIndex == ushort.MaxValue)
+			return false;
+
+		if (paramIndex != paramEnd)
+		{
+			ArgumentCountError();
+			return false;
+		}
+
+		var typeIndex = vm.chunk.functions.buffer[functionIndex].typeIndex;
+		var returnType = vm.chunk.functionTypes.buffer[typeIndex].returnType;
+		if (!returnType.IsEqualTo(valueType))
+		{
+			vm.callframeStack.count -= 1;
+			var function = vm.chunk.functions.buffer[functionIndex];
+			vm.Error(string.Format(
+				"Wrong return type for function '{0}'. Expected {1}. Got {2}",
+				function.name,
+				returnType,
+				valueType
+			));
+			return false;
+		}
+
+		var error = vm.CallTopFunction();
+		return !error.isSome;
 	}
 }

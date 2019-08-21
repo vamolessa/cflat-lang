@@ -36,17 +36,13 @@ public sealed class VirtualMachine
 	internal Buffer<object> heap;
 	private Option<RuntimeError> maybeError;
 
-	public Option<RuntimeError> RunFunction(ByteCodeChunk chunk, int functionIndex)
+	public void Load(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
 		maybeError = Option.None;
 
 		valueStack.count = 0;
 		callframeStack.count = 0;
-
-		var function = chunk.functions.buffer[functionIndex];
-		valueStack.PushBack(new ValueData(functionIndex));
-		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
 
 		heap = new Buffer<object>
 		{
@@ -55,24 +51,33 @@ public sealed class VirtualMachine
 		};
 		for (var i = 0; i < heap.count; i++)
 			heap.buffer[i] = chunk.stringLiterals.buffer[i];
+	}
 
+	public void PushFunction(int functionIndex)
+	{
+		var function = chunk.functions.buffer[functionIndex];
+		valueStack.PushBack(new ValueData(functionIndex));
+		callframeStack.PushBack(new CallFrame(functionIndex, function.codeIndex, 1));
+	}
+
+	public Option<RuntimeError> CallTopFunction()
+	{
+		while (VirtualMachineInstructions.Tick(this)) { }
+		return maybeError;
+	}
+
+	public Option<RuntimeError> CallTopFunctionDebug()
+	{
 		var sb = new StringBuilder();
-
-		while (true)
+		do
 		{
-			{
-				var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
-				sb.Clear();
-				VirtualMachineHelper.TraceStack(this, sb);
-				chunk.DisassembleInstruction(ip, sb);
-				sb.AppendLine();
-				System.Console.Write(sb);
-			}
-
-			var done = VirtualMachineInstructions.Tick(this);
-			if (done)
-				break;
-		}
+			var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
+			sb.Clear();
+			VirtualMachineHelper.TraceStack(this, sb);
+			chunk.DisassembleInstruction(ip, sb);
+			sb.AppendLine();
+			System.Console.Write(sb);
+		} while (VirtualMachineInstructions.Tick(this));
 
 		return maybeError;
 	}

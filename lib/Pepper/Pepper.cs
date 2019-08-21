@@ -32,7 +32,9 @@ public sealed class Pepper
 			));
 		}
 
-		return virtualMachine.RunFunction(byteCode, byteCode.functions.count - 1);
+		virtualMachine.Load(byteCode);
+		virtualMachine.PushFunction(byteCode.functions.count - 1);
+		return virtualMachine.CallTopFunction();
 	}
 
 	public ValueData Pop()

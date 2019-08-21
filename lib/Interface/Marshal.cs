@@ -54,17 +54,29 @@ public interface IMarshaler
 	void Marshal<T>(ref T value, string name) where T : struct, IMarshalable;
 }
 
-public struct ReadMarshaler<T> : IMarshaler
-	where T : struct, IMarshalable
+internal struct ReadMarshaler : IMarshaler
 {
 	private VirtualMachine vm;
 	private int stackIndex;
 
-	public ReadMarshaler(VirtualMachine vm, ref int stackIndex)
+	public static ReadMarshaler ArgFor<T>(VirtualMachine vm, ref int stackIndex) where T : struct, IMarshalable
+	{
+		var marshaler = new ReadMarshaler(vm, stackIndex);
+		stackIndex += global::Marshal.ReflectOn<T>(vm.chunk).size;
+		return marshaler;
+	}
+
+	public static ReadMarshaler For<T>(VirtualMachine vm) where T : struct, IMarshalable
+	{
+		var marshaler = new ReadMarshaler(vm, vm.valueStack.count);
+		vm.valueStack.Grow(global::Marshal.ReflectOn<T>(vm.chunk).size);
+		return marshaler;
+	}
+
+	public ReadMarshaler(VirtualMachine vm, int stackIndex)
 	{
 		this.vm = vm;
 		this.stackIndex = stackIndex;
-		stackIndex += global::Marshal.ReflectOn<T>(vm.chunk).size;
 	}
 
 	public void Marshal(ref bool value, string name) => value = vm.valueStack.buffer[stackIndex++].asBool;
@@ -75,24 +87,29 @@ public struct ReadMarshaler<T> : IMarshaler
 
 	public void Marshal(ref string value, string name) => value = vm.heap.buffer[vm.valueStack.buffer[stackIndex++].asInt] as string;
 
-	public void Marshal<S>(ref S value, string name) where S : struct, IMarshalable
+	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable
 	{
 		value = default;
 		value.Marshal(ref this);
 	}
 }
 
-public struct WriteMarshaler<T> : IMarshaler
-	where T : struct, IMarshalable
+internal struct WriteMarshaler : IMarshaler
 {
 	private VirtualMachine vm;
 	private int stackIndex;
 
-	public WriteMarshaler(VirtualMachine vm)
+	public static WriteMarshaler For<T>(VirtualMachine vm) where T : struct, IMarshalable
+	{
+		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
+		vm.valueStack.Grow(global::Marshal.ReflectOn<T>(vm.chunk).size);
+		return marshaler;
+	}
+
+	public WriteMarshaler(VirtualMachine vm, int stackIndex)
 	{
 		this.vm = vm;
-		this.stackIndex = vm.valueStack.count;
-		vm.valueStack.Grow(global::Marshal.ReflectOn<T>(vm.chunk).size);
+		this.stackIndex = stackIndex;
 	}
 
 	public void Marshal(ref bool value, string name) => vm.valueStack.buffer[stackIndex++].asBool = value;
@@ -107,10 +124,10 @@ public struct WriteMarshaler<T> : IMarshaler
 		vm.heap.PushBack(value);
 	}
 
-	public void Marshal<S>(ref S value, string name) where S : struct, IMarshalable => value.Marshal(ref this);
+	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 }
 
-public struct DefinitionMarshaler : IMarshaler
+internal struct DefinitionMarshaler : IMarshaler
 {
 	internal ByteCodeChunk chunk;
 	internal StructTypeBuilder builder;

@@ -36,7 +36,7 @@ public struct RuntimeContext : IContext
 	public T ArgStruct<T>() where T : struct, IMarshalable
 	{
 		var value = default(T);
-		var marshaler = new ReadMarshaler<T>(vm, ref argStackIndex);
+		var marshaler = ReadMarshaler.ArgFor<T>(vm, ref argStackIndex);
 		value.Marshal(ref marshaler);
 		return value;
 	}
