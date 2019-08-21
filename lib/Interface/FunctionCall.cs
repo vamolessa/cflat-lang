@@ -51,16 +51,26 @@ public struct FunctionCall
 
 	public FunctionCall WithStruct<T>(T value) where T : struct, IMarshalable
 	{
-		var type = Marshal.ReflectOn<T>(vm.chunk).type;
-		var paramType = vm.chunk.functionParamTypes.buffer[paramIndex++];
-		if (paramIndex < ushort.MaxValue && paramType.IsEqualTo(type))
+		if (paramIndex < ushort.MaxValue)
 		{
-			var marshaler = new WriteMarshaler<T>(vm);
-			value.Marshal(ref marshaler);
-		}
-		else
-		{
-			ArgumentError(paramType, type);
+			if (paramIndex < paramEnd)
+			{
+				var type = Marshal.ReflectOn<T>(vm.chunk).type;
+				var paramType = vm.chunk.functionParamTypes.buffer[paramIndex++];
+				if (paramType.IsEqualTo(type))
+				{
+					var marshaler = new WriteMarshaler<T>(vm);
+					value.Marshal(ref marshaler);
+				}
+				else
+				{
+					ArgumentTypeError(paramType, type);
+				}
+			}
+			else
+			{
+				ArgumentCountError();
+			}
 		}
 
 		return this;
@@ -75,14 +85,24 @@ public struct FunctionCall
 
 	private void PushArgument(ValueData value, ValueType type)
 	{
-		var paramType = vm.chunk.functionParamTypes.buffer[paramIndex++];
-		if (paramIndex < ushort.MaxValue && paramType.IsEqualTo(type))
-			vm.valueStack.PushBack(value);
-		else
-			ArgumentError(paramType, type);
+		if (paramIndex < ushort.MaxValue)
+		{
+			if (paramIndex < paramEnd)
+			{
+				var paramType = vm.chunk.functionParamTypes.buffer[paramIndex++];
+				if (paramType.IsEqualTo(type))
+					vm.valueStack.PushBack(value);
+				else
+					ArgumentTypeError(paramType, type);
+			}
+			else
+			{
+				ArgumentCountError();
+			}
+		}
 	}
 
-	private void ArgumentError(ValueType parameterType, ValueType argumentType)
+	private void ArgumentTypeError(ValueType parameterType, ValueType argumentType)
 	{
 		var function = vm.chunk.functions.buffer[functionIndex];
 		var paramsStartIndex = vm.chunk.functionTypes.buffer[function.typeIndex].parameters.index;
@@ -96,5 +116,60 @@ public struct FunctionCall
 		));
 
 		paramIndex = ushort.MaxValue;
+	}
+
+	private void ArgumentCountError()
+	{
+		var function = vm.chunk.functions.buffer[functionIndex];
+		var parameters = vm.chunk.functionTypes.buffer[function.typeIndex].parameters;
+		var argCount = paramIndex - parameters.index;
+
+		vm.Error(string.Format(
+			"Wrong number of arguments for function '{0}'. Expected {1}. Got {2}",
+			function.name,
+			parameters.length,
+			argCount
+		));
+
+		paramIndex = ushort.MaxValue;
+	}
+
+	public Option<bool> GetBool()
+	{
+		if (paramIndex < ushort.MaxValue)
+		{
+			var typeIndex = vm.chunk.functions.buffer[functionIndex].typeIndex;
+			var type = vm.chunk.functionTypes.buffer[typeIndex];
+			var argCount = paramIndex - type.parameters.index;
+			if (argCount == type.parameters.length)
+			{
+				var returnType = type.returnType;
+				var valueType = new ValueType(TypeKind.Bool);
+				if (returnType.IsEqualTo(valueType))
+				{
+
+				}
+				else
+				{
+					ReturnError(returnType, valueType);
+				}
+			}
+			else
+			{
+				ArgumentCountError();
+			}
+		}
+	}
+
+	private void ReturnError(ValueType returnType, ValueType type)
+	{
+		var function = vm.chunk.functions.buffer[functionIndex];
+
+		vm.Error(string.Format(
+			"Wrong return type for function '{0}'. Expected {1}. Got {2}",
+			function.name,
+			returnType,
+			type
+		));
 	}
 }
