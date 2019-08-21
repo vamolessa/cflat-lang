@@ -25,6 +25,7 @@ internal static class VirtualMachineInstructions
 		switch (nextInstruction)
 		{
 		case Instruction.Halt:
+			vm.callframeStack.count -= 1;
 			return false;
 		case Instruction.Call:
 			{
