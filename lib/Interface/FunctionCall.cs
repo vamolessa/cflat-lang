@@ -146,19 +146,17 @@ public struct FunctionCall
 				var returnType = type.returnType;
 				var valueType = new ValueType(TypeKind.Bool);
 				if (returnType.IsEqualTo(valueType))
-				{
-
-				}
+					return Option.Some(vm.valueStack.PopLast().asBool);
 				else
-				{
 					ReturnError(returnType, valueType);
-				}
 			}
 			else
 			{
 				ArgumentCountError();
 			}
 		}
+
+		return Option.None;
 	}
 
 	private void ReturnError(ValueType returnType, ValueType type)
