@@ -205,7 +205,7 @@ public struct FunctionCall
 			return false;
 		}
 	}
-	
+
 
 	private bool CallAndCheckReturn(ValueType valueType)
 	{
@@ -225,7 +225,7 @@ public struct FunctionCall
 			vm.callframeStack.count -= 1;
 			var function = vm.chunk.functions.buffer[functionIndex];
 			vm.Error(string.Format(
-				"Wrong return type for function '{0}'. Expected {1}. Got {2}",
+				"Return type does not match for function '{0}'. Expected {1}. Tried {2}",
 				function.name,
 				returnType.ToString(vm.chunk),
 				valueType.ToString(vm.chunk)

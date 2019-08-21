@@ -1,5 +1,10 @@
 using Xunit;
 
+public sealed class CompileErrorException : System.Exception
+{
+	public CompileErrorException(string error) : base(error) { }
+}
+
 public static class TestHelper
 {
 	public const int TabSize = 8;
@@ -23,17 +28,6 @@ public static class TestHelper
 				errorMessage = VirtualMachineHelper.FormatError(source, error.value, 1, TabSize);
 			Assert.Null(errorMessage);
 		}
-
-		public void AssertFailCall()
-		{
-			var error = pepper.GetError();
-			Assert.True(error.isSome);
-		}
-	}
-
-	public sealed class CompileErrorException : System.Exception
-	{
-		public CompileErrorException(string error) : base(error) { }
 	}
 
 	public static T[] BufferToArray<T>(Buffer<T> buffer)

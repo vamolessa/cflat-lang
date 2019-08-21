@@ -107,7 +107,10 @@ public sealed class VirtualMachine
 
 	public void Error(string message)
 	{
-		var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
+		var ip = -1;
+		if (callframeStack.count > 0)
+			ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
+
 		error = Option.Some(new RuntimeError(
 			ip,
 			ip >= 0 ? chunk.slices.buffer[ip] : new Slice(),

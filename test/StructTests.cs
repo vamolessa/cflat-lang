@@ -37,12 +37,12 @@ public sealed class StructTests
 	}
 
 	[Theory]
-	[InlineData("struct S{x:int} fn a():S{S{x=3}} fn b():int{a().x}", 3)]
-	[InlineData("struct S{x:int y:int} fn a():S{S{x=3 y=5}} fn b():int{a().x}", 3)]
-	[InlineData("struct S{x:int y:int} fn a():S{S{x=3 y=5}} fn b():int{a().y}", 5)]
-	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().x}", 3)]
-	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().y}", 5)]
-	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn b():int{a().z}", 7)]
+	[InlineData("struct S{x:int} fn a():S{S{x=3}} fn f():int{a().x}", 3)]
+	[InlineData("struct S{x:int y:int} fn a():S{S{x=3 y=5}} fn f():int{a().x}", 3)]
+	[InlineData("struct S{x:int y:int} fn a():S{S{x=3 y=5}} fn f():int{a().y}", 5)]
+	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn f():int{a().x}", 3)]
+	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn f():int{a().y}", 5)]
+	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn f():int{a().z}", 7)]
 	public void FunctionStructReturnTests(string source, int expected)
 	{
 		TestHelper.Run(source, out var a).GetInt(out var v);

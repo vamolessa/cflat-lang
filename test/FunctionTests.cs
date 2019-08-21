@@ -90,7 +90,9 @@ public sealed class FunctionTests
 	[InlineData("fn f():int{let a=if true{1} a}")]
 	private void ReturnIntTestError(string source)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
-		a.AssertFailCall();
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run(source, out var a).GetInt(out var v);
+		});
 	}
 }
