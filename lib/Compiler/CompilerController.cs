@@ -300,54 +300,6 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void StructExpression(CompilerController self, Precedence precedence)
-	{
-		var slice = self.compiler.parser.previousToken.slice;
-
-		var source = self.compiler.parser.tokenizer.source;
-		var builder = self.compiler.BeginStructDeclaration();
-		var fieldStartIndex = self.compiler.chunk.structTypeFields.count;
-
-		self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct initializer");
-		while (
-			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
-			!self.compiler.parser.Check(TokenKind.End)
-		)
-		{
-			self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
-			var fieldSlice = self.compiler.parser.previousToken.slice;
-			var fieldName = CompilerHelper.GetSlice(self.compiler, fieldSlice);
-			self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
-
-			Expression(self);
-			var expressionType = self.compiler.typeStack.PopLast();
-
-			builder.WithField(fieldName, expressionType);
-		}
-		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
-
-		var structIndex = builder.BuildAnonymous();
-		var type = new ValueType(TypeKind.Struct, structIndex);
-		self.compiler.typeStack.PushBack(type);
-
-		if (self.compiler.chunk.structTypes.count >= ushort.MaxValue)
-		{
-			self.compiler.chunk.structTypes.count -= builder.fieldCount;
-			self.compiler.AddSoftError(slice, "Too many struct declarations");
-		}
-
-		var structSize = self.compiler.chunk.structTypes.buffer[structIndex].size;
-		if (structSize >= byte.MaxValue)
-		{
-			self.compiler.AddSoftError(
-				slice,
-				"Struct size is too big. Max is {0}. Got {1}",
-				byte.MaxValue,
-				structSize
-			);
-		}
-	}
-
 	public void Statement(out ValueType type, out StatementKind kind)
 	{
 		type = new ValueType(TypeKind.Unit);

@@ -20,8 +20,6 @@ public static class CompilerTypeExtensions
 			type = Option.Some(new ValueType(TypeKind.String));
 		else if (self.parser.Match(TokenKind.Object))
 			type = Option.Some(new ValueType(TypeKind.NativeObject));
-		else if (self.parser.Match(TokenKind.Struct))
-			type = self.ParseAnonymousStructType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Tuple))
 			type = self.ParseTupleType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Identifier))
@@ -34,51 +32,6 @@ public static class CompilerTypeExtensions
 
 		self.AddSoftError(self.parser.previousToken.slice, error);
 		return new ValueType(TypeKind.Unit);
-	}
-
-	private static Option<ValueType> ParseAnonymousStructType(this Compiler self, int recursionLevel)
-	{
-		var source = self.parser.tokenizer.source;
-		var builder = self.chunk.BeginStructType();
-		var fieldStartIndex = self.chunk.structTypeFields.count;
-
-		self.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after anonymous struct type");
-		while (
-			!self.parser.Check(TokenKind.CloseCurlyBrackets) &&
-			!self.parser.Check(TokenKind.End)
-		)
-		{
-			self.parser.Consume(TokenKind.Identifier, "Expected field name");
-			var fieldSlice = self.parser.previousToken.slice;
-			var fieldName = CompilerHelper.GetSlice(self, fieldSlice);
-			self.parser.Consume(TokenKind.Colon, "Expected ':' after field name");
-			var fieldType = self.ParseType("Expected field type", 0);
-
-			var hasDuplicate = false;
-			for (var i = 0; i < builder.fieldCount; i++)
-			{
-				var otherName = self.chunk.structTypeFields.buffer[fieldStartIndex + i].name;
-				if (fieldName == otherName)
-				{
-					hasDuplicate = true;
-					break;
-				}
-			}
-
-			if (hasDuplicate)
-			{
-				self.AddSoftError(fieldSlice, "Struct already has a field named '{0}'", fieldName);
-				continue;
-			}
-
-			builder.WithField(fieldName, fieldType);
-		}
-		self.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after anonymous struct fields");
-
-		var structTypeIndex = builder.BuildAnonymous();
-		var type = new ValueType(TypeKind.Struct, structTypeIndex);
-
-		return Option.Some(type);
 	}
 
 	private static Option<ValueType> ParseTupleType(this Compiler self, int recursionLevel)

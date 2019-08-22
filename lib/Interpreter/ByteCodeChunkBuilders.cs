@@ -276,41 +276,4 @@ public struct StructTypeBuilder
 
 		return (ushort)(chunk.structTypes.count - 1);
 	}
-
-	public int BuildAnonymous()
-	{
-		var fieldsIndex = chunk.structTypeFields.count - fieldCount;
-
-		for (var i = 0; i < chunk.structTypes.count; i++)
-		{
-			var other = chunk.structTypes.buffer[i];
-			if (
-				other.fields.length != fieldCount ||
-				!string.IsNullOrEmpty(other.name)
-			)
-				continue;
-
-			var matched = true;
-			for (var j = 0; j < fieldCount; j++)
-			{
-				var thisField = chunk.structTypeFields.buffer[fieldsIndex + j];
-				var otherField = chunk.structTypeFields.buffer[other.fields.index + j];
-				if (
-					!thisField.type.IsEqualTo(otherField.type) ||
-					thisField.name != otherField.name
-				)
-				{
-					matched = false;
-					break;
-				}
-			}
-			if (!matched)
-				continue;
-
-			chunk.structTypeFields.count = fieldsIndex;
-			return i;
-		}
-
-		return Build("");
-	}
 }
