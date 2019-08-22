@@ -70,9 +70,20 @@ public static class CompilerDeclarationExtensions
 			return;
 		}
 
-		var typeIndex = builder.Build();
+		var index = builder.Build();
 		var name = CompilerHelper.GetSlice(self, slice);
-		self.chunk.AddFunction(name, typeIndex);
+		self.chunk.AddFunction(name, index);
+
+		var parametersSize = self.chunk.functionTypes.buffer[index].parametersSize;
+		if (parametersSize >= byte.MaxValue)
+		{
+			self.AddSoftError(
+				slice,
+				"Functions parameters size is too big. Max is {0}. Got {1}",
+				byte.MaxValue,
+				parametersSize
+			);
+		}
 	}
 
 	public static bool ResolveToFunctionIndex(this Compiler self, Slice slice, out int index)

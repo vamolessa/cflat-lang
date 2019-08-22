@@ -55,6 +55,17 @@ public static class ByteCodeChunkExtensions
 
 	public static void FormatTupleType(this ByteCodeChunk self, ushort tupleTypeIndex, StringBuilder sb)
 	{
+		var type = self.tupleTypes.buffer[tupleTypeIndex];
+		sb.Append('(');
+		for (var i = 0; i < type.elements.length; i++)
+		{
+			var elementIndex = type.elements.index + i;
+			var elementType = self.tupleElementTypes.buffer[elementIndex];
+			elementType.Format(self, sb);
+			if (i < type.elements.length - 1)
+				sb.Append(' ');
+		}
+		sb.Append(')');
 	}
 
 	public static void FormatStructType(this ByteCodeChunk self, ushort structTypeIndex, StringBuilder sb)

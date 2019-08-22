@@ -79,12 +79,15 @@ public struct FunctionTypeBuilder
 			}
 		}
 
-		var parametersTotalSize = 0;
+		var parametersSize = 0;
 		for (var i = 0; i < parameterCount; i++)
 		{
 			var param = chunk.functionParamTypes.buffer[parametersIndex + i];
-			parametersTotalSize += param.GetSize(chunk);
+			parametersSize += param.GetSize(chunk);
 		}
+
+		if (parametersSize > byte.MaxValue)
+			parametersSize = byte.MaxValue;
 
 		chunk.functionTypes.PushBack(new FunctionType(
 			new Slice(
@@ -92,7 +95,7 @@ public struct FunctionTypeBuilder
 				parameterCount
 			),
 			returnType,
-			parametersTotalSize
+			(byte)parametersSize
 		));
 
 		return (ushort)(chunk.functionTypes.count - 1);
@@ -148,11 +151,11 @@ public struct TupleTypeBuilder
 		chunk.tupleTypes.count -= elementCount;
 	}
 
-	public ushort Build(string name)
+	public ushort Build()
 	{
 		var elementsIndex = chunk.tupleElementTypes.count - elementCount;
 
-		var size = (byte)0;
+		var size = 0;
 		for (var i = 0; i < elementCount; i++)
 		{
 			var element = chunk.tupleElementTypes.buffer[elementsIndex + i];
@@ -161,13 +164,15 @@ public struct TupleTypeBuilder
 
 		if (size == 0)
 			size = 1;
+		else if (size >= byte.MaxValue)
+			size = byte.MaxValue;
 
 		chunk.tupleTypes.PushBack(new TupleType(
 			new Slice(
 				elementsIndex,
 				elementCount
 			),
-			size
+			(byte)size
 		));
 
 		return (ushort)(chunk.tupleTypes.count - 1);
@@ -228,7 +233,7 @@ public struct StructTypeBuilder
 	{
 		var fieldsIndex = chunk.structTypeFields.count - fieldCount;
 
-		var size = (byte)0;
+		var size = 0;
 		for (var i = 0; i < fieldCount; i++)
 		{
 			var field = chunk.structTypeFields.buffer[fieldsIndex + i];
@@ -237,6 +242,8 @@ public struct StructTypeBuilder
 
 		if (size == 0)
 			size = 1;
+		else if (size >= byte.MaxValue)
+			size = byte.MaxValue;
 
 		chunk.structTypes.PushBack(new StructType(
 			name,
@@ -244,7 +251,7 @@ public struct StructTypeBuilder
 				fieldsIndex,
 				fieldCount
 			),
-			size
+			(byte)size
 		));
 
 		return (ushort)(chunk.structTypes.count - 1);

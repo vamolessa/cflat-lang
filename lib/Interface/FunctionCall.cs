@@ -206,7 +206,6 @@ public struct FunctionCall
 		}
 	}
 
-
 	private bool CallAndCheckReturn(ValueType valueType)
 	{
 		if (paramIndex == ushort.MaxValue)

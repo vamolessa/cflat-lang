@@ -496,8 +496,46 @@ public sealed class CompilerController
 
 	public static void Grouping(CompilerController self, Precedence precedence)
 	{
-		Expression(self);
+		var slice = self.compiler.parser.previousToken.slice;
+
+		var expressionCount = 0;
+		while (
+			!self.compiler.parser.Check(TokenKind.CloseParenthesis) &&
+			!self.compiler.parser.Check(TokenKind.End)
+		)
+		{
+			Expression(self);
+			expressionCount += 1;
+		}
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after expression");
+		slice = Slice.FromTo(slice, self.compiler.parser.previousToken.slice);
+
+		if (expressionCount == 0)
+		{
+			self.compiler.EmitInstruction(Instruction.LoadUnit);
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+		}
+		else if (expressionCount > 1)
+		{
+			var builder = self.compiler.chunk.BeginTupleType();
+			for (var i = self.compiler.typeStack.count - expressionCount; i < self.compiler.typeStack.count; i++)
+				builder.WithElement(self.compiler.typeStack.buffer[i]);
+			var typeIndex = builder.Build();
+
+			self.compiler.typeStack.count -= expressionCount;
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Tuple, typeIndex));
+
+			var tupleSize = self.compiler.chunk.tupleTypes.buffer[typeIndex].size;
+			if (tupleSize >= byte.MaxValue)
+			{
+				self.compiler.AddSoftError(
+					slice,
+					"Tuple size is too big. Max is {0}. Got {1}",
+					byte.MaxValue,
+					tupleSize
+				);
+			}
+		}
 	}
 
 	public static void Block(CompilerController self, Precedence precedence)

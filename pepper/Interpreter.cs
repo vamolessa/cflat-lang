@@ -48,9 +48,9 @@ public static class Interpreter
 		var pepper = new Pepper();
 		pepper.DebugMode = true;
 
-		pepper.AddFunction(TestFunction, TestFunction);
-		pepper.AddFunction(OtherFunction, OtherFunction);
-		pepper.AddFunction(CallingFunction, CallingFunction);
+		// pepper.AddFunction(TestFunction, TestFunction);
+		// pepper.AddFunction(OtherFunction, OtherFunction);
+		// pepper.AddFunction(CallingFunction, CallingFunction);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)

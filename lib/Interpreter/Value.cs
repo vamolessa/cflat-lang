@@ -112,9 +112,15 @@ public readonly struct ValueType
 
 	public byte GetSize(ByteCodeChunk chunk)
 	{
-		return kind == TypeKind.Struct ?
-			chunk.structTypes.buffer[index].size :
-			(byte)1;
+		switch (kind)
+		{
+		case TypeKind.Tuple:
+			return chunk.tupleTypes.buffer[index].size;
+		case TypeKind.Struct:
+			return chunk.structTypes.buffer[index].size;
+		default:
+			return 1;
+		}
 	}
 
 	public void Format(ByteCodeChunk chunk, StringBuilder sb)
@@ -122,7 +128,7 @@ public readonly struct ValueType
 		switch (kind)
 		{
 		case TypeKind.Unit:
-			sb.Append("{}");
+			sb.Append("()");
 			break;
 		case TypeKind.Bool:
 			sb.Append("bool");
@@ -170,9 +176,9 @@ public readonly struct FunctionType
 {
 	public readonly Slice parameters;
 	public readonly ValueType returnType;
-	public readonly int parametersSize;
+	public readonly byte parametersSize;
 
-	public FunctionType(Slice parameters, ValueType returnType, int parametersTotalSize)
+	public FunctionType(Slice parameters, ValueType returnType, byte parametersTotalSize)
 	{
 		this.parameters = parameters;
 		this.returnType = returnType;
