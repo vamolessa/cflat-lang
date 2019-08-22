@@ -2,6 +2,62 @@ using Xunit;
 
 public sealed class InterfaceTests
 {
+	public static Return TupleTestFunction<C>(ref C context) where C : IContext
+	{
+		var t = context.ArgTuple<Tuple<Int, Bool>>();
+		var body = context.BodyOfTuple<Tuple<Int, Bool>>();
+		t.e0.value += 1;
+		t.e1.value = !t.e1.value;
+		return body.Return(t);
+	}
+
+	[Theory]
+	[InlineData("TupleTestFunction(tuple{1 true})", 2, false)]
+	[InlineData("TupleTestFunction(tuple{4 false})", 5, true)]
+	public void TupleIoTest(string source, int n, bool b)
+	{
+		var pepper = new Pepper();
+		pepper.AddFunction(TupleTestFunction, TupleTestFunction);
+		TestHelper.RunExpression(pepper, source, out var a).GetTuple<Tuple<Int, Bool>>(out var t);
+		a.AssertSuccessCall();
+		Assert.Equal(n, t.e0.value);
+		Assert.Equal(b, t.e1.value);
+	}
+
+	public struct MyTuple : ITuple
+	{
+		public int n;
+		public bool b;
+
+		public void Marshal<M>(ref M marshaler) where M : IMarshaler
+		{
+			marshaler.Marshal(ref n, null);
+			marshaler.Marshal(ref b, null);
+		}
+	}
+
+	public static Return NamedTupleTestFunction<C>(ref C context) where C : IContext
+	{
+		var t = context.ArgTuple<MyTuple>();
+		var body = context.BodyOfTuple<MyTuple>();
+		t.n += 1;
+		t.b = !t.b;
+		return body.Return(t);
+	}
+
+	[Theory]
+	[InlineData("NamedTupleTestFunction(tuple{1 true})", 2, false)]
+	[InlineData("NamedTupleTestFunction(tuple{4 false})", 5, true)]
+	public void NamedTupleIoTest(string source, int n, bool b)
+	{
+		var pepper = new Pepper();
+		pepper.AddFunction(NamedTupleTestFunction, NamedTupleTestFunction);
+		TestHelper.RunExpression(pepper, source, out var a).GetTuple<MyTuple>(out var t);
+		a.AssertSuccessCall();
+		Assert.Equal(n, t.n);
+		Assert.Equal(b, t.b);
+	}
+
 	public struct MyStruct : IStruct
 	{
 		public int x;
