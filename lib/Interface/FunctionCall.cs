@@ -53,11 +53,23 @@ public struct FunctionCall
 		return this;
 	}
 
-	public FunctionCall WithStruct<T>(T value) where T : struct, IMarshalable
+	public FunctionCall WithTuple<T>(T value) where T : struct, ITuple
 	{
-		var marshaler = WriteMarshaler.For<T>(vm);
+		var reflection = Marshal.ReflectOnTuple<T>(vm.chunk);
+		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
+		vm.valueStack.Grow(reflection.size);
 		value.Marshal(ref marshaler);
-		CheckArgument(Marshal.ReflectOn<T>(vm.chunk).type);
+		CheckArgument(reflection.type);
+		return this;
+	}
+
+	public FunctionCall WithStruct<T>(T value) where T : struct, IStruct
+	{
+		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
+		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
+		vm.valueStack.Grow(reflection.size);
+		value.Marshal(ref marshaler);
+		CheckArgument(reflection.type);
 		return this;
 	}
 
@@ -177,12 +189,31 @@ public struct FunctionCall
 		}
 	}
 
-	public bool GetStruct<T>(out T value) where T : struct, IMarshalable
+	public bool GetTuple<T>(out T value) where T : struct, ITuple
 	{
 		value = default;
-		if (CallAndCheckReturn(Marshal.ReflectOn<T>(vm.chunk).type))
+		var reflection = Marshal.ReflectOnTuple<T>(vm.chunk);
+		if (CallAndCheckReturn(reflection.type))
 		{
-			var marshaler = ReadMarshaler.For<T>(vm);
+			var marshaler = new ReadMarshaler(vm, vm.valueStack.count);
+			vm.valueStack.Grow(reflection.size);
+			value.Marshal(ref marshaler);
+			return true;
+		}
+		else
+		{
+			return false;
+		}
+	}
+
+	public bool GetStruct<T>(out T value) where T : struct, IStruct
+	{
+		value = default;
+		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
+		if (CallAndCheckReturn(reflection.type))
+		{
+			var marshaler = new ReadMarshaler(vm, vm.valueStack.count);
+			vm.valueStack.Grow(reflection.size);
 			value.Marshal(ref marshaler);
 			return true;
 		}

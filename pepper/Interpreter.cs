@@ -2,7 +2,7 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public struct Point : IMarshalable
+	public struct Point : IStruct
 	{
 		public int x;
 		public int y;
@@ -40,17 +40,29 @@ public static class Interpreter
 		var body = context.Body();
 		var success = body.Call("some_function").WithInt(6).GetInt(out var n);
 		System.Console.WriteLine("CALLED FUNCTION success:{0} return:{1}", success, n);
+
 		return body.Return();
+	}
+
+	public static Return TestTupleFunction<C>(ref C context) where C : IContext
+	{
+		var t = context.ArgTuple<Tuple<Int, Bool>>();
+		var body = context.BodyOfTuple<Tuple<Int, Bool>>();
+		System.Console.WriteLine("HELLO FROM C# TUPLE {0}, {1}", t.e0.value, t.e1.value);
+		t.e0.value += 1;
+		t.e1.value = !t.e1.value;
+		return body.Return(t);
 	}
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
-		//pepper.DebugMode = true;
+		pepper.DebugMode = true;
 
 		pepper.AddFunction(TestFunction, TestFunction);
 		pepper.AddFunction(OtherFunction, OtherFunction);
 		pepper.AddFunction(CallingFunction, CallingFunction);
+		pepper.AddFunction(TestTupleFunction, TestTupleFunction);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)

@@ -50,7 +50,8 @@ public static class FunctionBodyExtensions
 
 	public static Return Return<T>(this FunctionBody<T> self, T value) where T : struct, IMarshalable
 	{
-		var marshaler = WriteMarshaler.For<T>(self.vm);
+		var marshaler = new WriteMarshaler(self.vm, self.vm.valueStack.count);
+		self.vm.valueStack.Grow(Marshal.ReflectOn<T>(self.vm.chunk).size);
 		value.Marshal(ref marshaler);
 		return default;
 	}

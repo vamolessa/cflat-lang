@@ -6,7 +6,8 @@ public interface IContext
 	int ArgInt();
 	float ArgFloat();
 	string ArgString();
-	T ArgStruct<T>() where T : struct, IMarshalable;
+	T ArgTuple<T>() where T : struct, ITuple;
+	T ArgStruct<T>() where T : struct, IStruct;
 	T ArgObject<T>() where T : class;
 
 	FunctionBody<Unit> Body([CallerMemberName] string functionName = "");
@@ -14,7 +15,8 @@ public interface IContext
 	FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "");
 	FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "");
 	FunctionBody<string> BodyOfString([CallerMemberName] string functionName = "");
-	FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable;
+	FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple;
+	FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
 	FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
 }
 
@@ -33,10 +35,19 @@ public struct RuntimeContext : IContext
 	public int ArgInt() => vm.valueStack.buffer[argStackIndex++].asInt;
 	public float ArgFloat() => vm.valueStack.buffer[argStackIndex++].asFloat;
 	public string ArgString() => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as string;
-	public T ArgStruct<T>() where T : struct, IMarshalable
+	public T ArgTuple<T>() where T : struct, ITuple
 	{
 		var value = default(T);
-		var marshaler = ReadMarshaler.ArgFor<T>(vm, ref argStackIndex);
+		var marshaler = new ReadMarshaler(vm, argStackIndex);
+		argStackIndex += Marshal.ReflectOnTuple<T>(vm.chunk).size;
+		value.Marshal(ref marshaler);
+		return value;
+	}
+	public T ArgStruct<T>() where T : struct, IStruct
+	{
+		var value = default(T);
+		var marshaler = new ReadMarshaler(vm, argStackIndex);
+		argStackIndex += Marshal.ReflectOnStruct<T>(vm.chunk).size;
 		value.Marshal(ref marshaler);
 		return value;
 	}
@@ -47,7 +58,8 @@ public struct RuntimeContext : IContext
 	public FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "") => new FunctionBody<int>(vm);
 	public FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "") => new FunctionBody<float>(vm);
 	public FunctionBody<string> BodyOfString([CallerMemberName] string functionName = "") => new FunctionBody<string>(vm);
-	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable => new FunctionBody<T>(vm);
+	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple => new FunctionBody<T>(vm);
+	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new FunctionBody<T>(vm);
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new FunctionBody<object>(vm);
 }
 
@@ -94,9 +106,14 @@ public struct DefinitionContext : IContext
 		builder.WithParam(new ValueType(TypeKind.String));
 		return default;
 	}
-	public T ArgStruct<T>() where T : struct, IMarshalable
+	public T ArgTuple<T>() where T : struct, ITuple
 	{
-		builder.WithParam(Marshal.ReflectOn<T>(chunk).type);
+		builder.WithParam(Marshal.ReflectOnTuple<T>(chunk).type);
+		return default;
+	}
+	public T ArgStruct<T>() where T : struct, IStruct
+	{
+		builder.WithParam(Marshal.ReflectOnStruct<T>(chunk).type);
 		return default;
 	}
 	public T ArgObject<T>() where T : class
@@ -130,9 +147,14 @@ public struct DefinitionContext : IContext
 		builder.returnType = new ValueType(TypeKind.String);
 		throw new Definition(functionName, builder);
 	}
-	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable
+	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple
 	{
-		builder.returnType = Marshal.ReflectOn<T>(chunk).type;
+		builder.returnType = Marshal.ReflectOnTuple<T>(chunk).type;
+		throw new Definition(functionName, builder);
+	}
+	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct
+	{
+		builder.returnType = Marshal.ReflectOnStruct<T>(chunk).type;
 		throw new Definition(functionName, builder);
 	}
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
