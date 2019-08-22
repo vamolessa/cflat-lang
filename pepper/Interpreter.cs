@@ -2,10 +2,29 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
+	public static Return StartStopwatch<C>(ref C context) where C : IContext
+	{
+		var body = context.BodyOfObject<System.Diagnostics.Stopwatch>();
+		var sw = new System.Diagnostics.Stopwatch();
+		sw.Start();
+		return body.Return(sw);
+	}
+
+	public static Return StopStopwatch<C>(ref C context) where C : IContext
+	{
+		var sw = context.ArgObject<System.Diagnostics.Stopwatch>();
+		var body = context.BodyOfFloat();
+		sw.Stop();
+		return body.Return((float)sw.Elapsed.TotalSeconds);
+	}
+
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
-		pepper.DebugMode = true;
+		// pepper.DebugMode = true;
+
+		pepper.AddFunction(StartStopwatch, StartStopwatch);
+		pepper.AddFunction(StopStopwatch, StopStopwatch);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)
@@ -25,7 +44,7 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		pepper.CallFunction(string.Empty).Get();
+		pepper.CallFunction("main").Get();
 		var runtimeError = pepper.GetError();
 		if (runtimeError.isSome)
 		{
