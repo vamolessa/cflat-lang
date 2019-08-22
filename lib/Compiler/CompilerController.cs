@@ -450,7 +450,7 @@ public sealed class CompilerController
 		{
 			compiler.AddSoftError(
 				compiler.parser.previousToken.slice,
-				"Tuple element count must be equal to variable declaratin count. Expected {0}. Got {1}",
+				"Tuple element count must be equal to variable declaration count. Expected {0}. Got {1}",
 				slices.count,
 				tupleElements.length
 			);

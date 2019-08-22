@@ -1,5 +1,6 @@
 fn main() {
-	let{a b} = tuple{2 "asds"}
-	print a
-	print b
+	for i=0,10 {
+		let a=i
+		print a
+	}
 }

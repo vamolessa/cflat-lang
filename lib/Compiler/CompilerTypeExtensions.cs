@@ -22,6 +22,8 @@ public static class CompilerTypeExtensions
 			type = Option.Some(new ValueType(TypeKind.NativeObject));
 		else if (self.parser.Match(TokenKind.Struct))
 			type = self.ParseAnonymousStructType(recursionLevel + 1);
+		else if (self.parser.Match(TokenKind.Tuple))
+			type = self.ParseTupleType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Identifier))
 			type = self.ParseStructType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Function))
@@ -75,6 +77,29 @@ public static class CompilerTypeExtensions
 
 		var structTypeIndex = builder.BuildAnonymous();
 		var type = new ValueType(TypeKind.Struct, structTypeIndex);
+
+		return Option.Some(type);
+	}
+
+	private static Option<ValueType> ParseTupleType(this Compiler self, int recursionLevel)
+	{
+		var source = self.parser.tokenizer.source;
+		var builder = self.chunk.BeginTupleType();
+		var elementStartIndex = self.chunk.tupleElementTypes.count;
+
+		self.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after tuple type");
+		while (
+			!self.parser.Check(TokenKind.CloseCurlyBrackets) &&
+			!self.parser.Check(TokenKind.End)
+		)
+		{
+			var elementType = self.ParseType("Expected element type", 0);
+			builder.WithElement(elementType);
+		}
+		self.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple elements");
+
+		var tupleTypeIndex = builder.Build();
+		var type = new ValueType(TypeKind.Tuple, tupleTypeIndex);
 
 		return Option.Some(type);
 	}

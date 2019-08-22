@@ -10,6 +10,9 @@ public static class CompilerDeclarationExtensions
 			stackIndex = lastVar.stackIndex + lastVar.type.GetSize(self.chunk);
 		}
 
+		if (CompilerHelper.AreEqual(self.parser.tokenizer.source, slice, "_"))
+			isUsed = true;
+
 		self.localVariables.PushBack(new LocalVariable(
 			slice,
 			stackIndex,
@@ -32,7 +35,7 @@ public static class CompilerDeclarationExtensions
 
 		var type = new ValueType(TypeKind.Unit);
 		if (self.typeStack.count > 0)
-			type = self.typeStack.buffer[self.typeStack.count - 1];
+			type = self.typeStack.PopLast();
 
 		return self.AddLocalVariable(slice, type, mutable, false);
 	}

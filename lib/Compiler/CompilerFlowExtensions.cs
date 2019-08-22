@@ -40,7 +40,6 @@ public static class CompilerFlowExtensions
 		}
 
 		self.localVariables.count -= localCount;
-		self.typeStack.count -= localCount;
 	}
 
 	public static void BeginLoop(this Compiler self)

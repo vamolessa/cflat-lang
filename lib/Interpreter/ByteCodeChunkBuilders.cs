@@ -155,6 +155,26 @@ public struct TupleTypeBuilder
 	{
 		var elementsIndex = chunk.tupleElementTypes.count - elementCount;
 
+		for (var i = 0; i < chunk.tupleTypes.count; i++)
+		{
+			var other = chunk.tupleTypes.buffer[i];
+			if (other.elements.length != elementCount)
+				goto NoMatch;
+
+			for (var j = 0; j < elementCount; j++)
+			{
+				var thisElementType = chunk.tupleElementTypes.buffer[elementsIndex + j];
+				var otherElementType = chunk.tupleElementTypes.buffer[other.elements.index + j];
+				if (!thisElementType.IsEqualTo(otherElementType))
+					goto NoMatch;
+			}
+
+			chunk.tupleElementTypes.count = elementsIndex;
+			return (ushort)i;
+
+		NoMatch:;
+		}
+
 		var size = 0;
 		for (var i = 0; i < elementCount; i++)
 		{
