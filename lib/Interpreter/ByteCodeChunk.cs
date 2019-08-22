@@ -55,7 +55,7 @@ public sealed class ByteCodeChunk
 
 	public void AddFunction(string name, ushort typeIndex)
 	{
-		functions.PushBack(new Function(name, typeIndex, (ushort)bytes.count));
+		functions.PushBack(new Function(name, bytes.count, typeIndex));
 	}
 
 	public TupleTypeBuilder BeginTupleType()

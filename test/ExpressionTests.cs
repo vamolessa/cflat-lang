@@ -5,9 +5,9 @@ public sealed class ExpressionTests
 	[Theory]
 	[InlineData("{}")]
 	[InlineData("{{}}")]
-	[InlineData("{()}")]
+	[InlineData("{tuple{}}")]
 	[InlineData("{mut a=4 a=a+1 {}}")]
-	[InlineData("{mut a=4 a=a+1 ()")]
+	[InlineData("{mut a=4 a=a+1 tuple{}}")]
 	public void BlockUnitTests(string source)
 	{
 		TestHelper.RunExpression(source, out var a).Get();
@@ -33,9 +33,9 @@ public sealed class ExpressionTests
 	[InlineData("if true {} else {}")]
 	[InlineData("if true {} else if false {}")]
 	[InlineData("if true {} else if false {} else {}")]
-	[InlineData("if true {let a=0 a+1 ()}")]
+	[InlineData("if true {let a=0 a+1 tuple{}}")]
 	[InlineData("if true {{}}")]
-	[InlineData("if true {()")]
+	[InlineData("if true {tuple{}}")]
 	public void IfUnitTests(string source)
 	{
 		TestHelper.RunExpression(source, out var a).Get();

@@ -21,7 +21,7 @@ public static class VirtualMachineHelper
 		switch (type.kind)
 		{
 		case TypeKind.Unit:
-			sb.Append("()");
+			sb.Append("{}");
 			return;
 		case TypeKind.Bool:
 			sb.Append(vm.valueStack.buffer[index].asBool ? "true" : "false");
@@ -56,7 +56,7 @@ public static class VirtualMachineHelper
 		case TypeKind.Tuple:
 			{
 				var tupleType = vm.chunk.tupleTypes.buffer[type.index];
-				sb.Append('(');
+				sb.Append("tuple{");
 				var offset = 0;
 				for (var i = 0; i < tupleType.elements.length; i++)
 				{
@@ -68,7 +68,7 @@ public static class VirtualMachineHelper
 
 					offset += elementType.GetSize(vm.chunk);
 				}
-				sb.Append(')');
+				sb.Append('}');
 				return;
 			}
 		case TypeKind.Struct:

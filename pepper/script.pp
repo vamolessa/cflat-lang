@@ -1,3 +1,5 @@
+fn f():int{3}
+
 fn main() {
-	print (2 1)
+	print f()
 }

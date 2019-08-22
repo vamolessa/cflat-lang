@@ -128,7 +128,7 @@ public readonly struct ValueType
 		switch (kind)
 		{
 		case TypeKind.Unit:
-			sb.Append("()");
+			sb.Append("{}");
 			break;
 		case TypeKind.Bool:
 			sb.Append("bool");
