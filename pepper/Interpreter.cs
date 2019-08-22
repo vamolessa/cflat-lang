@@ -54,6 +54,28 @@ public static class Interpreter
 		return body.Return(t);
 	}
 
+	public struct ThisIsATuple : ITuple
+	{
+		public int n;
+		public bool b;
+
+		public void Marshal<M>(ref M marshaler) where M : IMarshaler
+		{
+			marshaler.Marshal(ref n, null);
+			marshaler.Marshal(ref b, null);
+		}
+	}
+
+	public static Return TestTupleAgainFunction<C>(ref C context) where C : IContext
+	{
+		var t = context.ArgTuple<ThisIsATuple>();
+		var body = context.BodyOfTuple<ThisIsATuple>();
+		System.Console.WriteLine("HELLO FROM C# TUPLE 2 {0}, {1}", t.n, t.b);
+		t.n += 1;
+		t.b = !t.b;
+		return body.Return(t);
+	}
+
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
@@ -63,6 +85,7 @@ public static class Interpreter
 		pepper.AddFunction(OtherFunction, OtherFunction);
 		pepper.AddFunction(CallingFunction, CallingFunction);
 		pepper.AddFunction(TestTupleFunction, TestTupleFunction);
+		pepper.AddFunction(TestTupleAgainFunction, TestTupleAgainFunction);
 
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)

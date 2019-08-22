@@ -21,7 +21,6 @@ public sealed class CompilerController
 			Declaration();
 
 		compiler.EmitInstruction(Instruction.Halt);
-
 		return compiler.errors;
 	}
 
@@ -45,7 +44,6 @@ public sealed class CompilerController
 		compiler.chunk.functions.PushBack(new Function(string.Empty, 0, functionTypeIndex));
 
 		compiler.EmitInstruction(Instruction.Halt);
-
 		return compiler.errors;
 	}
 

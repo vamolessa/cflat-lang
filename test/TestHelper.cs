@@ -40,7 +40,11 @@ public static class TestHelper
 
 	public static FunctionCall Run(string source, out CallAssertion assertion)
 	{
-		var pepper = new Pepper();
+		return Run(new Pepper(), source, out assertion);
+	}
+
+	public static FunctionCall Run(Pepper pepper, string source, out CallAssertion assertion)
+	{
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
@@ -51,7 +55,11 @@ public static class TestHelper
 
 	public static FunctionCall RunExpression(string source, out CallAssertion assertion)
 	{
-		var pepper = new Pepper();
+		return RunExpression(new Pepper(), source, out assertion);
+	}
+
+	public static FunctionCall RunExpression(Pepper pepper, string source, out CallAssertion assertion)
+	{
 		var compileErrors = pepper.CompileExpression(source);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));

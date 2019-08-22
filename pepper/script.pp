@@ -1,3 +1,3 @@
 fn main() {
-	print TestTupleFunction(tuple{3 false})
+	print TestFunction(Point{x=1 y=2 z=3})
 }
