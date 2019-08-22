@@ -2,48 +2,6 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public struct Point : IStruct
-	{
-		public int x;
-		public int y;
-		public int z;
-
-		public void Marshal<M>(ref M marshaler) where M : IMarshaler
-		{
-			marshaler.Marshal(ref x, nameof(x));
-			marshaler.Marshal(ref y, nameof(y));
-			marshaler.Marshal(ref z, nameof(z));
-		}
-	}
-
-	public static Return TestFunction<C>(ref C context) where C : IContext
-	{
-		var p = context.ArgStruct<Point>();
-		var body = context.BodyOfStruct<Point>();
-		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
-		p.x += 1;
-		p.y += 1;
-		p.z += 1;
-		return body.Return(p);
-	}
-
-	public sealed class SomeTestClass { }
-
-	public static Return OtherFunction<C>(ref C context) where C : IContext
-	{
-		var body = context.BodyOfObject<SomeTestClass>();
-		return body.Return(new SomeTestClass());
-	}
-
-	public static Return CallingFunction<C>(ref C context) where C : IContext
-	{
-		var body = context.Body();
-		var success = body.Call("some_function").WithInt(6).GetInt(out var n);
-		System.Console.WriteLine("CALLED FUNCTION success:{0} return:{1}", success, n);
-
-		return body.Return();
-	}
-
 	public static Return TestTupleFunction<C>(ref C context) where C : IContext
 	{
 		var t = context.ArgTuple<Tuple<Int, Bool>>();
