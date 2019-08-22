@@ -55,7 +55,7 @@ public struct FunctionCall
 
 	public FunctionCall WithTuple<T>(T value) where T : struct, ITuple
 	{
-		var reflection = Marshal.ReflectOnTuple<T>(vm.chunk);
+		var reflection = Marshal.ReflectOnTuple<T>(vm);
 		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
 		vm.valueStack.Grow(reflection.size);
 		value.Marshal(ref marshaler);
@@ -65,7 +65,7 @@ public struct FunctionCall
 
 	public FunctionCall WithStruct<T>(T value) where T : struct, IStruct
 	{
-		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
+		var reflection = Marshal.ReflectOnStruct<T>(vm);
 		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
 		vm.valueStack.Grow(reflection.size);
 		value.Marshal(ref marshaler);
@@ -192,7 +192,7 @@ public struct FunctionCall
 	public bool GetTuple<T>(out T value) where T : struct, ITuple
 	{
 		value = default;
-		var reflection = Marshal.ReflectOnTuple<T>(vm.chunk);
+		var reflection = Marshal.ReflectOnTuple<T>(vm);
 		if (CallAndCheckReturn(reflection.type))
 		{
 			var marshaler = new ReadMarshaler(vm, vm.valueStack.count);
@@ -209,7 +209,7 @@ public struct FunctionCall
 	public bool GetStruct<T>(out T value) where T : struct, IStruct
 	{
 		value = default;
-		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
+		var reflection = Marshal.ReflectOnStruct<T>(vm);
 		if (CallAndCheckReturn(reflection.type))
 		{
 			vm.valueStack.count -= reflection.size;
@@ -255,10 +255,10 @@ public struct FunctionCall
 			vm.callframeStack.count -= 1;
 			var function = vm.chunk.functions.buffer[functionIndex];
 			vm.Error(string.Format(
-				"Return type does not match for function '{0}'. Expected {1}. Tried {2}",
+				"Return type does not match for function '{0}'. Expected {1}. Got {2}",
 				function.name,
-				returnType.ToString(vm.chunk),
-				valueType.ToString(vm.chunk)
+				valueType.ToString(vm.chunk),
+				returnType.ToString(vm.chunk)
 			));
 			return false;
 		}

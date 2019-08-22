@@ -290,7 +290,7 @@ public struct StructTypeBuilder
 
 	public void Cancel()
 	{
-		chunk.structTypes.count -= fieldCount;
+		chunk.structTypeFields.count -= fieldCount;
 	}
 
 	public Result Build(string name, out ushort typeIndex)

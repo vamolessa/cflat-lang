@@ -39,7 +39,7 @@ public struct RuntimeContext : IContext
 	{
 		var value = default(T);
 		var marshaler = new ReadMarshaler(vm, argStackIndex);
-		argStackIndex += Marshal.ReflectOnTuple<T>(vm.chunk).size;
+		argStackIndex += Marshal.ReflectOnTuple<T>(vm).size;
 		value.Marshal(ref marshaler);
 		return value;
 	}
@@ -47,7 +47,7 @@ public struct RuntimeContext : IContext
 	{
 		var value = default(T);
 		var marshaler = new ReadMarshaler(vm, argStackIndex);
-		argStackIndex += Marshal.ReflectOnStruct<T>(vm.chunk).size;
+		argStackIndex += Marshal.ReflectOnStruct<T>(vm).size;
 		value.Marshal(ref marshaler);
 		return value;
 	}
@@ -77,13 +77,13 @@ public struct DefinitionContext : IContext
 		}
 	}
 
-	internal ByteCodeChunk chunk;
+	internal VirtualMachine vm;
 	internal FunctionTypeBuilder builder;
 
-	public DefinitionContext(ByteCodeChunk chunk)
+	public DefinitionContext(VirtualMachine vm)
 	{
-		this.chunk = chunk;
-		this.builder = chunk.BeginFunctionType();
+		this.vm = vm;
+		this.builder = vm.chunk.BeginFunctionType();
 	}
 
 	public bool ArgBool()
@@ -108,12 +108,12 @@ public struct DefinitionContext : IContext
 	}
 	public T ArgTuple<T>() where T : struct, ITuple
 	{
-		builder.WithParam(Marshal.ReflectOnTuple<T>(chunk).type);
+		builder.WithParam(Marshal.ReflectOnTuple<T>(vm).type);
 		return default;
 	}
 	public T ArgStruct<T>() where T : struct, IStruct
 	{
-		builder.WithParam(Marshal.ReflectOnStruct<T>(chunk).type);
+		builder.WithParam(Marshal.ReflectOnStruct<T>(vm).type);
 		return default;
 	}
 	public T ArgObject<T>() where T : class
@@ -149,12 +149,12 @@ public struct DefinitionContext : IContext
 	}
 	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple
 	{
-		builder.returnType = Marshal.ReflectOnTuple<T>(chunk).type;
+		builder.returnType = Marshal.ReflectOnTuple<T>(vm).type;
 		throw new Definition(functionName, builder);
 	}
 	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct
 	{
-		builder.returnType = Marshal.ReflectOnStruct<T>(chunk).type;
+		builder.returnType = Marshal.ReflectOnStruct<T>(vm).type;
 		throw new Definition(functionName, builder);
 	}
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class

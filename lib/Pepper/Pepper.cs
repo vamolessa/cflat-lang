@@ -12,6 +12,11 @@ public sealed class Pepper
 		set { virtualMachine.debugMode = value; }
 	}
 
+	public Pepper()
+	{
+		virtualMachine.Load(byteCode);
+	}
+
 	public Buffer<CompileError> CompileSource(string source)
 	{
 		if (registerErrors.count > 0)

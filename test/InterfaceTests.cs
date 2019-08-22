@@ -16,9 +16,23 @@ public sealed class InterfaceTests
 		}
 	}
 
+	[Fact]
+	public void AddStructTwice()
+	{
+		var source = "Point{x=0 y=0 z=0}";
+		var pepper = new Pepper();
+		pepper.AddStruct<Point>();
+		pepper.AddStruct<Point>();
+		TestHelper.RunExpression(pepper, source, out var a).GetStruct<Point>(out var p);
+		a.AssertSuccessCall();
+		Assert.Equal(0, p.x);
+		Assert.Equal(0, p.y);
+		Assert.Equal(0, p.z);
+	}
+
 	[Theory]
 	[InlineData("Point{x=0 y=0 z=0}", 0, 0, 0)]
-	// [InlineData("Point{x=1 y=2 z=3}", 1, 2, 3)]
+	[InlineData("Point{x=1 y=2 z=3}", 1, 2, 3)]
 	public void MarshalPointStruct(string source, int x, int y, int z)
 	{
 		var pepper = new Pepper();
@@ -26,9 +40,6 @@ public sealed class InterfaceTests
 		pepper.AddStruct<Point>();
 		TestHelper.RunExpression(pepper, source, out var a).GetStruct<Point>(out var p);
 		a.AssertSuccessCall();
-		// var errors = pepper.CompileExpression(source);
-		// Assert.Equal(0, errors.count);
-		// pepper.CallFunction(string.Empty).GetStruct<Point>(out var p);
 		Assert.Equal(x, p.x);
 		Assert.Equal(y, p.y);
 		Assert.Equal(z, p.z);
@@ -45,18 +56,17 @@ public sealed class InterfaceTests
 		return body.Return(p);
 	}
 
-	//[Fact]
-	public void StructInteropTest()
+	[Theory]
+	[InlineData("TestFunction(Point{x=0 y=0 z=0})", 1, 1, 1)]
+	[InlineData("TestFunction(Point{x=1 y=2 z=3})", 2, 3, 4)]
+	public void StructIoTest(string source, int x, int y, int z)
 	{
 		var pepper = new Pepper();
 		pepper.AddFunction(TestFunction, TestFunction);
-		var source = "TestFunction(Point{x=1 y=2 z=3})";
 		TestHelper.RunExpression(pepper, source, out var a).GetStruct<Point>(out var p);
-		// var source = "fn f():Point{TestFunction(Point{x=1 y=2 z=3})}";
-		// TestHelper.Run(pepper, source, out var a).GetStruct<Point>(out var p);
 		a.AssertSuccessCall();
-		Assert.Equal(2, p.x);
-		Assert.Equal(3, p.y);
-		Assert.Equal(4, p.z);
+		Assert.Equal(x, p.x);
+		Assert.Equal(y, p.y);
+		Assert.Equal(z, p.z);
 	}
 }
