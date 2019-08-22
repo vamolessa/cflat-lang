@@ -4,6 +4,7 @@ public sealed class TupleTests
 {
 	[Theory]
 	[InlineData("fn f():int{let{a b}=tuple{true 3} a b}", 3)]
+	[InlineData("fn f():int{let{_ b}=tuple{true 3} b}", 3)]
 	[InlineData("fn f():int{let t=tuple{true 3} let{a b}=t a b}", 3)]
 	public void TupleDeconstructionTests(string source, int expected)
 	{
