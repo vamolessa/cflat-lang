@@ -1,5 +1,64 @@
 public static class CompilerTypeExtensions
 {
+	public static bool CheckFunctionBuild(this Compiler self, FunctionTypeBuilder.Result result, Slice slice)
+	{
+		switch (result)
+		{
+		case FunctionTypeBuilder.Result.Success:
+			return true;
+		case FunctionTypeBuilder.Result.TooManyFunctions:
+			self.AddSoftError(slice, "Too many function declarations");
+			return false;
+		case FunctionTypeBuilder.Result.ParametersTooBig:
+			self.AddSoftError(
+				slice,
+				"Function parameters size is too big. Max is {0}",
+				byte.MaxValue
+			);
+			return false;
+		default:
+			return false;
+		}
+	}
+
+	public static bool CheckTupleBuild(this Compiler self, TupleTypeBuilder.Result result, Slice slice)
+	{
+		switch (result)
+		{
+		case TupleTypeBuilder.Result.Success:
+			return true;
+		case TupleTypeBuilder.Result.TooManyTuples:
+			self.AddSoftError(slice, "Too many tuple declarations");
+			return false;
+		case TupleTypeBuilder.Result.ElementsTooBig:
+			self.AddSoftError(
+				slice,
+				"Tuple elements size is too big. Max is {0}",
+				byte.MaxValue
+			);
+			return false;
+		default:
+			return false;
+		}
+	}
+
+	public static bool CheckStructBuild(this Compiler self, StructTypeBuilder.Result result, Slice slice, string name)
+	{
+		switch (result)
+		{
+		case StructTypeBuilder.Result.Success:
+			return true;
+		case StructTypeBuilder.Result.TooManyStructs:
+			self.AddSoftError(slice, "Too many struct declarations");
+			return false;
+		case StructTypeBuilder.Result.DuplicatedName:
+			self.AddSoftError(slice, "There's already a struct named '{0}'", name);
+			return false;
+		default:
+			return false;
+		}
+	}
+
 	public static ValueType ParseType(this Compiler self, string error, int recursionLevel)
 	{
 		if (recursionLevel > 8)
@@ -51,9 +110,11 @@ public static class CompilerTypeExtensions
 		}
 		self.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple elements");
 
-		var tupleTypeIndex = builder.Build();
-		var type = new ValueType(TypeKind.Tuple, tupleTypeIndex);
+		var result = builder.Build(out var tupleTypeIndex);
+		if (!self.CheckTupleBuild(result, self.parser.previousToken.slice))
+			return Option.None;
 
+		var type = new ValueType(TypeKind.Tuple, tupleTypeIndex);
 		return Option.Some(type);
 	}
 
@@ -89,9 +150,11 @@ public static class CompilerTypeExtensions
 		if (self.parser.Match(TokenKind.Colon))
 			builder.returnType = self.ParseType("Expected function return type", recursionLevel);
 
-		var functionTypeIndex = builder.Build();
-		var type = new ValueType(TypeKind.Function, functionTypeIndex);
+		var result = builder.Build(out var typeIndex);
+		if (!self.CheckFunctionBuild(result, self.parser.previousToken.slice))
+			return Option.None;
 
+		var type = new ValueType(TypeKind.Function, typeIndex);
 		return Option.Some(type);
 	}
 }

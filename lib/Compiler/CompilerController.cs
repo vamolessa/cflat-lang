@@ -282,19 +282,11 @@ public sealed class CompilerController
 		}
 		else
 		{
-			var typeIndex = builder.Build();
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Tuple, typeIndex));
-
-			var tupleSize = self.compiler.chunk.tupleTypes.buffer[typeIndex].size;
-			if (tupleSize >= byte.MaxValue)
-			{
-				self.compiler.AddSoftError(
-					slice,
-					"Tuple size is too big. Max is {0}. Got {1}",
-					byte.MaxValue,
-					tupleSize
-				);
-			}
+			var result = builder.Build(out var typeIndex);
+			if (self.compiler.CheckTupleBuild(result, slice))
+				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Tuple, typeIndex));
+			else
+				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 		}
 	}
 
@@ -847,7 +839,7 @@ public sealed class CompilerController
 		}
 		else
 		{
-			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
+			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let' or 'mut'");
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 		}
 	}

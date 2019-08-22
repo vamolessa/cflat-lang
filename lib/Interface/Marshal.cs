@@ -149,35 +149,6 @@ internal struct WriteMarshaler : IMarshaler
 	}
 }
 
-internal struct StructDefinitionMarshaler : IDefinitionMarshaler
-{
-	internal ByteCodeChunk chunk;
-	internal StructTypeBuilder builder;
-
-	public StructDefinitionMarshaler(ByteCodeChunk chunk)
-	{
-		this.chunk = chunk;
-		this.builder = chunk.BeginStructType();
-	}
-
-	public void Marshal(ref bool value, string name) => builder.WithField(name, new ValueType(TypeKind.Bool));
-	public void Marshal(ref int value, string name) => builder.WithField(name, new ValueType(TypeKind.Int));
-	public void Marshal(ref float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
-	public void Marshal(ref string value, string name) => builder.WithField(name, new ValueType(TypeKind.String));
-	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => builder.WithField(name, global::Marshal.ReflectOn<T>(chunk).type);
-	public void Marshal(ref object value, string name) => builder.WithField(name, new ValueType(TypeKind.NativeObject));
-
-	public void FinishDefinition<T>() where T : struct, IMarshalable
-	{
-		var structTypeIndex = builder.Build(typeof(T).Name);
-
-		var reflection = new ReflectionData(
-			new ValueType(TypeKind.Struct, structTypeIndex),
-			chunk.structTypes.buffer[structTypeIndex].size
-		);
-		global::Marshal.ReflectionCache<T>.data = reflection;
-	}
-}
 
 internal struct TupleDefinitionMarshaler : IDefinitionMarshaler
 {
@@ -199,12 +170,46 @@ internal struct TupleDefinitionMarshaler : IDefinitionMarshaler
 
 	public void FinishDefinition<T>() where T : struct, IMarshalable
 	{
-		var tupleTypeIndex = builder.Build();
+		var result = builder.Build(out var typeIndex);
+		if (result == TupleTypeBuilder.Result.Success)
+		{
+			var reflection = new ReflectionData(
+				new ValueType(TypeKind.Tuple, typeIndex),
+				chunk.tupleTypes.buffer[typeIndex].size
+			);
+			global::Marshal.ReflectionCache<T>.data = reflection;
+		}
+	}
+}
 
-		var reflection = new ReflectionData(
-			new ValueType(TypeKind.Tuple, tupleTypeIndex),
-			chunk.tupleTypes.buffer[tupleTypeIndex].size
-		);
-		global::Marshal.ReflectionCache<T>.data = reflection;
+internal struct StructDefinitionMarshaler : IDefinitionMarshaler
+{
+	internal ByteCodeChunk chunk;
+	internal StructTypeBuilder builder;
+
+	public StructDefinitionMarshaler(ByteCodeChunk chunk)
+	{
+		this.chunk = chunk;
+		this.builder = chunk.BeginStructType();
+	}
+
+	public void Marshal(ref bool value, string name) => builder.WithField(name, new ValueType(TypeKind.Bool));
+	public void Marshal(ref int value, string name) => builder.WithField(name, new ValueType(TypeKind.Int));
+	public void Marshal(ref float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
+	public void Marshal(ref string value, string name) => builder.WithField(name, new ValueType(TypeKind.String));
+	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => builder.WithField(name, global::Marshal.ReflectOn<T>(chunk).type);
+	public void Marshal(ref object value, string name) => builder.WithField(name, new ValueType(TypeKind.NativeObject));
+
+	public void FinishDefinition<T>() where T : struct, IMarshalable
+	{
+		var result = builder.Build(typeof(T).Name, out var typeIndex);
+		if (result == StructTypeBuilder.Result.Success)
+		{
+			var reflection = new ReflectionData(
+				new ValueType(TypeKind.Struct, typeIndex),
+				chunk.structTypes.buffer[typeIndex].size
+			);
+			global::Marshal.ReflectionCache<T>.data = reflection;
+		}
 	}
 }

@@ -81,13 +81,15 @@ public static class Interpreter
 		var pepper = new Pepper();
 		pepper.DebugMode = true;
 
-		pepper.AddFunction(TestFunction, TestFunction);
-		pepper.AddFunction(OtherFunction, OtherFunction);
-		pepper.AddFunction(CallingFunction, CallingFunction);
-		pepper.AddFunction(TestTupleFunction, TestTupleFunction);
-		pepper.AddFunction(TestTupleAgainFunction, TestTupleAgainFunction);
+		pepper.AddStruct<Point>();
+		// pepper.AddFunction(TestFunction, TestFunction);
+		// pepper.AddFunction(OtherFunction, OtherFunction);
+		// pepper.AddFunction(CallingFunction, CallingFunction);
+		// pepper.AddFunction(TestTupleFunction, TestTupleFunction);
+		// pepper.AddFunction(TestTupleAgainFunction, TestTupleAgainFunction);
 
-		var compileErrors = pepper.CompileSource(source);
+		//var compileErrors = pepper.CompileSource(source);
+		var compileErrors = pepper.CompileExpression(source);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
@@ -105,7 +107,9 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		pepper.CallFunction("main").Get();
+		pepper.CallFunction(string.Empty).GetStruct<Point>(out var p);
+		System.Console.WriteLine("{0} {1} {2}", p.x, p.y, p.z);
+
 		var runtimeError = pepper.GetError();
 		if (runtimeError.isSome)
 		{

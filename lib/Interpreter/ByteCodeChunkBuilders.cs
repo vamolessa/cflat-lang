@@ -1,5 +1,12 @@
 public struct FunctionTypeBuilder
 {
+	public enum Result
+	{
+		Success,
+		TooManyFunctions,
+		ParametersTooBig,
+	}
+
 	public ByteCodeChunk chunk;
 	public ushort startParameterIndex;
 	public ushort parameterCount;
@@ -50,33 +57,36 @@ public struct FunctionTypeBuilder
 		chunk.functionParamTypes.count -= parameterCount;
 	}
 
-	public ushort Build()
+	public Result Build(out ushort typeIndex)
 	{
+		if (chunk.functions.count >= ushort.MaxValue || chunk.functionTypes.count >= ushort.MaxValue)
+		{
+			Cancel();
+			typeIndex = 0;
+			return Result.TooManyFunctions;
+		}
+
 		var parametersIndex = chunk.functionParamTypes.count - parameterCount;
 
 		for (var i = 0; i < chunk.functionTypes.count; i++)
 		{
 			var function = chunk.functionTypes.buffer[i];
 			if (!function.returnType.IsEqualTo(returnType) || function.parameters.length != parameterCount)
-				continue;
+				goto NoMatch;
 
-			var match = true;
 			for (var j = 0; j < parameterCount; j++)
 			{
 				var a = chunk.functionParamTypes.buffer[function.parameters.index + j];
 				var b = chunk.functionParamTypes.buffer[parametersIndex + j];
 				if (!a.IsEqualTo(b))
-				{
-					match = false;
-					break;
-				}
+					goto NoMatch;
 			}
 
-			if (match)
-			{
-				chunk.functionParamTypes.count = parametersIndex;
-				return (ushort)i;
-			}
+			chunk.functionParamTypes.count = parametersIndex;
+			typeIndex = (ushort)i;
+			return Result.Success;
+
+		NoMatch:;
 		}
 
 		var parametersSize = 0;
@@ -87,7 +97,11 @@ public struct FunctionTypeBuilder
 		}
 
 		if (parametersSize > byte.MaxValue)
-			parametersSize = byte.MaxValue;
+		{
+			Cancel();
+			typeIndex = 0;
+			return Result.ParametersTooBig;
+		}
 
 		chunk.functionTypes.PushBack(new FunctionType(
 			new Slice(
@@ -98,12 +112,20 @@ public struct FunctionTypeBuilder
 			(byte)parametersSize
 		));
 
-		return (ushort)(chunk.functionTypes.count - 1);
+		typeIndex = (ushort)(chunk.functionTypes.count - 1);
+		return Result.Success;
 	}
 }
 
 public struct TupleTypeBuilder
 {
+	public enum Result
+	{
+		Success,
+		TooManyTuples,
+		ElementsTooBig,
+	}
+
 	public ByteCodeChunk chunk;
 	public ushort startElementIndex;
 	public ushort elementCount;
@@ -151,8 +173,15 @@ public struct TupleTypeBuilder
 		chunk.tupleTypes.count -= elementCount;
 	}
 
-	public ushort Build()
+	public Result Build(out ushort typeIndex)
 	{
+		if (chunk.tupleTypes.count >= ushort.MaxValue)
+		{
+			Cancel();
+			typeIndex = 0;
+			return Result.TooManyTuples;
+		}
+
 		var elementsIndex = chunk.tupleElementTypes.count - elementCount;
 
 		for (var i = 0; i < chunk.tupleTypes.count; i++)
@@ -170,7 +199,8 @@ public struct TupleTypeBuilder
 			}
 
 			chunk.tupleElementTypes.count = elementsIndex;
-			return (ushort)i;
+			typeIndex = (ushort)i;
+			return Result.Success;
 
 		NoMatch:;
 		}
@@ -183,9 +213,15 @@ public struct TupleTypeBuilder
 		}
 
 		if (size == 0)
+		{
 			size = 1;
+		}
 		else if (size >= byte.MaxValue)
-			size = byte.MaxValue;
+		{
+			Cancel();
+			typeIndex = 0;
+			return Result.ElementsTooBig;
+		}
 
 		chunk.tupleTypes.PushBack(new TupleType(
 			new Slice(
@@ -195,12 +231,20 @@ public struct TupleTypeBuilder
 			(byte)size
 		));
 
-		return (ushort)(chunk.tupleTypes.count - 1);
+		typeIndex = (ushort)(chunk.tupleTypes.count - 1);
+		return Result.Success;
 	}
 }
 
 public struct StructTypeBuilder
 {
+	public enum Result
+	{
+		Success,
+		TooManyStructs,
+		DuplicatedName,
+	}
+
 	public ByteCodeChunk chunk;
 	public ushort startFieldIndex;
 	public ushort fieldCount;
@@ -249,8 +293,25 @@ public struct StructTypeBuilder
 		chunk.structTypes.count -= fieldCount;
 	}
 
-	public ushort Build(string name)
+	public Result Build(string name, out ushort typeIndex)
 	{
+		if (chunk.structTypes.count >= ushort.MaxValue)
+		{
+			Cancel();
+			typeIndex = 0;
+			return Result.TooManyStructs;
+		}
+
+		for (var i = 0; i < chunk.structTypes.count; i++)
+		{
+			if (chunk.structTypes.buffer[i].name == name)
+			{
+				Cancel();
+				typeIndex = 0;
+				return Result.DuplicatedName;
+			}
+		}
+
 		var fieldsIndex = chunk.structTypeFields.count - fieldCount;
 
 		var size = 0;
@@ -274,6 +335,7 @@ public struct StructTypeBuilder
 			(byte)size
 		));
 
-		return (ushort)(chunk.structTypes.count - 1);
+		typeIndex = (ushort)(chunk.structTypes.count - 1);
+		return Result.Success;
 	}
 }

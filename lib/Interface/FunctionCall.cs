@@ -212,8 +212,8 @@ public struct FunctionCall
 		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
 		if (CallAndCheckReturn(reflection.type))
 		{
+			vm.valueStack.count -= reflection.size;
 			var marshaler = new ReadMarshaler(vm, vm.valueStack.count);
-			vm.valueStack.Grow(reflection.size);
 			value.Marshal(ref marshaler);
 			return true;
 		}

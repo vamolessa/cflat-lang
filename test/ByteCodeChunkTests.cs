@@ -15,7 +15,8 @@ public sealed class ByteCodeChunkTests
 		builder.WithElement(new ValueType(TypeKind.Int));
 		Assert.Equal(2, chunk.tupleElementTypes.count);
 
-		var typeIndex = builder.Build();
+		var result = builder.Build(out var typeIndex);
+		Assert.Equal(TupleTypeBuilder.Result.Success, result);
 		var type = chunk.tupleTypes.buffer[typeIndex];
 		Assert.Equal(1, chunk.tupleTypes.count);
 		Assert.Equal(2, chunk.tupleElementTypes.count);
@@ -32,7 +33,8 @@ public sealed class ByteCodeChunkTests
 		builder.WithElement(new ValueType(TypeKind.Int));
 		Assert.Equal(4, chunk.tupleElementTypes.count);
 
-		typeIndex = builder.Build();
+		result = builder.Build(out typeIndex);
+		Assert.Equal(TupleTypeBuilder.Result.Success, result);
 		type = chunk.tupleTypes.buffer[typeIndex];
 		Assert.Equal(1, chunk.tupleTypes.count);
 		Assert.Equal(2, chunk.tupleElementTypes.count);
