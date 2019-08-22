@@ -1,5 +1,5 @@
-fn f():int{3}
-
 fn main() {
-	print f()
+	let{a b} = tuple{2 "asds"}
+	print a
+	print b
 }

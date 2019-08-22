@@ -400,7 +400,15 @@ public sealed class CompilerController
 		compiler.EndScope(scope, 0);
 	}
 
-	private int VariableDeclaration(bool mutable)
+	private void VariableDeclaration(bool mutable)
+	{
+		if (compiler.parser.Match(TokenKind.OpenCurlyBrackets))
+			MultipleVariableDeclaration(mutable);
+		else
+			SingleVariableDeclaration(mutable);
+	}
+
+	private int SingleVariableDeclaration(bool mutable)
 	{
 		compiler.parser.Consume(TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.parser.previousToken.slice;
@@ -409,6 +417,52 @@ public sealed class CompilerController
 		Expression(this);
 
 		return compiler.DeclareLocalVariable(slice, mutable);
+	}
+
+	private void MultipleVariableDeclaration(bool mutable)
+	{
+		var slices = new Buffer<Slice>(8);
+
+		while (
+			!compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
+			!compiler.parser.Check(TokenKind.End)
+		)
+		{
+			compiler.parser.Consume(TokenKind.Identifier, "Expected variable name");
+			slices.PushBack(compiler.parser.previousToken.slice);
+		}
+		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after variable names");
+		compiler.parser.Consume(TokenKind.Equal, "Expected assignment");
+		Expression(this);
+
+		var expressionType = compiler.typeStack.PopLast();
+		if (expressionType.kind != TypeKind.Tuple)
+		{
+			compiler.AddSoftError(
+				compiler.parser.previousToken.slice,
+				"Expression must be a tuple"
+			);
+			return;
+		}
+
+		var tupleElements = compiler.chunk.tupleTypes.buffer[expressionType.index].elements;
+		if (tupleElements.length != slices.count)
+		{
+			compiler.AddSoftError(
+				compiler.parser.previousToken.slice,
+				"Tuple element count must be equal to variable declaratin count. Expected {0}. Got {1}",
+				slices.count,
+				tupleElements.length
+			);
+			return;
+		}
+
+		for (var i = 0; i < slices.count; i++)
+		{
+			var slice = slices.buffer[i];
+			var elementType = compiler.chunk.tupleElementTypes.buffer[tupleElements.index + i];
+			compiler.AddLocalVariable(slice, elementType, mutable, false);
+		}
 	}
 
 	public void WhileStatement()
@@ -433,7 +487,7 @@ public sealed class CompilerController
 	public void ForStatement()
 	{
 		var scope = compiler.BeginScope();
-		var itVarIndex = VariableDeclaration(true);
+		var itVarIndex = SingleVariableDeclaration(true);
 		compiler.localVariables.buffer[itVarIndex].isUsed = true;
 		var itVar = compiler.localVariables.buffer[itVarIndex];
 		if (!itVar.type.IsKind(TypeKind.Int))
