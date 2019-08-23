@@ -1,5 +1,4 @@
 //#define DEBUG_TRACE
-
 using System.Text;
 
 internal static class VirtualMachineInstructions
@@ -41,7 +40,7 @@ internal static class VirtualMachineInstructions
 					var functionIndex = stack[stackTop - 1].asInt;
 					var function = vm.chunk.functions.buffer[functionIndex];
 
-					vm.callframeStack.PushBack(
+					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
 							functionIndex,
 							function.codeIndex,
@@ -56,7 +55,7 @@ internal static class VirtualMachineInstructions
 					var functionIndex = stack[stackTop - 1].asInt;
 					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
-					vm.callframeStack.PushBack(
+					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
 							functionIndex,
 							-1,
