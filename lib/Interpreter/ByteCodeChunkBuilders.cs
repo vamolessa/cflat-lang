@@ -307,7 +307,7 @@ public struct StructTypeBuilder
 			if (chunk.structTypes.buffer[i].name == name)
 			{
 				Cancel();
-				typeIndex = 0;
+				typeIndex = (ushort)i;
 				return Result.DuplicatedName;
 			}
 		}

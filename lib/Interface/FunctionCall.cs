@@ -19,6 +19,7 @@ public struct FunctionCall
 		}
 		else
 		{
+			System.Diagnostics.Debug.Assert(true);
 			paramIndex = ushort.MaxValue;
 			paramEnd = ushort.MaxValue;
 		}
@@ -55,7 +56,7 @@ public struct FunctionCall
 
 	public FunctionCall WithTuple<T>(T value) where T : struct, ITuple
 	{
-		var reflection = Marshal.ReflectOnTuple<T>(vm);
+		var reflection = Marshal.ReflectOnTuple<T>(vm.chunk);
 		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
 		vm.valueStack.Grow(reflection.size);
 		value.Marshal(ref marshaler);
@@ -65,7 +66,7 @@ public struct FunctionCall
 
 	public FunctionCall WithStruct<T>(T value) where T : struct, IStruct
 	{
-		var reflection = Marshal.ReflectOnStruct<T>(vm);
+		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
 		var marshaler = new WriteMarshaler(vm, vm.valueStack.count);
 		vm.valueStack.Grow(reflection.size);
 		value.Marshal(ref marshaler);
@@ -192,7 +193,7 @@ public struct FunctionCall
 	public bool GetTuple<T>(out T value) where T : struct, ITuple
 	{
 		value = default;
-		var reflection = Marshal.ReflectOnTuple<T>(vm);
+		var reflection = Marshal.ReflectOnTuple<T>(vm.chunk);
 		if (CallAndCheckReturn(reflection.type))
 		{
 			vm.valueStack.count -= reflection.size;
@@ -209,7 +210,7 @@ public struct FunctionCall
 	public bool GetStruct<T>(out T value) where T : struct, IStruct
 	{
 		value = default;
-		var reflection = Marshal.ReflectOnStruct<T>(vm);
+		var reflection = Marshal.ReflectOnStruct<T>(vm.chunk);
 		if (CallAndCheckReturn(reflection.type))
 		{
 			vm.valueStack.count -= reflection.size;

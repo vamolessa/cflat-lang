@@ -6,11 +6,6 @@ public sealed class Pepper
 	internal string source;
 	internal Buffer<CompileError> registerErrors = new Buffer<CompileError>();
 
-	public Pepper()
-	{
-		virtualMachine.Load(byteCode);
-	}
-
 	public Buffer<CompileError> CompileSource(string source)
 	{
 		if (registerErrors.count > 0)

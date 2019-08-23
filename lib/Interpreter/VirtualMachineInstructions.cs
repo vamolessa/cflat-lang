@@ -37,8 +37,8 @@ internal static class VirtualMachineInstructions
 
 			ref var frame = ref vm.callframeStack.buffer[vm.callframeStack.count - 1];
 
-			var p = (CallFrame*)null;
-			ref var flasd = ref *p;
+			// var p = (CallFrame*)null;
+			// ref var flasd = ref *p;
 
 			var nextInstruction = (Instruction)NextByte(vm, ref frame);
 			switch (nextInstruction)

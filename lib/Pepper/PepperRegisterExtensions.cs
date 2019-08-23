@@ -7,7 +7,7 @@ public static class PepperRegisterExtensions
 
 	public static bool AddFunction(this Pepper self, NativeFunction.Callback<DefinitionContext> definitionFunction, NativeFunction.Callback<RuntimeContext> runtimeFunction)
 	{
-		var context = new DefinitionContext(self.virtualMachine);
+		var context = new DefinitionContext(self.byteCode);
 		try
 		{
 			definitionFunction(ref context);
@@ -45,6 +45,6 @@ public static class PepperRegisterExtensions
 
 	public static void AddStruct<T>(this Pepper self) where T : struct, IStruct
 	{
-		Marshal.ReflectOnStruct<T>(self.virtualMachine);
+		Marshal.ReflectOnStruct<T>(self.byteCode);
 	}
 }

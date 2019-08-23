@@ -2,6 +2,19 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
+	// public sealed class StartThing : INativeFunction
+	// {
+	// 	public SomeCall<Tuple<Int>, Int> someFunction = new SomeCall<Tuple<Int>, Int>("some_function");
+
+	// 	public Return Call<C>(ref C context) where C : IContext
+	// 	{
+	// 		var body = context.BodyOfObject<System.Diagnostics.Stopwatch>();
+	// 		var sw = new System.Diagnostics.Stopwatch();
+	// 		sw.Start();
+	// 		return body.Return(sw);
+	// 	}
+	// }
+
 	public static Return StartStopwatch<C>(ref C context) where C : IContext
 	{
 		var body = context.BodyOfObject<System.Diagnostics.Stopwatch>();
@@ -21,7 +34,6 @@ public static class Interpreter
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var pepper = new Pepper();
-		// pepper.DebugMode = true;
 
 		pepper.AddFunction(StartStopwatch, StartStopwatch);
 		pepper.AddFunction(StopStopwatch, StopStopwatch);

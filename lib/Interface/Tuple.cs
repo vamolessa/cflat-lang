@@ -78,8 +78,17 @@ public struct Object<T> : IMarshalable
 
 public interface ITuple : IMarshalable { }
 
-public static class Tuple
+public struct Tuple : ITuple
 {
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+	}
+
+	public static Tuple New()
+	{
+		return new Tuple();
+	}
+
 	public static Tuple<E0> New<E0>(E0 e0)
 		where E0 : IMarshalable
 	{
@@ -99,6 +108,15 @@ public static class Tuple
 		where E2 : IMarshalable
 	{
 		return new Tuple<E0, E1, E2>(e0, e1, e2);
+	}
+
+	public static Tuple<E0, E1, E2, E3> New<E0, E1, E2, E3>(E0 e0, E1 e1, E2 e2, E3 e3)
+		where E0 : IMarshalable
+		where E1 : IMarshalable
+		where E2 : IMarshalable
+		where E3 : IMarshalable
+	{
+		return new Tuple<E0, E1, E2, E3>(e0, e1, e2, e3);
 	}
 }
 
@@ -159,5 +177,33 @@ public struct Tuple<E0, E1, E2> : ITuple
 		e0.Marshal(ref marshaler);
 		e1.Marshal(ref marshaler);
 		e2.Marshal(ref marshaler);
+	}
+}
+
+public struct Tuple<E0, E1, E2, E3> : ITuple
+	where E0 : IMarshalable
+	where E1 : IMarshalable
+	where E2 : IMarshalable
+	where E3 : IMarshalable
+{
+	public E0 e0;
+	public E1 e1;
+	public E2 e2;
+	public E3 e3;
+
+	public Tuple(E0 e0, E1 e1, E2 e2, E3 e3)
+	{
+		this.e0 = e0;
+		this.e1 = e1;
+		this.e2 = e2;
+		this.e3 = e3;
+	}
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		e0.Marshal(ref marshaler);
+		e1.Marshal(ref marshaler);
+		e2.Marshal(ref marshaler);
+		e3.Marshal(ref marshaler);
 	}
 }

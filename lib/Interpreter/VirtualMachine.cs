@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Text;
-
 public readonly struct RuntimeError
 {
 	public readonly int instructionIndex;
@@ -29,18 +26,6 @@ internal struct CallFrame
 	}
 }
 
-internal readonly struct ReflectionData
-{
-	public readonly ValueType type;
-	public readonly byte size;
-
-	public ReflectionData(ValueType type, byte size)
-	{
-		this.type = type;
-		this.size = size;
-	}
-}
-
 public sealed class VirtualMachine
 {
 	internal ByteCodeChunk chunk;
@@ -48,8 +33,6 @@ public sealed class VirtualMachine
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
 	internal Buffer<object> heap;
 	internal Option<RuntimeError> error;
-
-	internal Dictionary<System.Type, ReflectionData> reflectionData = new Dictionary<System.Type, ReflectionData>();
 
 	public void Load(ByteCodeChunk chunk)
 	{
