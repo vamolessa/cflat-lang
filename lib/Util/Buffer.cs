@@ -16,10 +16,14 @@ public struct Buffer<T>
 
 	public void Grow(int size)
 	{
-		count += size;
-
 		if (buffer == null)
 			buffer = new T[MinCapacity];
+		GrowUnchecked(size);
+	}
+
+	public void GrowUnchecked(int size)
+	{
+		count += size;
 
 		if (count > buffer.Length)
 		{
@@ -33,7 +37,11 @@ public struct Buffer<T>
 	{
 		if (buffer == null)
 			buffer = new T[MinCapacity];
+		PushBackUnchecked(element);
+	}
 
+	public void PushBackUnchecked(T element)
+	{
 		if (count >= buffer.Length)
 		{
 			var temp = new T[buffer.Length * 2];
