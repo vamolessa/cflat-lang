@@ -43,8 +43,6 @@ internal readonly struct ReflectionData
 
 public sealed class VirtualMachine
 {
-	public bool debugMode = false;
-
 	internal ByteCodeChunk chunk;
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
@@ -99,25 +97,7 @@ public sealed class VirtualMachine
 
 	public void CallTopFunction()
 	{
-		if (debugMode)
-		{
-			var sb = new StringBuilder();
-			do
-			{
-				var ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
-				sb.Clear();
-				VirtualMachineHelper.TraceStack(this, sb);
-				chunk.DisassembleInstruction(ip, sb);
-				System.Console.WriteLine(sb);
-			} while (VirtualMachineInstructions.Tick(this));
-			sb.Clear();
-			VirtualMachineHelper.TraceStack(this, sb);
-			System.Console.WriteLine(sb);
-		}
-		else
-		{
-			while (VirtualMachineInstructions.Tick(this)) { }
-		}
+		VirtualMachineInstructions.Run(this);
 	}
 
 	public void Error(string message)

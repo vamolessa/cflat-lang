@@ -6,12 +6,6 @@ public sealed class Pepper
 	internal string source;
 	internal Buffer<CompileError> registerErrors = new Buffer<CompileError>();
 
-	public bool DebugMode
-	{
-		get { return virtualMachine.debugMode; }
-		set { virtualMachine.debugMode = value; }
-	}
-
 	public Pepper()
 	{
 		virtualMachine.Load(byteCode);
