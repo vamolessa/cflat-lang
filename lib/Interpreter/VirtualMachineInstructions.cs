@@ -4,15 +4,16 @@ using System.Text;
 
 internal static class VirtualMachineInstructions
 {
-	private static ref ValueData Peek(VirtualMachine vm)
+	private static ref ValueData Peek2(ValueData[] stack, int count)
 	{
-		return ref vm.valueStack.buffer[vm.valueStack.count - 1];
+		return ref stack[count - 1];
 	}
 
-	private static ref ValueData PeekBefore(VirtualMachine vm)
+	private static ref ValueData PeekBefore2(ValueData[] stack, int count)
 	{
-		return ref vm.valueStack.buffer[vm.valueStack.count - 2];
+		return ref stack[count - 2];
 	}
+
 
 	private static byte NextByte(byte[] bytes, ref int codeIndex)
 	{
@@ -26,6 +27,9 @@ internal static class VirtualMachineInstructions
 #endif
 
 		var bytes = vm.chunk.bytes.buffer;
+		var stack = vm.valueStack.buffer;
+		ref var stackSize = ref vm.valueStack.count;
+
 		while (true)
 		{
 #if DEBUG_TRACE
@@ -48,8 +52,8 @@ internal static class VirtualMachineInstructions
 			case Instruction.Call:
 				{
 					var size = NextByte(bytes, ref codeIndex);
-					var stackTop = vm.valueStack.count - size;
-					var functionIndex = vm.valueStack.buffer[stackTop - 1].asInt;
+					var stackTop = stackSize - size;
+					var functionIndex = stack[stackTop - 1].asInt;
 					var function = vm.chunk.functions.buffer[functionIndex];
 
 					vm.callframeStack.PushBack(
@@ -63,8 +67,8 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.CallNative:
 				{
-					var stackTop = vm.valueStack.count - NextByte(bytes, ref codeIndex);
-					var functionIndex = vm.valueStack.buffer[stackTop - 1].asInt;
+					var stackTop = stackSize - NextByte(bytes, ref codeIndex);
+					var functionIndex = stack[stackTop - 1].asInt;
 					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
 					vm.callframeStack.PushBack(
@@ -75,10 +79,7 @@ internal static class VirtualMachineInstructions
 						)
 					);
 
-					var context = new RuntimeContext(
-						vm,
-						vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex
-					);
+					var context = new RuntimeContext(vm, stackTop);
 					function.callback(ref context);
 					VirtualMachineHelper.Return(vm, function.returnSize);
 					break;
@@ -103,22 +104,22 @@ internal static class VirtualMachineInstructions
 
 					VirtualMachineHelper.ValueToString(
 						vm,
-						vm.valueStack.count - size,
+						stackSize - size,
 						type,
 						sb
 					);
-					vm.valueStack.count -= size;
+					stackSize -= size;
 
 					System.Console.WriteLine(sb);
 					break;
 				}
 			case Instruction.Pop:
-				vm.valueStack.count -= 1;
+				stackSize -= 1;
 				break;
 			case Instruction.PopMultiple:
 				{
 					var size = NextByte(bytes, ref codeIndex);
-					vm.valueStack.count -= size;
+					stackSize -= size;
 				}
 				break;
 			case Instruction.Move:
@@ -126,13 +127,13 @@ internal static class VirtualMachineInstructions
 					var sizeUnderMove = NextByte(bytes, ref codeIndex);
 					var sizeToMove = NextByte(bytes, ref codeIndex);
 
-					var srcIdx = vm.valueStack.count - sizeToMove;
+					var srcIdx = stackSize - sizeToMove;
 					var dstIdx = srcIdx - sizeUnderMove;
 
-					while (srcIdx < vm.valueStack.count)
-						vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
+					while (srcIdx < stackSize)
+						stack[dstIdx++] = stack[srcIdx++];
 
-					vm.valueStack.count = dstIdx;
+					stackSize = dstIdx;
 				}
 				break;
 			case Instruction.LoadUnit:
@@ -165,40 +166,40 @@ internal static class VirtualMachineInstructions
 			case Instruction.AssignLocal:
 				{
 					var index = frame.baseStackIndex + NextByte(bytes, ref codeIndex);
-					vm.valueStack.buffer[index] = Peek(vm);
+					stack[index] = stack[stackSize - 1];
 					break;
 				}
 			case Instruction.LoadLocal:
 				{
 					var index = frame.baseStackIndex + NextByte(bytes, ref codeIndex);
-					vm.valueStack.PushBack(vm.valueStack.buffer[index]);
+					vm.valueStack.PushBack(stack[index]);
 					break;
 				}
 			case Instruction.AssignLocalMultiple:
 				{
 					var dstIdx = frame.baseStackIndex + NextByte(bytes, ref codeIndex);
 					var size = NextByte(bytes, ref codeIndex);
-					var srcIdx = vm.valueStack.count - size;
+					var srcIdx = stackSize - size;
 
-					while (srcIdx < vm.valueStack.count)
-						vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
+					while (srcIdx < stackSize)
+						stack[dstIdx++] = stack[srcIdx++];
 					break;
 				}
 			case Instruction.LoadLocalMultiple:
 				{
 					var srcIdx = frame.baseStackIndex + NextByte(bytes, ref codeIndex);
 					var size = NextByte(bytes, ref codeIndex);
-					var dstIdx = vm.valueStack.count;
+					var dstIdx = stackSize;
 
 					vm.valueStack.Grow(size);
-					while (dstIdx < vm.valueStack.count)
-						vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
+					while (dstIdx < stackSize)
+						stack[dstIdx++] = stack[srcIdx++];
 					break;
 				}
 			case Instruction.IncrementLocalInt:
 				{
 					var index = frame.baseStackIndex + NextByte(bytes, ref codeIndex);
-					vm.valueStack.buffer[index].asInt += 1;
+					stack[index].asInt += 1;
 					break;
 				}
 			case Instruction.IntToFloat:
@@ -208,37 +209,37 @@ internal static class VirtualMachineInstructions
 				vm.valueStack.PushBack(new ValueData((int)vm.valueStack.PopLast().asFloat));
 				break;
 			case Instruction.NegateInt:
-				Peek(vm).asInt = -Peek(vm).asInt;
+				stack[stackSize - 1].asInt = -stack[stackSize - 1].asInt;
 				break;
 			case Instruction.NegateFloat:
-				Peek(vm).asFloat = -Peek(vm).asFloat;
+				stack[stackSize - 1].asFloat = -stack[stackSize - 1].asFloat;
 				break;
 			case Instruction.AddInt:
-				PeekBefore(vm).asInt += vm.valueStack.PopLast().asInt;
+				stack[stackSize - 2].asInt += vm.valueStack.PopLast().asInt;
 				break;
 			case Instruction.AddFloat:
-				PeekBefore(vm).asFloat += vm.valueStack.PopLast().asFloat;
+				stack[stackSize - 2].asFloat += vm.valueStack.PopLast().asFloat;
 				break;
 			case Instruction.SubtractInt:
-				PeekBefore(vm).asInt -= vm.valueStack.PopLast().asInt;
+				stack[stackSize - 2].asInt -= vm.valueStack.PopLast().asInt;
 				break;
 			case Instruction.SubtractFloat:
-				PeekBefore(vm).asFloat -= vm.valueStack.PopLast().asFloat;
+				stack[stackSize - 2].asFloat -= vm.valueStack.PopLast().asFloat;
 				break;
 			case Instruction.MultiplyInt:
-				PeekBefore(vm).asInt *= vm.valueStack.PopLast().asInt;
+				stack[stackSize - 2].asInt *= vm.valueStack.PopLast().asInt;
 				break;
 			case Instruction.MultiplyFloat:
-				PeekBefore(vm).asFloat *= vm.valueStack.PopLast().asFloat;
+				stack[stackSize - 2].asFloat *= vm.valueStack.PopLast().asFloat;
 				break;
 			case Instruction.DivideInt:
-				PeekBefore(vm).asInt /= vm.valueStack.PopLast().asInt;
+				stack[stackSize - 2].asInt /= vm.valueStack.PopLast().asInt;
 				break;
 			case Instruction.DivideFloat:
-				PeekBefore(vm).asFloat /= vm.valueStack.PopLast().asFloat;
+				stack[stackSize - 2].asFloat /= vm.valueStack.PopLast().asFloat;
 				break;
 			case Instruction.Not:
-				Peek(vm).asBool = !Peek(vm).asBool;
+				stack[stackSize - 1].asBool = !stack[stackSize - 1].asBool;
 				break;
 			case Instruction.EqualBool:
 				vm.valueStack.PushBack(new ValueData(vm.valueStack.PopLast().asBool == vm.valueStack.PopLast().asBool));
@@ -282,14 +283,14 @@ internal static class VirtualMachineInstructions
 			case Instruction.JumpForwardIfFalse:
 				{
 					var offset = BytesHelper.BytesToShort(NextByte(bytes, ref codeIndex), NextByte(bytes, ref codeIndex));
-					if (!vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
+					if (!stack[stackSize - 1].asBool)
 						codeIndex += offset;
 					break;
 				}
 			case Instruction.JumpForwardIfTrue:
 				{
 					var offset = BytesHelper.BytesToShort(NextByte(bytes, ref codeIndex), NextByte(bytes, ref codeIndex));
-					if (vm.valueStack.buffer[vm.valueStack.count - 1].asBool)
+					if (stack[stackSize - 1].asBool)
 						codeIndex += offset;
 					break;
 				}
@@ -303,7 +304,7 @@ internal static class VirtualMachineInstructions
 			case Instruction.ForLoopCheck:
 				{
 					var index = frame.baseStackIndex + NextByte(bytes, ref codeIndex);
-					var less = vm.valueStack.buffer[index].asInt < vm.valueStack.buffer[index + 1].asInt;
+					var less = stack[index].asInt < stack[index + 1].asInt;
 					vm.valueStack.PushBack(new ValueData(less));
 					break;
 				}
