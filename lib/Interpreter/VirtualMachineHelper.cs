@@ -4,8 +4,7 @@ public static class VirtualMachineHelper
 {
 	public static void Return(VirtualMachine vm, int size)
 	{
-		vm.callframeStack.count -= 1;
-		var stackTop = vm.callframeStack.buffer[vm.callframeStack.count].baseStackIndex - 1;
+		var stackTop = vm.callframeStack.buffer[--vm.callframeStack.count].baseStackIndex - 1;
 
 		var dstIdx = stackTop;
 		var srcIdx = vm.valueStack.count - size;
