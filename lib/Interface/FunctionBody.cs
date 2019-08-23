@@ -17,7 +17,7 @@ public readonly struct FunctionBody<T>
 
 public static class FunctionBodyExtensions
 {
-	public static Return Return(this FunctionBody<Unit> self)
+	public static Return Return(this FunctionBody<Tuple> self)
 	{
 		self.vm.valueStack.PushBack(new ValueData());
 		return default;
@@ -51,7 +51,7 @@ public static class FunctionBodyExtensions
 	public static Return Return<T>(this FunctionBody<T> self, T value) where T : struct, IMarshalable
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
-		
+
 		var marshaler = new WriteMarshaler(self.vm, self.vm.valueStack.count);
 		self.vm.valueStack.Grow(Marshal.SizeOf<T>.size);
 		value.Marshal(ref marshaler);

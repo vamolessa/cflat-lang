@@ -25,6 +25,12 @@ public struct NewFunctionCall<A, R>
 			vm.valueStack.count
 		));
 
-		return default;
+		arguments.Marshal(ref marshaler);
+		vm.CallTopFunction();
+
+		var result = default(R);
+		result.Marshal(ref marshaler);
+		
+		return result;
 	}
 }

@@ -10,7 +10,7 @@ public interface IContext
 	T ArgStruct<T>() where T : struct, IStruct;
 	T ArgObject<T>() where T : class;
 
-	FunctionBody<Unit> Body([CallerMemberName] string functionName = "");
+	FunctionBody<Tuple> Body([CallerMemberName] string functionName = "");
 	FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "");
 	FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "");
 	FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "");
@@ -57,7 +57,7 @@ public struct RuntimeContext : IContext
 	}
 	public T ArgObject<T>() where T : class => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
 
-	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "") => new FunctionBody<Unit>(vm);
+	public FunctionBody<Tuple> Body([CallerMemberName] string functionName = "") => new FunctionBody<Tuple>(vm);
 	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "") => new FunctionBody<bool>(vm);
 	public FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "") => new FunctionBody<int>(vm);
 	public FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "") => new FunctionBody<float>(vm);
@@ -126,7 +126,7 @@ public struct DefinitionContext : IContext
 		return default;
 	}
 
-	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "")
+	public FunctionBody<Tuple> Body([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Unit);
 		throw new Definition(functionName, builder);
