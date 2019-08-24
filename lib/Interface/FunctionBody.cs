@@ -8,11 +8,6 @@ public readonly struct FunctionBody<T>
 	{
 		this.vm = vm;
 	}
-
-	public FunctionCall Call(string functionName)
-	{
-		return vm.CallFunction(functionName);
-	}
 }
 
 public static class FunctionBodyExtensions

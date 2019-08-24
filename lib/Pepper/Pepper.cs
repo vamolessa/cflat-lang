@@ -30,17 +30,6 @@ public sealed class Pepper
 		return errors;
 	}
 
-	public FunctionCall CallFunction(string functionName)
-	{
-		if (compiler.compiler.errors.count > 0 || registerErrors.count > 0)
-		{
-			virtualMachine.Error("Has compile errors");
-			return new FunctionCall(virtualMachine, ushort.MaxValue);
-		}
-
-		return virtualMachine.CallFunction(functionName);
-	}
-
 	public Option<RuntimeError> GetError()
 	{
 		return virtualMachine.error;

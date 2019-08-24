@@ -51,33 +51,6 @@ public sealed class VirtualMachine
 			heap.buffer[i] = chunk.stringLiterals.buffer[i];
 	}
 
-	public FunctionCall CallFunction(string functionName)
-	{
-		for (var i = 0; i < chunk.functions.count; i++)
-		{
-			var function = chunk.functions.buffer[i];
-			if (function.name == functionName)
-			{
-				valueStack.PushBack(new ValueData(i));
-				callframeStack.PushBack(new CallFrame(
-					-1,
-					chunk.bytes.count - 1,
-					valueStack.count
-				));
-				callframeStack.PushBack(new CallFrame(
-					i,
-					function.codeIndex,
-					valueStack.count
-				));
-
-				return new FunctionCall(this, (ushort)i);
-			}
-		}
-
-		Error(string.Format("Could not find function named '{0}'", functionName));
-		return new FunctionCall(this, ushort.MaxValue);
-	}
-
 	public void CallTopFunction()
 	{
 		VirtualMachineInstructions.Run(this);
