@@ -60,6 +60,7 @@ internal static class Marshal
 
 public interface IMarshaler
 {
+	void Marshal(string name);
 	void Marshal(ref bool value, string name);
 	void Marshal(ref int value, string name);
 	void Marshal(ref float value, string name);
@@ -84,20 +85,16 @@ internal struct ReadMarshaler : IMarshaler
 		this.stackIndex = stackIndex;
 	}
 
+	public void Marshal(string name) => stackIndex++;
 	public void Marshal(ref bool value, string name) => value = vm.valueStack.buffer[stackIndex++].asBool;
-
 	public void Marshal(ref int value, string name) => value = vm.valueStack.buffer[stackIndex++].asInt;
-
 	public void Marshal(ref float value, string name) => value = vm.valueStack.buffer[stackIndex++].asFloat;
-
 	public void Marshal(ref string value, string name) => value = vm.heap.buffer[vm.valueStack.buffer[stackIndex++].asInt] as string;
-
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable
 	{
 		value = default;
 		value.Marshal(ref this);
 	}
-
 	public void Marshal(ref object value, string name) => value = vm.heap.buffer[vm.valueStack.buffer[stackIndex++].asInt];
 }
 
@@ -112,20 +109,16 @@ internal struct WriteMarshaler : IMarshaler
 		this.stackIndex = stackIndex;
 	}
 
+	public void Marshal(string name) => stackIndex++;
 	public void Marshal(ref bool value, string name) => vm.valueStack.buffer[stackIndex++].asBool = value;
-
 	public void Marshal(ref int value, string name) => vm.valueStack.buffer[stackIndex++].asInt = value;
-
 	public void Marshal(ref float value, string name) => vm.valueStack.buffer[stackIndex++].asFloat = value;
-
 	public void Marshal(ref string value, string name)
 	{
 		vm.valueStack.buffer[stackIndex++].asInt = vm.heap.count;
 		vm.heap.PushBack(value);
 	}
-
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
-
 	public void Marshal(ref object value, string name)
 	{
 		vm.valueStack.buffer[stackIndex++].asInt = vm.heap.count;
@@ -144,6 +137,7 @@ internal struct TupleDefinitionMarshaler : IDefinitionMarshaler
 		this.builder = chunk.BeginTupleType();
 	}
 
+	public void Marshal(string name) => builder.WithElement(new ValueType(TypeKind.Unit));
 	public void Marshal(ref bool value, string name) => builder.WithElement(new ValueType(TypeKind.Bool));
 	public void Marshal(ref int value, string name) => builder.WithElement(new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithElement(new ValueType(TypeKind.Float));
@@ -179,6 +173,7 @@ internal struct StructDefinitionMarshaler : IDefinitionMarshaler
 		this.builder = chunk.BeginStructType();
 	}
 
+	public void Marshal(string name) => builder.WithField(name, new ValueType(TypeKind.Unit));
 	public void Marshal(ref bool value, string name) => builder.WithField(name, new ValueType(TypeKind.Bool));
 	public void Marshal(ref int value, string name) => builder.WithField(name, new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
@@ -220,6 +215,7 @@ internal struct FunctionDefinitionMarshaler : IDefinitionMarshaler
 		this.builder = chunk.BeginFunctionType();
 	}
 
+	public void Marshal(string name) => builder.WithParam(new ValueType(TypeKind.Unit));
 	public void Marshal(ref bool value, string name) => builder.WithParam(new ValueType(TypeKind.Bool));
 	public void Marshal(ref int value, string name) => builder.WithParam(new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithParam(new ValueType(TypeKind.Float));

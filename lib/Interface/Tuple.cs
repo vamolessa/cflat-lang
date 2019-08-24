@@ -1,3 +1,11 @@
+public readonly struct Unit : IMarshalable
+{
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		marshaler.Marshal(null);
+	}
+}
+
 public struct Bool : IMarshalable
 {
 	public bool value;
@@ -78,17 +86,8 @@ public struct Object<T> : IMarshalable
 
 public interface ITuple : IMarshalable { }
 
-public struct Tuple : ITuple
+public static class Tuple
 {
-	public void Marshal<M>(ref M marshaler) where M : IMarshaler
-	{
-	}
-
-	public static Tuple New()
-	{
-		return new Tuple();
-	}
-
 	public static Tuple<E0> New<E0>(E0 e0)
 		where E0 : IMarshalable
 	{

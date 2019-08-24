@@ -17,7 +17,7 @@ public readonly struct FunctionBody<T>
 
 public static class FunctionBodyExtensions
 {
-	public static Return Return(this FunctionBody<Tuple> self)
+	public static Return Return(this FunctionBody<Unit> self)
 	{
 		self.vm.valueStack.PushBack(new ValueData());
 		return default;

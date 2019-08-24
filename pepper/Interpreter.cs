@@ -56,13 +56,12 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		pepper.CallFunction("main").Get();
-		// var main = pepper.GetFunction<Tuple, Tuple>("main");
-		// if (main.isSome)
-		// {
-		// 	var context = new RuntimeContext();
-		// 	main.value.Call(context, );
-		// }
+		//pepper.CallFunction("main").Get();
+		var main = pepper.GetFunction<Unit>("main");
+		if (main.isSome)
+			main.value.Call(pepper);
+		else
+			System.Console.WriteLine("NOT FOUNDED");
 
 		var runtimeError = pepper.GetError();
 		if (runtimeError.isSome)

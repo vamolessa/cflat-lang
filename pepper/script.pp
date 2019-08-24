@@ -8,7 +8,7 @@ fn fibonacci(n:int):int {
 
 fn main() {
 	let sw = StartStopwatch()
-	fibonacci(30)
+	fibonacci(10)
 	let s = StopStopwatch(sw)
 	print tuple{"time" s}
 }

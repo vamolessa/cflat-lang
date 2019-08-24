@@ -10,7 +10,7 @@ public interface IContext
 	T ArgStruct<T>() where T : struct, IStruct;
 	T ArgObject<T>() where T : class;
 
-	FunctionBody<Tuple> Body([CallerMemberName] string functionName = "");
+	FunctionBody<Unit> Body([CallerMemberName] string functionName = "");
 	FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "");
 	FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "");
 	FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "");
@@ -19,6 +19,8 @@ public interface IContext
 	FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
 	FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
 
+	R CallFunction<R>(Function<R> function)
+		where R : struct, IMarshalable;
 	R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
 		where R : struct, IMarshalable;
@@ -61,7 +63,7 @@ public struct RuntimeContext : IContext
 	}
 	public T ArgObject<T>() where T : class => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
 
-	public FunctionBody<Tuple> Body([CallerMemberName] string functionName = "") => new FunctionBody<Tuple>(vm);
+	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "") => new FunctionBody<Unit>(vm);
 	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "") => new FunctionBody<bool>(vm);
 	public FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "") => new FunctionBody<int>(vm);
 	public FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "") => new FunctionBody<float>(vm);
@@ -70,6 +72,32 @@ public struct RuntimeContext : IContext
 	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new FunctionBody<T>(vm);
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new FunctionBody<object>(vm);
 
+	public R CallFunction<R>(Function<R> function)
+		where R : struct, IMarshalable
+	{
+		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
+
+		vm.valueStack.PushBack(new ValueData(function.functionIndex));
+		vm.callframeStack.PushBack(new CallFrame(
+			-1,
+			vm.chunk.bytes.count - 1,
+			vm.valueStack.count
+		));
+		vm.callframeStack.PushBack(new CallFrame(
+			function.functionIndex,
+			function.codeIndex,
+			vm.valueStack.count
+		));
+
+		vm.CallTopFunction();
+
+		vm.valueStack.count -= Marshal.SizeOf<R>.size;
+		var reader = new ReadMarshaler(vm, vm.valueStack.count);
+		var result = default(R);
+		result.Marshal(ref reader);
+
+		return result;
+	}
 	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
 		where R : struct, IMarshalable
@@ -171,7 +199,7 @@ public struct DefinitionContext : IContext
 		return default;
 	}
 
-	public FunctionBody<Tuple> Body([CallerMemberName] string functionName = "")
+	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Unit);
 		throw new DefinitionReturn(functionName, builder);
@@ -212,6 +240,15 @@ public struct DefinitionContext : IContext
 		throw new DefinitionReturn(functionName, builder);
 	}
 
+	public R CallFunction<R>(Function<R> function)
+		where R : struct, IMarshalable
+	{
+		var marshaler = new FunctionDefinitionMarshaler(chunk);
+		marshaler.Returns<R>();
+		var reflection = new Marshal.ReflectionData(new ValueType(TypeKind.Unit), 0);
+
+		throw new ReflectionReturn(reflection);
+	}
 	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
 		where R : struct, IMarshalable
