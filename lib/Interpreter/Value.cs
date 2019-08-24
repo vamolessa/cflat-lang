@@ -200,16 +200,16 @@ public readonly struct Function
 	}
 }
 
+public delegate Return NativeCallback<C>(ref C context) where C : IContext;
+
 public readonly struct NativeFunction
 {
-	public delegate Return Callback<C>(ref C context) where C : IContext;
-
 	public readonly string name;
 	public readonly ushort typeIndex;
 	public readonly byte returnSize;
-	public readonly Callback<RuntimeContext> callback;
+	public readonly NativeCallback<RuntimeContext> callback;
 
-	public NativeFunction(string name, ushort typeIndex, byte returnSize, Callback<RuntimeContext> callback)
+	public NativeFunction(string name, ushort typeIndex, byte returnSize, NativeCallback<RuntimeContext> callback)
 	{
 		this.name = name;
 		this.returnSize = returnSize;

@@ -18,6 +18,10 @@ public interface IContext
 	FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple;
 	FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
 	FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
+
+	R CallFunction<A, R>(Function<A, R> function, ref A arguments)
+		where A : struct, ITuple
+		where R : struct, IMarshalable;
 }
 
 public struct RuntimeContext : IContext
@@ -65,19 +69,60 @@ public struct RuntimeContext : IContext
 	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple => new FunctionBody<T>(vm);
 	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new FunctionBody<T>(vm);
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new FunctionBody<object>(vm);
+
+	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
+		where A : struct, ITuple
+		where R : struct, IMarshalable
+	{
+		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
+
+		vm.valueStack.PushBack(new ValueData(function.functionIndex));
+		vm.callframeStack.PushBack(new CallFrame(
+			-1,
+			vm.chunk.bytes.count - 1,
+			vm.valueStack.count
+		));
+		vm.callframeStack.PushBack(new CallFrame(
+			function.functionIndex,
+			function.codeIndex,
+			vm.valueStack.count
+		));
+
+		var writer = new WriteMarshaler(vm, vm.valueStack.count);
+		vm.valueStack.GrowUnchecked(function.parametersSize);
+		arguments.Marshal(ref writer);
+		vm.CallTopFunction();
+
+		vm.valueStack.count -= Marshal.SizeOf<R>.size;
+		var reader = new ReadMarshaler(vm, vm.valueStack.count);
+		var result = default(R);
+		result.Marshal(ref reader);
+
+		return result;
+	}
 }
 
 public struct DefinitionContext : IContext
 {
-	public sealed class Definition : System.Exception
+	internal sealed class DefinitionReturn : System.Exception
 	{
 		public readonly string functionName;
 		public FunctionTypeBuilder functionTypeBuilder;
 
-		public Definition(string functionName, FunctionTypeBuilder functionTypeBuilder) : base("", null)
+		public DefinitionReturn(string functionName, FunctionTypeBuilder functionTypeBuilder) : base("", null)
 		{
 			this.functionName = functionName;
 			this.functionTypeBuilder = functionTypeBuilder;
+		}
+	}
+
+	internal sealed class ReflectionReturn : System.Exception
+	{
+		public readonly Marshal.ReflectionData reflectionData;
+
+		public ReflectionReturn(Marshal.ReflectionData reflectionData) : base("", null)
+		{
+			this.reflectionData = reflectionData;
 		}
 	}
 
@@ -129,41 +174,52 @@ public struct DefinitionContext : IContext
 	public FunctionBody<Tuple> Body([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Unit);
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Bool);
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Int);
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Float);
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<string> BodyOfString([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.String);
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple
 	{
 		builder.returnType = Marshal.ReflectOnTuple<T>(chunk).type;
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct
 	{
 		builder.returnType = Marshal.ReflectOnStruct<T>(chunk).type;
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
 	}
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
 	{
 		builder.returnType = new ValueType(TypeKind.NativeObject);
-		throw new Definition(functionName, builder);
+		throw new DefinitionReturn(functionName, builder);
+	}
+
+	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
+		where A : struct, ITuple
+		where R : struct, IMarshalable
+	{
+		var marshaler = new FunctionDefinitionMarshaler(chunk);
+		marshaler.Returns<R>();
+		var reflection = marshaler.GetReflectionData<A>();
+
+		throw new ReflectionReturn(reflection);
 	}
 }

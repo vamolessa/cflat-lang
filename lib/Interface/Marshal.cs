@@ -208,3 +208,44 @@ internal struct StructDefinitionMarshaler : IDefinitionMarshaler
 		throw new Marshal.InvalidReflectionException();
 	}
 }
+
+internal struct FunctionDefinitionMarshaler : IDefinitionMarshaler
+{
+	internal ByteCodeChunk chunk;
+	internal FunctionTypeBuilder builder;
+
+	public FunctionDefinitionMarshaler(ByteCodeChunk chunk)
+	{
+		this.chunk = chunk;
+		this.builder = chunk.BeginFunctionType();
+	}
+
+	public void Marshal(ref bool value, string name) => builder.WithParam(new ValueType(TypeKind.Bool));
+	public void Marshal(ref int value, string name) => builder.WithParam(new ValueType(TypeKind.Int));
+	public void Marshal(ref float value, string name) => builder.WithParam(new ValueType(TypeKind.Float));
+	public void Marshal(ref string value, string name) => builder.WithParam(new ValueType(TypeKind.String));
+	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => builder.WithParam(global::Marshal.ReflectOn<T>(chunk).type);
+	public void Marshal(ref object value, string name) => builder.WithParam(new ValueType(TypeKind.NativeObject));
+
+	public void Returns<T>() where T : struct, IMarshalable
+	{
+		var marshaler = new TupleDefinitionMarshaler(chunk);
+		var reflection = marshaler.GetReflectionData<T>();
+		builder.returnType = reflection.type;
+	}
+
+	public Marshal.ReflectionData GetReflectionData<T>() where T : struct, IMarshalable
+	{
+		default(T).Marshal(ref this);
+		var result = builder.Build(out var typeIndex);
+		if (result == FunctionTypeBuilder.Result.Success)
+		{
+			return new Marshal.ReflectionData(
+				new ValueType(TypeKind.Function, typeIndex),
+				chunk.functionTypes.buffer[typeIndex].parametersSize
+			);
+		}
+
+		throw new Marshal.InvalidReflectionException();
+	}
+}
