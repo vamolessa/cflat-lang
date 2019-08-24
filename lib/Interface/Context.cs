@@ -19,8 +19,6 @@ public interface IContext
 	FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
 	FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
 
-	R CallFunction<R>(Function<R> function)
-		where R : struct, IMarshalable;
 	R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
 		where R : struct, IMarshalable;
@@ -72,32 +70,6 @@ public struct RuntimeContext : IContext
 	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new FunctionBody<T>(vm);
 	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new FunctionBody<object>(vm);
 
-	public R CallFunction<R>(Function<R> function)
-		where R : struct, IMarshalable
-	{
-		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
-
-		vm.valueStack.PushBack(new ValueData(function.functionIndex));
-		vm.callframeStack.PushBack(new CallFrame(
-			-1,
-			vm.chunk.bytes.count - 1,
-			vm.valueStack.count
-		));
-		vm.callframeStack.PushBack(new CallFrame(
-			function.functionIndex,
-			function.codeIndex,
-			vm.valueStack.count
-		));
-
-		vm.CallTopFunction();
-
-		vm.valueStack.count -= Marshal.SizeOf<R>.size;
-		var reader = new ReadMarshaler(vm, vm.valueStack.count);
-		var result = default(R);
-		result.Marshal(ref reader);
-
-		return result;
-	}
 	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
 		where R : struct, IMarshalable
@@ -240,15 +212,6 @@ public struct DefinitionContext : IContext
 		throw new DefinitionReturn(functionName, builder);
 	}
 
-	public R CallFunction<R>(Function<R> function)
-		where R : struct, IMarshalable
-	{
-		var marshaler = new FunctionDefinitionMarshaler(chunk);
-		marshaler.Returns<R>();
-		var reflection = marshaler.GetReflectionData<Empty>();
-
-		throw new ReflectionReturn(reflection);
-	}
 	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
 		where R : struct, IMarshalable

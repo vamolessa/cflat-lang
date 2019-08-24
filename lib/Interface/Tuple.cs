@@ -1,4 +1,4 @@
-public readonly struct Empty : IMarshalable
+public readonly struct Empty : ITuple
 {
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{

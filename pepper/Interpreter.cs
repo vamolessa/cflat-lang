@@ -57,9 +57,9 @@ public static class Interpreter
 		}
 
 		//pepper.CallFunction("main").Get();
-		var main = pepper.GetFunction<Unit>("main");
+		var main = pepper.GetFunction<Empty, Unit>("main");
 		if (main.isSome)
-			main.value.Call(pepper);
+			main.value.Call(pepper, new Empty());
 		else
 			System.Console.WriteLine("NOT FOUNDED");
 

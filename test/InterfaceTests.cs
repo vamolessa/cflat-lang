@@ -2,6 +2,8 @@ using Xunit;
 
 public sealed class InterfaceTests
 {
+	public static Function<Tuple<Int>, Int> someFunction;
+
 	public static Return TupleTestFunction<C>(ref C context) where C : IContext
 	{
 		var t = context.ArgTuple<Tuple<Int, Bool>>();
@@ -153,8 +155,9 @@ public sealed class InterfaceTests
 	public static Return FunctionTestFunction<C>(ref C context) where C : IContext
 	{
 		var body = context.BodyOfInt();
-		var success = body.Call("some_function").WithInt(6).GetInt(out var n);
-		return body.Return(n);
+		//var success = body.Call("some_function").WithInt(6).GetInt(out var n);
+		var n = someFunction.Call(ref context, Tuple.New(new Int(6)));
+		return body.Return(n.value);
 	}
 
 	[Fact]
