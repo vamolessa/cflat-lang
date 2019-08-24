@@ -57,6 +57,13 @@ public static class Interpreter
 		}
 
 		pepper.CallFunction("main").Get();
+		// var main = pepper.GetFunction<Tuple, Tuple>("main");
+		// if (main.isSome)
+		// {
+		// 	var context = new RuntimeContext();
+		// 	main.value.Call(context, );
+		// }
+
 		var runtimeError = pepper.GetError();
 		if (runtimeError.isSome)
 		{
