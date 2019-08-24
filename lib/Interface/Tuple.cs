@@ -1,3 +1,10 @@
+public readonly struct Empty : IMarshalable
+{
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+	}
+}
+
 public readonly struct Unit : IMarshalable
 {
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
@@ -66,21 +73,18 @@ public struct String : IMarshalable
 	}
 }
 
-public struct Object<T> : IMarshalable
-	where T : class
+public struct Object : IMarshalable
 {
-	public T value;
+	public object value;
 
-	public Object(T value)
+	public Object(object value)
 	{
 		this.value = value;
 	}
 
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
-		object obj = value;
-		marshaler.Marshal(ref obj, null);
-		value = obj as T;
+		marshaler.Marshal(ref value, null);
 	}
 }
 

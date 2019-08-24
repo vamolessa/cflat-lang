@@ -245,7 +245,7 @@ public struct DefinitionContext : IContext
 	{
 		var marshaler = new FunctionDefinitionMarshaler(chunk);
 		marshaler.Returns<R>();
-		var reflection = new Marshal.ReflectionData(new ValueType(TypeKind.Unit), 0);
+		var reflection = marshaler.GetReflectionData<Empty>();
 
 		throw new ReflectionReturn(reflection);
 	}

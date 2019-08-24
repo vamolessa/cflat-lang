@@ -27,11 +27,38 @@ internal static class Marshal
 	{
 		public static byte size;
 	}
+	internal static class BasicTypeOf<T> where T : IMarshalable
+	{
+		public static Option<ValueType> type;
+
+		static BasicTypeOf()
+		{
+			BasicTypeOf<Unit>.type = Option.Some(new ValueType(TypeKind.Unit));
+			BasicTypeOf<Bool>.type = Option.Some(new ValueType(TypeKind.Bool));
+			BasicTypeOf<Int>.type = Option.Some(new ValueType(TypeKind.Int));
+			BasicTypeOf<Float>.type = Option.Some(new ValueType(TypeKind.Float));
+			BasicTypeOf<String>.type = Option.Some(new ValueType(TypeKind.String));
+			BasicTypeOf<Object>.type = Option.Some(new ValueType(TypeKind.NativeObject));
+
+			SizeOf<Unit>.size = 1;
+			SizeOf<Bool>.size = 1;
+			SizeOf<Int>.size = 1;
+			SizeOf<Float>.size = 1;
+			SizeOf<String>.size = 1;
+			SizeOf<Object>.size = 1;
+		}
+	}
 
 	public static ReflectionData ReflectOn<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
 	{
 		var type = typeof(T);
-		if (typeof(IStruct).IsAssignableFrom(type))
+
+		var marshalType = Marshal.BasicTypeOf<T>.type;
+		if (marshalType.isSome)
+		{
+			return new ReflectionData(marshalType.value, Marshal.SizeOf<T>.size);
+		}
+		else if (typeof(IStruct).IsAssignableFrom(type))
 		{
 			var marshaler = new StructDefinitionMarshaler(chunk);
 			return marshaler.GetReflectionData<T>();
@@ -225,9 +252,7 @@ internal struct FunctionDefinitionMarshaler : IDefinitionMarshaler
 
 	public void Returns<T>() where T : struct, IMarshalable
 	{
-		var marshaler = new TupleDefinitionMarshaler(chunk);
-		var reflection = marshaler.GetReflectionData<T>();
-		builder.returnType = reflection.type;
+		builder.returnType = global::Marshal.ReflectOn<T>(chunk).type;
 	}
 
 	public Marshal.ReflectionData GetReflectionData<T>() where T : struct, IMarshalable
