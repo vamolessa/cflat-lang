@@ -14,7 +14,7 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{let t=T{s=S{a=3 b=7} c=9}t.c}", 9)]
 	public void StructGetFieldTests(string source, int expected)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -31,7 +31,7 @@ public sealed class StructTests
 	[InlineData("struct S{a:int b:int} struct T{s:S c:int} fn f():int{mut t=T{s=S{a=0 b=0} c=0}t.c=9 t.c}", 9)]
 	public void StructSetFieldTests(string source, int expected)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -45,7 +45,7 @@ public sealed class StructTests
 	[InlineData("struct S{x:int y:int z:int} fn a():S{S{x=3 y=5 z=7}} fn f():int{a().z}", 7)]
 	public void FunctionStructReturnTests(string source, int expected)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -73,7 +73,7 @@ public sealed class StructTests
 			}
 		", lastFunctionSource);
 
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}

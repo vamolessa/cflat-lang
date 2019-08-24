@@ -10,7 +10,7 @@ public sealed class ExpressionTests
 	[InlineData("{mut a=4 a=a+1 tuple{}}")]
 	public void BlockUnitTests(string source)
 	{
-		TestHelper.RunExpression(source, out var a).Get();
+		TestHelper.RunExpression<Unit>(source, out var a);
 		a.AssertSuccessCall();
 	}
 
@@ -23,7 +23,7 @@ public sealed class ExpressionTests
 	[InlineData("{let a=4 {let a=2 a+1} a+5}", 9)]
 	public void BlockIntTests(string source, int expected)
 	{
-		TestHelper.RunExpression(source, out var a).GetInt(out var v);
+		var v = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -38,7 +38,7 @@ public sealed class ExpressionTests
 	[InlineData("if true {tuple{}}")]
 	public void IfUnitTests(string source)
 	{
-		TestHelper.RunExpression(source, out var a).Get();
+		TestHelper.RunExpression<Unit>(source, out var a);
 		a.AssertSuccessCall();
 	}
 
@@ -51,7 +51,7 @@ public sealed class ExpressionTests
 	[InlineData("20 + if true {4} else {5}", 24)]
 	public void IfIntTests(string source, int expected)
 	{
-		TestHelper.RunExpression(source, out var a).GetInt(out var v);
+		var v = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -69,7 +69,7 @@ public sealed class ExpressionTests
 	[InlineData("{mut a=false false and {a=true true} a}", false)]
 	public void LogicalTests(string source, bool expected)
 	{
-		TestHelper.RunExpression(source, out var a).GetBool(out var v);
+		var v = TestHelper.RunExpression<Bool>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -81,7 +81,7 @@ public sealed class ExpressionTests
 	[InlineData("{mut a=4 mut b=5 b+1 a=b=7 a}", 7)]
 	public void AssignmentIntTests(string source, int expected)
 	{
-		TestHelper.RunExpression(source, out var a).GetInt(out var v);
+		var v = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}

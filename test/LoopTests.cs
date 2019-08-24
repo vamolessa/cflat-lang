@@ -8,7 +8,7 @@ public sealed class LoopTests
 	[InlineData("{mut a=10 mut b=0 while a>0{a=a-1 b=b+1} b}", 10)]
 	public void WhileIntTests(string source, int expected)
 	{
-		TestHelper.RunExpression(source, out var a).GetInt(out var n);
+		var n = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, n);
 	}
@@ -18,7 +18,7 @@ public sealed class LoopTests
 	[InlineData("{mut a=0 for i=0,10{a=a+1 i=i+1} a}", 5)]
 	public void ForIntTests(string source, int expected)
 	{
-		TestHelper.RunExpression(source, out var a).GetInt(out var n);
+		var n = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, n);
 	}

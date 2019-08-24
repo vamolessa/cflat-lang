@@ -26,6 +26,11 @@ public struct Bool : IMarshalable
 	{
 		marshaler.Marshal(ref value, null);
 	}
+
+	public static implicit operator bool(Bool self)
+	{
+		return self.value;
+	}
 }
 
 public struct Int : IMarshalable
@@ -40,6 +45,11 @@ public struct Int : IMarshalable
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		marshaler.Marshal(ref value, null);
+	}
+
+	public static implicit operator int(Int self)
+	{
+		return self.value;
 	}
 }
 
@@ -56,6 +66,11 @@ public struct Float : IMarshalable
 	{
 		marshaler.Marshal(ref value, null);
 	}
+
+	public static implicit operator float(Float self)
+	{
+		return self.value;
+	}
 }
 
 public struct String : IMarshalable
@@ -70,6 +85,11 @@ public struct String : IMarshalable
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		marshaler.Marshal(ref value, null);
+	}
+
+	public static implicit operator string(String self)
+	{
+		return self.value;
 	}
 }
 

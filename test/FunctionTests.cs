@@ -80,7 +80,7 @@ public sealed class FunctionTests
 	[InlineData("fn f():int{if true{return 1} 0}", 1)]
 	private void ReturnIntTest(string source, int expected)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -92,7 +92,7 @@ public sealed class FunctionTests
 	{
 		Assert.Throws<CompileErrorException>(() =>
 		{
-			TestHelper.Run(source, out var a).GetInt(out var v);
+			TestHelper.Run<Int>(source, out var a);
 		});
 	}
 }

@@ -20,10 +20,10 @@ public sealed class InterfaceTests
 	{
 		var pepper = new Pepper();
 		pepper.AddFunction(TupleTestFunction, TupleTestFunction);
-		TestHelper.RunExpression(pepper, source, out var a).GetTuple<Tuple<Int, Bool>>(out var t);
+		var t = TestHelper.RunExpression<Tuple<Int, Bool>>(pepper, source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(n, t.e0.value);
-		Assert.Equal(b, t.e1.value);
+		Assert.Equal(n, t.e0);
+		Assert.Equal(b, t.e1);
 	}
 
 	public struct MyTuple : ITuple
@@ -54,7 +54,7 @@ public sealed class InterfaceTests
 	{
 		var pepper = new Pepper();
 		pepper.AddFunction(NamedTupleTestFunction, NamedTupleTestFunction);
-		TestHelper.RunExpression(pepper, source, out var a).GetTuple<MyTuple>(out var t);
+		var t = TestHelper.RunExpression<MyTuple>(pepper, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(n, t.n);
 		Assert.Equal(b, t.b);
@@ -81,11 +81,11 @@ public sealed class InterfaceTests
 		var pepper = new Pepper();
 		pepper.AddStruct<MyStruct>();
 		pepper.AddStruct<MyStruct>();
-		TestHelper.RunExpression(pepper, source, out var a).GetStruct<MyStruct>(out var p);
+		var s = TestHelper.RunExpression<MyStruct>(pepper, source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(0, p.x);
-		Assert.Equal(0, p.y);
-		Assert.Equal(0, p.z);
+		Assert.Equal(0, s.x);
+		Assert.Equal(0, s.y);
+		Assert.Equal(0, s.z);
 	}
 
 	[Theory]
@@ -96,11 +96,11 @@ public sealed class InterfaceTests
 		var pepper = new Pepper();
 		pepper.AddStruct<MyStruct>();
 		pepper.AddStruct<MyStruct>();
-		TestHelper.RunExpression(pepper, source, out var a).GetStruct<MyStruct>(out var p);
+		var s = TestHelper.RunExpression<MyStruct>(pepper, source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(x, p.x);
-		Assert.Equal(y, p.y);
-		Assert.Equal(z, p.z);
+		Assert.Equal(x, s.x);
+		Assert.Equal(y, s.y);
+		Assert.Equal(z, s.z);
 	}
 
 	private static Return StructTestFunction<C>(ref C context) where C : IContext
@@ -121,11 +121,11 @@ public sealed class InterfaceTests
 	{
 		var pepper = new Pepper();
 		pepper.AddFunction(StructTestFunction, StructTestFunction);
-		TestHelper.RunExpression(pepper, source, out var a).GetStruct<MyStruct>(out var p);
+		var s = TestHelper.RunExpression<MyStruct>(pepper, source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(x, p.x);
-		Assert.Equal(y, p.y);
-		Assert.Equal(z, p.z);
+		Assert.Equal(x, s.x);
+		Assert.Equal(y, s.y);
+		Assert.Equal(z, s.z);
 	}
 
 	public sealed class MyClass
@@ -147,7 +147,7 @@ public sealed class InterfaceTests
 	{
 		var pepper = new Pepper();
 		pepper.AddFunction(ClassTestFunction, ClassTestFunction);
-		TestHelper.RunExpression(pepper, source, out var a).GetObject<MyClass>(out var c);
+		var c = TestHelper.RunExpression<Object>(pepper, source, out var a).value as MyClass;
 		a.AssertSuccessCall();
 		Assert.Equal(n, c.boxed);
 	}
@@ -166,7 +166,7 @@ public sealed class InterfaceTests
 		var source = "fn some_function(a:int):int{a+1} fn f():int{FunctionTestFunction()}";
 		var pepper = new Pepper();
 		pepper.AddFunction(FunctionTestFunction, FunctionTestFunction);
-		TestHelper.Run(pepper, source, out var a).GetInt(out var n);
+		var n = TestHelper.Run<Int>(pepper, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(7, n);
 	}

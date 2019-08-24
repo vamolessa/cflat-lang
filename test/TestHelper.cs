@@ -38,33 +38,37 @@ public static class TestHelper
 		return array;
 	}
 
-	public static FunctionCall Run(string source, out CallAssertion assertion)
+	public static R Run<R>(string source, out CallAssertion assertion)
+		where R : struct, IMarshalable
 	{
-		return Run(new Pepper(), source, out assertion);
+		return Run<R>(new Pepper(), source, out assertion);
 	}
 
-	public static FunctionCall Run(Pepper pepper, string source, out CallAssertion assertion)
+	public static R Run<R>(Pepper pepper, string source, out CallAssertion assertion)
+		where R : struct, IMarshalable
 	{
 		var compileErrors = pepper.CompileSource(source);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
 		assertion = new CallAssertion(source, pepper);
-		return pepper.CallFunction("f");
+		return pepper.GetFunction<Empty, R>("f").value.Call(pepper, new Empty());
 	}
 
-	public static FunctionCall RunExpression(string source, out CallAssertion assertion)
+	public static R RunExpression<R>(string source, out CallAssertion assertion)
+	where R : struct, IMarshalable
 	{
-		return RunExpression(new Pepper(), source, out assertion);
+		return RunExpression<R>(new Pepper(), source, out assertion);
 	}
 
-	public static FunctionCall RunExpression(Pepper pepper, string source, out CallAssertion assertion)
+	public static R RunExpression<R>(Pepper pepper, string source, out CallAssertion assertion)
+		where R : struct, IMarshalable
 	{
 		var compileErrors = pepper.CompileExpression(source);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
 		assertion = new CallAssertion(source, pepper);
-		return pepper.CallFunction(string.Empty);
+		return pepper.GetFunction<Empty, R>(string.Empty).value.Call(pepper, new Empty());
 	}
 }

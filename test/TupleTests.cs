@@ -8,7 +8,7 @@ public sealed class TupleTests
 	[InlineData("fn f():int{let t=tuple{true 3} let{a b}=t a b}", 3)]
 	public void TupleDeconstructionTests(string source, int expected)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
@@ -17,7 +17,7 @@ public sealed class TupleTests
 	[InlineData("fn b(t:tuple{bool int}):int{let{a b}=t a b}fn f():int{b(tuple{true 3})}", 3)]
 	public void TupleParameterTests(string source, int expected)
 	{
-		TestHelper.Run(source, out var a).GetInt(out var v);
+		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v);
 	}
