@@ -166,8 +166,15 @@ public sealed class InterfaceTests
 		var source = "fn some_function(a:int):int{a+1} fn f():int{FunctionTestFunction()}";
 		var pepper = new Pepper();
 		pepper.AddFunction(FunctionTestFunction, FunctionTestFunction);
-		var n = TestHelper.Run<Int>(pepper, source, out var a);
-		a.AssertSuccessCall();
+
+		var compileErrors = pepper.CompileSource(source);
+		if (compileErrors.count > 0)
+			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, 1));
+
+		someFunction = pepper.GetFunction<Tuple<Int>, Int>("some_function").value;
+
+		var n = pepper.GetFunction<Empty, Int>("f").value.Call(pepper, new Empty());
+		Assert.False(pepper.GetError().isSome);
 		Assert.Equal(7, n);
 	}
 }
