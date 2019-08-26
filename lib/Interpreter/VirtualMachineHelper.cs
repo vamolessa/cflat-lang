@@ -35,7 +35,7 @@ public static class VirtualMachineHelper
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				sb.Append('"');
-				sb.Append(vm.heap.buffer[idx]);
+				sb.Append(vm.nativeObjects.buffer[idx]);
 				sb.Append('"');
 				return;
 			}
@@ -94,7 +94,7 @@ public static class VirtualMachineHelper
 		case TypeKind.NativeObject:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
-				var obj = vm.heap.buffer[idx];
+				var obj = vm.nativeObjects.buffer[idx];
 				sb.Append("native-object [");
 				sb.Append(obj.GetType().Name);
 				sb.Append("] ");

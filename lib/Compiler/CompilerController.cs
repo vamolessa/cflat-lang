@@ -227,6 +227,8 @@ public sealed class CompilerController
 			var fieldSlice = compiler.parser.previousToken.slice;
 			compiler.parser.Consume(TokenKind.Colon, "Expected ':' after field name");
 			var fieldType = compiler.ParseType("Expected field type", 0);
+			if (!compiler.parser.Check(TokenKind.CloseCurlyBrackets))
+				compiler.parser.Consume(TokenKind.Comma, "Expected ',' after field type");
 
 			var hasDuplicate = false;
 			for (var i = 0; i < builder.fieldCount; i++)
@@ -269,6 +271,8 @@ public sealed class CompilerController
 			isUnit = false;
 
 			Expression(self);
+			if (!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets))
+				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after element value expression");
 			var expressionType = self.compiler.typeStack.PopLast();
 			builder.WithElement(expressionType);
 		}
@@ -372,6 +376,9 @@ public sealed class CompilerController
 		{
 			compiler.parser.Consume(TokenKind.Identifier, "Expected variable name");
 			slices.PushBack(compiler.parser.previousToken.slice);
+
+			if (!compiler.parser.Check(TokenKind.CloseCurlyBrackets))
+				compiler.parser.Consume(TokenKind.Comma, "Expected ',' after variable name");
 		}
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after variable names");
 		compiler.parser.Consume(TokenKind.Equal, "Expected assignment");
@@ -820,6 +827,9 @@ public sealed class CompilerController
 				self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
 
 				Expression(self);
+				if (!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets))
+					self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after field value expression");
+
 				var expressionType = self.compiler.typeStack.PopLast();
 				if (!expressionType.IsEqualTo(field.type))
 				{
@@ -831,6 +841,7 @@ public sealed class CompilerController
 						expressionType.ToString(self.compiler.chunk)
 					);
 				}
+
 			}
 			self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
 

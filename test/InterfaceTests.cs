@@ -14,8 +14,8 @@ public sealed class InterfaceTests
 	}
 
 	[Theory]
-	[InlineData("TupleTestFunction(tuple{1 true})", 2, false)]
-	[InlineData("TupleTestFunction(tuple{4 false})", 5, true)]
+	[InlineData("TupleTestFunction(tuple{1,true})", 2, false)]
+	[InlineData("TupleTestFunction(tuple{4,false})", 5, true)]
 	public void TupleIoTest(string source, int n, bool b)
 	{
 		var pepper = new Pepper();
@@ -48,8 +48,8 @@ public sealed class InterfaceTests
 	}
 
 	[Theory]
-	[InlineData("NamedTupleTestFunction(tuple{1 true})", 2, false)]
-	[InlineData("NamedTupleTestFunction(tuple{4 false})", 5, true)]
+	[InlineData("NamedTupleTestFunction(tuple{1,true})", 2, false)]
+	[InlineData("NamedTupleTestFunction(tuple{4,false})", 5, true)]
 	public void NamedTupleIoTest(string source, int n, bool b)
 	{
 		var pepper = new Pepper();
@@ -77,7 +77,7 @@ public sealed class InterfaceTests
 	[Fact]
 	public void AddStructTwiceTest()
 	{
-		var source = "MyStruct{x=0 y=0 z=0}";
+		var source = "MyStruct{x=0,y=0,z=0}";
 		var pepper = new Pepper();
 		pepper.AddStruct<MyStruct>();
 		pepper.AddStruct<MyStruct>();
@@ -89,8 +89,8 @@ public sealed class InterfaceTests
 	}
 
 	[Theory]
-	[InlineData("MyStruct{x=0 y=0 z=0}", 0, 0, 0)]
-	[InlineData("MyStruct{x=1 y=2 z=3}", 1, 2, 3)]
+	[InlineData("MyStruct{x=0,y=0,z=0}", 0, 0, 0)]
+	[InlineData("MyStruct{x=1,y=2,z=3}", 1, 2, 3)]
 	public void MarshalPointStruct(string source, int x, int y, int z)
 	{
 		var pepper = new Pepper();
@@ -115,8 +115,8 @@ public sealed class InterfaceTests
 	}
 
 	[Theory]
-	[InlineData("StructTestFunction(MyStruct{x=0 y=0 z=0})", 1, 1, 1)]
-	[InlineData("StructTestFunction(MyStruct{x=1 y=2 z=3})", 2, 3, 4)]
+	[InlineData("StructTestFunction(MyStruct{x=0,y=0,z=0})", 1, 1, 1)]
+	[InlineData("StructTestFunction(MyStruct{x=1,y=2,z=3})", 2, 3, 4)]
 	public void StructIoTest(string source, int x, int y, int z)
 	{
 		var pepper = new Pepper();
@@ -155,7 +155,6 @@ public sealed class InterfaceTests
 	public static Return FunctionTestFunction<C>(ref C context) where C : IContext
 	{
 		var body = context.BodyOfInt();
-		//var success = body.Call("some_function").WithInt(6).GetInt(out var n);
 		var n = someFunction.Call(ref context, Tuple.New(new Int(6)));
 		return body.Return(n.value);
 	}

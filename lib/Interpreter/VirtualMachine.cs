@@ -31,7 +31,7 @@ public sealed class VirtualMachine
 	internal ByteCodeChunk chunk;
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
-	internal Buffer<object> heap;
+	internal Buffer<object> nativeObjects;
 	internal Option<RuntimeError> error;
 
 	public void Load(ByteCodeChunk chunk)
@@ -42,13 +42,13 @@ public sealed class VirtualMachine
 		valueStack.count = 0;
 		callframeStack.count = 0;
 
-		heap = new Buffer<object>
+		nativeObjects = new Buffer<object>
 		{
 			buffer = new object[chunk.stringLiterals.buffer.Length],
 			count = chunk.stringLiterals.count
 		};
-		for (var i = 0; i < heap.count; i++)
-			heap.buffer[i] = chunk.stringLiterals.buffer[i];
+		for (var i = 0; i < nativeObjects.count; i++)
+			nativeObjects.buffer[i] = chunk.stringLiterals.buffer[i];
 	}
 
 	public void CallTopFunction()

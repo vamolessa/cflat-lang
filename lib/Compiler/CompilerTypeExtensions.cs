@@ -79,7 +79,7 @@ public static class CompilerTypeExtensions
 			type = Option.Some(new ValueType(TypeKind.String));
 		else if (self.parser.Match(TokenKind.Object))
 			type = Option.Some(new ValueType(TypeKind.NativeObject));
-		else if (self.parser.Match(TokenKind.Tuple))
+		else if (self.parser.Match(TokenKind.OpenCurlyBrackets))
 			type = self.ParseTupleType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Identifier))
 			type = self.ParseStructType(recursionLevel + 1);
@@ -99,13 +99,14 @@ public static class CompilerTypeExtensions
 		var builder = self.chunk.BeginTupleType();
 		var elementStartIndex = self.chunk.tupleElementTypes.count;
 
-		self.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after tuple type");
 		while (
 			!self.parser.Check(TokenKind.CloseCurlyBrackets) &&
 			!self.parser.Check(TokenKind.End)
 		)
 		{
 			var elementType = self.ParseType("Expected element type", 0);
+			if (!self.parser.Check(TokenKind.CloseCurlyBrackets))
+				self.parser.Consume(TokenKind.Comma, "Expected ',' after element type");
 			builder.WithElement(elementType);
 		}
 		self.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple elements");

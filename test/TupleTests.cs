@@ -3,9 +3,9 @@ using Xunit;
 public sealed class TupleTests
 {
 	[Theory]
-	[InlineData("fn f():int{let{a b}=tuple{true 3} a b}", 3)]
-	[InlineData("fn f():int{let{_ b}=tuple{true 3} b}", 3)]
-	[InlineData("fn f():int{let t=tuple{true 3} let{a b}=t a b}", 3)]
+	[InlineData("fn f():int{let{a,b}=tuple{true,3} a b}", 3)]
+	[InlineData("fn f():int{let{_,b}=tuple{true,3} b}", 3)]
+	[InlineData("fn f():int{let t=tuple{true,3} let{a,b}=t a b}", 3)]
 	public void TupleDeconstructionTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
@@ -14,7 +14,7 @@ public sealed class TupleTests
 	}
 
 	[Theory]
-	[InlineData("fn b(t:tuple{bool int}):int{let{a b}=t a b}fn f():int{b(tuple{true 3})}", 3)]
+	[InlineData("fn b(t:{bool,int}):int{let{a,b}=t a b}fn f():int{b(tuple{true,3})}", 3)]
 	public void TupleParameterTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
@@ -24,7 +24,7 @@ public sealed class TupleTests
 
 	[Theory]
 	[InlineData(
-		"fn f(){tuple{tuple{true true} 3}}",
+		"fn f(){tuple{tuple{true,true},3}}",
 		new[] { 0, 2, 2, 2 },
 		new[] {
 			TypeKind.Bool,
@@ -34,7 +34,7 @@ public sealed class TupleTests
 		}
 	)]
 	[InlineData(
-		"fn f(){tuple{0 tuple{true true} 3}}",
+		"fn f(){tuple{0,tuple{true,true},3}}",
 		new[] { 0, 2, 2, 3 },
 		new[] {
 			TypeKind.Bool,
@@ -45,7 +45,7 @@ public sealed class TupleTests
 		}
 	)]
 	[InlineData(
-		"fn f(){tuple{0 tuple{tuple{1.0 2.0} true} 3}}",
+		"fn f(){tuple{0,tuple{tuple{1.0,2.0},true},3}}",
 		new[] { 0, 2, 2, 2, 4, 3 },
 		new[] {
 			TypeKind.Float,

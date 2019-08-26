@@ -38,7 +38,7 @@ public struct RuntimeContext : IContext
 	public bool ArgBool() => vm.valueStack.buffer[argStackIndex++].asBool;
 	public int ArgInt() => vm.valueStack.buffer[argStackIndex++].asInt;
 	public float ArgFloat() => vm.valueStack.buffer[argStackIndex++].asFloat;
-	public string ArgString() => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as string;
+	public string ArgString() => vm.nativeObjects.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as string;
 	public T ArgTuple<T>() where T : struct, ITuple
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
@@ -59,7 +59,7 @@ public struct RuntimeContext : IContext
 		value.Marshal(ref marshaler);
 		return value;
 	}
-	public T ArgObject<T>() where T : class => vm.heap.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
+	public T ArgObject<T>() where T : class => vm.nativeObjects.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
 
 	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "") => new FunctionBody<Unit>(vm);
 	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "") => new FunctionBody<bool>(vm);

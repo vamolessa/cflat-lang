@@ -38,8 +38,8 @@ public static class FunctionBodyExtensions
 
 	public static Return Return(this FunctionBody<string> self, string value)
 	{
-		self.vm.valueStack.PushBack(new ValueData(self.vm.heap.count));
-		self.vm.heap.PushBack(value);
+		self.vm.valueStack.PushBack(new ValueData(self.vm.nativeObjects.count));
+		self.vm.nativeObjects.PushBack(value);
 		return default;
 	}
 
@@ -55,8 +55,8 @@ public static class FunctionBodyExtensions
 
 	public static Return Return(this FunctionBody<object> self, object value)
 	{
-		self.vm.valueStack.PushBack(new ValueData(self.vm.heap.count));
-		self.vm.heap.PushBack(value);
+		self.vm.valueStack.PushBack(new ValueData(self.vm.nativeObjects.count));
+		self.vm.nativeObjects.PushBack(value);
 		return default;
 	}
 }

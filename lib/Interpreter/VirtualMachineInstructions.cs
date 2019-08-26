@@ -236,8 +236,8 @@ internal static class VirtualMachineInstructions
 				break;
 			case Instruction.EqualString:
 				stackBuffer.PushBackUnchecked(new ValueData(
-						(vm.heap.buffer[stack[--stackSize].asInt] as string).Equals(
-						vm.heap.buffer[stack[--stackSize].asInt] as string)
+						(vm.nativeObjects.buffer[stack[--stackSize].asInt] as string).Equals(
+						vm.nativeObjects.buffer[stack[--stackSize].asInt] as string)
 					));
 				break;
 			case Instruction.GreaterInt:

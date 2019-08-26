@@ -72,7 +72,7 @@ public sealed class ParserTest
 	[InlineData("fn(){return{}}")]
 	[InlineData("fn(a:int,b:int):bool{true}")]
 	[InlineData("fn(a:int,b:int):bool{return true}")]
-	[InlineData("fn(a:int,b:int):bool{fn(){return tuple{}} true}")]
+	[InlineData("fn(a:int,b:int):bool{fn(){return {}} true}")]
 	public void TestFunctionDeclaration(string source)
 	{
 		var result = CompileExpression(source);
