@@ -1,14 +1,6 @@
-fn fibonacci(n:int):int {
-	if n <= 1 {
-		return n
-	}
-
-	fibonacci(n - 2) + fibonacci(n - 1)
-}
+fn f(){let _={{0,{1.0,2.0},true},3}}
 
 fn main() {
-	let sw = StartStopwatch()
-	fibonacci(30)
-	let s = StopStopwatch(sw)
-	print {"time",s}
+	let a={{0,{1.0,2.0},true},3}
+	print a
 }

@@ -554,26 +554,35 @@ public sealed class CompilerController
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
 			return;
 		}
-
-		var scope = self.compiler.BeginScope();
-
-		self.Statement(out var firstStatementType, out var firstStatementKind);
-		switch (firstStatementKind)
+		else if (
+			self.compiler.parser.Check(TokenKind.Let) ||
+			self.compiler.parser.Check(TokenKind.Mut) ||
+			self.compiler.parser.Check(TokenKind.While) ||
+			self.compiler.parser.Check(TokenKind.For) ||
+			self.compiler.parser.Check(TokenKind.Break) ||
+			self.compiler.parser.Check(TokenKind.Return) ||
+			self.compiler.parser.Check(TokenKind.Print)
+		)
 		{
-		case StatementKind.Expression:
+			var scope = self.compiler.BeginScope();
+			self.Statement(out var firstStatementType, out var firstStatementKind);
+			FinishBlock(self, scope, firstStatementType, firstStatementKind);
+			return;
+		}
+		else
+		{
+			var scope = self.compiler.BeginScope();
+			Expression(self);
+			var expressionType = self.compiler.typeStack.PopLast();
 			if (self.compiler.parser.Check(TokenKind.Comma))
 			{
 				self.compiler.scopeDepth -= 1;
-				FinishTupleExpression(self, firstStatementType);
+				FinishTupleExpression(self, expressionType);
 			}
 			else
 			{
-				FinishBlock(self, scope, firstStatementType, firstStatementKind);
+				FinishBlock(self, scope, expressionType, StatementKind.Expression);
 			}
-			break;
-		default:
-			FinishBlock(self, scope, firstStatementType, firstStatementKind);
-			break;
 		}
 	}
 

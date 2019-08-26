@@ -24,7 +24,7 @@ public sealed class TupleTests
 
 	[Theory]
 	[InlineData(
-		"fn f(){{true,true},3}}",
+		"fn f(){let _={{true,true},3}}",
 		new[] { 0, 2, 2, 2 },
 		new[] {
 			TypeKind.Bool,
@@ -34,7 +34,7 @@ public sealed class TupleTests
 		}
 	)]
 	[InlineData(
-		"fn f(){{0,{true,true},3}}",
+		"fn f(){let _={0,{true,true},3}}",
 		new[] { 0, 2, 2, 3 },
 		new[] {
 			TypeKind.Bool,
@@ -45,14 +45,14 @@ public sealed class TupleTests
 		}
 	)]
 	[InlineData(
-		"fn f(){{0,{1.0,2.0},true},3}}",
-		new[] { 0, 2, 2, 2, 4, 3 },
+		"fn f(){let _={{0,{1.0,2.0},true},3}}",
+		new[] { 0, 2, 2, 3, 5, 2 },
 		new[] {
 			TypeKind.Float,
 			TypeKind.Float,
+			TypeKind.Int,
 			TypeKind.Tuple,
 			TypeKind.Bool,
-			TypeKind.Int,
 			TypeKind.Tuple,
 			TypeKind.Int
 		}
