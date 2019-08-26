@@ -1,5 +1,6 @@
 auto native binding
 
+bytecode serialization
 ref
 debug mode
 array
