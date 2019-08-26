@@ -9,6 +9,14 @@ public sealed class CompilerController
 		Return,
 	}
 
+	private struct Storage
+	{
+		public bool isValid;
+		public int variableIndex;
+		public ValueType type;
+		public int stackIndex;
+	}
+
 	public Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 
@@ -195,7 +203,7 @@ public sealed class CompilerController
 		}
 		else
 		{
-			Block(this, Precedence.None);
+			Block(this);
 			var type = compiler.typeStack.PopLast();
 			if (!type.IsEqualTo(builder.returnType))
 				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", builder.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
@@ -255,43 +263,32 @@ public sealed class CompilerController
 		compiler.EndStructDeclaration(builder, slice);
 	}
 
-	public static void TupleExpression(CompilerController self, Precedence precedence)
+	public static void FinishTupleExpression(CompilerController self, ValueType firstElementType)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
-		self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before tuple expression");
 
 		var builder = self.compiler.chunk.BeginTupleType();
+		builder.WithElement(firstElementType);
 
-		var isUnit = true;
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
 			!self.compiler.parser.Check(TokenKind.End)
 		)
 		{
-			isUnit = false;
-
+			self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after element value expression");
 			Expression(self);
-			if (!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets))
-				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after element value expression");
 			var expressionType = self.compiler.typeStack.PopLast();
 			builder.WithElement(expressionType);
 		}
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple expression");
+
 		slice = Slice.FromTo(slice, self.compiler.parser.previousToken.slice);
 
-		if (isUnit)
-		{
-			self.compiler.EmitInstruction(Instruction.LoadUnit);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-		}
+		var result = builder.Build(out var typeIndex);
+		if (self.compiler.CheckTupleBuild(result, slice))
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Tuple, typeIndex));
 		else
-		{
-			var result = builder.Build(out var typeIndex);
-			if (self.compiler.CheckTupleBuild(result, slice))
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Tuple, typeIndex));
-			else
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-		}
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 	}
 
 	public void Statement(out ValueType type, out StatementKind kind)
@@ -549,24 +546,65 @@ public sealed class CompilerController
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after expression");
 	}
 
-	public static void Block(CompilerController self, Precedence precedence)
+	public static void BlockOrTupleExpression(CompilerController self, Precedence precedence)
 	{
-		var scope = self.compiler.BeginScope();
-		var lastStatementType = new ValueType(TypeKind.Unit);
-		var statementKind = StatementKind.Other;
+		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
+		{
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+			self.compiler.EmitInstruction(Instruction.LoadUnit);
+			return;
+		}
 
+		var scope = self.compiler.BeginScope();
+
+		self.Statement(out var firstStatementType, out var firstStatementKind);
+		switch (firstStatementKind)
+		{
+		case StatementKind.Expression:
+			if (self.compiler.parser.Check(TokenKind.Comma))
+			{
+				self.compiler.scopeDepth -= 1;
+				FinishTupleExpression(self, firstStatementType);
+			}
+			else
+			{
+				FinishBlock(self, scope, firstStatementType, firstStatementKind);
+			}
+			break;
+		default:
+			FinishBlock(self, scope, firstStatementType, firstStatementKind);
+			break;
+		}
+	}
+
+	public static void Block(CompilerController self)
+	{
+		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
+		{
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+			self.compiler.EmitInstruction(Instruction.LoadUnit);
+			return;
+		}
+
+		var scope = self.compiler.BeginScope();
+		self.Statement(out var firstStatementType, out var firstStatementKind);
+		FinishBlock(self, scope, firstStatementType, firstStatementKind);
+	}
+
+	public static void FinishBlock(CompilerController self, Scope scope, ValueType lastStatementType, StatementKind lastStatementKind)
+	{
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
 			!self.compiler.parser.Check(TokenKind.End)
 		)
 		{
-			self.Statement(out lastStatementType, out statementKind);
+			self.Statement(out lastStatementType, out lastStatementKind);
 		}
 
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
 		var sizeLeftOnStack = 0;
-		if (statementKind == StatementKind.Expression)
+		if (lastStatementKind == StatementKind.Expression)
 		{
 			sizeLeftOnStack = lastStatementType.GetSize(self.compiler.chunk);
 			self.compiler.chunk.bytes.count -= sizeLeftOnStack > 1 ? 2 : 1;
@@ -574,7 +612,7 @@ public sealed class CompilerController
 
 		self.compiler.EndScope(scope, sizeLeftOnStack);
 
-		if (statementKind == StatementKind.Other)
+		if (lastStatementKind == StatementKind.Other)
 		{
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
@@ -595,7 +633,7 @@ public sealed class CompilerController
 		self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
 
 		var elseJump = self.compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		Block(self, precedence);
+		Block(self);
 		var thenType = self.compiler.typeStack.PopLast();
 		var hasElse = self.compiler.parser.Match(TokenKind.Else);
 
@@ -619,7 +657,7 @@ public sealed class CompilerController
 			else
 			{
 				self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after else");
-				Block(self, precedence);
+				Block(self);
 			}
 
 			var elseType = self.compiler.typeStack.PopLast();
@@ -705,14 +743,6 @@ public sealed class CompilerController
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			break;
 		}
-	}
-
-	private struct Storage
-	{
-		public bool isValid;
-		public int variableIndex;
-		public ValueType type;
-		public int stackIndex;
 	}
 
 	public static void Identifier(CompilerController self, Precedence precedence)

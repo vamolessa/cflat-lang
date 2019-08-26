@@ -14,8 +14,8 @@ public sealed class InterfaceTests
 	}
 
 	[Theory]
-	[InlineData("TupleTestFunction(tuple{1,true})", 2, false)]
-	[InlineData("TupleTestFunction(tuple{4,false})", 5, true)]
+	[InlineData("TupleTestFunction({1,true})", 2, false)]
+	[InlineData("TupleTestFunction({4,false})", 5, true)]
 	public void TupleIoTest(string source, int n, bool b)
 	{
 		var pepper = new Pepper();
@@ -48,8 +48,8 @@ public sealed class InterfaceTests
 	}
 
 	[Theory]
-	[InlineData("NamedTupleTestFunction(tuple{1,true})", 2, false)]
-	[InlineData("NamedTupleTestFunction(tuple{4,false})", 5, true)]
+	[InlineData("NamedTupleTestFunction({1,true})", 2, false)]
+	[InlineData("NamedTupleTestFunction({4,false})", 5, true)]
 	public void NamedTupleIoTest(string source, int n, bool b)
 	{
 		var pepper = new Pepper();

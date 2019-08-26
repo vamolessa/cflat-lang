@@ -2,7 +2,6 @@ public static class TokenScanners
 {
 	public static readonly Scanner[] scanners = new Scanner[] {
 		new ExactScanner("fn").ForToken(TokenKind.Function),
-		new ExactScanner("tuple").ForToken(TokenKind.Tuple),
 		new ExactScanner("struct").ForToken(TokenKind.Struct),
 		new ExactScanner("for").ForToken(TokenKind.For),
 		new ExactScanner("if").ForToken(TokenKind.If),

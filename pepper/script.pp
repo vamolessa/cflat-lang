@@ -10,5 +10,5 @@ fn main() {
 	let sw = StartStopwatch()
 	fibonacci(30)
 	let s = StopStopwatch(sw)
-	print tuple{"time" s}
+	print {"time",s}
 }

@@ -55,7 +55,7 @@ public static class VirtualMachineHelper
 		case TypeKind.Tuple:
 			{
 				var tupleType = vm.chunk.tupleTypes.buffer[type.index];
-				sb.Append("tuple{");
+				sb.Append('{');
 				var offset = 0;
 				for (var i = 0; i < tupleType.elements.length; i++)
 				{
@@ -63,7 +63,7 @@ public static class VirtualMachineHelper
 					var elementType = vm.chunk.tupleElementTypes.buffer[elementIndex];
 					ValueToString(vm, index + offset, elementType, sb);
 					if (i < tupleType.elements.length - 1)
-						sb.Append(' ');
+						sb.Append(',');
 
 					offset += elementType.GetSize(vm.chunk);
 				}
@@ -84,7 +84,7 @@ public static class VirtualMachineHelper
 					sb.Append('=');
 					ValueToString(vm, index + offset, field.type, sb);
 					if (i < structType.fields.length - 1)
-						sb.Append(' ');
+						sb.Append(',');
 
 					offset += field.type.GetSize(vm.chunk);
 				}
