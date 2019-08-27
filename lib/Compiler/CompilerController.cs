@@ -184,7 +184,7 @@ public sealed class CompilerController
 
 				compiler.AddLocalVariable(paramSlice, paramType, false, true);
 				builder.WithParam(paramType);
-			} while (compiler.parser.Match(TokenKind.Comma));
+			} while (compiler.parser.Match(TokenKind.Comma) || compiler.parser.Match(TokenKind.End));
 		}
 		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
@@ -780,7 +780,7 @@ public sealed class CompilerController
 						self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 						break;
 					}
-				} while (self.compiler.parser.Match(TokenKind.Dot));
+				} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
 			}
 		}
 
@@ -950,7 +950,7 @@ public sealed class CompilerController
 				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 				return;
 			}
-		} while (self.compiler.parser.Match(TokenKind.Dot));
+		} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
 
 		var fieldSize = type.GetSize(self.compiler.chunk);
 		var sizeAboveField = structSize - offset - fieldSize;
@@ -1003,7 +1003,7 @@ public sealed class CompilerController
 				}
 
 				argIndex += 1;
-			} while (self.compiler.parser.Match(TokenKind.Comma));
+			} while (self.compiler.parser.Match(TokenKind.Comma) || self.compiler.parser.Match(TokenKind.End));
 		}
 
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expect ')' after function argument list");
@@ -1227,5 +1227,60 @@ public sealed class CompilerController
 		default:
 			return;
 		}
+	}
+
+	public static void NativeCall(CompilerController self, Precedence precedence)
+	{
+		var source = self.compiler.parser.tokenizer.source;
+		var identifierIndex = self.compiler.chunk.nativeIdentifiers.count;
+
+		do
+		{
+			self.compiler.parser.Consume(TokenKind.Identifier, "Expected native identifier");
+			var identifier = CompilerHelper.GetString(self.compiler);
+			self.compiler.chunk.nativeIdentifiers.PushBack(identifier);
+		} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
+
+		var identifiersSlice = new Slice(identifierIndex, self.compiler.chunk.nativeIdentifiers.count - identifierIndex);
+
+		var argumentsSize = 0;
+		self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' before native function call argument");
+		while (
+			!self.compiler.parser.Check(TokenKind.CloseParenthesis) &&
+			!self.compiler.parser.Check(TokenKind.End)
+		)
+		{
+			Expression(self);
+			var expressionType = self.compiler.typeStack.PopLast();
+			argumentsSize += expressionType.GetSize(self.compiler.chunk);
+
+			if (!self.compiler.parser.Check(TokenKind.CloseParenthesis))
+				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after native function call argument");
+		}
+		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after native function call argument");
+
+		if (argumentsSize > byte.MaxValue)
+		{
+			self.compiler.AddSoftError(
+				self.compiler.parser.previousToken.slice,
+				"Native function call arguments size is too big. Max is {0}",
+				byte.MaxValue
+			);
+			argumentsSize = byte.MaxValue;
+		}
+
+		var returnType = self.compiler.parser.Match(TokenKind.Colon) ?
+			self.compiler.ParseType("Expected native function call return type", 0) :
+			new ValueType(TypeKind.Unit);
+		self.compiler.typeStack.PushBack(returnType);
+
+		self.compiler.EmitInstruction(Instruction.CallNativeAuto);
+		self.compiler.EmitUShort((ushort)self.compiler.chunk.nativeCalls.count);
+
+		self.compiler.chunk.nativeCalls.PushBack(new NativeCall(
+			identifiersSlice,
+			(byte)argumentsSize,
+			returnType.GetSize(self.compiler.chunk)
+		));
 	}
 }

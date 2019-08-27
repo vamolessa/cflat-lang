@@ -194,6 +194,7 @@ public static class ByteCodeChunkExtensions
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.Call:
 		case Instruction.CallNative:
+		case Instruction.CallNativeAuto:
 		case Instruction.Return:
 		case Instruction.PopMultiple:
 		case Instruction.LoadLocal:

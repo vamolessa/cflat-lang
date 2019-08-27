@@ -13,11 +13,11 @@ public static class PepperInspectionExtensions
 			var callframe = vm.callframeStack.buffer[i];
 			var sourceIndex = vm.chunk.slices.buffer[callframe.codeIndex - 1].index;
 
-			if (callframe.functionIndex < 0)
-				continue;
-
-			if (sourceIndex >= 0)
+			switch (callframe.type)
 			{
+			case CallFrame.Type.EntryPoint:
+				break;
+			case CallFrame.Type.Function:
 				var pos = CompilerHelper.GetLineAndColumn(
 					self.source,
 					sourceIndex,
@@ -36,12 +36,18 @@ public static class PepperInspectionExtensions
 					pos.line - 1
 				);
 				sb.AppendLine(line.TrimStart());
-			}
-			else
-			{
+				break;
+			case CallFrame.Type.NativeFunction:
 				sb.Append("[native function] ");
 				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
 				sb.AppendLine();
+				break;
+			case CallFrame.Type.AutoNativeFunction:
+				sb.Append("[auto-native function] ");
+				
+				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
+				sb.AppendLine();
+				break;
 			}
 		}
 

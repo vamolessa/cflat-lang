@@ -3,6 +3,7 @@ public enum Instruction
 	Halt,
 	Call,
 	CallNative,
+	CallNativeAuto,
 	Return,
 	Print,
 	Pop,

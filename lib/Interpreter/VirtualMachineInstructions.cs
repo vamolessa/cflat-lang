@@ -3,7 +3,7 @@ using System.Text;
 
 internal static class VirtualMachineInstructions
 {
-	public static void Run(VirtualMachine vm)
+	public static void RunTopFunction(VirtualMachine vm)
 	{
 #if DEBUG_TRACE
 		var debugSb = new StringBuilder();
@@ -42,9 +42,10 @@ internal static class VirtualMachineInstructions
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
-							functionIndex,
 							function.codeIndex,
-							stackTop
+							stackTop,
+							(ushort)functionIndex,
+							CallFrame.Type.Function
 						)
 					);
 					break;
@@ -57,15 +58,55 @@ internal static class VirtualMachineInstructions
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
-							functionIndex,
-							-1,
-							stackTop
+							0,
+							stackTop,
+							(ushort)functionIndex,
+							CallFrame.Type.NativeFunction
 						)
 					);
 
 					var context = new RuntimeContext(vm, stackTop);
 					function.callback(ref context);
 					VirtualMachineHelper.Return(vm, function.returnSize);
+					break;
+				}
+			case Instruction.CallNativeAuto:
+				{
+					var callIndex = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var call = vm.chunk.nativeCalls.buffer[callIndex];
+					var stackTop = stackSize - call.argumentsSize;
+
+					vm.callframeStack.PushBackUnchecked(
+						new CallFrame(
+							0,
+							stackTop,
+							0,
+							CallFrame.Type.AutoNativeFunction
+						)
+					);
+
+					var flags =
+						System.Reflection.BindingFlags.Static |
+						System.Reflection.BindingFlags.Instance |
+						System.Reflection.BindingFlags.Public |
+						System.Reflection.BindingFlags.NonPublic;
+
+					var methods = typeof(System.Console).GetMethods(flags);
+					System.Reflection.MethodInfo method = null;
+					foreach (var m in methods)
+					{
+						var parameters = m.GetParameters();
+						if (m.Name == "WriteLine" && parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
+							method = m;
+					}
+
+					var marshaler = new ReadMarshaler(vm, stackTop);
+					var arg = default(String);
+					arg.Marshal(ref marshaler);
+					var result = method.Invoke(null, new object[] { arg.value });
+					stackBuffer.PushBack(new ValueData());
+
+					VirtualMachineHelper.Return(vm, call.returnSize);
 					break;
 				}
 			case Instruction.Return:

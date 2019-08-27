@@ -14,15 +14,25 @@ public readonly struct RuntimeError
 
 internal struct CallFrame
 {
-	public int functionIndex;
+	public enum Type : ushort
+	{
+		EntryPoint,
+		Function,
+		NativeFunction,
+		AutoNativeFunction,
+	}
+
 	public int codeIndex;
 	public int baseStackIndex;
+	public ushort functionIndex;
+	public Type type;
 
-	public CallFrame(int functionIndex, int codeIndex, int baseStackIndex)
+	public CallFrame(int codeIndex, int baseStackIndex, ushort functionIndex, Type type)
 	{
-		this.functionIndex = functionIndex;
 		this.codeIndex = codeIndex;
 		this.baseStackIndex = baseStackIndex;
+		this.functionIndex = functionIndex;
+		this.type = type;
 	}
 }
 
@@ -49,11 +59,6 @@ public sealed class VirtualMachine
 		};
 		for (var i = 0; i < nativeObjects.count; i++)
 			nativeObjects.buffer[i] = chunk.stringLiterals.buffer[i];
-	}
-
-	public void CallTopFunction()
-	{
-		VirtualMachineInstructions.Run(this);
 	}
 
 	public void Error(string message)

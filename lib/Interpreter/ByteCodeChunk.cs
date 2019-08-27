@@ -16,6 +16,8 @@ public sealed class ByteCodeChunk
 	public Buffer<ValueType> tupleElementTypes = new Buffer<ValueType>(16);
 	public Buffer<StructType> structTypes = new Buffer<StructType>(8);
 	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(16);
+	public Buffer<NativeCall> nativeCalls = new Buffer<NativeCall>(4);
+	public Buffer<string> nativeIdentifiers = new Buffer<string>(8);
 
 	public void WriteByte(byte value, Slice slice)
 	{

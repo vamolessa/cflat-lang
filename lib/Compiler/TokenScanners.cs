@@ -14,6 +14,8 @@ public static class TokenScanners
 		new ExactScanner("or").ForToken(TokenKind.Or),
 		new ExactScanner("is").ForToken(TokenKind.Is),
 
+		new CharScanner('@').ForToken(TokenKind.At),
+
 		new ExactScanner("let").ForToken(TokenKind.Let),
 		new ExactScanner("mut").ForToken(TokenKind.Mut),
 		new ExactScanner("ref").ForToken(TokenKind.Ref),

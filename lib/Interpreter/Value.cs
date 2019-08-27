@@ -255,3 +255,17 @@ public readonly struct StructTypeField
 		this.type = type;
 	}
 }
+
+public readonly struct NativeCall
+{
+	public readonly Slice identifiers;
+	public readonly byte argumentsSize;
+	public readonly byte returnSize;
+
+	public NativeCall(Slice identifiers, byte argumentsSize, byte returnSize)
+	{
+		this.identifiers = identifiers;
+		this.argumentsSize = argumentsSize;
+		this.returnSize = returnSize;
+	}
+}

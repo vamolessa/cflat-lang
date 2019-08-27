@@ -78,20 +78,23 @@ public struct RuntimeContext : IContext
 
 		vm.valueStack.PushBack(new ValueData(function.functionIndex));
 		vm.callframeStack.PushBack(new CallFrame(
-			-1,
 			vm.chunk.bytes.count - 1,
-			vm.valueStack.count
+			vm.valueStack.count,
+			0,
+			CallFrame.Type.EntryPoint
 		));
 		vm.callframeStack.PushBack(new CallFrame(
-			function.functionIndex,
 			function.codeIndex,
-			vm.valueStack.count
+			vm.valueStack.count,
+			function.functionIndex,
+			CallFrame.Type.Function
 		));
 
 		var writer = new WriteMarshaler(vm, vm.valueStack.count);
 		vm.valueStack.GrowUnchecked(function.parametersSize);
 		arguments.Marshal(ref writer);
-		vm.CallTopFunction();
+
+		VirtualMachineInstructions.RunTopFunction(vm);
 
 		vm.valueStack.count -= Marshal.SizeOf<R>.size;
 		var reader = new ReadMarshaler(vm, vm.valueStack.count);
