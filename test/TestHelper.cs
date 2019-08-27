@@ -30,14 +30,6 @@ public static class TestHelper
 		}
 	}
 
-	public static T[] BufferToArray<T>(Buffer<T> buffer)
-	{
-		var array = new T[buffer.count];
-		if (buffer.count > 0)
-			System.Array.Copy(buffer.buffer, 0, array, 0, array.Length);
-		return array;
-	}
-
 	public static R Run<R>(string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{

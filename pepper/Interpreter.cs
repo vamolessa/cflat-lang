@@ -22,6 +22,8 @@ public static class Interpreter
 	{
 		var pepper = new Pepper();
 
+		pepper.AddSearchingAssembly(typeof(System.Console));
+
 		pepper.AddFunction(StartStopwatch, StartStopwatch);
 		pepper.AddFunction(StopStopwatch, StopStopwatch);
 
@@ -43,7 +45,6 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		//pepper.CallFunction("main").Get();
 		var main = pepper.GetFunction<Empty, Unit>("main");
 		if (main.isSome)
 			main.value.Call(pepper, new Empty());

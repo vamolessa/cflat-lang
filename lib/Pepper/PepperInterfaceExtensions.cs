@@ -1,9 +1,18 @@
 public static class PepperInterfaceExtensions
 {
+	public static void AddSearchingAssembly(this Pepper self, System.Type containedType)
+	{
+		var assembly = System.Reflection.Assembly.GetAssembly(containedType);
+		self.compiler.searchingAssemblies.PushBack(assembly);
+	}
+
 	public static Option<Function<A, R>> GetFunction<A, R>(this Pepper self, string functionName)
 		where A : struct, ITuple
 		where R : struct, IMarshalable
 	{
+		if (self.compiler.compiler.errors.count > 0)
+			return Option.None;
+
 		var context = new DefinitionContext(self.byteCode);
 		try
 		{

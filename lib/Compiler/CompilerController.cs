@@ -17,8 +17,9 @@ public sealed class CompilerController
 		public int stackIndex;
 	}
 
-	public Compiler compiler = new Compiler();
+	public readonly Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
+	public Buffer<System.Reflection.Assembly> searchingAssemblies = new Buffer<System.Reflection.Assembly>();
 
 	public Buffer<CompileError> Compile(string source, ByteCodeChunk chunk)
 	{
@@ -1231,19 +1232,49 @@ public sealed class CompilerController
 
 	public static void NativeCall(CompilerController self, Precedence precedence)
 	{
-		var source = self.compiler.parser.tokenizer.source;
-		var identifierIndex = self.compiler.chunk.nativeIdentifiers.count;
-
+		var identifiers = new Buffer<string>(8);
+		var slice = self.compiler.parser.previousToken.slice;
 		do
 		{
 			self.compiler.parser.Consume(TokenKind.Identifier, "Expected native identifier");
-			var identifier = CompilerHelper.GetString(self.compiler);
-			self.compiler.chunk.nativeIdentifiers.PushBack(identifier);
+			identifiers.PushBackUnchecked(CompilerHelper.GetPreviousSlice(self.compiler));
 		} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
+		slice = Slice.FromTo(slice, self.compiler.parser.previousToken.slice);
 
-		var identifiersSlice = new Slice(identifierIndex, self.compiler.chunk.nativeIdentifiers.count - identifierIndex);
+		var methods = new System.Reflection.MethodInfo[0];
+		string methodName = null;
 
+		if (identifiers.count < 2)
+		{
+			self.compiler.AddSoftError(slice, "Expected at least 2 identifiers separated by '.'");
+		}
+		else
+		{
+			var typeName = string.Join(".", identifiers.buffer, 0, identifiers.count - 1);
+
+			System.Type type = null;
+			for (var i = 0; i < self.searchingAssemblies.count; i++)
+			{
+				var assembly = self.searchingAssemblies.buffer[i];
+				type = assembly.GetType(typeName);
+				if (type != null)
+					break;
+			}
+
+			if (type != null)
+			{
+				methods = type.GetMethods();
+				methodName = identifiers.buffer[identifiers.count - 1];
+			}
+			else
+			{
+				self.compiler.AddSoftError(slice, "Could not find type '{0}'", typeName);
+			}
+		}
+
+		var expressionTypes = new Buffer<ValueType>(8);
 		var argumentsSize = 0;
+
 		self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' before native function call argument");
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseParenthesis) &&
@@ -1252,7 +1283,8 @@ public sealed class CompilerController
 		{
 			Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
-			argumentsSize += expressionType.GetSize(self.compiler.chunk);
+			expressionTypes.PushBack(expressionType);
+			argumentsSize = expressionType.GetSize(self.compiler.chunk);
 
 			if (!self.compiler.parser.Check(TokenKind.CloseParenthesis))
 				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after native function call argument");
@@ -1262,12 +1294,35 @@ public sealed class CompilerController
 		if (argumentsSize > byte.MaxValue)
 		{
 			self.compiler.AddSoftError(
-				self.compiler.parser.previousToken.slice,
-				"Native function call arguments size is too big. Max is {0}",
-				byte.MaxValue
+				slice,
+				"Native function call arguments size is too big. Max is {0}", byte.MaxValue
 			);
 			argumentsSize = byte.MaxValue;
 		}
+
+		System.Reflection.MethodInfo method = null;
+		foreach (var m in methods)
+		{
+			if (m.Name != methodName)
+				goto NoMatch;
+
+			var parameters = m.GetParameters();
+			if (parameters.Length != expressionTypes.count)
+				goto NoMatch;
+
+			for (var i = 0; i < parameters.Length; i++)
+			{
+				if (!expressionTypes.buffer[i].IsCompatibleWithNativeType(parameters[i].ParameterType))
+					goto NoMatch;
+			}
+
+			method = m;
+			break;
+		NoMatch:;
+		}
+
+		if (method == null && !string.IsNullOrEmpty(methodName))
+			self.compiler.AddSoftError(slice, "Could not find method '{0}'", methodName);
 
 		var returnType = self.compiler.parser.Match(TokenKind.Colon) ?
 			self.compiler.ParseType("Expected native function call return type", 0) :
@@ -1276,9 +1331,9 @@ public sealed class CompilerController
 
 		self.compiler.EmitInstruction(Instruction.CallNativeAuto);
 		self.compiler.EmitUShort((ushort)self.compiler.chunk.nativeCalls.count);
-
 		self.compiler.chunk.nativeCalls.PushBack(new NativeCall(
-			identifiersSlice,
+			method,
+			expressionTypes.ToArray(),
 			(byte)argumentsSize,
 			returnType.GetSize(self.compiler.chunk)
 		));

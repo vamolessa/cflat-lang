@@ -83,6 +83,44 @@ internal static class Marshal
 		var marshaler = new TupleDefinitionMarshaler(chunk);
 		return marshaler.GetReflectionData<T>();
 	}
+
+	public static object GetObject(ref ReadMarshaler marshaler, ValueType type)
+	{
+		if (type.IsKind(TypeKind.Bool))
+		{
+			var v = default(Bool);
+			v.Marshal(ref marshaler);
+			return v.value;
+		}
+		else if (type.IsKind(TypeKind.Int))
+		{
+			var v = default(Int);
+			v.Marshal(ref marshaler);
+			return v.value;
+		}
+		else if (type.IsKind(TypeKind.Float))
+		{
+			var v = default(Float);
+			v.Marshal(ref marshaler);
+			return v.value;
+		}
+		else if (type.IsKind(TypeKind.String))
+		{
+			var v = default(String);
+			v.Marshal(ref marshaler);
+			return v.value;
+		}
+		else if (type.IsKind(TypeKind.NativeObject))
+		{
+			var v = default(Object);
+			v.Marshal(ref marshaler);
+			return v.value;
+		}
+		else
+		{
+			return null;
+		}
+	}
 }
 
 public interface IMarshaler

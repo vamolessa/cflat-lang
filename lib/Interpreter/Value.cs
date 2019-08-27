@@ -1,3 +1,4 @@
+using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -170,6 +171,25 @@ public readonly struct ValueType
 		Format(chunk, sb);
 		return sb.ToString();
 	}
+
+	public bool IsCompatibleWithNativeType(System.Type type)
+	{
+		switch (kind)
+		{
+		case TypeKind.Bool:
+			return type == typeof(bool);
+		case TypeKind.Int:
+			return type == typeof(int);
+		case TypeKind.Float:
+			return type == typeof(float);
+		case TypeKind.String:
+			return type == typeof(string);
+		case TypeKind.NativeObject:
+			return type.IsClass;
+		default:
+			return false;
+		}
+	}
 }
 
 public readonly struct FunctionType
@@ -258,13 +278,15 @@ public readonly struct StructTypeField
 
 public readonly struct NativeCall
 {
-	public readonly Slice identifiers;
+	public readonly MethodInfo methodInfo;
+	public readonly ValueType[] argumentTypes;
 	public readonly byte argumentsSize;
 	public readonly byte returnSize;
 
-	public NativeCall(Slice identifiers, byte argumentsSize, byte returnSize)
+	public NativeCall(MethodInfo methodInfo, ValueType[] argumentTypes, byte argumentsSize, byte returnSize)
 	{
-		this.identifiers = identifiers;
+		this.methodInfo = methodInfo;
+		this.argumentTypes = argumentTypes;
 		this.argumentsSize = argumentsSize;
 		this.returnSize = returnSize;
 	}

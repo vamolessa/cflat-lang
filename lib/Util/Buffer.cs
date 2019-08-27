@@ -61,6 +61,18 @@ public struct Buffer<T>
 	{
 		buffer[--count] = buffer[index];
 	}
+
+	public T[] ToArray()
+	{
+		if (buffer != null && count > 0)
+		{
+			var array = new T[count];
+			System.Array.Copy(buffer, 0, array, 0, array.Length);
+			return array;
+		}
+
+		return new T[0];
+	}
 }
 
 public sealed class BufferDebugView<T>

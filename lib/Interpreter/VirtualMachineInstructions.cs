@@ -1,4 +1,4 @@
-//#define DEBUG_TRACE
+#define DEBUG_TRACE
 using System.Text;
 
 internal static class VirtualMachineInstructions
@@ -31,7 +31,7 @@ internal static class VirtualMachineInstructions
 			switch (nextInstruction)
 			{
 			case Instruction.Halt:
-				vm.callframeStack.count -= 1;
+				--vm.callframeStack.count;
 				return;
 			case Instruction.Call:
 				{
@@ -85,36 +85,20 @@ internal static class VirtualMachineInstructions
 						)
 					);
 
-					var flags =
-						System.Reflection.BindingFlags.Static |
-						System.Reflection.BindingFlags.Instance |
-						System.Reflection.BindingFlags.Public |
-						System.Reflection.BindingFlags.NonPublic;
-
-					var methods = typeof(System.Console).GetMethods(flags);
-					System.Reflection.MethodInfo method = null;
-					foreach (var m in methods)
-					{
-						var parameters = m.GetParameters();
-						if (m.Name == "WriteLine" && parameters.Length == 1 && parameters[0].ParameterType == typeof(string))
-							method = m;
-					}
-
 					var marshaler = new ReadMarshaler(vm, stackTop);
-					var arg = default(String);
-					arg.Marshal(ref marshaler);
-					var result = method.Invoke(null, new object[] { arg.value });
-					stackBuffer.PushBack(new ValueData());
+					var arguments = new object[call.argumentTypes.Length];
+					for (var i = 0; i < arguments.Length; i++)
+						arguments[i] = Marshal.GetObject(ref marshaler, call.argumentTypes[i]);
+
+					var result = call.methodInfo.Invoke(null, arguments);
+					stackBuffer.PushBackUnchecked(new ValueData());
 
 					VirtualMachineHelper.Return(vm, call.returnSize);
 					break;
 				}
 			case Instruction.Return:
-				{
-					var size = bytes[codeIndex++];
-					VirtualMachineHelper.Return(vm, size);
-					break;
-				}
+				VirtualMachineHelper.Return(vm, bytes[codeIndex++]);
+				break;
 			case Instruction.Print:
 				{
 					var type = ValueType.Read(
@@ -139,13 +123,10 @@ internal static class VirtualMachineInstructions
 					break;
 				}
 			case Instruction.Pop:
-				stackSize -= 1;
+				--stackSize;
 				break;
 			case Instruction.PopMultiple:
-				{
-					var size = bytes[codeIndex++];
-					stackSize -= size;
-				}
+				stackSize -= bytes[codeIndex++];
 				break;
 			case Instruction.Move:
 				{
@@ -177,11 +158,6 @@ internal static class VirtualMachineInstructions
 					break;
 				}
 			case Instruction.LoadFunction:
-				{
-					var index = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
-					stackBuffer.PushBackUnchecked(new ValueData(index));
-					break;
-				}
 			case Instruction.LoadNativeFunction:
 				{
 					var index = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
