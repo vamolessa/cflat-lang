@@ -1,4 +1,4 @@
-#define DEBUG_TRACE
+//#define DEBUG_TRACE
 using System.Text;
 
 internal static class VirtualMachineInstructions
@@ -79,7 +79,7 @@ internal static class VirtualMachineInstructions
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
 							0,
-							stackTop,
+							stackTop + 1,
 							0,
 							CallFrame.Type.AutoNativeFunction
 						)
