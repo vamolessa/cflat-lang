@@ -1321,21 +1321,37 @@ public sealed class CompilerController
 		NoMatch:;
 		}
 
-		if (method == null && !string.IsNullOrEmpty(methodName))
-			self.compiler.AddSoftError(slice, "Could not find method '{0}'", methodName);
-
 		var returnType = self.compiler.parser.Match(TokenKind.Colon) ?
 			self.compiler.ParseType("Expected native function call return type", 0) :
 			new ValueType(TypeKind.Unit);
 		self.compiler.typeStack.PushBack(returnType);
 
+		if (!string.IsNullOrEmpty(methodName))
+		{
+			if (method == null)
+			{
+				self.compiler.AddSoftError(slice, "Could not find native method '{0}'", methodName);
+			}
+			else if (!returnType.IsCompatibleWithNativeType(method.ReturnType))
+			{
+				self.compiler.AddSoftError(
+					slice,
+					"Inconpatible return type of native method '{0}'. Expected '{1}'. Got '{2}'",
+					methodName,
+					returnType.ToString(self.compiler.chunk),
+					method.ReturnType.Name
+				);
+				method = null;
+			}
+		}
+
 		self.compiler.EmitInstruction(Instruction.CallNativeAuto);
 		self.compiler.EmitUShort((ushort)self.compiler.chunk.nativeCalls.count);
 		self.compiler.chunk.nativeCalls.PushBack(new NativeCall(
 			method,
+			returnType,
 			expressionTypes.ToArray(),
-			(byte)argumentsSize,
-			returnType.GetSize(self.compiler.chunk)
+			(byte)argumentsSize
 		));
 	}
 }

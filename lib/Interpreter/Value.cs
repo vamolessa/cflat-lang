@@ -157,7 +157,7 @@ public readonly struct ValueType
 			chunk.FormatStructType(index, sb);
 			break;
 		case TypeKind.NativeObject:
-			sb.Append("custom");
+			sb.Append("native object");
 			break;
 		default:
 			sb.Append("unreachable");
@@ -176,6 +176,8 @@ public readonly struct ValueType
 	{
 		switch (kind)
 		{
+		case TypeKind.Unit:
+			return type == typeof(void);
 		case TypeKind.Bool:
 			return type == typeof(bool);
 		case TypeKind.Int:
@@ -279,15 +281,15 @@ public readonly struct StructTypeField
 public readonly struct NativeCall
 {
 	public readonly MethodInfo methodInfo;
+	public readonly ValueType returnType;
 	public readonly ValueType[] argumentTypes;
 	public readonly byte argumentsSize;
-	public readonly byte returnSize;
 
-	public NativeCall(MethodInfo methodInfo, ValueType[] argumentTypes, byte argumentsSize, byte returnSize)
+	public NativeCall(MethodInfo methodInfo, ValueType returnType, ValueType[] argumentTypes, byte argumentsSize)
 	{
 		this.methodInfo = methodInfo;
+		this.returnType = returnType;
 		this.argumentTypes = argumentTypes;
 		this.argumentsSize = argumentsSize;
-		this.returnSize = returnSize;
 	}
 }

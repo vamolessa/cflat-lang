@@ -85,15 +85,27 @@ internal static class VirtualMachineInstructions
 						)
 					);
 
-					var marshaler = new ReadMarshaler(vm, stackTop);
+					var reader = new ReadMarshaler(vm, stackTop);
 					var arguments = new object[call.argumentTypes.Length];
 					for (var i = 0; i < arguments.Length; i++)
-						arguments[i] = Marshal.GetObject(ref marshaler, call.argumentTypes[i]);
+						arguments[i] = Marshal.GetObject(ref reader, call.argumentTypes[i]);
 
 					var result = call.methodInfo.Invoke(null, arguments);
-					stackBuffer.PushBackUnchecked(new ValueData());
+					if (call.returnType.IsKind(TypeKind.Unit))
+						stackBuffer.PushBackUnchecked(new ValueData());
+					else if (call.returnType.IsKind(TypeKind.Bool) && result is bool b)
+						stackBuffer.PushBackUnchecked(new ValueData(b));
+					else if (call.returnType.IsKind(TypeKind.Int) && result is int i)
+						stackBuffer.PushBackUnchecked(new ValueData(i));
+					else if (call.returnType.IsKind(TypeKind.Float) && result is float f)
+						stackBuffer.PushBackUnchecked(new ValueData(f));
+					else
+					{
+						stackBuffer.PushBackUnchecked(new ValueData(vm.nativeObjects.count));
+						vm.nativeObjects.PushBackUnchecked(result);
+					}
 
-					VirtualMachineHelper.Return(vm, call.returnSize);
+					VirtualMachineHelper.Return(vm, call.returnType.GetSize(vm.chunk));
 					break;
 				}
 			case Instruction.Return:
