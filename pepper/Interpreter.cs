@@ -2,12 +2,6 @@ public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public struct A { public int a; }
-	public static A Add(int a, int b)
-	{
-		return new A { a = a + b };
-	}
-
 	public static Return StartStopwatch<C>(ref C context) where C : IContext
 	{
 		var body = context.BodyOfObject<System.Diagnostics.Stopwatch>();
