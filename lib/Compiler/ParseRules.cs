@@ -1,6 +1,6 @@
 public sealed class ParseRules
 {
-	public delegate void RuleFunction(CompilerController controller, Precedence precedence);
+	public delegate void RuleFunction(CompilerController controller, Precedence precedence, Slice slice);
 
 	private const int RuleCount = (int)TokenKind.COUNT;
 	private readonly Precedence[] precedences = new Precedence[RuleCount];
