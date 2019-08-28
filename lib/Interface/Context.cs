@@ -10,14 +10,14 @@ public interface IContext
 	T ArgStruct<T>() where T : struct, IStruct;
 	T ArgObject<T>() where T : class;
 
-	FunctionBody<Unit> Body([CallerMemberName] string functionName = "");
-	FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "");
-	FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "");
-	FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "");
-	FunctionBody<string> BodyOfString([CallerMemberName] string functionName = "");
-	FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple;
-	FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
-	FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
+	NativeFunctionBody<Unit> Body([CallerMemberName] string functionName = "");
+	NativeFunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "");
+	NativeFunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "");
+	NativeFunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "");
+	NativeFunctionBody<string> BodyOfString([CallerMemberName] string functionName = "");
+	NativeFunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple;
+	NativeFunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
+	NativeFunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
 
 	R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
@@ -61,14 +61,14 @@ public struct RuntimeContext : IContext
 	}
 	public T ArgObject<T>() where T : class => vm.nativeObjects.buffer[vm.valueStack.buffer[argStackIndex++].asInt] as T;
 
-	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "") => new FunctionBody<Unit>(vm);
-	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "") => new FunctionBody<bool>(vm);
-	public FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "") => new FunctionBody<int>(vm);
-	public FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "") => new FunctionBody<float>(vm);
-	public FunctionBody<string> BodyOfString([CallerMemberName] string functionName = "") => new FunctionBody<string>(vm);
-	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple => new FunctionBody<T>(vm);
-	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new FunctionBody<T>(vm);
-	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new FunctionBody<object>(vm);
+	public NativeFunctionBody<Unit> Body([CallerMemberName] string functionName = "") => new NativeFunctionBody<Unit>(vm);
+	public NativeFunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "") => new NativeFunctionBody<bool>(vm);
+	public NativeFunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "") => new NativeFunctionBody<int>(vm);
+	public NativeFunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "") => new NativeFunctionBody<float>(vm);
+	public NativeFunctionBody<string> BodyOfString([CallerMemberName] string functionName = "") => new NativeFunctionBody<string>(vm);
+	public NativeFunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple => new NativeFunctionBody<T>(vm);
+	public NativeFunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new NativeFunctionBody<T>(vm);
+	public NativeFunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new NativeFunctionBody<object>(vm);
 
 	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
@@ -174,42 +174,42 @@ public struct DefinitionContext : IContext
 		return default;
 	}
 
-	public FunctionBody<Unit> Body([CallerMemberName] string functionName = "")
+	public NativeFunctionBody<Unit> Body([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Unit);
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "")
+	public NativeFunctionBody<bool> BodyOfBool([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Bool);
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "")
+	public NativeFunctionBody<int> BodyOfInt([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Int);
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "")
+	public NativeFunctionBody<float> BodyOfFloat([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.Float);
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<string> BodyOfString([CallerMemberName] string functionName = "")
+	public NativeFunctionBody<string> BodyOfString([CallerMemberName] string functionName = "")
 	{
 		builder.returnType = new ValueType(TypeKind.String);
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple
+	public NativeFunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple
 	{
 		builder.returnType = Marshal.ReflectOnTuple<T>(chunk).type;
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct
+	public NativeFunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct
 	{
 		builder.returnType = Marshal.ReflectOnStruct<T>(chunk).type;
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public FunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
+	public NativeFunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
 	{
 		builder.returnType = new ValueType(TypeKind.NativeObject);
 		throw new DefinitionReturn(functionName, builder);
