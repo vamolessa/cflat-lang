@@ -1195,13 +1195,9 @@ public sealed class CompilerController
 			break;
 		case TokenKind.GreaterEqual:
 			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c
-					.EmitInstruction(Instruction.LessInt)
-					.EmitInstruction(Instruction.Not);
+				c.EmitInstruction(Instruction.LessInt).EmitInstruction(Instruction.Not);
 			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c
-					.EmitInstruction(Instruction.LessFloat)
-					.EmitInstruction(Instruction.Not);
+				c.EmitInstruction(Instruction.LessFloat).EmitInstruction(Instruction.Not);
 			else
 				c.AddSoftError(slice, "GreaterOrEqual operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk));
 			c.typeStack.PushBack(new ValueType(TypeKind.Bool));
