@@ -28,7 +28,10 @@ public struct Buffer<T>
 
 		if (count > buffer.Length)
 		{
-			var temp = new T[buffer.Length * 2];
+			var newLength = buffer.Length << 1;
+			while (newLength < count)
+				newLength <<= 1;
+			var temp = new T[newLength];
 			System.Array.Copy(buffer, temp, previousCount);
 			buffer = temp;
 		}
