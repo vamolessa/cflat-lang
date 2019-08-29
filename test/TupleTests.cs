@@ -63,7 +63,7 @@ public sealed class TupleTests
 		var chunk = new ByteCodeChunk();
 
 		string error = null;
-		var errors = compiler.Compile(source, chunk);
+		var errors = compiler.Compile(source, chunk, TestHelper.CompilerMode);
 		if (errors.count > 0)
 			error = CompilerHelper.FormatError(source, errors, 1, 8);
 		Assert.Null(error);

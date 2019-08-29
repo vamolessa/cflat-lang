@@ -212,7 +212,7 @@ internal static class VirtualMachineInstructions
 			case Instruction.IncrementLocalInt:
 				{
 					var index = frame.baseStackIndex + bytes[codeIndex++];
-					stack[index].asInt += 1;
+					++stack[index].asInt;
 					break;
 				}
 			case Instruction.IntToFloat:
@@ -321,6 +321,27 @@ internal static class VirtualMachineInstructions
 					stackBuffer.PushBackUnchecked(new ValueData(less));
 					break;
 				}
+			case Instruction.DebugPushType:
+				{
+					var type = ValueType.Read(
+						bytes[codeIndex++],
+						bytes[codeIndex++],
+						bytes[codeIndex++],
+						bytes[codeIndex++]
+					);
+
+					vm.debugData.typeStack.PushBack(type);
+					break;
+				}
+			case Instruction.DebugPopType:
+				--vm.debugData.typeStack.count;
+				break;
+			case Instruction.DebugPushFrame:
+				vm.debugData.baseTypeStackIndex.PushBack((ushort)vm.debugData.typeStack.count);
+				break;
+			case Instruction.DebugPopFrame:
+				vm.debugData.typeStack.count = vm.debugData.baseTypeStackIndex.PopLast();
+				break;
 			default:
 				break;
 			}

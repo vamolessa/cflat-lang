@@ -109,4 +109,13 @@ public static class CompilerEmitExtensions
 			out self.chunk.bytes.buffer[jumpIndex + 1]
 		);
 	}
+
+	public static void EmitType(this Compiler self, ValueType type)
+	{
+		type.Write(out var b0, out var b1, out var b2, out var b3);
+		self.EmitByte(b0);
+		self.EmitByte(b1);
+		self.EmitByte(b2);
+		self.EmitByte(b3);
+	}
 }

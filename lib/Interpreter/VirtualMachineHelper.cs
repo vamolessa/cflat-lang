@@ -114,12 +114,15 @@ public static class VirtualMachineHelper
 		sb.Append("          ");
 		for (var i = 0; i < vm.valueStack.count;)
 		{
+			var type = i < vm.debugData.typeStack.count ?
+				vm.debugData.typeStack.buffer[i] :
+				new ValueType(TypeKind.Int);
+
 			sb.Append("[");
-			//var type = vm.typeStack.buffer[i];
-			var type = new ValueType(TypeKind.Int);
 			ValueToString(vm, i, type, sb);
-			i += type.GetSize(vm.chunk);
 			sb.Append("]");
+
+			i += type.GetSize(vm.chunk);
 		}
 		sb.AppendLine();
 	}

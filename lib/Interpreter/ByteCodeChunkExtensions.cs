@@ -191,6 +191,9 @@ public static class ByteCodeChunkExtensions
 		case Instruction.GreaterFloat:
 		case Instruction.LessInt:
 		case Instruction.LessFloat:
+		case Instruction.DebugPopType:
+		case Instruction.DebugPushFrame:
+		case Instruction.DebugPopFrame:
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.Call:
 		case Instruction.CallNative:
@@ -201,11 +204,11 @@ public static class ByteCodeChunkExtensions
 		case Instruction.AssignLocal:
 		case Instruction.IncrementLocalInt:
 		case Instruction.ForLoopCheck:
-			return OneArgInstruction(self, instruction, index, sb);
+			return OneByteInstruction(self, instruction, index, sb);
 		case Instruction.Move:
 		case Instruction.AssignLocalMultiple:
 		case Instruction.LoadLocalMultiple:
-			return TwoArgInstruction(self, instruction, index, sb);
+			return TwoByteInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadFunction:
@@ -220,7 +223,8 @@ public static class ByteCodeChunkExtensions
 		case Instruction.JumpBackward:
 			return JumpInstruction(self, instruction, -1, index, sb);
 		case Instruction.Print:
-			return PrintInstruction(self, instruction, index, sb);
+		case Instruction.DebugPushType:
+			return TypeInstruction(self, instruction, index, sb);
 		default:
 			sb.Append("Unknown instruction ");
 			sb.Append(instruction.ToString());
@@ -234,7 +238,7 @@ public static class ByteCodeChunkExtensions
 		return index + 1;
 	}
 
-	private static int OneArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int OneByteInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
@@ -242,7 +246,7 @@ public static class ByteCodeChunkExtensions
 		return index + 2;
 	}
 
-	private static int TwoArgInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int TwoByteInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
@@ -320,7 +324,7 @@ public static class ByteCodeChunkExtensions
 		return index + 3;
 	}
 
-	private static int PrintInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int TypeInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');

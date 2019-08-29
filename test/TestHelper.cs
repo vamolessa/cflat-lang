@@ -7,6 +7,7 @@ public sealed class CompileErrorException : System.Exception
 
 public static class TestHelper
 {
+	public const Mode CompilerMode = Mode.Release;
 	public const int TabSize = 8;
 
 	public readonly struct CallAssertion
@@ -39,7 +40,7 @@ public static class TestHelper
 	public static R Run<R>(Pepper pepper, string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		var compileErrors = pepper.CompileSource(source);
+		var compileErrors = pepper.CompileSource(source, CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
@@ -56,7 +57,7 @@ public static class TestHelper
 	public static R RunExpression<R>(Pepper pepper, string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		var compileErrors = pepper.CompileExpression(source);
+		var compileErrors = pepper.CompileExpression(source, CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 

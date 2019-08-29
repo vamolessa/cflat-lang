@@ -1,5 +1,6 @@
 public sealed class Compiler
 {
+	public Mode mode;
 	public readonly Parser parser;
 	public Buffer<CompileError> errors = new Buffer<CompileError>();
 
@@ -24,15 +25,16 @@ public sealed class Compiler
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		this.parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(null, null);
+		Reset(null, null, Mode.Release);
 	}
 
-	public void Reset(string source, ByteCodeChunk chunk)
+	public void Reset(string source, ByteCodeChunk chunk, Mode mode)
 	{
 		parser.tokenizer.Reset(source);
 		parser.Reset();
 
 		errors.count = 0;
+		this.mode = mode;
 
 		isInPanicMode = false;
 		this.chunk = chunk;

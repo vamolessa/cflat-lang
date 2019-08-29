@@ -46,7 +46,7 @@ public sealed class ValueTests
 	{
 		var cc = new CompilerController();
 		var chunk = new ByteCodeChunk();
-		var errors = cc.Compile(source, chunk);
+		var errors = cc.Compile(source, chunk, TestHelper.CompilerMode);
 		Assert.Empty(errors.ToArray());
 
 		var type = new ValueType(TypeKind.Struct, chunk.structTypes.count - 1);

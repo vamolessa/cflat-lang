@@ -28,7 +28,7 @@ public static class Interpreter
 		pepper.AddFunction(StartStopwatch, StartStopwatch);
 		pepper.AddFunction(StopStopwatch, StopStopwatch);
 
-		var compileErrors = pepper.CompileSource(source);
+		var compileErrors = pepper.CompileSource(source, Mode.Release);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);

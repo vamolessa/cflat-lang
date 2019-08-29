@@ -36,11 +36,18 @@ internal struct CallFrame
 	}
 }
 
+internal struct DebugData
+{
+	public Buffer<ValueType> typeStack;
+	public Buffer<ushort> baseTypeStackIndex;
+}
+
 public sealed class VirtualMachine
 {
 	internal ByteCodeChunk chunk;
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
+	internal DebugData debugData = new DebugData();
 	internal Buffer<object> nativeObjects;
 	internal Option<RuntimeError> error;
 

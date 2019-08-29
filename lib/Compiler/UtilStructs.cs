@@ -1,3 +1,9 @@
+public enum Mode
+{
+	Release,
+	Debug
+}
+
 public readonly struct CompileError
 {
 	public readonly Slice slice;

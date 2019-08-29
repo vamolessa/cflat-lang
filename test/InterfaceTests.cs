@@ -166,7 +166,7 @@ public sealed class InterfaceTests
 		var pepper = new Pepper();
 		pepper.AddFunction(FunctionTestFunction, FunctionTestFunction);
 
-		var compileErrors = pepper.CompileSource(source);
+		var compileErrors = pepper.CompileSource(source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, 1));
 
