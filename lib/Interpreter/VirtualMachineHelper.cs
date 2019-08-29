@@ -114,8 +114,8 @@ public static class VirtualMachineHelper
 		sb.Append("          ");
 		for (var i = 0; i < vm.valueStack.count;)
 		{
-			var type = i < vm.debugData.typeStack.count ?
-				vm.debugData.typeStack.buffer[i] :
+			var type = i < vm.typeStack.count ?
+				vm.typeStack.buffer[i] :
 				new ValueType(TypeKind.Int);
 
 			sb.Append("[");

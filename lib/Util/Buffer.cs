@@ -23,12 +23,13 @@ public struct Buffer<T>
 
 	public void GrowUnchecked(int size)
 	{
+		var previousCount = count;
 		count += size;
 
 		if (count > buffer.Length)
 		{
 			var temp = new T[buffer.Length * 2];
-			System.Array.Copy(buffer, temp, buffer.Length);
+			System.Array.Copy(buffer, temp, previousCount);
 			buffer = temp;
 		}
 	}

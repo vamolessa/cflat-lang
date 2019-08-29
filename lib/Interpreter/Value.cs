@@ -54,7 +54,7 @@ public readonly struct ValueType
 	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
 	{
 		return new ValueType(
-			BytesHelper.BytesToShort(b0, b1),
+			BytesHelper.BytesToUShort(b0, b1),
 			(TypeKind)b2,
 			b3
 		);
@@ -101,7 +101,7 @@ public readonly struct ValueType
 
 	public void Write(out byte b0, out byte b1, out byte b2, out byte b3)
 	{
-		BytesHelper.ShortToBytes(
+		BytesHelper.UShortToBytes(
 			index,
 			out b0,
 			out b1

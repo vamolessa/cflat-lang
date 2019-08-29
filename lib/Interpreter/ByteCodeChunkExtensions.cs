@@ -191,9 +191,6 @@ public static class ByteCodeChunkExtensions
 		case Instruction.GreaterFloat:
 		case Instruction.LessInt:
 		case Instruction.LessFloat:
-		case Instruction.DebugPopType:
-		case Instruction.DebugPushFrame:
-		case Instruction.DebugPopFrame:
 			return SimpleInstruction(instruction, index, sb);
 		case Instruction.Call:
 		case Instruction.CallNative:
@@ -223,8 +220,9 @@ public static class ByteCodeChunkExtensions
 		case Instruction.JumpBackward:
 			return JumpInstruction(self, instruction, -1, index, sb);
 		case Instruction.Print:
-		case Instruction.DebugPushType:
-			return TypeInstruction(self, instruction, index, sb);
+			return PrintInstruction(self, instruction, index, sb);
+		case Instruction.DebugSaveTypeStack:
+			return SaveTypeStackInstruction(self, instruction, index, sb);
 		default:
 			sb.Append("Unknown instruction ");
 			sb.Append(instruction.ToString());
@@ -258,7 +256,7 @@ public static class ByteCodeChunkExtensions
 
 	private static int LoadLiteralInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
-		var literalIndex = BytesHelper.BytesToShort(
+		var literalIndex = BytesHelper.BytesToUShort(
 			chunk.bytes.buffer[index + 1],
 			chunk.bytes.buffer[index + 2]
 		);
@@ -289,7 +287,7 @@ public static class ByteCodeChunkExtensions
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
-		var functionIndex = BytesHelper.BytesToShort(
+		var functionIndex = BytesHelper.BytesToUShort(
 			chunk.bytes.buffer[index + 1],
 			chunk.bytes.buffer[index + 2]
 		);
@@ -301,7 +299,7 @@ public static class ByteCodeChunkExtensions
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
-		var functionIndex = BytesHelper.BytesToShort(
+		var functionIndex = BytesHelper.BytesToUShort(
 			chunk.bytes.buffer[index + 1],
 			chunk.bytes.buffer[index + 2]
 		);
@@ -313,7 +311,7 @@ public static class ByteCodeChunkExtensions
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
-		var offset = BytesHelper.BytesToShort(
+		var offset = BytesHelper.BytesToUShort(
 			chunk.bytes.buffer[index + 1],
 			chunk.bytes.buffer[index + 2]
 		);
@@ -324,7 +322,7 @@ public static class ByteCodeChunkExtensions
 		return index + 3;
 	}
 
-	private static int TypeInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	private static int PrintInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
@@ -339,5 +337,26 @@ public static class ByteCodeChunkExtensions
 		type.Format(chunk, sb);
 
 		return index + 5;
+	}
+
+	private static int SaveTypeStackInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+
+		var count = BytesHelper.BytesToUShort(
+			chunk.bytes.buffer[index + 1],
+			chunk.bytes.buffer[index + 2]
+		);
+		sb.Append(" count: ");
+		sb.Append(count);
+
+		var size = BytesHelper.BytesToUShort(
+			chunk.bytes.buffer[index + 3],
+			chunk.bytes.buffer[index + 4]
+		);
+		sb.Append(" size: ");
+		sb.Append(size);
+
+		return count + 5;
 	}
 }

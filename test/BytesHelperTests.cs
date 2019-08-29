@@ -10,7 +10,7 @@ public sealed class BytesHelperTests
 	[InlineData(1, 2, 0x102)]
 	public void BytesToShortTest(byte b0, byte b1, ushort u16)
 	{
-		var r = BytesHelper.BytesToShort(b0, b1);
+		var r = BytesHelper.BytesToUShort(b0, b1);
 		Assert.Equal(u16, r);
 	}
 
@@ -22,7 +22,7 @@ public sealed class BytesHelperTests
 	[InlineData(0x102, 1, 2)]
 	public void ShortToBytesTest(ushort u16, byte b0, byte b1)
 	{
-		BytesHelper.ShortToBytes(u16, out var r0, out var r1);
+		BytesHelper.UShortToBytes(u16, out var r0, out var r1);
 		Assert.Equal(b0, r0);
 		Assert.Equal(b1, r1);
 	}

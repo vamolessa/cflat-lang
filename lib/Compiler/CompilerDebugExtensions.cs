@@ -1,29 +1,19 @@
 public static class CompilerDebugExtensions
 {
-	public static void DebugEmitPushType(this Compiler self, ValueType type)
+	public static void DebugSaveTypeStack(this Compiler self)
 	{
-		if (self.mode == Mode.Debug)
-		{
-			self.EmitInstruction(Instruction.DebugPushType);
-			self.EmitType(type);
-		}
-	}
+		if (self.mode != Mode.Debug)
+			return;
 
-	public static void DebugEmitPopType(this Compiler self)
-	{
-		if (self.mode == Mode.Debug)
-			self.EmitInstruction(Instruction.DebugPopType);
-	}
+		var size = 0;
+		for (var i = 0; i < self.typeStack.count; i++)
+			size += self.typeStack.buffer[i].GetSize(self.chunk);
 
-	public static void DebugEmitPushFrame(this Compiler self)
-	{
-		if (self.mode == Mode.Debug)
-			self.EmitInstruction(Instruction.DebugPushFrame);
-	}
+		self.EmitInstruction(Instruction.DebugSaveTypeStack);
+		self.EmitUShort((ushort)self.typeStack.count);
+		self.EmitUShort((ushort)size);
 
-	public static void DebugEmitPopFrame(this Compiler self)
-	{
-		if (self.mode == Mode.Debug)
-			self.EmitInstruction(Instruction.DebugPopFrame);
+		for (var i = 0; i < self.typeStack.count; i++)
+			self.EmitType(self.typeStack.buffer[i]);
 	}
 }

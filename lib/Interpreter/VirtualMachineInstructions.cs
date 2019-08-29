@@ -72,7 +72,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.CallNativeAuto:
 				{
-					var callIndex = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var callIndex = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					var call = vm.chunk.nativeCalls.buffer[callIndex];
 					var stackTop = stackSize - call.argumentsSize;
 
@@ -165,14 +165,14 @@ internal static class VirtualMachineInstructions
 				break;
 			case Instruction.LoadLiteral:
 				{
-					var index = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var index = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					stackBuffer.PushBackUnchecked(vm.chunk.literalData.buffer[index]);
 					break;
 				}
 			case Instruction.LoadFunction:
 			case Instruction.LoadNativeFunction:
 				{
-					var index = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var index = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					stackBuffer.PushBackUnchecked(new ValueData(index));
 					break;
 				}
@@ -283,33 +283,33 @@ internal static class VirtualMachineInstructions
 				break;
 			case Instruction.JumpForward:
 				{
-					var offset = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					codeIndex += offset;
 					break;
 				}
 			case Instruction.JumpBackward:
 				{
-					var offset = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					codeIndex -= offset;
 					break;
 				}
 			case Instruction.JumpForwardIfFalse:
 				{
-					var offset = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					if (!stack[stackSize - 1].asBool)
 						codeIndex += offset;
 					break;
 				}
 			case Instruction.JumpForwardIfTrue:
 				{
-					var offset = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					if (stack[stackSize - 1].asBool)
 						codeIndex += offset;
 					break;
 				}
 			case Instruction.PopAndJumpForwardIfFalse:
 				{
-					var offset = BytesHelper.BytesToShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					if (!stack[--stackSize].asBool)
 						codeIndex += offset;
 					break;
@@ -321,27 +321,28 @@ internal static class VirtualMachineInstructions
 					stackBuffer.PushBackUnchecked(new ValueData(less));
 					break;
 				}
-			case Instruction.DebugPushType:
+			case Instruction.DebugSaveTypeStack:
 				{
-					var type = ValueType.Read(
-						bytes[codeIndex++],
-						bytes[codeIndex++],
-						bytes[codeIndex++],
-						bytes[codeIndex++]
-					);
+					var count = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var size = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 
-					vm.debugData.typeStack.PushBack(type);
+					vm.typeStack.count = 0;
+					vm.typeStack.Grow(stackSize);
+
+					for (var i = stackSize - size; i >= 0; i++)
+						vm.typeStack.PushBackUnchecked(new ValueType(TypeKind.Int));
+
+					for (var i = 0; i < count; i++)
+					{
+						vm.typeStack.PushBackUnchecked(ValueType.Read(
+							bytes[codeIndex++],
+							bytes[codeIndex++],
+							bytes[codeIndex++],
+							bytes[codeIndex++]
+						));
+					}
 					break;
 				}
-			case Instruction.DebugPopType:
-				--vm.debugData.typeStack.count;
-				break;
-			case Instruction.DebugPushFrame:
-				vm.debugData.baseTypeStackIndex.PushBack((ushort)vm.debugData.typeStack.count);
-				break;
-			case Instruction.DebugPopFrame:
-				vm.debugData.typeStack.count = vm.debugData.baseTypeStackIndex.PopLast();
-				break;
 			default:
 				break;
 			}

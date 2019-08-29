@@ -49,8 +49,5 @@ public enum Instruction
 	PopAndJumpForwardIfFalse,
 	ForLoopCheck,
 
-	DebugPushType,
-	DebugPopType,
-	DebugPushFrame,
-	DebugPopFrame,
+	DebugSaveTypeStack,
 }

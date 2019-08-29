@@ -8,7 +8,7 @@ public static class CompilerEmitExtensions
 
 	public static Compiler EmitUShort(this Compiler self, ushort value)
 	{
-		BytesHelper.ShortToBytes(value, out var b0, out var b1);
+		BytesHelper.UShortToBytes(value, out var b0, out var b1);
 		self.chunk.WriteByte(b0, self.parser.previousToken.slice);
 		self.chunk.WriteByte(b1, self.parser.previousToken.slice);
 		return self;
@@ -103,7 +103,7 @@ public static class CompilerEmitExtensions
 		if (offset > ushort.MaxValue)
 			self.AddSoftError(self.parser.previousToken.slice, "Too much code to jump over");
 
-		BytesHelper.ShortToBytes(
+		BytesHelper.UShortToBytes(
 			(ushort)offset,
 			out self.chunk.bytes.buffer[jumpIndex],
 			out self.chunk.bytes.buffer[jumpIndex + 1]
