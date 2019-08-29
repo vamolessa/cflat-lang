@@ -415,6 +415,13 @@ public sealed class CompilerController
 
 	public void WhileStatement()
 	{
+		var labelSlice = new Slice();
+		if (compiler.parser.Match(TokenKind.Colon))
+		{
+			compiler.parser.Consume(TokenKind.Identifier, "Expected loop label name");
+			labelSlice = compiler.parser.previousToken.slice;
+		}
+
 		var loopJump = compiler.BeginEmitBackwardJump();
 		var expressionSlice = Expression(this);
 
@@ -424,7 +431,7 @@ public sealed class CompilerController
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		compiler.BeginLoop();
+		compiler.BeginLoop(labelSlice);
 		BlockStatement();
 
 		compiler.EndEmitBackwardJump(Instruction.JumpBackward, loopJump);
@@ -434,6 +441,13 @@ public sealed class CompilerController
 
 	public void ForStatement()
 	{
+		var labelSlice = new Slice();
+		if (compiler.parser.Match(TokenKind.Colon))
+		{
+			compiler.parser.Consume(TokenKind.Identifier, "Expected loop label name");
+			labelSlice = compiler.parser.previousToken.slice;
+		}
+
 		var scope = compiler.BeginScope();
 		var itVarIndex = SingleVariableDeclaration(true);
 		compiler.localVariables.buffer[itVarIndex].isUsed = true;
@@ -455,7 +469,7 @@ public sealed class CompilerController
 		compiler.EmitByte((byte)itVar.stackIndex);
 
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		compiler.BeginLoop();
+		compiler.BeginLoop(labelSlice);
 		BlockStatement();
 
 		compiler.EmitInstruction(Instruction.IncrementLocalInt);
@@ -470,31 +484,45 @@ public sealed class CompilerController
 
 	private void BreakStatement()
 	{
+		var slice = compiler.parser.previousToken.slice;
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.JumpForward);
 
-		var nestingCount = 1;
-		if (compiler.parser.Match(TokenKind.IntLiteral))
-		{
-			nestingCount = CompilerHelper.GetInt(compiler);
+		var nestingIndex = -1;
 
-			if (nestingCount <= 0)
+		if (compiler.loopNesting.count == 0)
+			compiler.AddSoftError(slice, "Not inside a loop");
+		else
+			nestingIndex = compiler.loopNesting.count - 1;
+
+		if (compiler.parser.Match(TokenKind.Colon))
+		{
+			compiler.parser.Consume(TokenKind.Identifier, "Expected loop label name");
+			var labelSlice = compiler.parser.previousToken.slice;
+			slice = Slice.FromTo(slice, labelSlice);
+
+			var source = compiler.parser.tokenizer.source;
+			for (var i = 0; i < compiler.loopNesting.count; i++)
 			{
-				compiler.AddSoftError(compiler.parser.previousToken.slice, "Nesting count must be at least 1");
-				nestingCount = 1;
+				var loopLabelSlice = compiler.loopNesting.buffer[i];
+				if (CompilerHelper.AreEqual(source, labelSlice, loopLabelSlice))
+				{
+					nestingIndex = i;
+					break;
+				}
 			}
 
-			if (nestingCount > compiler.loopNesting)
-			{
-				compiler.AddSoftError(compiler.parser.previousToken.slice, "Nesting count can not exceed loop nesting count which is {0}", compiler.loopNesting);
-				nestingCount = compiler.loopNesting;
-			}
+			if (nestingIndex < 0)
+				compiler.AddSoftError(labelSlice, "Could not find an enclosing loop with label '{0}'", CompilerHelper.GetSlice(compiler, labelSlice));
 		}
 
-		if (!compiler.BreakLoop(nestingCount, breakJump))
+		if (nestingIndex > byte.MaxValue)
 		{
-			compiler.AddSoftError(compiler.parser.previousToken.slice, "Not inside a loop");
-			return;
+			compiler.AddHardError(slice, "Break is nested too deeply. Max loop nesting level is {0}", byte.MaxValue);
+			nestingIndex = -1;
 		}
+
+		if (nestingIndex >= 0)
+			compiler.loopBreaks.PushBack(new LoopBreak(breakJump, (byte)nestingIndex));
 	}
 
 	private ValueType ReturnStatement()

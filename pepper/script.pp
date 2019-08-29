@@ -1,3 +1,8 @@
 fn main() {
-	true + 4
+	while:myloop true {
+		print "once"
+		break:myloop
+	}
+
+	print "end"
 }

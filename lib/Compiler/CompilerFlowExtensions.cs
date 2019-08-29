@@ -42,32 +42,23 @@ public static class CompilerFlowExtensions
 		self.localVariables.count -= localCount;
 	}
 
-	public static void BeginLoop(this Compiler self)
+	public static void BeginLoop(this Compiler self, Slice labelSlice)
 	{
-		self.loopNesting += 1;
+		self.loopNesting.PushBack(labelSlice);
 	}
 
 	public static void EndLoop(this Compiler self)
 	{
-		self.loopNesting -= 1;
+		self.loopNesting.count -= 1;
 
 		for (var i = self.loopBreaks.count - 1; i >= 0; i--)
 		{
 			var loopBreak = self.loopBreaks.buffer[i];
-			if (loopBreak.nesting == self.loopNesting)
+			if (loopBreak.nesting == self.loopNesting.count)
 			{
 				self.EndEmitForwardJump(loopBreak.jump);
 				self.loopBreaks.SwapRemove(i);
 			}
 		}
-	}
-
-	public static bool BreakLoop(this Compiler self, int nesting, int jump)
-	{
-		if (self.loopNesting < nesting)
-			return false;
-
-		self.loopBreaks.PushBack(new LoopBreak(self.loopNesting - nesting, jump));
-		return true;
 	}
 }

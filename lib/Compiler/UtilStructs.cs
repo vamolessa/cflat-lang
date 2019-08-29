@@ -42,12 +42,12 @@ public readonly struct Scope
 
 public readonly struct LoopBreak
 {
-	public readonly int nesting;
 	public readonly int jump;
+	public readonly byte nesting;
 
-	public LoopBreak(int nesting, int jump)
+	public LoopBreak(int jump, byte nesting)
 	{
-		this.nesting = nesting;
 		this.jump = jump;
+		this.nesting = nesting;
 	}
 }

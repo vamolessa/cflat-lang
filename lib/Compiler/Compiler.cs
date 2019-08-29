@@ -13,7 +13,7 @@ public sealed class Compiler
 	public Buffer<ValueType> functionReturnTypeStack = new Buffer<ValueType>(4);
 
 	public Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
-	public int loopNesting;
+	public Buffer<Slice> loopNesting = new Buffer<Slice>(4);
 
 	public Compiler()
 	{
