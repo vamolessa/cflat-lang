@@ -143,8 +143,7 @@ public sealed class CompilerController
 		var function = self.compiler.chunk.functions.buffer[functionIndex];
 
 		self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
-		var type = new ValueType(TypeKind.Function, function.typeIndex);
-		self.compiler.typeStack.PushBack(type);
+		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Function, function.typeIndex));
 	}
 
 	private void ConsumeFunction(Slice slice)
@@ -215,6 +214,7 @@ public sealed class CompilerController
 				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", builder.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
 
+		compiler.DebugEmitSaveTypeStack();
 		compiler.EmitInstruction(Instruction.Return);
 		compiler.EmitByte((byte)builder.returnType.GetSize(compiler.chunk));
 
@@ -546,6 +546,7 @@ public sealed class CompilerController
 				returnType = compiler.typeStack.PopLast();
 		}
 
+		compiler.DebugEmitSaveTypeStack();
 		compiler.EmitInstruction(Instruction.Return);
 		compiler.EmitByte((byte)expectedType.GetSize(compiler.chunk));
 
@@ -586,8 +587,7 @@ public sealed class CompilerController
 	{
 		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
 		{
-			var type = new ValueType(TypeKind.Unit);
-			self.compiler.typeStack.PushBack(type);
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
 			return;
 		}
@@ -627,8 +627,7 @@ public sealed class CompilerController
 	{
 		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
 		{
-			var type = new ValueType(TypeKind.Unit);
-			self.compiler.typeStack.PushBack(type);
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
 			return;
 		}
@@ -661,8 +660,7 @@ public sealed class CompilerController
 
 		if (lastStatementKind == StatementKind.Other)
 		{
-			var type = new ValueType(TypeKind.Unit);
-			self.compiler.typeStack.PushBack(type);
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
 		}
 		else
@@ -734,8 +732,7 @@ public sealed class CompilerController
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
 			self.compiler.AddSoftError(rightSlice, "Expected bool expression after and");
 
-		var type = new ValueType(TypeKind.Bool);
-		self.compiler.typeStack.PushBack(type);
+		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 	}
 
 	public static void Or(CompilerController self, Precedence precedence, Slice previousSlice)
@@ -751,8 +748,7 @@ public sealed class CompilerController
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
 			self.compiler.AddSoftError(rightSlice, "Expected bool expression after or");
 
-		var type = new ValueType(TypeKind.Bool);
-		self.compiler.typeStack.PushBack(type);
+		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 	}
 
 	public static void Literal(CompilerController self, Precedence precedence, Slice previousSlice)
@@ -818,8 +814,7 @@ public sealed class CompilerController
 						ref storage.stackIndex
 					))
 					{
-						var type = new ValueType(TypeKind.Unit);
-						self.compiler.typeStack.PushBack(type);
+						self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 						break;
 					}
 				} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
@@ -925,15 +920,12 @@ public sealed class CompilerController
 
 			}
 			self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
-
-			var type = new ValueType(TypeKind.Struct, structIndex);
-			self.compiler.typeStack.PushBack(type);
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Struct, structIndex));
 		}
 		else
 		{
 			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let' or 'mut'");
-			var type = new ValueType(TypeKind.Unit);
-			self.compiler.typeStack.PushBack(type);
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 		}
 	}
 
@@ -990,8 +982,7 @@ public sealed class CompilerController
 				ref offset
 			))
 			{
-				var unitType = new ValueType(TypeKind.Unit);
-				self.compiler.typeStack.PushBack(unitType);
+				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 				return;
 			}
 		} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
@@ -1063,8 +1054,7 @@ public sealed class CompilerController
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
 		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersSize : 0));
-		var returnType = isFunction ? functionType.returnType : new ValueType(TypeKind.Unit);
-		self.compiler.typeStack.PushBack(returnType);
+		self.compiler.typeStack.PushBack(isFunction ? functionType.returnType : new ValueType(TypeKind.Unit));
 	}
 
 	public static void Unary(CompilerController self, Precedence precedence, Slice previousSlice)

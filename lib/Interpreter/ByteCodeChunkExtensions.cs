@@ -357,6 +357,6 @@ public static class ByteCodeChunkExtensions
 		sb.Append(" size: ");
 		sb.Append(size);
 
-		return count + 5;
+		return index + count * 4 + 5;
 	}
 }

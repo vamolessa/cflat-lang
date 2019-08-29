@@ -1,4 +1,4 @@
-//#define DEBUG_TRACE
+#define DEBUG_TRACE
 using System.Text;
 
 internal static class VirtualMachineInstructions
@@ -325,21 +325,22 @@ internal static class VirtualMachineInstructions
 				{
 					var count = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 					var size = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var diff = stackSize - size;
 
-					vm.typeStack.count = 0;
-					vm.typeStack.Grow(stackSize);
+					vm.debugData.typeStack.count = 0;
+					vm.debugData.typeStack.Grow(stackSize);
 
-					for (var i = stackSize - size; i >= 0; i++)
-						vm.typeStack.PushBackUnchecked(new ValueType(TypeKind.Int));
+					for (var i = 0; i < diff; i++)
+						vm.debugData.typeStack.buffer[i] = new ValueType(TypeKind.Int);
 
-					for (var i = 0; i < count; i++)
+					for (var i = diff; i < vm.debugData.typeStack.count; i++)
 					{
-						vm.typeStack.PushBackUnchecked(ValueType.Read(
+						vm.debugData.typeStack.buffer[i] = ValueType.Read(
 							bytes[codeIndex++],
 							bytes[codeIndex++],
 							bytes[codeIndex++],
 							bytes[codeIndex++]
-						));
+						);
 					}
 					break;
 				}

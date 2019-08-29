@@ -1,6 +1,6 @@
 public static class CompilerDebugExtensions
 {
-	public static void DebugSaveTypeStack(this Compiler self)
+	public static void DebugEmitSaveTypeStack(this Compiler self)
 	{
 		if (self.mode != Mode.Debug)
 			return;

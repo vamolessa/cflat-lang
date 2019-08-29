@@ -36,12 +36,22 @@ internal struct CallFrame
 	}
 }
 
+public struct DebugData
+{
+	public Buffer<ValueType> typeStack;
+
+	public void Clear()
+	{
+		typeStack.count = 0;
+	}
+}
+
 public sealed class VirtualMachine
 {
 	internal ByteCodeChunk chunk;
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
-	internal Buffer<ValueType> typeStack;
+	internal DebugData debugData = new DebugData();
 	internal Buffer<object> nativeObjects;
 	internal Option<RuntimeError> error;
 
@@ -52,6 +62,8 @@ public sealed class VirtualMachine
 
 		valueStack.count = 0;
 		callframeStack.count = 0;
+
+		debugData.Clear();
 
 		nativeObjects = new Buffer<object>
 		{
