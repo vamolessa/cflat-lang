@@ -7,7 +7,7 @@ public sealed class CompileErrorException : System.Exception
 
 public static class TestHelper
 {
-	public const Mode CompilerMode = Mode.Debug;
+	public const Mode CompilerMode = Mode.Release;
 	public const int TabSize = 8;
 
 	public readonly struct CallAssertion

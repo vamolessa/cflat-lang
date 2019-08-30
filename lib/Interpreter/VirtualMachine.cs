@@ -38,10 +38,12 @@ internal struct CallFrame
 
 public struct DebugData
 {
+	public Buffer<int> frameStack;
 	public Buffer<ValueType> typeStack;
 
 	public void Clear()
 	{
+		frameStack.count = 0;
 		typeStack.count = 0;
 	}
 }

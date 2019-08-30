@@ -321,29 +321,34 @@ internal static class VirtualMachineInstructions
 					stackBuffer.PushBackUnchecked(new ValueData(less));
 					break;
 				}
-			case Instruction.DebugSaveTypeStack:
+			case Instruction.DebugPushFrame:
+				vm.debugData.frameStack.PushBack(vm.debugData.typeStack.count);
+				break;
+			case Instruction.DebugPopFrame:
+				vm.debugData.typeStack.count = vm.debugData.frameStack.PopLast();
+				break;
+			case Instruction.DebugPushType:
 				{
-					var count = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					var size = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					var diff = stackSize - size;
+					var type = ValueType.Read(
+						bytes[codeIndex++],
+						bytes[codeIndex++],
+						bytes[codeIndex++],
+						bytes[codeIndex++]
+					);
 
-					vm.debugData.typeStack.count = 0;
-					vm.debugData.typeStack.Grow(stackSize);
+					var totalTypeSize = type.GetSize(vm.chunk);
+					for (var i = 0; i < vm.debugData.typeStack.count; i++)
+						totalTypeSize += vm.debugData.typeStack.buffer[i].GetSize(vm.chunk);
 
-					for (var i = 0; i < diff; i++)
-						vm.debugData.typeStack.buffer[i] = new ValueType(TypeKind.Int);
+					for (var i = stackSize - totalTypeSize; i > 0; i--)
+						vm.debugData.typeStack.PushBack(new ValueType(TypeKind.Unit));
 
-					for (var i = diff; i < vm.debugData.typeStack.count; i++)
-					{
-						vm.debugData.typeStack.buffer[i] = ValueType.Read(
-							bytes[codeIndex++],
-							bytes[codeIndex++],
-							bytes[codeIndex++],
-							bytes[codeIndex++]
-						);
-					}
+					vm.debugData.typeStack.PushBack(type);
 					break;
 				}
+			case Instruction.DebugPopType:
+				vm.debugData.typeStack.count -= 1;
+				break;
 			default:
 				break;
 			}
