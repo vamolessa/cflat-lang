@@ -1,7 +1,9 @@
-fn myfunction(a:int):int {
-	a + 10
+fn b(t:{bool,int}):int {
+	let{a,b}=t
+	a
+	b
 }
 
 fn main() {
-	let _ = myfunction(7)
+	b({true,3})
 }
