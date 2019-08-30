@@ -1,6 +1,5 @@
-bytecode serialization
-ref
-debug type info (for stack trace)
-debugger
 array
+ref
 clojure
+bytecode serialization
+debugger
