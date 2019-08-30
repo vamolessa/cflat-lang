@@ -314,6 +314,8 @@ public sealed class CompilerController
 			new ValueType(TypeKind.Unit);
 
 		self.compiler.typeStack.PushBack(type);
+
+		self.compiler.DebugEmitPopType((byte)builder.elementCount);
 		self.compiler.DebugEmitPushType(type);
 	}
 
@@ -955,10 +957,10 @@ public sealed class CompilerController
 						expressionType.ToString(self.compiler.chunk)
 					);
 				}
-
 			}
 			self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Struct, structIndex));
+			self.compiler.DebugEmitPopType((byte)structType.fields.length);
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Struct, structIndex));
 		}
 		else

@@ -137,24 +137,26 @@ public static class VirtualMachineHelper
 	{
 		sb.Append("          ");
 
-		for (var i = 0; i < vm.valueStack.count;)
+		var valueIndex = 0;
+		var typeIndex = 0;
+		while (valueIndex < vm.valueStack.count)
 		{
 			sb.Append("[");
-			if (i < vm.debugData.typeStack.count)
+			if (typeIndex < vm.debugData.typeStack.count)
 			{
-				var type = vm.debugData.typeStack.buffer[i];
-				ValueToString(vm, i, type, sb);
-				i += type.GetSize(vm.chunk);
+				var type = vm.debugData.typeStack.buffer[typeIndex++];
+				ValueToString(vm, valueIndex, type, sb);
+				valueIndex += type.GetSize(vm.chunk);
 			}
 			else
 			{
 				sb.Append("?");
-				i += 1;
+				valueIndex += 1;
 			}
 			sb.Append("]");
 		}
 
-		for (var i = vm.debugData.typeStack.count - vm.valueStack.count; i > 0; i--)
+		for (var i = typeIndex; i < vm.debugData.typeStack.count; i++)
 			sb.Append("[+]");
 
 		sb.AppendLine();
