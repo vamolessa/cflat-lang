@@ -16,6 +16,12 @@ public static class ByteCodeChunkExtensions
 {
 	public static void FormatFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
 	{
+		if (functionIndex >= self.functions.count)
+		{
+			sb.Append("<!>");
+			return;
+		}
+
 		var function = self.functions.buffer[functionIndex];
 		if (string.IsNullOrEmpty(function.name))
 			sb.Append("<anonymous>");
@@ -27,6 +33,12 @@ public static class ByteCodeChunkExtensions
 
 	public static void FormatNativeFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
 	{
+		if (functionIndex >= self.nativeFunctions.count)
+		{
+			sb.Append("<!>");
+			return;
+		}
+
 		var function = self.nativeFunctions.buffer[functionIndex];
 		sb.Append(function.name);
 		sb.Append(' ');
@@ -35,6 +47,12 @@ public static class ByteCodeChunkExtensions
 
 	public static void FormatFunctionType(this ByteCodeChunk self, ushort functionTypeIndex, StringBuilder sb)
 	{
+		if (functionTypeIndex >= self.functionTypes.count)
+		{
+			sb.Append("<!>");
+			return;
+		}
+
 		var type = self.functionTypes.buffer[functionTypeIndex];
 		sb.Append("fn(");
 		for (var i = 0; i < type.parameters.length; i++)
@@ -55,6 +73,12 @@ public static class ByteCodeChunkExtensions
 
 	public static void FormatTupleType(this ByteCodeChunk self, ushort tupleTypeIndex, StringBuilder sb)
 	{
+		if (tupleTypeIndex >= self.tupleTypes.count)
+		{
+			sb.Append("<!>");
+			return;
+		}
+
 		sb.Append('{');
 		var type = self.tupleTypes.buffer[tupleTypeIndex];
 		for (var i = 0; i < type.elements.length; i++)
@@ -70,6 +94,12 @@ public static class ByteCodeChunkExtensions
 
 	public static void FormatStructType(this ByteCodeChunk self, ushort structTypeIndex, StringBuilder sb)
 	{
+		if (structTypeIndex >= self.structTypes.count)
+		{
+			sb.Append("<!>");
+			return;
+		}
+
 		var type = self.structTypes.buffer[structTypeIndex];
 		sb.Append(type.name);
 		sb.Append('{');
@@ -204,6 +234,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.AssignLocal:
 		case Instruction.IncrementLocalInt:
 		case Instruction.ForLoopCheck:
+		case Instruction.DebugPopTypeMultiple:
 			return OneByteInstruction(self, instruction, index, sb);
 		case Instruction.Move:
 		case Instruction.AssignLocalMultiple:

@@ -21,9 +21,19 @@ public static class CompilerDebugExtensions
 		}
 	}
 
-	public static void DebugEmitPopType(this Compiler self)
+	public static void DebugEmitPopType(this Compiler self, byte count)
 	{
 		if (self.mode == Mode.Debug)
-			self.EmitInstruction(Instruction.DebugPopType);
+		{
+			if (count > 1)
+			{
+				self.EmitInstruction(Instruction.DebugPopTypeMultiple);
+				self.EmitByte(count);
+			}
+			else
+			{
+				self.EmitInstruction(Instruction.DebugPopType);
+			}
+		}
 	}
 }

@@ -34,6 +34,12 @@ public static class VirtualMachineHelper
 		case TypeKind.String:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
+				if (idx >= vm.nativeObjects.count)
+				{
+					sb.Append("<!>");
+					return;
+				}
+
 				sb.Append('"');
 				sb.Append(vm.nativeObjects.buffer[idx]);
 				sb.Append('"');
@@ -54,6 +60,12 @@ public static class VirtualMachineHelper
 			}
 		case TypeKind.Tuple:
 			{
+				if (type.index >= vm.chunk.tupleTypes.count)
+				{
+					sb.Append("<!>");
+					return;
+				}
+
 				var tupleType = vm.chunk.tupleTypes.buffer[type.index];
 				sb.Append('{');
 				var offset = 0;
@@ -72,6 +84,12 @@ public static class VirtualMachineHelper
 			}
 		case TypeKind.Struct:
 			{
+				if (type.index >= vm.chunk.structTypes.count)
+				{
+					sb.Append("<!>");
+					return;
+				}
+
 				var structType = vm.chunk.structTypes.buffer[type.index];
 				sb.Append(structType.name);
 				sb.Append('{');
@@ -94,6 +112,12 @@ public static class VirtualMachineHelper
 		case TypeKind.NativeObject:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
+				if (idx >= vm.nativeObjects.count)
+				{
+					sb.Append("<!>");
+					return;
+				}
+
 				var obj = vm.nativeObjects.buffer[idx];
 				sb.Append("native [");
 				sb.Append(obj != null ? obj.GetType().Name : "null");
@@ -112,18 +136,27 @@ public static class VirtualMachineHelper
 	public static void TraceStack(VirtualMachine vm, StringBuilder sb)
 	{
 		sb.Append("          ");
+
 		for (var i = 0; i < vm.valueStack.count;)
 		{
-			var type = i < vm.debugData.typeStack.count ?
-				vm.debugData.typeStack.buffer[i] :
-				new ValueType(TypeKind.Int);
-
 			sb.Append("[");
-			ValueToString(vm, i, type, sb);
+			if (i < vm.debugData.typeStack.count)
+			{
+				var type = vm.debugData.typeStack.buffer[i];
+				ValueToString(vm, i, type, sb);
+				i += type.GetSize(vm.chunk);
+			}
+			else
+			{
+				sb.Append("?");
+				i += 1;
+			}
 			sb.Append("]");
-
-			i += type.GetSize(vm.chunk);
 		}
+
+		for (var i = vm.debugData.typeStack.count - vm.valueStack.count; i > 0; i--)
+			sb.Append("[+]");
+
 		sb.AppendLine();
 	}
 

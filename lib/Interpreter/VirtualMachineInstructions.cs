@@ -342,6 +342,9 @@ internal static class VirtualMachineInstructions
 			case Instruction.DebugPopType:
 				vm.debugData.typeStack.count -= 1;
 				break;
+			case Instruction.DebugPopTypeMultiple:
+				vm.debugData.typeStack.count -= bytes[codeIndex++];
+				break;
 			default:
 				break;
 			}

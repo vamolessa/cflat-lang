@@ -28,11 +28,6 @@ public static class CompilerFlowExtensions
 			localVarsSize += type.GetSize(self.chunk);
 		}
 
-		{
-			for (var i = 0; i < localCount; i++)
-				self.DebugEmitPopType();
-		}
-
 		if (sizeLeftOnStack > 0)
 		{
 			self.EmitInstruction(Instruction.Move);
@@ -45,6 +40,8 @@ public static class CompilerFlowExtensions
 		}
 
 		self.localVariables.count -= localCount;
+
+		self.DebugEmitPopType((byte)localCount);
 	}
 
 	public static void BeginLoop(this Compiler self, Slice labelSlice)

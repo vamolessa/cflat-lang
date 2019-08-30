@@ -53,4 +53,5 @@ public enum Instruction
 	DebugPopFrame,
 	DebugPushType,
 	DebugPopType,
+	DebugPopTypeMultiple,
 }
