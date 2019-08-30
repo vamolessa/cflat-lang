@@ -1,14 +1,7 @@
-struct S {
-	b:bool,
-	i:int
-}
-
-fn b(t:S):int {
-	let s=t
-	s.b
-	s.i
-}
-
 fn main():int {
-	b(S{b=true,i=3})
+	mut a=0
+	for i=0,10 {
+		a=a+1
+	}
+	a
 }

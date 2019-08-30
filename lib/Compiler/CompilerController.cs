@@ -504,6 +504,7 @@ public sealed class CompilerController
 		compiler.EmitInstruction(Instruction.ForLoopCheck);
 		compiler.EmitByte((byte)itVar.stackIndex);
 
+		compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
 		compiler.DebugEmitPopType(1);
 		var breakJump = compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 		compiler.BeginLoop(labelSlice);
