@@ -1,3 +1,3 @@
 fn main() {
-	print "end"
+	let _ = 1 + 2
 }

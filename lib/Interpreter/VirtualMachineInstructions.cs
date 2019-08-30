@@ -1,4 +1,4 @@
-//#define DEBUG_TRACE
+#define DEBUG_TRACE
 using System.Text;
 
 internal static class VirtualMachineInstructions
@@ -335,13 +335,6 @@ internal static class VirtualMachineInstructions
 						bytes[codeIndex++],
 						bytes[codeIndex++]
 					);
-
-					var totalTypeSize = type.GetSize(vm.chunk);
-					for (var i = 0; i < vm.debugData.typeStack.count; i++)
-						totalTypeSize += vm.debugData.typeStack.buffer[i].GetSize(vm.chunk);
-
-					for (var i = stackSize - totalTypeSize; i > 0; i--)
-						vm.debugData.typeStack.PushBack(new ValueType(TypeKind.Unit));
 
 					vm.debugData.typeStack.PushBack(type);
 					break;
