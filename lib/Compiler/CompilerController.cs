@@ -351,8 +351,11 @@ public sealed class CompilerController
 			compiler.typeStack.PopLast() :
 			new ValueType(TypeKind.Unit);
 
-		compiler.EmitPop(type.GetSize(compiler.chunk));
-		compiler.DebugEmitPopType(1);
+		if (!compiler.parser.Check(TokenKind.CloseCurlyBrackets))
+		{
+			compiler.EmitPop(type.GetSize(compiler.chunk));
+			compiler.DebugEmitPopType(1);
+		}
 
 		return type;
 	}
@@ -360,12 +363,20 @@ public sealed class CompilerController
 	public void BlockStatement()
 	{
 		var scope = compiler.BeginScope();
+		ValueType lastStatementType = new ValueType(TypeKind.Unit);
+		StatementKind lastStatementKind = StatementKind.Other;
 		while (
 			!compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
 			!compiler.parser.Check(TokenKind.End)
 		)
 		{
-			Statement(out var _, out var _);
+			Statement(out lastStatementType, out lastStatementKind);
+		}
+
+		if (lastStatementKind == StatementKind.Expression)
+		{
+			compiler.EmitPop(lastStatementType.GetSize(compiler.chunk));
+			compiler.DebugEmitPopType(1);
 		}
 
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
@@ -673,12 +684,9 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
 
-		var sizeLeftOnStack = 0;
-		if (lastStatementKind == StatementKind.Expression)
-		{
-			sizeLeftOnStack = lastStatementType.GetSize(self.compiler.chunk);
-			self.compiler.chunk.bytes.count -= sizeLeftOnStack > 1 ? 2 : 1;
-		}
+		var sizeLeftOnStack = lastStatementKind == StatementKind.Expression ?
+			lastStatementType.GetSize(self.compiler.chunk) :
+			0;
 
 		self.compiler.EndScope(scope, sizeLeftOnStack);
 

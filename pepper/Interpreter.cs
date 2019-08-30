@@ -28,7 +28,7 @@ public static class Interpreter
 		pepper.AddFunction(StartStopwatch, StartStopwatch);
 		pepper.AddFunction(StopStopwatch, StopStopwatch);
 
-		var compileErrors = pepper.CompileSource(source, Mode.Debug);
+		var compileErrors = pepper.CompileSource(source, Mode.Release);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
@@ -46,9 +46,9 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		var main = pepper.GetFunction<Empty, Unit>("main");
+		var main = pepper.GetFunction<Empty, Int>("main");
 		if (main.isSome)
-			main.value.Call(pepper, new Empty());
+			System.Console.WriteLine("RESULT: {0}", main.value.Call(pepper, new Empty()).value);
 		else
 			System.Console.WriteLine("NOT FOUNDED");
 

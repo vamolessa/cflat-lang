@@ -9,6 +9,6 @@ fn b(t:S):int {
 	s.i
 }
 
-fn main() {
+fn main():int {
 	b(S{b=true,i=3})
 }
