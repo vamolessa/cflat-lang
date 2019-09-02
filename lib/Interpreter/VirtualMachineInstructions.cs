@@ -72,7 +72,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.CallNativeAuto:
 				{
-					var callIndex = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
+					var callIndex = bytes[codeIndex++];
 					var call = vm.chunk.nativeCalls.buffer[callIndex];
 					var stackTop = stackSize - call.argumentsSize;
 

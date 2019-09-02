@@ -1462,8 +1462,17 @@ public sealed class CompilerController
 
 		self.compiler.DebugEmitPopType((byte)expressionTypes.count);
 
+		if (self.compiler.chunk.nativeCalls.count > byte.MaxValue)
+		{
+			self.compiler.AddSoftError(
+				slice,
+				"Too many native function calls. Max is {0}", byte.MaxValue
+			);
+			return;
+		}
+
 		self.compiler.EmitInstruction(Instruction.CallNativeAuto);
-		self.compiler.EmitUShort((ushort)self.compiler.chunk.nativeCalls.count);
+		self.compiler.EmitByte((byte)self.compiler.chunk.nativeCalls.count);
 		self.compiler.chunk.nativeCalls.PushBack(new NativeCall(
 			method,
 			returnType,

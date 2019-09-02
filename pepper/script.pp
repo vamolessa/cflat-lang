@@ -1,6 +1,5 @@
 fn main():int {
-	mut a=6
-	@System.Console.WriteLine("asda")
-	@System.Console.WriteLine(a)
-	a
+	@System.Console.WriteLine("string")
+	@System.Console.WriteLine(9)
+	7
 }
