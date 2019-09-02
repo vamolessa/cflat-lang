@@ -36,7 +36,7 @@ internal struct CallFrame
 	}
 }
 
-public struct DebugData
+internal struct DebugData
 {
 	public Buffer<int> frameStack;
 	public Buffer<ValueType> typeStack;

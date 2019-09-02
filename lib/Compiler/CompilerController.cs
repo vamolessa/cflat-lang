@@ -37,6 +37,11 @@ public sealed class CompilerController
 	{
 		compiler.Reset(source, chunk, mode);
 
+		{
+			compiler.DebugEmitPushFrame();
+			compiler.DebugEmitPushType(new ValueType(TypeKind.Function, compiler.chunk.functionTypes.count));
+		}
+
 		compiler.parser.Next();
 		Expression(this);
 
@@ -51,6 +56,14 @@ public sealed class CompilerController
 		));
 		var functionTypeIndex = (ushort)(compiler.chunk.functionTypes.count - 1);
 		compiler.chunk.functions.PushBack(new Function(string.Empty, 0, functionTypeIndex));
+
+		{
+			compiler.DebugEmitPopFrame();
+			compiler.DebugEmitPushType(topType);
+		}
+
+		compiler.EmitInstruction(Instruction.Return);
+		compiler.EmitByte(topType.GetSize(chunk));
 
 		compiler.EmitInstruction(Instruction.Halt);
 		return compiler.errors;
@@ -234,7 +247,7 @@ public sealed class CompilerController
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte((byte)builder.returnType.GetSize(compiler.chunk));
+		compiler.EmitByte(builder.returnType.GetSize(compiler.chunk));
 
 		compiler.functionReturnTypeStack.PopLast();
 		compiler.localVariables.count -= builder.parameterCount;
@@ -582,8 +595,13 @@ public sealed class CompilerController
 				returnType = compiler.typeStack.PopLast();
 		}
 
+		{
+			compiler.DebugEmitPopFrame();
+			compiler.DebugEmitPushType(expectedType);
+		}
+
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte((byte)expectedType.GetSize(compiler.chunk));
+		compiler.EmitByte(expectedType.GetSize(compiler.chunk));
 
 		if (!returnType.IsEqualTo(expectedType))
 			compiler.AddSoftError(

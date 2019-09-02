@@ -7,7 +7,7 @@ public sealed class CompileErrorException : System.Exception
 
 public static class TestHelper
 {
-	public const Mode CompilerMode = Mode.Debug;
+	public static readonly Mode CompilerMode = Mode.Debug;
 	public const int TabSize = 8;
 
 	public readonly struct CallAssertion
@@ -28,6 +28,22 @@ public static class TestHelper
 			if (error.isSome)
 				errorMessage = VirtualMachineHelper.FormatError(source, error.value, 1, TabSize);
 			Assert.Null(errorMessage);
+
+			{
+				var flags =
+					System.Reflection.BindingFlags.NonPublic |
+					System.Reflection.BindingFlags.Instance;
+				var virtualMachineField = pepper.GetType().GetField("virtualMachine", flags);
+				var virtualMachine = virtualMachineField.GetValue(pepper);
+				var debugDataField = virtualMachineField.FieldType.GetField("debugData", flags);
+				var debugData = debugDataField.GetValue(virtualMachine);
+				var typeStackField = debugDataField.FieldType.GetField("typeStack");
+				var typeStack = (Buffer<ValueType>)typeStackField.GetValue(debugData);
+
+				if (CompilerMode == Mode.Release)
+					typeStack.PushBack(new ValueType(TypeKind.Unit));
+				Assert.Single(typeStack.ToArray());
+			}
 		}
 	}
 

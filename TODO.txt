@@ -1,5 +1,6 @@
 array
 ref
 clojure
+modules
 bytecode serialization
 debugger
