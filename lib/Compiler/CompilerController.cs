@@ -1100,16 +1100,13 @@ public sealed class CompilerController
 		if (isFunction && argIndex != functionType.parameters.length)
 			self.compiler.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
+		var popCount = isFunction ? functionType.parameters.length + 1 : 1;
+		self.compiler.DebugEmitPopType((byte)popCount);
+
 		if (type.kind == TypeKind.Function)
-		{
-			var popCount = isFunction ? functionType.parameters.length + 1 : 1;
-			self.compiler.DebugEmitPopType((byte)popCount);
 			self.compiler.EmitInstruction(Instruction.Call);
-		}
 		else if (type.kind == TypeKind.NativeFunction)
-		{
 			self.compiler.EmitInstruction(Instruction.CallNative);
-		}
 
 		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersSize : 0));
 		var returnType = isFunction ? functionType.returnType : new ValueType(TypeKind.Unit);
@@ -1462,6 +1459,8 @@ public sealed class CompilerController
 				method = null;
 			}
 		}
+
+		self.compiler.DebugEmitPopType((byte)expressionTypes.count);
 
 		self.compiler.EmitInstruction(Instruction.CallNativeAuto);
 		self.compiler.EmitUShort((ushort)self.compiler.chunk.nativeCalls.count);

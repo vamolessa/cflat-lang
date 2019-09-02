@@ -1,4 +1,4 @@
-//#define DEBUG_TRACE
+#define DEBUG_TRACE
 using System.Text;
 
 internal static class VirtualMachineInstructions
