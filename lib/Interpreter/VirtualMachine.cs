@@ -51,10 +51,11 @@ internal struct DebugData
 public sealed class VirtualMachine
 {
 	internal ByteCodeChunk chunk;
-	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
-	internal DebugData debugData = new DebugData();
+	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
+	internal Buffer<ValueData> valueHeap = new Buffer<ValueData>(256);
 	internal Buffer<object> nativeObjects;
+	internal DebugData debugData = new DebugData();
 	internal Option<RuntimeError> error;
 
 	public void Load(ByteCodeChunk chunk)
@@ -62,10 +63,9 @@ public sealed class VirtualMachine
 		this.chunk = chunk;
 		error = Option.None;
 
-		valueStack.count = 0;
 		callframeStack.count = 0;
-
-		debugData.Clear();
+		valueStack.count = 0;
+		valueHeap.count = 0;
 
 		nativeObjects = new Buffer<object>
 		{
@@ -74,6 +74,8 @@ public sealed class VirtualMachine
 		};
 		for (var i = 0; i < nativeObjects.count; i++)
 			nativeObjects.buffer[i] = chunk.stringLiterals.buffer[i];
+
+		debugData.Clear();
 	}
 
 	public void Error(string message)

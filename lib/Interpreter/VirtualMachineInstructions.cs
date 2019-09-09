@@ -65,9 +65,17 @@ internal static class VirtualMachineInstructions
 						)
 					);
 
-					var context = new RuntimeContext(vm, stackTop);
-					function.callback(ref context);
-					VirtualMachineHelper.Return(vm, function.returnSize);
+					try
+					{
+						var context = new RuntimeContext(vm, stackTop);
+						function.callback(ref context);
+						VirtualMachineHelper.Return(vm, function.returnSize);
+					}
+					catch (System.Exception e)
+					{
+						vm.Error(e.ToString());
+						return;
+					}
 					break;
 				}
 			case Instruction.CallNativeAuto:
@@ -90,22 +98,29 @@ internal static class VirtualMachineInstructions
 					for (var i = 0; i < arguments.Length; i++)
 						arguments[i] = Marshal.GetObject(ref reader, call.argumentTypes[i]);
 
-					var result = call.methodInfo.Invoke(null, arguments);
-					if (call.returnType.IsKind(TypeKind.Unit))
-						stackBuffer.PushBackUnchecked(new ValueData());
-					else if (call.returnType.IsKind(TypeKind.Bool) && result is bool b)
-						stackBuffer.PushBackUnchecked(new ValueData(b));
-					else if (call.returnType.IsKind(TypeKind.Int) && result is int i)
-						stackBuffer.PushBackUnchecked(new ValueData(i));
-					else if (call.returnType.IsKind(TypeKind.Float) && result is float f)
-						stackBuffer.PushBackUnchecked(new ValueData(f));
-					else
+					try
 					{
-						stackBuffer.PushBackUnchecked(new ValueData(vm.nativeObjects.count));
-						vm.nativeObjects.PushBackUnchecked(result);
+						var result = call.methodInfo.Invoke(null, arguments);
+						if (call.returnType.IsKind(TypeKind.Unit))
+							stackBuffer.PushBackUnchecked(new ValueData());
+						else if (call.returnType.IsKind(TypeKind.Bool) && result is bool b)
+							stackBuffer.PushBackUnchecked(new ValueData(b));
+						else if (call.returnType.IsKind(TypeKind.Int) && result is int i)
+							stackBuffer.PushBackUnchecked(new ValueData(i));
+						else if (call.returnType.IsKind(TypeKind.Float) && result is float f)
+							stackBuffer.PushBackUnchecked(new ValueData(f));
+						else
+						{
+							stackBuffer.PushBackUnchecked(new ValueData(vm.nativeObjects.count));
+							vm.nativeObjects.PushBackUnchecked(result);
+						}
+						VirtualMachineHelper.Return(vm, call.returnType.GetSize(vm.chunk));
 					}
-
-					VirtualMachineHelper.Return(vm, call.returnType.GetSize(vm.chunk));
+					catch (System.Exception e)
+					{
+						vm.Error(e.ToString());
+						return;
+					}
 					break;
 				}
 			case Instruction.Return:
