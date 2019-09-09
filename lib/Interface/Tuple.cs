@@ -108,6 +108,24 @@ public struct Object : IMarshalable
 	}
 }
 
+public struct Array<T> : IMarshalable where T : IMarshalable
+{
+	public T[] buffer;
+	public Slice slice;
+
+	public Array(T[] buffer, Slice slice)
+	{
+		this.buffer = buffer;
+		this.slice = slice;
+	}
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		var index = (int)slice.index;
+		marshaler.Marshal(ref index, null);
+	}
+}
+
 public interface ITuple : IMarshalable { }
 
 public static class Tuple

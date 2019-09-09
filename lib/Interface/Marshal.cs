@@ -27,6 +27,7 @@ internal static class Marshal
 	{
 		public static byte size;
 	}
+
 	internal static class BasicTypeOf<T> where T : IMarshalable
 	{
 		public static Option<ValueType> type;
