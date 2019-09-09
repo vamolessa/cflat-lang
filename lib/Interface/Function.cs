@@ -18,11 +18,11 @@ public sealed class Function<A, R>
 		return context.CallFunction<A, R>(this, ref arguments);
 	}
 
-	public R Call(Pepper pepper, A arguments)
+	public R Call(Clef clef, A arguments)
 	{
 		var context = new RuntimeContext(
-			pepper.virtualMachine,
-			pepper.virtualMachine.valueStack.count - parametersSize
+			clef.virtualMachine,
+			clef.virtualMachine.valueStack.count - parametersSize
 		);
 
 		return context.CallFunction<A, R>(this, ref arguments);

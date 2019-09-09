@@ -1,4 +1,4 @@
-public sealed class Pepper
+public sealed class Clef
 {
 	internal readonly VirtualMachine virtualMachine = new VirtualMachine();
 	internal readonly CompilerController compiler = new CompilerController();

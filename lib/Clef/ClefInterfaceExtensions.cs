@@ -1,12 +1,12 @@
-public static class PepperInterfaceExtensions
+public static class ClefInterfaceExtensions
 {
-	public static void AddSearchingAssembly(this Pepper self, System.Type containedType)
+	public static void AddSearchingAssembly(this Clef self, System.Type containedType)
 	{
 		var assembly = System.Reflection.Assembly.GetAssembly(containedType);
 		self.compiler.searchingAssemblies.PushBack(assembly);
 	}
 
-	public static Option<Function<A, R>> GetFunction<A, R>(this Pepper self, string functionName)
+	public static Option<Function<A, R>> GetFunction<A, R>(this Clef self, string functionName)
 		where A : struct, ITuple
 		where R : struct, IMarshalable
 	{
@@ -42,12 +42,12 @@ public static class PepperInterfaceExtensions
 		return Option.None;
 	}
 
-	public static void AddRegisterError(this Pepper self, string errorFormat, params object[] args)
+	public static void AddRegisterError(this Clef self, string errorFormat, params object[] args)
 	{
 		self.registerErrors.PushBack(new CompileError(new Slice(), string.Format(errorFormat, args)));
 	}
 
-	public static bool AddFunction(this Pepper self, NativeCallback<DefinitionContext> definitionFunction, NativeCallback<RuntimeContext> runtimeFunction)
+	public static bool AddFunction(this Clef self, NativeCallback<DefinitionContext> definitionFunction, NativeCallback<RuntimeContext> runtimeFunction)
 	{
 		var context = new DefinitionContext(self.byteCode);
 		try
@@ -85,7 +85,7 @@ public static class PepperInterfaceExtensions
 		return false;
 	}
 
-	public static void AddStruct<T>(this Pepper self) where T : struct, IStruct
+	public static void AddStruct<T>(this Clef self) where T : struct, IStruct
 	{
 		Marshal.ReflectOnStruct<T>(self.byteCode);
 	}

@@ -1,8 +1,8 @@
 using System.Text;
 
-public static class PepperInspectionExtensions
+public static class ClefInspectionExtensions
 {
-	public static string TraceCallStack(this Pepper self)
+	public static string TraceCallStack(this Clef self)
 	{
 		var vm = self.virtualMachine;
 		var sb = new StringBuilder();
@@ -44,7 +44,7 @@ public static class PepperInspectionExtensions
 				break;
 			case CallFrame.Type.AutoNativeFunction:
 				sb.Append("[auto-native function] ");
-				
+
 				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
 				sb.AppendLine();
 				break;
@@ -54,7 +54,7 @@ public static class PepperInspectionExtensions
 		return sb.ToString();
 	}
 
-	public static string Disassemble(this Pepper self)
+	public static string Disassemble(this Clef self)
 	{
 		var sb = new StringBuilder();
 		self.byteCode.Disassemble(self.source, "script", sb);

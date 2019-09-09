@@ -1,3 +1,4 @@
+function prototype
 multi bytecode
 array
 ref

@@ -13,18 +13,18 @@ public static class TestHelper
 	public readonly struct CallAssertion
 	{
 		private readonly string source;
-		private readonly Pepper pepper;
+		private readonly Clef clef;
 
-		public CallAssertion(string source, Pepper pepper)
+		public CallAssertion(string source, Clef clef)
 		{
 			this.source = source;
-			this.pepper = pepper;
+			this.clef = clef;
 		}
 
 		public void AssertSuccessCall()
 		{
 			string errorMessage = null;
-			var error = pepper.GetError();
+			var error = clef.GetError();
 			if (error.isSome)
 				errorMessage = VirtualMachineHelper.FormatError(source, error.value, 1, TabSize);
 			Assert.Null(errorMessage);
@@ -33,8 +33,8 @@ public static class TestHelper
 				var flags =
 					System.Reflection.BindingFlags.NonPublic |
 					System.Reflection.BindingFlags.Instance;
-				var virtualMachineField = pepper.GetType().GetField("virtualMachine", flags);
-				var virtualMachine = virtualMachineField.GetValue(pepper);
+				var virtualMachineField = clef.GetType().GetField("virtualMachine", flags);
+				var virtualMachine = virtualMachineField.GetValue(clef);
 				var debugDataField = virtualMachineField.FieldType.GetField("debugData", flags);
 				var debugData = debugDataField.GetValue(virtualMachine);
 				var typeStackField = debugDataField.FieldType.GetField("typeStack");
@@ -50,34 +50,34 @@ public static class TestHelper
 	public static R Run<R>(string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		return Run<R>(new Pepper(), source, out assertion);
+		return Run<R>(new Clef(), source, out assertion);
 	}
 
-	public static R Run<R>(Pepper pepper, string source, out CallAssertion assertion)
+	public static R Run<R>(Clef clef, string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		var compileErrors = pepper.CompileSource(source, CompilerMode);
+		var compileErrors = clef.CompileSource(source, CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
-		assertion = new CallAssertion(source, pepper);
-		return pepper.GetFunction<Empty, R>("f").value.Call(pepper, new Empty());
+		assertion = new CallAssertion(source, clef);
+		return clef.GetFunction<Empty, R>("f").value.Call(clef, new Empty());
 	}
 
 	public static R RunExpression<R>(string source, out CallAssertion assertion)
 	where R : struct, IMarshalable
 	{
-		return RunExpression<R>(new Pepper(), source, out assertion);
+		return RunExpression<R>(new Clef(), source, out assertion);
 	}
 
-	public static R RunExpression<R>(Pepper pepper, string source, out CallAssertion assertion)
+	public static R RunExpression<R>(Clef clef, string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		var compileErrors = pepper.CompileExpression(source, CompilerMode);
+		var compileErrors = clef.CompileExpression(source, CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
-		assertion = new CallAssertion(source, pepper);
-		return pepper.GetFunction<Empty, R>(string.Empty).value.Call(pepper, new Empty());
+		assertion = new CallAssertion(source, clef);
+		return clef.GetFunction<Empty, R>(string.Empty).value.Call(clef, new Empty());
 	}
 }

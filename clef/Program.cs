@@ -21,7 +21,7 @@ public static class Program
 			return;
 		}
 
-		ConsoleHelper.Write("Usage: pepper [script]");
+		ConsoleHelper.Write("Usage: clef [script]");
 		System.Environment.Exit(64);
 	}
 

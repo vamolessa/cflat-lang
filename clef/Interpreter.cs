@@ -20,15 +20,15 @@ public static class Interpreter
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
-		var pepper = new Pepper();
+		var clef = new Clef();
 
-		pepper.AddSearchingAssembly(typeof(System.Console));
-		pepper.AddSearchingAssembly(typeof(Interpreter));
+		clef.AddSearchingAssembly(typeof(System.Console));
+		clef.AddSearchingAssembly(typeof(Interpreter));
 
-		pepper.AddFunction(StartStopwatch, StartStopwatch);
-		pepper.AddFunction(StopStopwatch, StopStopwatch);
+		clef.AddFunction(StartStopwatch, StartStopwatch);
+		clef.AddFunction(StopStopwatch, StopStopwatch);
 
-		var compileErrors = pepper.CompileSource(source, Mode.Debug);
+		var compileErrors = clef.CompileSource(source, Mode.Debug);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
@@ -42,24 +42,24 @@ public static class Interpreter
 
 		if (printDisassembled)
 		{
-			ConsoleHelper.Write(pepper.Disassemble());
+			ConsoleHelper.Write(clef.Disassemble());
 			ConsoleHelper.LineBreak();
 		}
 
-		var main = pepper.GetFunction<Empty, Int>("main");
+		var main = clef.GetFunction<Empty, Int>("main");
 		if (main.isSome)
-			System.Console.WriteLine("RESULT: {0}", main.value.Call(pepper, new Empty()).value);
+			System.Console.WriteLine("RESULT: {0}", main.value.Call(clef, new Empty()).value);
 		else
 			System.Console.WriteLine("NOT FOUNDED");
 
-		var runtimeError = pepper.GetError();
+		var runtimeError = clef.GetError();
 		if (runtimeError.isSome)
 		{
 			var error = VirtualMachineHelper.FormatError(source, runtimeError.value, 2, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
-			ConsoleHelper.Error(pepper.TraceCallStack());
+			ConsoleHelper.Error(clef.TraceCallStack());
 
 			System.Environment.ExitCode = 70;
 		}
