@@ -233,6 +233,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LoadLocal:
 		case Instruction.AssignLocal:
 		case Instruction.IncrementLocalInt:
+		case Instruction.CreateArray:
 		case Instruction.ForLoopCheck:
 		case Instruction.DebugPopTypeMultiple:
 			return OneByteInstruction(self, instruction, index, sb);

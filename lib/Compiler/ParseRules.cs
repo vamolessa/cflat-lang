@@ -20,6 +20,7 @@ public sealed class ParseRules
 		Set(TokenKind.Dot, null, CompilerController.Dot, Precedence.Call);
 		Set(TokenKind.OpenParenthesis, CompilerController.Grouping, CompilerController.Call, Precedence.Call);
 		Set(TokenKind.OpenCurlyBrackets, CompilerController.BlockOrTupleExpression, null, Precedence.None);
+		Set(TokenKind.OpenSquareBrackets, CompilerController.ArrayExpression, null, Precedence.None);
 		Set(TokenKind.Minus, CompilerController.Unary, CompilerController.Binary, Precedence.Term);
 		Set(TokenKind.Plus, null, CompilerController.Binary, Precedence.Term);
 		Set(TokenKind.Slash, null, CompilerController.Binary, Precedence.Factor);

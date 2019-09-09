@@ -46,9 +46,9 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		var main = clef.GetFunction<Empty, Int>("main");
+		var main = clef.GetFunction<Empty, Unit>("main");
 		if (main.isSome)
-			System.Console.WriteLine("RESULT: {0}", main.value.Call(clef, new Empty()).value);
+			System.Console.WriteLine("RESULT: {0}", main.value.Call(clef, new Empty()));
 		else
 			System.Console.WriteLine("NOT FOUNDED");
 

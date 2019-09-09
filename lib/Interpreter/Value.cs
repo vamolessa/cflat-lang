@@ -45,18 +45,35 @@ public enum TypeKind : byte
 	NativeObject,
 }
 
+[System.Flags]
+public enum TypeFlags : byte
+{
+	None = 0x0,
+	Array = 0x1,
+}
+
 public readonly struct ValueType
 {
 	public readonly ushort index;
 	public readonly TypeKind kind;
-	public readonly byte flags;
+	public readonly TypeFlags flags;
+
+	public bool IsSimple
+	{
+		get { return flags == 0 && index == 0; }
+	}
+
+	public bool IsArray
+	{
+		get { return (flags & TypeFlags.Array) != 0; }
+	}
 
 	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
 	{
 		return new ValueType(
 			BytesHelper.BytesToUShort(b0, b1),
 			(TypeKind)b2,
-			b3
+			(TypeFlags)b3
 		);
 	}
 
@@ -70,11 +87,11 @@ public readonly struct ValueType
 	public ValueType(TypeKind kind, int index)
 	{
 		this.kind = kind;
-		this.flags = 0;
+		this.flags = TypeFlags.None;
 		this.index = (ushort)index;
 	}
 
-	public ValueType(ushort index, TypeKind kind, byte flags)
+	public ValueType(ushort index, TypeKind kind, TypeFlags flags)
 	{
 		this.kind = kind;
 		this.flags = flags;
@@ -87,11 +104,6 @@ public readonly struct ValueType
 			kind == other.kind &&
 			flags == other.flags &&
 			index == other.index;
-	}
-
-	public bool IsSimple()
-	{
-		return flags == 0 && index == 0;
 	}
 
 	public bool IsKind(TypeKind kind)
@@ -108,11 +120,14 @@ public readonly struct ValueType
 		);
 
 		b2 = (byte)kind;
-		b3 = flags;
+		b3 = (byte)flags;
 	}
 
 	public byte GetSize(ByteCodeChunk chunk)
 	{
+		if (!IsSimple)
+			return 1;
+
 		switch (kind)
 		{
 		case TypeKind.Tuple:
@@ -124,8 +139,21 @@ public readonly struct ValueType
 		}
 	}
 
+	public ValueType GetElementType()
+	{
+		return new ValueType(index, kind, flags & ~TypeFlags.Array);
+	}
+
 	public void Format(ByteCodeChunk chunk, StringBuilder sb)
 	{
+		if (IsArray)
+		{
+			sb.Append('[');
+			GetElementType().Format(chunk, sb);
+			sb.Append(']');
+			return;
+		}
+
 		switch (kind)
 		{
 		case TypeKind.Unit:

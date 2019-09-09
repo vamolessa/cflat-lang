@@ -23,6 +23,7 @@ public enum Instruction
 	LoadField,
 	IntToFloat,
 	FloatToInt,
+	CreateArray,
 	NegateInt,
 	NegateFloat,
 	AddInt,

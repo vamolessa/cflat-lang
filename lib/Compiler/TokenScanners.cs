@@ -35,6 +35,8 @@ public static class TokenScanners
 		new CharScanner(')').ForToken(TokenKind.CloseParenthesis),
 		new CharScanner('{').ForToken(TokenKind.OpenCurlyBrackets),
 		new CharScanner('}').ForToken(TokenKind.CloseCurlyBrackets),
+		new CharScanner('[').ForToken(TokenKind.OpenSquareBrackets),
+		new CharScanner(']').ForToken(TokenKind.CloseSquareBrackets),
 
 		new CharScanner('+').ForToken(TokenKind.Plus),
 		new CharScanner('-').ForToken(TokenKind.Minus),

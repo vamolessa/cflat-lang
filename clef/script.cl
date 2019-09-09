@@ -1,1 +1,4 @@
-fn main():int{if true{return 1}else{return 0}}
+fn main() {
+	let a = [{false, false}:2]
+	print a
+}

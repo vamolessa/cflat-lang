@@ -12,6 +12,7 @@ public enum TokenKind
 	Print,
 
 	OpenParenthesis, CloseParenthesis, OpenCurlyBrackets, CloseCurlyBrackets,
+	OpenSquareBrackets, CloseSquareBrackets,
 
 	Plus, Minus, Asterisk, Slash,
 	Equal, Less, Greater, LessEqual, GreaterEqual,

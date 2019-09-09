@@ -18,13 +18,13 @@ public sealed class ValueTests
 	}
 
 	[Theory]
-	[InlineData(TypeKind.Unit, 0, 0)]
-	[InlineData(TypeKind.Int, 0, 0)]
-	[InlineData(TypeKind.Struct, 0, 0)]
-	[InlineData(TypeKind.Struct, 99, 0)]
-	[InlineData(TypeKind.Struct, 99, 1)]
-	[InlineData(TypeKind.Unit, 0, 1)]
-	public void ValueTypeTests(TypeKind kind, ushort index, byte flags)
+	[InlineData(TypeKind.Unit, 0, TypeFlags.None)]
+	[InlineData(TypeKind.Int, 0, TypeFlags.None)]
+	[InlineData(TypeKind.Struct, 0, TypeFlags.None)]
+	[InlineData(TypeKind.Struct, 99, TypeFlags.None)]
+	[InlineData(TypeKind.Struct, 99, TypeFlags.Array)]
+	[InlineData(TypeKind.Unit, 0, TypeFlags.Array)]
+	public void ValueTypeTests(TypeKind kind, ushort index, TypeFlags flags)
 	{
 		byte b0, b1, b2, b3;
 		var type = new ValueType(index, kind, flags);

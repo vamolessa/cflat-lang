@@ -17,6 +17,24 @@ public static class VirtualMachineHelper
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 	{
+		if (type.IsArray)
+		{
+			var heapStartIndex = vm.valueStack.buffer[index].asInt;
+			if (heapStartIndex <= 0)
+			{
+				sb.Append("<!>");
+				return;
+			}
+
+			sb.Append('[');
+			type.GetElementType().Format(vm.chunk, sb);
+			sb.Append(':');
+			var arrayLength = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
+			sb.Append(arrayLength);
+			sb.Append(']');
+			return;
+		}
+
 		switch (type.kind)
 		{
 		case TypeKind.Unit:

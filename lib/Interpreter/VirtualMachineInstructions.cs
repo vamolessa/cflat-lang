@@ -236,6 +236,32 @@ internal static class VirtualMachineInstructions
 			case Instruction.FloatToInt:
 				stack[stackSize - 1] = new ValueData((int)stack[stackSize - 1].asFloat);
 				break;
+			case Instruction.CreateArray:
+				{
+					var elementSize = bytes[codeIndex++];
+					var arrayLength = stack[--stackSize].asInt;
+					if (arrayLength < 0)
+					{
+						vm.Error("Negative array length");
+						return;
+					}
+
+					stackSize -= elementSize;
+
+					var heapStartIndex = vm.valueHeap.count;
+					var arraySize = elementSize * arrayLength;
+					vm.valueHeap.GrowUnchecked(arraySize + 1);
+					vm.valueHeap.buffer[heapStartIndex++] = new ValueData(arrayLength);
+
+					for (var i = 0; i < arraySize; i += elementSize)
+					{
+						for (var j = 0; j < elementSize; j++)
+							vm.valueHeap.buffer[heapStartIndex + i + j] = stack[stackSize + j];
+					}
+
+					stack[stackSize++] = new ValueData(heapStartIndex);
+					break;
+				}
 			case Instruction.NegateInt:
 				stack[stackSize - 1].asInt = -stack[stackSize - 1].asInt;
 				break;

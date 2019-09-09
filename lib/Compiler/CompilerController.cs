@@ -328,8 +328,41 @@ public sealed class CompilerController
 
 		self.compiler.typeStack.PushBack(type);
 
-		self.compiler.DebugEmitPopType((byte)builder.elementCount);
-		self.compiler.DebugEmitPushType(type);
+		{
+			self.compiler.DebugEmitPopType((byte)builder.elementCount);
+			self.compiler.DebugEmitPushType(type);
+		}
+	}
+
+	public static void ArrayExpression(CompilerController self, Precedence precedence, Slice previousSlice)
+	{
+		var defaultValueSlice = Expression(self);
+		var defaultValueType = self.compiler.typeStack.PopLast();
+		if (defaultValueType.IsArray)
+			self.compiler.AddSoftError(defaultValueSlice, "Can not declare array of arrays");
+
+		self.compiler.parser.Consume(TokenKind.Colon, "Expected ':' after array element default value");
+
+		var lengthSlice = Expression(self);
+		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Int))
+			self.compiler.AddSoftError(lengthSlice, "Expected int expression for array length");
+
+		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
+
+		var arrayType = new ValueType(
+			defaultValueType.index,
+			defaultValueType.kind,
+			defaultValueType.flags | TypeFlags.Array
+		);
+		self.compiler.typeStack.PushBack(arrayType);
+
+		self.compiler.EmitInstruction(Instruction.CreateArray);
+		self.compiler.EmitByte(defaultValueType.GetSize(self.compiler.chunk));
+
+		{
+			self.compiler.DebugEmitPopType(2);
+			self.compiler.DebugEmitPushType(arrayType);
+		}
 	}
 
 	public void Statement(out ValueType type, out StatementKind kind)
@@ -1268,7 +1301,7 @@ public sealed class CompilerController
 					c.typeStack.PushBack(new ValueType(TypeKind.Bool));
 					break;
 				}
-				if (!aType.IsSimple() || !bType.IsSimple())
+				if (!aType.IsSimple || !bType.IsSimple)
 				{
 					c.AddSoftError(slice, "{0} operator can only be applied to bools, ints, floats and strings. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk), opName);
 					break;
