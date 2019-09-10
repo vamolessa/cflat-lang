@@ -47,7 +47,7 @@ public static class NativeFunctionBodyExtensions
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
 
-		var marshaler = new WriteMarshaler(self.vm, self.vm.valueStack.count);
+		var marshaler = new StackWriteMarshaler(self.vm, self.vm.valueStack.count);
 		self.vm.valueStack.GrowUnchecked(Marshal.SizeOf<T>.size);
 		value.Marshal(ref marshaler);
 		return default;

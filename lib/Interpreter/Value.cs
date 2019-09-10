@@ -80,7 +80,7 @@ public readonly struct ValueType
 	public ValueType(TypeKind kind)
 	{
 		this.kind = kind;
-		this.flags = 0;
+		this.flags = TypeFlags.None;
 		this.index = 0;
 	}
 
@@ -125,7 +125,7 @@ public readonly struct ValueType
 
 	public byte GetSize(ByteCodeChunk chunk)
 	{
-		if (!IsSimple)
+		if (IsArray)
 			return 1;
 
 		switch (kind)
@@ -139,9 +139,14 @@ public readonly struct ValueType
 		}
 	}
 
-	public ValueType GetElementType()
+	public ValueType ToArrayElementType()
 	{
 		return new ValueType(index, kind, flags & ~TypeFlags.Array);
+	}
+
+	public ValueType ToArrayType()
+	{
+		return new ValueType(index, kind, flags | TypeFlags.Array);
 	}
 
 	public void Format(ByteCodeChunk chunk, StringBuilder sb)
@@ -149,7 +154,7 @@ public readonly struct ValueType
 		if (IsArray)
 		{
 			sb.Append('[');
-			GetElementType().Format(chunk, sb);
+			ToArrayElementType().Format(chunk, sb);
 			sb.Append(']');
 			return;
 		}

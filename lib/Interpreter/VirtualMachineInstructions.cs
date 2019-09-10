@@ -93,7 +93,7 @@ internal static class VirtualMachineInstructions
 						)
 					);
 
-					var reader = new ReadMarshaler(vm, stackTop);
+					var reader = new StackReadMarshaler(vm, stackTop);
 					var arguments = new object[call.argumentTypes.Length];
 					for (var i = 0; i < arguments.Length; i++)
 						arguments[i] = Marshal.GetObject(ref reader, call.argumentTypes[i]);

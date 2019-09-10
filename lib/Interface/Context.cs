@@ -44,7 +44,7 @@ public struct RuntimeContext : IContext
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
 
 		var value = default(T);
-		var marshaler = new ReadMarshaler(vm, argStackIndex);
+		var marshaler = new StackReadMarshaler(vm, argStackIndex);
 		argStackIndex += Marshal.SizeOf<T>.size;
 		value.Marshal(ref marshaler);
 		return value;
@@ -54,7 +54,7 @@ public struct RuntimeContext : IContext
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
 
 		var value = default(T);
-		var marshaler = new ReadMarshaler(vm, argStackIndex);
+		var marshaler = new StackReadMarshaler(vm, argStackIndex);
 		argStackIndex += Marshal.SizeOf<T>.size;
 		value.Marshal(ref marshaler);
 		return value;
@@ -90,14 +90,14 @@ public struct RuntimeContext : IContext
 			CallFrame.Type.Function
 		));
 
-		var writer = new WriteMarshaler(vm, vm.valueStack.count);
+		var writer = new StackWriteMarshaler(vm, vm.valueStack.count);
 		vm.valueStack.GrowUnchecked(function.parametersSize);
 		arguments.Marshal(ref writer);
 
 		VirtualMachineInstructions.RunTopFunction(vm);
 
 		vm.valueStack.count -= Marshal.SizeOf<R>.size;
-		var reader = new ReadMarshaler(vm, vm.valueStack.count);
+		var reader = new StackReadMarshaler(vm, vm.valueStack.count);
 		var result = default(R);
 		result.Marshal(ref reader);
 

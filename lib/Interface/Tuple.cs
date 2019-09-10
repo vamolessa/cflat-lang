@@ -108,21 +108,38 @@ public struct Object : IMarshalable
 	}
 }
 
-public struct Array<T> : IMarshalable where T : IMarshalable
+public struct Array<T> : IMarshalable where T : struct, IMarshalable
 {
-	public T[] buffer;
-	public Slice slice;
-
-	public Array(T[] buffer, Slice slice)
-	{
-		this.buffer = buffer;
-		this.slice = slice;
-	}
+	internal VirtualMachine vm;
+	internal int heapStartIndex;
 
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
-		var index = (int)slice.index;
-		marshaler.Marshal(ref index, null);
+		marshaler.Marshal(ref heapStartIndex, null);
+	}
+
+	public int Length
+	{
+		get { return vm.valueHeap.buffer[heapStartIndex - 1].asInt; }
+	}
+
+	public T this[int index]
+	{
+		get
+		{
+			var size = global::Marshal.ReflectOn<T>(vm.chunk).size;
+			var marshaler = new HeapReadMarshaler(vm, heapStartIndex + size * index);
+			var value = default(T);
+			value.Marshal(ref marshaler);
+			return value;
+		}
+
+		set
+		{
+			var size = global::Marshal.ReflectOn<T>(vm.chunk).size;
+			var marshaler = new HeapReadMarshaler(vm, heapStartIndex + size * index);
+			value.Marshal(ref marshaler);
+		}
 	}
 }
 
