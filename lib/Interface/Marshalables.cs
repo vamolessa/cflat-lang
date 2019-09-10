@@ -108,13 +108,14 @@ public struct Object : IMarshalable
 	}
 }
 
-public struct Array<T> : IMarshalable where T : struct, IMarshalable
+public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalable
 {
 	internal VirtualMachine vm;
 	internal int heapStartIndex;
 
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
+		vm = marshaler.VirtualMachine;
 		marshaler.Marshal(ref heapStartIndex, null);
 	}
 
@@ -137,9 +138,18 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 		set
 		{
 			var size = global::Marshal.ReflectOn<T>(vm.chunk).size;
-			var marshaler = new HeapReadMarshaler(vm, heapStartIndex + size * index);
+			var marshaler = new HeapWriteMarshaler(vm, heapStartIndex + size * index);
 			value.Marshal(ref marshaler);
 		}
+	}
+
+	Marshal.ReflectionData IReflectable.GetReflectionData(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Array<T>>.size = 1;
+		return new Marshal.ReflectionData(
+			global::Marshal.ReflectOn<T>(chunk).type.ToArrayType(),
+			1
+		);
 	}
 }
 

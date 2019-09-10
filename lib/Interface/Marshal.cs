@@ -7,6 +7,11 @@ public interface IMarshalable
 	void Marshal<M>(ref M marshaler) where M : IMarshaler;
 }
 
+internal interface IReflectable
+{
+	Marshal.ReflectionData GetReflectionData(ByteCodeChunk chunk);
+}
+
 internal static class Marshal
 {
 	public sealed class InvalidReflectionException : System.Exception { }
@@ -53,22 +58,16 @@ internal static class Marshal
 	public static ReflectionData ReflectOn<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
 	{
 		var type = typeof(T);
-
 		var marshalType = Marshal.BasicTypeOf<T>.type;
+
 		if (marshalType.isSome)
-		{
 			return new ReflectionData(marshalType.value, Marshal.SizeOf<T>.size);
-		}
 		else if (typeof(IStruct).IsAssignableFrom(type))
-		{
-			var marshaler = new StructDefinitionMarshaler(chunk);
-			return marshaler.GetReflectionData<T>();
-		}
+			return new StructDefinitionMarshaler(chunk).GetReflectionData<T>();
 		else if (typeof(ITuple).IsAssignableFrom(type))
-		{
-			var marshaler = new TupleDefinitionMarshaler(chunk);
-			return marshaler.GetReflectionData<T>();
-		}
+			return new TupleDefinitionMarshaler(chunk).GetReflectionData<T>();
+		else if (typeof(IReflectable).IsAssignableFrom(type))
+			return (new T() as IReflectable).GetReflectionData(chunk);
 
 		throw new InvalidReflectionException();
 	}
@@ -126,23 +125,15 @@ internal static class Marshal
 
 public interface IMarshaler
 {
+	VirtualMachine VirtualMachine { get; }
+
 	void Marshal(string name);
 	void Marshal(ref bool value, string name);
 	void Marshal(ref int value, string name);
 	void Marshal(ref float value, string name);
 	void Marshal(ref string value, string name);
-	void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable;
 	void Marshal<T>(ref T value, string name) where T : struct, IMarshalable;
 	void Marshal(ref object value, string name);
-}
-
-public interface IHeapMarshaler
-{
-	void HeapMarshal();
-	void HeapMarshal(ref bool value);
-	void HeapMarshal(ref int value);
-	void HeapMarshal(ref float value);
-	void HeapMarshal(ref string value);
 }
 
 internal interface IDefinitionMarshaler : IMarshaler
@@ -161,16 +152,13 @@ internal struct StackReadMarshaler : IMarshaler
 		this.stackIndex = stackIndex;
 	}
 
+	public VirtualMachine VirtualMachine { get { return vm; } }
+
 	public void Marshal(string name) => stackIndex++;
 	public void Marshal(ref bool value, string name) => value = vm.valueStack.buffer[stackIndex++].asBool;
 	public void Marshal(ref int value, string name) => value = vm.valueStack.buffer[stackIndex++].asInt;
 	public void Marshal(ref float value, string name) => value = vm.valueStack.buffer[stackIndex++].asFloat;
 	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.valueStack.buffer[stackIndex++].asInt] as string;
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable
-	{
-		value.Marshal(ref this);
-		value.vm = vm;
-	}
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable =>
 		value.Marshal(ref this);
 	public void Marshal(ref object value, string name) => value = vm.nativeObjects.buffer[vm.valueStack.buffer[stackIndex++].asInt];
@@ -187,6 +175,8 @@ internal struct StackWriteMarshaler : IMarshaler
 		this.stackIndex = stackIndex;
 	}
 
+	public VirtualMachine VirtualMachine { get { return vm; } }
+
 	public void Marshal(string name) => stackIndex++;
 	public void Marshal(ref bool value, string name) => vm.valueStack.buffer[stackIndex++].asBool = value;
 	public void Marshal(ref int value, string name) => vm.valueStack.buffer[stackIndex++].asInt = value;
@@ -196,7 +186,6 @@ internal struct StackWriteMarshaler : IMarshaler
 		vm.valueStack.buffer[stackIndex++].asInt = vm.nativeObjects.count;
 		vm.nativeObjects.PushBack(value);
 	}
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void Marshal(ref object value, string name)
 	{
@@ -216,16 +205,13 @@ internal struct HeapReadMarshaler : IMarshaler
 		this.heapIndex = heapIndex;
 	}
 
+	public VirtualMachine VirtualMachine { get { return vm; } }
+
 	public void Marshal(string name) => heapIndex++;
 	public void Marshal(ref bool value, string name) => value = vm.valueHeap.buffer[heapIndex++].asBool;
 	public void Marshal(ref int value, string name) => value = vm.valueHeap.buffer[heapIndex++].asInt;
 	public void Marshal(ref float value, string name) => value = vm.valueHeap.buffer[heapIndex++].asFloat;
 	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.valueHeap.buffer[heapIndex++].asInt] as string;
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable
-	{
-		value.Marshal(ref this);
-		value.vm = vm;
-	}
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable =>
 		value.Marshal(ref this);
 	public void Marshal(ref object value, string name) => value = vm.nativeObjects.buffer[vm.valueHeap.buffer[heapIndex++].asInt];
@@ -242,6 +228,8 @@ internal struct HeapWriteMarshaler : IMarshaler
 		this.heapIndex = heapIndex;
 	}
 
+	public VirtualMachine VirtualMachine { get { return vm; } }
+
 	public void Marshal(string name) => heapIndex++;
 	public void Marshal(ref bool value, string name) => vm.valueHeap.buffer[heapIndex++].asBool = value;
 	public void Marshal(ref int value, string name) => vm.valueHeap.buffer[heapIndex++].asInt = value;
@@ -251,7 +239,6 @@ internal struct HeapWriteMarshaler : IMarshaler
 		vm.valueHeap.buffer[heapIndex++].asInt = vm.nativeObjects.count;
 		vm.nativeObjects.PushBack(value);
 	}
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void Marshal(ref object value, string name)
 	{
@@ -271,12 +258,13 @@ internal struct TupleDefinitionMarshaler : IDefinitionMarshaler
 		this.builder = chunk.BeginTupleType();
 	}
 
+	public VirtualMachine VirtualMachine { get { return null; } }
+
 	public void Marshal(string name) => builder.WithElement(new ValueType(TypeKind.Unit));
 	public void Marshal(ref bool value, string name) => builder.WithElement(new ValueType(TypeKind.Bool));
 	public void Marshal(ref int value, string name) => builder.WithElement(new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithElement(new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithElement(new ValueType(TypeKind.String));
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable => builder.WithElement(global::Marshal.ReflectOn<T>(chunk).type.ToArrayType());
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => builder.WithElement(global::Marshal.ReflectOn<T>(chunk).type);
 	public void Marshal(ref object value, string name) => builder.WithElement(new ValueType(TypeKind.NativeObject));
 
@@ -308,13 +296,14 @@ internal struct StructDefinitionMarshaler : IDefinitionMarshaler
 		this.builder = chunk.BeginStructType();
 	}
 
+	public VirtualMachine VirtualMachine { get { return null; } }
+
 	public void Marshal(string name) => builder.WithField(name, new ValueType(TypeKind.Unit));
 	public void Marshal(ref bool value, string name) => builder.WithField(name, new ValueType(TypeKind.Bool));
 	public void Marshal(ref int value, string name) => builder.WithField(name, new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithField(name, new ValueType(TypeKind.String));
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => builder.WithField(name, global::Marshal.ReflectOn<T>(chunk).type);
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable => builder.WithField(name, global::Marshal.ReflectOn<T>(chunk).type.ToArrayType());
 	public void Marshal(ref object value, string name) => builder.WithField(name, new ValueType(TypeKind.NativeObject));
 
 	public Marshal.ReflectionData GetReflectionData<T>() where T : struct, IMarshalable
@@ -351,13 +340,14 @@ internal struct FunctionDefinitionMarshaler : IDefinitionMarshaler
 		this.builder = chunk.BeginFunctionType();
 	}
 
+	public VirtualMachine VirtualMachine { get { return null; } }
+
 	public void Marshal(string name) => builder.WithParam(new ValueType(TypeKind.Unit));
 	public void Marshal(ref bool value, string name) => builder.WithParam(new ValueType(TypeKind.Bool));
 	public void Marshal(ref int value, string name) => builder.WithParam(new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithParam(new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithParam(new ValueType(TypeKind.String));
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => builder.WithParam(global::Marshal.ReflectOn<T>(chunk).type);
-	public void Marshal<T>(ref Array<T> value, string name) where T : struct, IMarshalable => builder.WithParam(global::Marshal.ReflectOn<T>(chunk).type.ToArrayType());
 	public void Marshal(ref object value, string name) => builder.WithParam(new ValueType(TypeKind.NativeObject));
 
 	public void Returns<T>() where T : struct, IMarshalable
