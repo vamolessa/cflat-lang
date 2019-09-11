@@ -1124,9 +1124,11 @@ public sealed class CompilerController
 		var type = arrayType.ToArrayElementType();
 		var elementSize = type.GetSize(self.compiler.chunk);
 		var offset = 0;
+		var hasFieldAccess = false;
 
 		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
+			hasFieldAccess = true;
 			if (!FieldAccess(
 				self,
 				ref slice,
@@ -1141,7 +1143,7 @@ public sealed class CompilerController
 
 		self.compiler.DebugEmitPopType(2);
 
-		if (offset > 0)
+		if (hasFieldAccess)
 		{
 			self.compiler.EmitInstruction(Instruction.ArrayGetField);
 			self.compiler.EmitByte(elementSize);

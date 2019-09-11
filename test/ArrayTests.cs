@@ -95,7 +95,14 @@ public sealed class ArrayTests
 
 	[Theory]
 	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].a}", 11)]
-	//[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f0}", 11)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].b}", 22)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].c}", 33)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f0}", 11)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f1}", 12)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].b.f0}", 21)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f0}", 31)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f1}", 32)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f2}", 33)]
 	public void IntArrayFieldIndexingTest(string source, int expected)
 	{
 		var declarations =
