@@ -24,6 +24,8 @@ public enum Instruction
 	IntToFloat,
 	FloatToInt,
 	CreateArray,
+	GetHeap,
+	SetHeap,
 	NegateInt,
 	NegateFloat,
 	AddInt,

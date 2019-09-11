@@ -262,6 +262,31 @@ internal static class VirtualMachineInstructions
 					stack[stackSize++] = new ValueData(heapStartIndex);
 					break;
 				}
+			case Instruction.GetHeap:
+				{
+					var size = bytes[codeIndex++];
+					var index = stack[--stackSize].asInt;
+
+					var stackStartIndex = stackSize;
+					stackBuffer.GrowUnchecked(size);
+
+					for (var i = 0; i < size; i++)
+						stack[stackStartIndex + i] = vm.valueHeap.buffer[index + i];
+					break;
+				}
+			case Instruction.SetHeap:
+				{
+					var size = bytes[codeIndex++];
+
+					stackSize -= size;
+					var stackStartIndex = stackSize;
+
+					var index = stack[--stackSize].asInt;
+
+					for (var i = 0; i < size; i++)
+						vm.valueHeap.buffer[index + i] = stack[stackStartIndex + i];
+					break;
+				}
 			case Instruction.NegateInt:
 				stack[stackSize - 1].asInt = -stack[stackSize - 1].asInt;
 				break;
