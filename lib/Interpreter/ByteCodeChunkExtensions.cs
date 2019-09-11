@@ -224,7 +224,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.DebugPushFrame:
 		case Instruction.DebugPopFrame:
 		case Instruction.DebugPopType:
-			return SimpleInstruction(instruction, index, sb);
+			return OneByteInstruction(instruction, index, sb);
 		case Instruction.Call:
 		case Instruction.CallNative:
 		case Instruction.CallNativeAuto:
@@ -238,11 +238,14 @@ public static class ByteCodeChunkExtensions
 		case Instruction.ArraySet:
 		case Instruction.ForLoopCheck:
 		case Instruction.DebugPopTypeMultiple:
-			return OneByteInstruction(self, instruction, index, sb);
+			return TwoByteInstruction(self, instruction, index, sb);
 		case Instruction.Move:
 		case Instruction.AssignLocalMultiple:
 		case Instruction.LoadLocalMultiple:
-			return TwoByteInstruction(self, instruction, index, sb);
+			return ThreeByteInstruction(self, instruction, index, sb);
+		case Instruction.ArrayGetField:
+		case Instruction.ArraySetField:
+			return FourByteInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);
 		case Instruction.LoadFunction:
@@ -266,18 +269,10 @@ public static class ByteCodeChunkExtensions
 		}
 	}
 
-	private static int SimpleInstruction(Instruction instruction, int index, StringBuilder sb)
+	private static int OneByteInstruction(Instruction instruction, int index, StringBuilder sb)
 	{
 		sb.Append(instruction.ToString());
 		return index + 1;
-	}
-
-	private static int OneByteInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
-	{
-		sb.Append(instruction.ToString());
-		sb.Append(' ');
-		sb.Append(chunk.bytes.buffer[index + 1]);
-		return index + 2;
 	}
 
 	private static int TwoByteInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
@@ -285,9 +280,29 @@ public static class ByteCodeChunkExtensions
 		sb.Append(instruction.ToString());
 		sb.Append(' ');
 		sb.Append(chunk.bytes.buffer[index + 1]);
+		return index + 2;
+	}
+
+	private static int ThreeByteInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		sb.Append(chunk.bytes.buffer[index + 1]);
 		sb.Append(", ");
 		sb.Append(chunk.bytes.buffer[index + 2]);
 		return index + 3;
+	}
+
+	private static int FourByteInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)
+	{
+		sb.Append(instruction.ToString());
+		sb.Append(' ');
+		sb.Append(chunk.bytes.buffer[index + 1]);
+		sb.Append(", ");
+		sb.Append(chunk.bytes.buffer[index + 2]);
+		sb.Append(", ");
+		sb.Append(chunk.bytes.buffer[index + 3]);
+		return index + 4;
 	}
 
 	private static int LoadLiteralInstruction(ByteCodeChunk chunk, Instruction instruction, int index, StringBuilder sb)

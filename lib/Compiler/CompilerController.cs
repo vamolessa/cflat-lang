@@ -1109,9 +1109,10 @@ public sealed class CompilerController
 
 	public static void Index(CompilerController self, Precedence precedence, Slice previousSlice)
 	{
+		var slice = previousSlice;
 		var arrayType = self.compiler.typeStack.PopLast();
 		if (!arrayType.IsArray)
-			self.compiler.AddSoftError(previousSlice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
+			self.compiler.AddSoftError(slice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
 
 		var indexExpressionSlice = Expression(self);
 		var indexExpressionType = self.compiler.typeStack.PopLast();
@@ -1120,17 +1121,41 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected '[' after array indexing");
 
-		var elementType = arrayType.ToArrayElementType();
+		var type = arrayType.ToArrayElementType();
+		var elementSize = type.GetSize(self.compiler.chunk);
+		var offset = 0;
 
-		self.compiler.EmitInstruction(Instruction.ArrayGet);
-		self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
-
-		self.compiler.typeStack.PushBack(elementType);
-
+		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
-			self.compiler.DebugEmitPopType(2);
-			self.compiler.DebugEmitPushType(elementType);
+			if (!FieldAccess(
+				self,
+				ref slice,
+				ref type,
+				ref offset
+			))
+			{
+				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+				return;
+			}
 		}
+
+		self.compiler.DebugEmitPopType(2);
+
+		if (offset > 0)
+		{
+			self.compiler.EmitInstruction(Instruction.ArrayGetField);
+			self.compiler.EmitByte(elementSize);
+			self.compiler.EmitByte(type.GetSize(self.compiler.chunk));
+			self.compiler.EmitByte((byte)offset);
+		}
+		else
+		{
+			self.compiler.EmitInstruction(Instruction.ArrayGet);
+			self.compiler.EmitByte(elementSize);
+		}
+
+		self.compiler.typeStack.PushBack(type);
+		self.compiler.DebugEmitPushType(type);
 	}
 
 	public static void Call(CompilerController self, Precedence precedence, Slice previousSlice)

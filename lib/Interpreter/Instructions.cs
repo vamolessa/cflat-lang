@@ -26,6 +26,8 @@ public enum Instruction
 	CreateArray,
 	ArrayGet,
 	ArraySet,
+	ArrayGetField,
+	ArraySetField,
 	NegateInt,
 	NegateFloat,
 	AddInt,
