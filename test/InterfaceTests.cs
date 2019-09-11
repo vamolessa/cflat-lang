@@ -22,8 +22,8 @@ public sealed class InterfaceTests
 		clef.AddFunction(TupleTestFunction, TupleTestFunction);
 		var t = TestHelper.RunExpression<Tuple<Int, Bool>>(clef, source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(n, t.e0);
-		Assert.Equal(b, t.e1);
+		Assert.Equal(n, t.e0.value);
+		Assert.Equal(b, t.e1.value);
 	}
 
 	public struct MyTuple : ITuple
@@ -174,6 +174,6 @@ public sealed class InterfaceTests
 
 		var n = clef.GetFunction<Empty, Int>("f").value.Call(clef, new Empty());
 		Assert.False(clef.GetError().isSome);
-		Assert.Equal(7, n);
+		Assert.Equal(7, n.value);
 	}
 }

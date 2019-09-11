@@ -23,7 +23,7 @@ public sealed class ExpressionTests
 	{
 		var v = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, v);
+		Assert.Equal(expected, v.value);
 	}
 
 	[Theory]
@@ -50,7 +50,7 @@ public sealed class ExpressionTests
 	{
 		var v = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, v);
+		Assert.Equal(expected, v.value);
 	}
 
 	[Theory]
@@ -68,7 +68,7 @@ public sealed class ExpressionTests
 	{
 		var v = TestHelper.RunExpression<Bool>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, v);
+		Assert.Equal(expected, v.value);
 	}
 
 	[Theory]
@@ -80,6 +80,6 @@ public sealed class ExpressionTests
 	{
 		var v = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, v);
+		Assert.Equal(expected, v.value);
 	}
 }

@@ -10,7 +10,7 @@ public sealed class TupleTests
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, v);
+		Assert.Equal(expected, v.value);
 	}
 
 	[Theory]
@@ -19,7 +19,7 @@ public sealed class TupleTests
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, v);
+		Assert.Equal(expected, v.value);
 	}
 
 	[Theory]

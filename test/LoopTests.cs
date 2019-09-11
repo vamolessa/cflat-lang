@@ -13,7 +13,7 @@ public sealed class LoopTests
 	{
 		var n = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, n);
+		Assert.Equal(expected, n.value);
 	}
 
 	[Theory]
@@ -25,6 +25,6 @@ public sealed class LoopTests
 	{
 		var n = TestHelper.RunExpression<Int>(source, out var a);
 		a.AssertSuccessCall();
-		Assert.Equal(expected, n);
+		Assert.Equal(expected, n.value);
 	}
 }
