@@ -344,8 +344,9 @@ public sealed class CompilerController
 		self.compiler.parser.Consume(TokenKind.Colon, "Expected ':' after array element default value");
 
 		var lengthSlice = Expression(self);
-		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Int))
-			self.compiler.AddSoftError(lengthSlice, "Expected int expression for array length");
+		var lengthType = self.compiler.typeStack.PopLast();
+		if (!lengthType.IsKind(TypeKind.Int))
+			self.compiler.AddSoftError(lengthSlice, "Expected int expression for array length. Got {0}", lengthType.ToString(self.compiler.chunk));
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
 
@@ -1068,7 +1069,7 @@ public sealed class CompilerController
 
 	public static void Dot(CompilerController self, Precedence precedence, Slice previousSlice)
 	{
-		var slice = self.compiler.parser.previousToken.slice;
+		var slice = previousSlice;
 		var type = self.compiler.typeStack.PopLast();
 		var offset = 0;
 
@@ -1104,6 +1105,32 @@ public sealed class CompilerController
 		self.compiler.typeStack.PushBack(type);
 		self.compiler.DebugEmitPushType(type);
 		return;
+	}
+
+	public static void Index(CompilerController self, Precedence precedence, Slice previousSlice)
+	{
+		var arrayType = self.compiler.typeStack.PopLast();
+		if (!arrayType.IsArray)
+			self.compiler.AddSoftError(previousSlice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
+
+		var indexExpressionSlice = Expression(self);
+		var indexExpressionType = self.compiler.typeStack.PopLast();
+		if (!indexExpressionType.IsKind(TypeKind.Int))
+			self.compiler.AddSoftError(indexExpressionSlice, "Expected int expression for array index. Got {0}", indexExpressionType.ToString(self.compiler.chunk));
+
+		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected '[' after array indexing");
+
+		var elementType = arrayType.ToArrayElementType();
+
+		self.compiler.EmitInstruction(Instruction.ArrayGet);
+		self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+
+		self.compiler.typeStack.PushBack(elementType);
+
+		{
+			self.compiler.DebugEmitPopType(2);
+			self.compiler.DebugEmitPushType(elementType);
+		}
 	}
 
 	public static void Call(CompilerController self, Precedence precedence, Slice previousSlice)
