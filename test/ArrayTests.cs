@@ -92,4 +92,20 @@ public sealed class ArrayTests
 		var v = TestHelper.RunExpression<Int>(clef, source, out var a);
 		Assert.True(clef.GetError().isSome);
 	}
+
+	[Theory]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].a}", 11)]
+	//[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f0}", 11)]
+	public void IntArrayFieldIndexingTest(string source, int expected)
+	{
+		var declarations =
+			"struct S1{f0:int}" +
+			"struct S2{f0:int,f1:int}" +
+			"struct S3{f0:int,f1:int,f2:int}" +
+			"struct S{a:S2,b:S1,c:S3}" +
+			"struct SS{a:int,b:int,c:int}";
+		var v = TestHelper.Run<Int>(declarations + source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
 }
