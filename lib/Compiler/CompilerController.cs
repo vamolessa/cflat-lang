@@ -17,6 +17,14 @@ public sealed class CompilerController
 		public int stackIndex;
 	}
 
+	private struct IndexStorage
+	{
+		public bool hasFieldAccess;
+		public byte elementSize;
+		public byte offset;
+		public ValueType type;
+	}
+
 	public readonly Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 	public Buffer<System.Reflection.Assembly> searchingAssemblies = new Buffer<System.Reflection.Assembly>();
@@ -653,6 +661,7 @@ public sealed class CompilerController
 		Expression(this);
 
 		var type = compiler.typeStack.PopLast();
+		compiler.DebugEmitPopType(1);
 
 		compiler.EmitInstruction(Instruction.Print);
 		compiler.EmitType(type);
@@ -933,19 +942,18 @@ public sealed class CompilerController
 			if (!self.compiler.localVariables.buffer[storage.variableIndex].isMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
 
-			Expression(self);
-
+			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
 			if (!expressionType.IsEqualTo(storage.type))
 			{
 				self.compiler.AddSoftError(
-					self.compiler.parser.previousToken.slice,
+					expressionSlice,
 					"Wrong type for assignment. Expected {0}. Got {1}",
 					storage.type.ToString(self.compiler.chunk),
 					expressionType.ToString(self.compiler.chunk)
 				);
 			}
-			self.compiler.typeStack.PushBack(expressionType);
+			self.compiler.typeStack.PushBack(storage.type);
 
 			var varTypeSize = storage.type.GetSize(self.compiler.chunk);
 			if (varTypeSize > 1)
@@ -1119,20 +1127,21 @@ public sealed class CompilerController
 		if (!indexExpressionType.IsKind(TypeKind.Int))
 			self.compiler.AddSoftError(indexExpressionSlice, "Expected int expression for array index. Got {0}", indexExpressionType.ToString(self.compiler.chunk));
 
-		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected '[' after array indexing");
+		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array indexing");
 
-		var type = arrayType.ToArrayElementType();
-		var elementSize = type.GetSize(self.compiler.chunk);
 		var offset = 0;
-		var hasFieldAccess = false;
+		var storage = new IndexStorage();
+		storage.hasFieldAccess = false;
+		storage.type = arrayType.ToArrayElementType();
+		storage.elementSize = storage.type.GetSize(self.compiler.chunk);
 
 		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
-			hasFieldAccess = true;
+			storage.hasFieldAccess = true;
 			if (!FieldAccess(
 				self,
 				ref slice,
-				ref type,
+				ref storage.type,
 				ref offset
 			))
 			{
@@ -1141,23 +1150,68 @@ public sealed class CompilerController
 			}
 		}
 
+		storage.offset = (byte)offset;
+
+		if (self.compiler.parser.Match(TokenKind.Equal))
+			IndexAssign(self, ref storage);
+		else
+			IndexAccess(self, ref storage);
+	}
+
+	private static void IndexAccess(CompilerController self, ref IndexStorage storage)
+	{
 		self.compiler.DebugEmitPopType(2);
 
-		if (hasFieldAccess)
+		if (storage.hasFieldAccess)
 		{
-			self.compiler.EmitInstruction(Instruction.ArrayGetField);
-			self.compiler.EmitByte(elementSize);
-			self.compiler.EmitByte(type.GetSize(self.compiler.chunk));
-			self.compiler.EmitByte((byte)offset);
+			self.compiler.EmitInstruction(Instruction.LoadArrayElementField);
+			self.compiler.EmitByte(storage.elementSize);
+			self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
+			self.compiler.EmitByte(storage.offset);
 		}
 		else
 		{
-			self.compiler.EmitInstruction(Instruction.ArrayGet);
-			self.compiler.EmitByte(elementSize);
+			self.compiler.EmitInstruction(Instruction.LoadArrayElement);
+			self.compiler.EmitByte(storage.elementSize);
 		}
 
-		self.compiler.typeStack.PushBack(type);
-		self.compiler.DebugEmitPushType(type);
+		self.compiler.typeStack.PushBack(storage.type);
+		self.compiler.DebugEmitPushType(storage.type);
+	}
+
+	private static void IndexAssign(CompilerController self, ref IndexStorage storage)
+	{
+		var expressionSlice = Expression(self);
+		var expressionType = self.compiler.typeStack.PopLast();
+		if (!expressionType.IsEqualTo(storage.type))
+		{
+			self.compiler.AddSoftError(
+				expressionSlice,
+				"Wrong type for assignment. Expected {0}. Got {1}",
+				storage.type.ToString(self.compiler.chunk),
+				expressionType.ToString(self.compiler.chunk)
+			);
+		}
+
+		self.compiler.typeStack.PushBack(storage.type);
+
+		{
+			self.compiler.DebugEmitPopType(3);
+			self.compiler.DebugEmitPushType(storage.type);
+		}
+
+		if (storage.hasFieldAccess)
+		{
+			self.compiler.EmitInstruction(Instruction.AssignArrayElementField);
+			self.compiler.EmitByte(storage.elementSize);
+			self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
+			self.compiler.EmitByte(storage.offset);
+		}
+		else
+		{
+			self.compiler.EmitInstruction(Instruction.AssignArrayElement);
+			self.compiler.EmitByte(storage.elementSize);
+		}
 	}
 
 	public static void Call(CompilerController self, Precedence precedence, Slice previousSlice)

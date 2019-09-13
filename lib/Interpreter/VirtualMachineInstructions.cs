@@ -262,7 +262,34 @@ internal static class VirtualMachineInstructions
 					stack[stackSize++] = new ValueData(heapStartIndex);
 					break;
 				}
-			case Instruction.ArrayGet:
+			case Instruction.AssignArrayElement:
+				{
+					var size = bytes[codeIndex++];
+
+					stackSize -= size;
+					var stackStartIndex = stackSize;
+
+					var index = stack[--stackSize].asInt;
+					var heapStartIndex = stack[--stackSize].asInt;
+
+					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
+					if (index < 0 || index >= length)
+					{
+						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
+						return;
+					}
+
+					heapStartIndex += index * size;
+
+					for (var i = 0; i < size; i++)
+					{
+						var value = stack[stackStartIndex + i];
+						vm.valueHeap.buffer[heapStartIndex + i] = value;
+						stack[stackSize++] = value;
+					}
+					break;
+				}
+			case Instruction.LoadArrayElement:
 				{
 					var size = bytes[codeIndex++];
 
@@ -284,54 +311,7 @@ internal static class VirtualMachineInstructions
 						stack[stackStartIndex + i] = vm.valueHeap.buffer[heapStartIndex + i];
 					break;
 				}
-			case Instruction.ArraySet:
-				{
-					var size = bytes[codeIndex++];
-
-					stackSize -= size;
-					var stackStartIndex = stackSize;
-
-					var index = stack[--stackSize].asInt;
-					var heapStartIndex = stack[--stackSize].asInt;
-
-					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
-					if (index < 0 || index >= length)
-					{
-						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
-						return;
-					}
-
-					heapStartIndex += index * size;
-
-					for (var i = 0; i < size; i++)
-						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
-					break;
-				}
-			case Instruction.ArrayGetField:
-				{
-					var elementSize = bytes[codeIndex++];
-					var fieldSize = bytes[codeIndex++];
-					var offset = bytes[codeIndex++];
-
-					var index = stack[--stackSize].asInt;
-					var heapStartIndex = stack[--stackSize].asInt;
-
-					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
-					if (index < 0 || index >= length)
-					{
-					vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
-						return;
-					}
-
-					heapStartIndex += index * elementSize + offset;
-					var stackStartIndex = stackSize;
-					stackBuffer.GrowUnchecked(fieldSize);
-
-					for (var i = 0; i < fieldSize; i++)
-						stack[stackStartIndex + i] = vm.valueHeap.buffer[heapStartIndex + i];
-					break;
-				}
-			case Instruction.ArraySetField:
+			case Instruction.AssignArrayElementField:
 				{
 					var elementSize = bytes[codeIndex++];
 					var fieldSize = bytes[codeIndex++];
@@ -353,7 +333,35 @@ internal static class VirtualMachineInstructions
 					heapStartIndex += index * elementSize + offset;
 
 					for (var i = 0; i < fieldSize; i++)
-						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
+					{
+						var value = stack[stackStartIndex + i];
+						vm.valueHeap.buffer[heapStartIndex + i] = value;
+						stack[stackSize++] = value;
+					}
+					break;
+				}
+			case Instruction.LoadArrayElementField:
+				{
+					var elementSize = bytes[codeIndex++];
+					var fieldSize = bytes[codeIndex++];
+					var offset = bytes[codeIndex++];
+
+					var index = stack[--stackSize].asInt;
+					var heapStartIndex = stack[--stackSize].asInt;
+
+					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
+					if (index < 0 || index >= length)
+					{
+						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
+						return;
+					}
+
+					heapStartIndex += index * elementSize + offset;
+					var stackStartIndex = stackSize;
+					stackBuffer.GrowUnchecked(fieldSize);
+
+					for (var i = 0; i < fieldSize; i++)
+						stack[stackStartIndex + i] = vm.valueHeap.buffer[heapStartIndex + i];
 					break;
 				}
 			case Instruction.NegateInt:
