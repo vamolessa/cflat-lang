@@ -6,7 +6,7 @@ public enum TokenKind
 
 	At,
 
-	Let, Mut, Ref,
+	Let, Mut, Ref, Set,
 	Bool, Int, Float, String, Object,
 
 	Print,

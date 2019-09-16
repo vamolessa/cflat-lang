@@ -1,4 +1,6 @@
-array marshalling?
+set keyword
+mut for array elements
+mut for struct fields
 --
 function prototype
 multi bytecode

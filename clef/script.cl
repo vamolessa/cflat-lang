@@ -1,9 +1,9 @@
+struct S {
+	a:int
+}
+
 fn main() {
-	let a = [3:1]
-	mut b = 0
-	mut c = 1
-	c = a[0] = b = 1
-	print a
-	print b
-	print c
+	let s = S{a=2}
+	s.a = 1
+	print s
 }
