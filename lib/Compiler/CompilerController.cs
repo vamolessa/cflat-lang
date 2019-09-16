@@ -365,13 +365,12 @@ public sealed class CompilerController
 		);
 		self.compiler.typeStack.PushBack(arrayType);
 
+		self.compiler.DebugEmitPopType(2);
+
 		self.compiler.EmitInstruction(Instruction.CreateArray);
 		self.compiler.EmitByte(defaultValueType.GetSize(self.compiler.chunk));
 
-		{
-			self.compiler.DebugEmitPopType(2);
-			self.compiler.DebugEmitPushType(arrayType);
-		}
+		self.compiler.DebugEmitPushType(arrayType);
 	}
 
 	public void Statement(out ValueType type, out StatementKind kind)
@@ -1193,12 +1192,7 @@ public sealed class CompilerController
 			);
 		}
 
-		self.compiler.typeStack.PushBack(storage.type);
-
-		{
-			self.compiler.DebugEmitPopType(3);
-			self.compiler.DebugEmitPushType(storage.type);
-		}
+		self.compiler.DebugEmitPopType(3);
 
 		if (storage.hasFieldAccess)
 		{
@@ -1212,6 +1206,9 @@ public sealed class CompilerController
 			self.compiler.EmitInstruction(Instruction.AssignArrayElement);
 			self.compiler.EmitByte(storage.elementSize);
 		}
+
+		self.compiler.typeStack.PushBack(storage.type);
+		self.compiler.DebugEmitPushType(storage.type);
 	}
 
 	public static void Call(CompilerController self, Precedence precedence, Slice previousSlice)

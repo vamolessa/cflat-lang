@@ -1,5 +1,9 @@
 fn main() {
-	let a = 1
+	let a = [3:1]
+	mut b = 0
+	mut c = 1
+	c = a[0] = b = 1
 	print a
-	print 0
+	print b
+	print c
 }
