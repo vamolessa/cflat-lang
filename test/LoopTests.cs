@@ -18,7 +18,7 @@ public sealed class LoopTests
 
 	[Theory]
 	[InlineData("{let mut a=0 for i=0,10{a=a+1} a}", 10)]
-	[InlineData("{let mut a=0 for i=0,10{a=a+1 i=i+1} a}", 5)]
+	[InlineData("{let mut a=0 for mut i=0,10{a=a+1 i=i+1} a}", 5)]
 	[InlineData("{let mut a=0 for i=0,10{a=a+1 break} a}", 1)]
 	[InlineData("{let mut a=0 for:loop i=0,10{a=a+1 break:loop} a}", 1)]
 	public void ForIntTests(string source, int expected)

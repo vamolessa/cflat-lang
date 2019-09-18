@@ -1,9 +1,9 @@
-fn print_a(a:[int]) {
-	print a[0]
+struct S {
+	a:int
 }
 
 fn main() {
-	let a = [0:1]
-	a[0] = 2
-	print_a(a)
+	let mut s = S{a=0}
+	s.a=7
+	print s
 }

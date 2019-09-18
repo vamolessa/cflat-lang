@@ -6,11 +6,22 @@ public sealed class TupleTests
 	[InlineData("fn f():int{let{a,b}={true,3} a b}", 3)]
 	[InlineData("fn f():int{let{_,b}={true,3} b}", 3)]
 	[InlineData("fn f():int{let t={true,3} let{a,b}=t a b}", 3)]
+	[InlineData("fn f():int{let{_,mut b}={true,3} b=5 b}", 5)]
 	public void TupleDeconstructionTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v.value);
+	}
+
+	[Theory]
+	[InlineData("fn f(){let{a,_}={true,3} a=false}")]
+	public void TupleDeconstructionErrors(string source)
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Unit>(source, out var a);
+		});
 	}
 
 	[Theory]

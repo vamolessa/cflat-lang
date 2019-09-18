@@ -25,6 +25,12 @@ public sealed class CompilerController
 		public ValueType type;
 	}
 
+	private struct VariableDeclarationInfo
+	{
+		public Slice slice;
+		public bool isMutable;
+	}
+
 	public readonly Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 	public Buffer<System.Reflection.Assembly> searchingAssemblies = new Buffer<System.Reflection.Assembly>();
@@ -433,36 +439,40 @@ public sealed class CompilerController
 
 	private void VariableDeclaration()
 	{
-		var mutable = compiler.parser.Match(TokenKind.Mut);
-
 		if (compiler.parser.Match(TokenKind.OpenCurlyBrackets))
-			MultipleVariableDeclaration(mutable);
+			MultipleVariableDeclaration();
 		else
-			SingleVariableDeclaration(mutable);
+			SingleVariableDeclaration();
 	}
 
-	private int SingleVariableDeclaration(bool mutable)
+	private int SingleVariableDeclaration()
 	{
+		var isMutable = compiler.parser.Match(TokenKind.Mut);
 		compiler.parser.Consume(TokenKind.Identifier, "Expected variable name");
 		var slice = compiler.parser.previousToken.slice;
 
 		compiler.parser.Consume(TokenKind.Equal, "Expected assignment");
 		Expression(this);
 
-		return compiler.DeclareLocalVariable(slice, mutable);
+		return compiler.DeclareLocalVariable(slice, isMutable);
 	}
 
-	private void MultipleVariableDeclaration(bool mutable)
+	private void MultipleVariableDeclaration()
 	{
-		var slices = new Buffer<Slice>(8);
+		var declarations = new Buffer<VariableDeclarationInfo>(8);
 
 		while (
 			!compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
 			!compiler.parser.Check(TokenKind.End)
 		)
 		{
+			var isMutable = compiler.parser.Match(TokenKind.Mut);
 			compiler.parser.Consume(TokenKind.Identifier, "Expected variable name");
-			slices.PushBackUnchecked(compiler.parser.previousToken.slice);
+			declarations.PushBackUnchecked(new VariableDeclarationInfo
+			{
+				slice = compiler.parser.previousToken.slice,
+				isMutable = isMutable
+			});
 
 			if (!compiler.parser.Check(TokenKind.CloseCurlyBrackets))
 				compiler.parser.Consume(TokenKind.Comma, "Expected ',' after variable name");
@@ -479,22 +489,22 @@ public sealed class CompilerController
 		}
 
 		var tupleElements = compiler.chunk.tupleTypes.buffer[expressionType.index].elements;
-		if (tupleElements.length != slices.count)
+		if (tupleElements.length != declarations.count)
 		{
 			compiler.AddSoftError(
 				expressionSlice,
 				"Tuple element count must be equal to variable declaration count. Expected {0}. Got {1}",
-				slices.count,
+				declarations.count,
 				tupleElements.length
 			);
 			return;
 		}
 
-		for (var i = 0; i < slices.count; i++)
+		for (var i = 0; i < declarations.count; i++)
 		{
-			var slice = slices.buffer[i];
+			var declaration = declarations.buffer[i];
 			var elementType = compiler.chunk.tupleElementTypes.buffer[tupleElements.index + i];
-			compiler.AddLocalVariable(slice, elementType, mutable, false);
+			compiler.AddLocalVariable(declaration.slice, elementType, declaration.isMutable, false);
 		}
 	}
 
@@ -535,7 +545,7 @@ public sealed class CompilerController
 		}
 
 		var scope = compiler.BeginScope();
-		var itVarIndex = SingleVariableDeclaration(true);
+		var itVarIndex = SingleVariableDeclaration();
 		compiler.localVariables.buffer[itVarIndex].isUsed = true;
 		var itVar = compiler.localVariables.buffer[itVarIndex];
 		if (!itVar.type.IsKind(TypeKind.Int))
@@ -935,7 +945,7 @@ public sealed class CompilerController
 		if (storage.isValid)
 		{
 			if (!self.compiler.localVariables.buffer[storage.variableIndex].isMutable)
-				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let'");
+				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
 
 			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
