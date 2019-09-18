@@ -1,10 +1,13 @@
-array element count
---
-mut for struct fields (??)
-set keyword (??)
+# NEXT
 ref
 function prototype
+
+# LATER
 clojure
 multiple bytecodes
 bytecode serialization
 debugger
+
+# MAYBE??
+mut for struct fields
+set keyword
