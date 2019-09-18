@@ -48,8 +48,9 @@ public enum TypeKind : byte
 [System.Flags]
 public enum TypeFlags : byte
 {
-	None = 0x0,
-	Array = 0x1,
+	None = 0b00,
+	Mutable = 0b01,
+	Array = 0b10,
 }
 
 public readonly struct ValueType
@@ -61,6 +62,11 @@ public readonly struct ValueType
 	public bool IsSimple
 	{
 		get { return flags == 0 && index == 0; }
+	}
+
+	public bool IsMutable
+	{
+		get { return (flags & TypeFlags.Mutable) != 0; }
 	}
 
 	public bool IsArray
@@ -141,7 +147,7 @@ public readonly struct ValueType
 
 	public ValueType ToArrayElementType()
 	{
-		return new ValueType(index, kind, flags & ~TypeFlags.Array);
+		return new ValueType(kind, index);
 	}
 
 	public ValueType ToArrayType()

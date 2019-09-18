@@ -85,6 +85,8 @@ public static class CompilerTypeExtensions
 			type = self.ParseStructType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Function))
 			type = self.ParseFunctionType(recursionLevel + 1);
+		else if (self.parser.Match(TokenKind.OpenSquareBrackets))
+			type = self.ParseArrayType(recursionLevel + 1);
 
 		if (type.isSome)
 			return type.value;
@@ -104,7 +106,7 @@ public static class CompilerTypeExtensions
 			!self.parser.Check(TokenKind.End)
 		)
 		{
-			var elementType = self.ParseType("Expected element type", 0);
+			var elementType = self.ParseType("Expected tuple element type", recursionLevel);
 			if (!self.parser.Check(TokenKind.CloseCurlyBrackets))
 				self.parser.Consume(TokenKind.Comma, "Expected ',' after element type");
 			builder.WithElement(elementType);
@@ -157,5 +159,18 @@ public static class CompilerTypeExtensions
 
 		var type = new ValueType(TypeKind.Function, typeIndex);
 		return Option.Some(type);
+	}
+
+	private static Option<ValueType> ParseArrayType(this Compiler self, int recursionLevel)
+	{
+		var elementType = self.ParseType("Expected array element type", recursionLevel);
+		self.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array type");
+		if (elementType.IsArray)
+		{
+			self.AddSoftError(self.parser.previousToken.slice, "Can not declare array of arrays");
+			return Option.None;
+		}
+
+		return Option.Some(elementType.ToArrayType());
 	}
 }
