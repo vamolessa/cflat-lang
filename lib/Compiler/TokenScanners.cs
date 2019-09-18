@@ -9,10 +9,9 @@ public static class TokenScanners
 		new ExactScanner("while").ForToken(TokenKind.While),
 		new ExactScanner("return").ForToken(TokenKind.Return),
 		new ExactScanner("break").ForToken(TokenKind.Break),
-		new ExactScanner("not").ForToken(TokenKind.Not),
+		new CharScanner('!').ForToken(TokenKind.Bang),
 		new ExactScanner("and").ForToken(TokenKind.And),
 		new ExactScanner("or").ForToken(TokenKind.Or),
-		new ExactScanner("is").ForToken(TokenKind.Is),
 		new ExactScanner("length").ForToken(TokenKind.Length),
 
 		new CharScanner('@').ForToken(TokenKind.At),
@@ -45,6 +44,8 @@ public static class TokenScanners
 		new CharScanner('*').ForToken(TokenKind.Asterisk),
 		new CharScanner('/').ForToken(TokenKind.Slash),
 
+		new ExactScanner("==").ForToken(TokenKind.EqualEqual),
+		new ExactScanner("!=").ForToken(TokenKind.BangEqual),
 		new CharScanner('=').ForToken(TokenKind.Equal),
 		new CharScanner('<').ForToken(TokenKind.Less),
 		new CharScanner('>').ForToken(TokenKind.Greater),

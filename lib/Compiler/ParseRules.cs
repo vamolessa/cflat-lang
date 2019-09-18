@@ -25,8 +25,9 @@ public sealed class ParseRules
 		Set(TokenKind.Plus, null, CompilerController.Binary, Precedence.Term);
 		Set(TokenKind.Slash, null, CompilerController.Binary, Precedence.Factor);
 		Set(TokenKind.Asterisk, null, CompilerController.Binary, Precedence.Factor);
-		Set(TokenKind.Not, CompilerController.Unary, null, Precedence.None);
-		Set(TokenKind.Is, null, CompilerController.Binary, Precedence.Equality);
+		Set(TokenKind.Bang, CompilerController.Unary, null, Precedence.None);
+		Set(TokenKind.EqualEqual, null, CompilerController.Binary, Precedence.Equality);
+		Set(TokenKind.BangEqual, null, CompilerController.Binary, Precedence.Equality);
 		Set(TokenKind.Length, CompilerController.LengthExpression, null, Precedence.None);
 		Set(TokenKind.Greater, null, CompilerController.Binary, Precedence.Comparison);
 		Set(TokenKind.GreaterEqual, null, CompilerController.Binary, Precedence.Comparison);

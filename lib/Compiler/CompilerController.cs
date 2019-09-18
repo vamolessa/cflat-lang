@@ -1336,11 +1336,11 @@ public sealed class CompilerController
 			}
 			else
 			{
-				self.compiler.AddSoftError(slice, "Unary minus operator can only be applied to ints or floats. Got type {0}", type.ToString(self.compiler.chunk));
+				self.compiler.AddSoftError(slice, "Unary '-' operator can only be applied to ints or floats. Got type {0}", type.ToString(self.compiler.chunk));
 				self.compiler.typeStack.PushBack(type);
 			}
 			break;
-		case TokenKind.Not:
+		case TokenKind.Bang:
 			if (type.IsKind(TypeKind.Bool))
 			{
 				self.compiler.EmitInstruction(Instruction.Not);
@@ -1348,7 +1348,7 @@ public sealed class CompilerController
 			}
 			else
 			{
-				self.compiler.AddSoftError(slice, "Not operator can only be applied to bools. Got type {0}", type.ToString(self.compiler.chunk));
+				self.compiler.AddSoftError(slice, "'!' operator can only be applied to bools. Got type {0}", type.ToString(self.compiler.chunk));
 				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 			}
 			break;
@@ -1386,7 +1386,6 @@ public sealed class CompilerController
 	{
 		var c = self.compiler;
 		var opToken = c.parser.previousToken;
-		var hasNotAfterIs = opToken.kind == TokenKind.Is && c.parser.Match(TokenKind.Not);
 
 		var opPrecedence = self.parseRules.GetPrecedence(opToken.kind);
 		var slice = ParseWithPrecedence(self, opPrecedence + 1);
@@ -1437,18 +1436,20 @@ public sealed class CompilerController
 
 			self.compiler.DebugEmitPopType(1);
 			break;
-		case TokenKind.Is:
+		case TokenKind.EqualEqual:
+		case TokenKind.BangEqual:
 			{
-				var opName = hasNotAfterIs ? "IsNot" : "Is";
+				var operatorName = opToken.kind == TokenKind.EqualEqual ? "==" : "!=";
+
 				if (!aType.IsEqualTo(bType))
 				{
-					c.AddSoftError(slice, "{0} operator can only be applied to same type values. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk), opName);
+					c.AddSoftError(slice, "'{0}' operator can only be applied to same type values. Got types {1} and {2}", operatorName, aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk));
 					c.typeStack.PushBack(new ValueType(TypeKind.Bool));
 					break;
 				}
 				if (!aType.IsSimple || !bType.IsSimple)
 				{
-					c.AddSoftError(slice, "{0} operator can only be applied to bools, ints, floats and strings. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk), opName);
+					c.AddSoftError(slice, "'{0}' operator can only be applied to bools, ints, floats and strings. Got types {1} and {2}", operatorName, aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk));
 					break;
 				}
 
@@ -1467,12 +1468,13 @@ public sealed class CompilerController
 					c.EmitInstruction(Instruction.EqualString);
 					break;
 				default:
-					c.AddSoftError(slice, "{0} operator can only be applied to bools, ints, floats and string. Got types {0} and {1}", aType.ToString(self.compiler.chunk), opName);
+					c.AddSoftError(slice, "'{0}' operator can only be applied to bools, ints, floats and string. Got types {1} and {2}", operatorName, aType.ToString(self.compiler.chunk));
 					break;
 				}
 
-				if (hasNotAfterIs)
-					c.EmitInstruction(Instruction.Not);
+				if (opToken.kind == TokenKind.BangEqual)
+					self.compiler.EmitInstruction(Instruction.Not);
+
 				c.typeStack.PushBack(new ValueType(TypeKind.Bool));
 
 				{
