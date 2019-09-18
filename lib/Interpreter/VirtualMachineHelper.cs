@@ -27,6 +27,8 @@ public static class VirtualMachineHelper
 			}
 
 			sb.Append('[');
+			if (type.IsMutable)
+				sb.Append("mut ");
 			type.ToArrayElementType().Format(vm.chunk, sb);
 			sb.Append(',');
 			var arrayLength = vm.valueHeap.buffer[heapStartIndex - 1].asInt;

@@ -24,6 +24,7 @@ public enum Instruction
 	IntToFloat,
 	FloatToInt,
 	CreateArray,
+	LoadArrayLength,
 	LoadArrayElement,
 	AssignArrayElement,
 	AssignArrayElementField,

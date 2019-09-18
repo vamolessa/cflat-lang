@@ -13,6 +13,7 @@ public static class TokenScanners
 		new ExactScanner("and").ForToken(TokenKind.And),
 		new ExactScanner("or").ForToken(TokenKind.Or),
 		new ExactScanner("is").ForToken(TokenKind.Is),
+		new ExactScanner("length").ForToken(TokenKind.Length),
 
 		new CharScanner('@').ForToken(TokenKind.At),
 

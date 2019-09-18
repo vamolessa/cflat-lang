@@ -262,6 +262,9 @@ internal static class VirtualMachineInstructions
 					stack[stackSize++] = new ValueData(heapStartIndex);
 					break;
 				}
+			case Instruction.LoadArrayLength:
+				stack[stackSize - 1] = vm.valueHeap.buffer[stack[stackSize - 1].asInt - 1];
+				break;
 			case Instruction.AssignArrayElement:
 				{
 					var size = bytes[codeIndex++];

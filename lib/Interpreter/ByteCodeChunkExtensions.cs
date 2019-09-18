@@ -202,6 +202,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.LoadTrue:
 		case Instruction.IntToFloat:
 		case Instruction.FloatToInt:
+		case Instruction.LoadArrayLength:
 		case Instruction.NegateInt:
 		case Instruction.NegateFloat:
 		case Instruction.AddInt:

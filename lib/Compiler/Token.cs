@@ -2,7 +2,7 @@ public enum TokenKind
 {
 	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
 	Function, Struct, If, Else, Repeat, While, Return, Break,
-	Dot, Comma, Colon, Not, And, Or, Is,
+	Dot, Comma, Colon, Not, And, Or, Is, Length,
 
 	At,
 

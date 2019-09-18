@@ -25,6 +25,18 @@ public sealed class ArrayTests
 	}
 
 	[Theory]
+	[InlineData("{let a=[{},0] length a}", 0)]
+	[InlineData("{let a=[{},1] length a}", 1)]
+	[InlineData("{let a=[{},8] length a}", 8)]
+	[InlineData("{let a=[{},999999] length a}", 999999)]
+	public void ArrayLengthTest(string source, int expectedLength)
+	{
+		var v = TestHelper.RunExpression<Int>(source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expectedLength, v.value);
+	}
+
+	[Theory]
 	[InlineData("[27,0]", 0, 27)]
 	[InlineData("[27,1]", 1, 27)]
 	[InlineData("[27,8]", 8, 27)]

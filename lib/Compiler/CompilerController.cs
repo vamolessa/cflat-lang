@@ -375,6 +375,21 @@ public sealed class CompilerController
 		self.compiler.DebugEmitPushType(arrayType);
 	}
 
+	public static void LengthExpression(CompilerController self, Precedence precedence, Slice previousSlice)
+	{
+		var expressionSlice = Expression(self);
+		var expressionType = self.compiler.typeStack.PopLast();
+		self.compiler.DebugEmitPopType(0);
+
+		if (!expressionType.IsArray)
+			self.compiler.AddSoftError(expressionSlice, "Expected array type. Got {0}", expressionType.ToString(self.compiler.chunk));
+
+		self.compiler.EmitInstruction(Instruction.LoadArrayLength);
+
+		self.compiler.DebugEmitPushType(new ValueType(TypeKind.Int));
+		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Int));
+	}
+
 	public void Statement(out ValueType type, out StatementKind kind)
 	{
 		type = new ValueType(TypeKind.Unit);
