@@ -358,11 +358,7 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
 
-		var arrayType = new ValueType(
-			defaultValueType.index,
-			defaultValueType.kind,
-			defaultValueType.flags | TypeFlags.Array
-		);
+		var arrayType = defaultValueType.ToArrayType().ToMutableType();
 		self.compiler.typeStack.PushBack(arrayType);
 
 		self.compiler.DebugEmitPopType(2);
@@ -1116,10 +1112,9 @@ public sealed class CompilerController
 
 	public static void Index(CompilerController self, Precedence precedence, Slice previousSlice)
 	{
-		var slice = previousSlice;
 		var arrayType = self.compiler.typeStack.PopLast();
 		if (!arrayType.IsArray)
-			self.compiler.AddSoftError(slice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
+			self.compiler.AddSoftError(previousSlice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
 
 		var indexExpressionSlice = Expression(self);
 		var indexExpressionType = self.compiler.typeStack.PopLast();
@@ -1128,6 +1123,7 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array indexing");
 
+		var slice = previousSlice;
 		var offset = 0;
 		var storage = new IndexStorage();
 		storage.hasFieldAccess = false;
@@ -1152,9 +1148,16 @@ public sealed class CompilerController
 		storage.offset = (byte)offset;
 
 		if (self.compiler.parser.Match(TokenKind.Equal))
+		{
+			if (!arrayType.IsMutable)
+				self.compiler.AddSoftError(previousSlice, "Can not write to immutable array. Try adding 'mut' after '[' at its declaration.");
+
 			IndexAssign(self, ref storage);
+		}
 		else
+		{
 			IndexAccess(self, ref storage);
+		}
 	}
 
 	private static void IndexAccess(CompilerController self, ref IndexStorage storage)
@@ -1225,18 +1228,26 @@ public sealed class CompilerController
 		{
 			do
 			{
-				Expression(self);
+				var passAsMutable = self.compiler.parser.Match(TokenKind.Mut);
+				var argSlice = Expression(self);
 				var argType = self.compiler.typeStack.PopLast();
+
 				if (
 					isFunction &&
 					argIndex < functionType.parameters.length
 				)
 				{
 					var paramType = self.compiler.chunk.functionParamTypes.buffer[functionType.parameters.index + argIndex];
+
+					if (!passAsMutable && paramType.IsArray)
+						argType = argType.ToImmutableType();
+					else if (passAsMutable && !paramType.IsArray)
+						self.compiler.AddSoftError(argSlice, "Can not apply modifier 'mut' to type {0}", argType.ToString(self.compiler.chunk));
+
 					if (!argType.IsEqualTo(paramType))
 					{
 						self.compiler.AddSoftError(
-							self.compiler.parser.previousToken.slice,
+							argSlice,
 							"Wrong type for argument {0}. Expected {1}. Got {2}",
 							argIndex + 1,
 							paramType.ToString(self.compiler.chunk),

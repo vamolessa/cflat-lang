@@ -151,4 +151,14 @@ public sealed class ArrayTests
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v.value);
 	}
+
+	[Fact]
+	public void ArrayMutabilityError()
+	{
+		var source = "fn func(a:[mut int]){} fn f(){func([0:1])}";
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Int>(source, out var a);
+		});
+	}
 }

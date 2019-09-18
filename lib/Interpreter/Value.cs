@@ -145,6 +145,16 @@ public readonly struct ValueType
 		}
 	}
 
+	public ValueType ToMutableType()
+	{
+		return new ValueType(index, kind, flags | TypeFlags.Mutable);
+	}
+
+	public ValueType ToImmutableType()
+	{
+		return new ValueType(index, kind, flags & ~TypeFlags.Mutable);
+	}
+
 	public ValueType ToArrayElementType()
 	{
 		return new ValueType(kind, index);
@@ -160,6 +170,8 @@ public readonly struct ValueType
 		if (IsArray)
 		{
 			sb.Append('[');
+			if (IsMutable)
+				sb.Append("mut ");
 			ToArrayElementType().Format(chunk, sb);
 			sb.Append(']');
 			return;

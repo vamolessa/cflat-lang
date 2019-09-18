@@ -167,7 +167,7 @@ public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalab
 	{
 		global::Marshal.SizeOf<Array<T>>.size = 1;
 		return new Marshal.ReflectionData(
-			global::Marshal.ReflectOn<T>(chunk).type.ToArrayType(),
+			global::Marshal.ReflectOn<T>(chunk).type.ToArrayType().ToMutableType(),
 			1
 		);
 	}
