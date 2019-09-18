@@ -384,8 +384,6 @@ public sealed class CompilerController
 			VariableDeclaration(false);
 		else if (compiler.parser.Match(TokenKind.Mut))
 			VariableDeclaration(true);
-		else if (compiler.parser.Match(TokenKind.Set))
-			SetStatement();
 		else if (compiler.parser.Match(TokenKind.While))
 			WhileStatement();
 		else if (compiler.parser.Match(TokenKind.For))
@@ -502,10 +500,6 @@ public sealed class CompilerController
 			var elementType = compiler.chunk.tupleElementTypes.buffer[tupleElements.index + i];
 			compiler.AddLocalVariable(slice, elementType, mutable, false);
 		}
-	}
-
-	public void SetStatement()
-	{
 	}
 
 	public void WhileStatement()

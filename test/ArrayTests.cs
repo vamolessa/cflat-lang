@@ -115,4 +115,40 @@ public sealed class ArrayTests
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v.value);
 	}
+
+	[Theory]
+	[InlineData("{let a=[5:1] a[0]=99 a[0]}", 99)]
+	[InlineData("{let a=[7:9] a[0]=99 a[0]}", 99)]
+	[InlineData("{let a=[7:9] a[1]=99 a[1]}", 99)]
+	[InlineData("{let a=[7:9] a[8]=99 a[8]}", 99)]
+	[InlineData("{let a=[7:9] a[4+2*2]=99 a[4+2*2]}", 99)]
+	public void IntArrayIndexAssignmentTest(string source, int expected)
+	{
+		var v = TestHelper.RunExpression<Int>(source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
+
+	[Theory]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].a=99 a[0].a}", 99)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].b=99 a[0].b}", 99)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].c=99 a[0].c}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f0=99 a[0].a.f0}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f1=99 a[0].a.f1}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].b.f0=99 a[0].b.f0}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f0=99 a[0].c.f0}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f1=99 a[0].c.f1}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f2=99 a[0].c.f2}", 99)]
+	public void IntArrayFieldIndexAssignmentTest(string source, int expected)
+	{
+		var declarations =
+			"struct S1{f0:int}" +
+			"struct S2{f0:int,f1:int}" +
+			"struct S3{f0:int,f1:int,f2:int}" +
+			"struct S{a:S2,b:S1,c:S3}" +
+			"struct SS{a:int,b:int,c:int}";
+		var v = TestHelper.Run<Int>(declarations + source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
 }
