@@ -3,9 +3,9 @@ public static class TokenScanners
 	public static readonly Scanner[] scanners = new Scanner[] {
 		new ExactScanner("fn").ForToken(TokenKind.Function),
 		new ExactScanner("struct").ForToken(TokenKind.Struct),
-		new ExactScanner("for").ForToken(TokenKind.For),
 		new ExactScanner("if").ForToken(TokenKind.If),
 		new ExactScanner("else").ForToken(TokenKind.Else),
+		new ExactScanner("repeat").ForToken(TokenKind.Repeat),
 		new ExactScanner("while").ForToken(TokenKind.While),
 		new ExactScanner("return").ForToken(TokenKind.Return),
 		new ExactScanner("break").ForToken(TokenKind.Break),

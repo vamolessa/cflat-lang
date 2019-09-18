@@ -52,7 +52,7 @@ public enum Instruction
 	JumpForwardIfFalse,
 	JumpForwardIfTrue,
 	PopAndJumpForwardIfFalse,
-	ForLoopCheck,
+	RepeatLoopCheck,
 
 	DebugPushFrame,
 	DebugPopFrame,

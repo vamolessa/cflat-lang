@@ -457,7 +457,7 @@ internal static class VirtualMachineInstructions
 						codeIndex += offset;
 					break;
 				}
-			case Instruction.ForLoopCheck:
+			case Instruction.RepeatLoopCheck:
 				{
 					var index = frame.baseStackIndex + bytes[codeIndex++];
 					var less = stack[index].asInt < stack[index + 1].asInt;

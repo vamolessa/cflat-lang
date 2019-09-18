@@ -355,7 +355,7 @@ public sealed class CompilerController
 		if (defaultValueType.IsArray)
 			self.compiler.AddSoftError(defaultValueSlice, "Can not declare array of arrays");
 
-		self.compiler.parser.Consume(TokenKind.Colon, "Expected ':' after array element default value");
+		self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after array element default value");
 
 		var lengthSlice = Expression(self);
 		var lengthType = self.compiler.typeStack.PopLast();
@@ -386,8 +386,8 @@ public sealed class CompilerController
 			VariableDeclaration();
 		else if (compiler.parser.Match(TokenKind.While))
 			WhileStatement();
-		else if (compiler.parser.Match(TokenKind.For))
-			ForStatement();
+		else if (compiler.parser.Match(TokenKind.Repeat))
+			RepeatStatement();
 		else if (compiler.parser.Match(TokenKind.Break))
 			BreakStatement();
 		else if (compiler.parser.Match(TokenKind.Return))
@@ -535,7 +535,7 @@ public sealed class CompilerController
 		compiler.EndLoop();
 	}
 
-	public void ForStatement()
+	public void RepeatStatement()
 	{
 		var labelSlice = new Slice();
 		if (compiler.parser.Match(TokenKind.Colon))
@@ -545,23 +545,27 @@ public sealed class CompilerController
 		}
 
 		var scope = compiler.BeginScope();
-		var itVarIndex = SingleVariableDeclaration();
-		compiler.localVariables.buffer[itVarIndex].isUsed = true;
-		var itVar = compiler.localVariables.buffer[itVarIndex];
-		if (!itVar.type.IsKind(TypeKind.Int))
-			compiler.AddSoftError(itVar.slice, "Expected variable of type int in for loop");
 
-		compiler.parser.Consume(TokenKind.Comma, "Expected comma after begin expression");
+		var itVarIsMutable = compiler.parser.Match(TokenKind.Mut);
+		compiler.parser.Consume(TokenKind.Identifier, "Expected iteration variable name");
+		var slice = compiler.parser.previousToken.slice;
+		compiler.EmitLoadLiteral(new ValueData(0), TypeKind.Int);
+		compiler.DebugEmitPushType(new ValueType(TypeKind.Int));
+
+		var itVarIndex = compiler.AddLocalVariable(slice, new ValueType(TypeKind.Int), itVarIsMutable, true);
+		var itVar = compiler.localVariables.buffer[itVarIndex];
+
+		compiler.parser.Consume(TokenKind.Comma, "Expected comma after iteration variable name");
 		var expressionSlice = Expression(this);
 		var toVarIndex = compiler.DeclareLocalVariable(compiler.parser.previousToken.slice, false);
 		compiler.localVariables.buffer[toVarIndex].isUsed = true;
 		if (!compiler.localVariables.buffer[toVarIndex].type.IsKind(TypeKind.Int))
 			compiler.AddSoftError(expressionSlice, "Expected expression of type int");
 
-		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
+		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after repeat statement");
 
 		var loopJump = compiler.BeginEmitBackwardJump();
-		compiler.EmitInstruction(Instruction.ForLoopCheck);
+		compiler.EmitInstruction(Instruction.RepeatLoopCheck);
 		compiler.EmitByte((byte)itVar.stackIndex);
 
 		compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
@@ -696,7 +700,7 @@ public sealed class CompilerController
 			self.compiler.parser.Check(TokenKind.Let) ||
 			self.compiler.parser.Check(TokenKind.Mut) ||
 			self.compiler.parser.Check(TokenKind.While) ||
-			self.compiler.parser.Check(TokenKind.For) ||
+			self.compiler.parser.Check(TokenKind.Repeat) ||
 			self.compiler.parser.Check(TokenKind.Break) ||
 			self.compiler.parser.Check(TokenKind.Return) ||
 			self.compiler.parser.Check(TokenKind.Print)

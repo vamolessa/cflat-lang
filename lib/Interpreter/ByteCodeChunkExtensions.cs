@@ -236,7 +236,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.CreateArray:
 		case Instruction.AssignArrayElement:
 		case Instruction.LoadArrayElement:
-		case Instruction.ForLoopCheck:
+		case Instruction.RepeatLoopCheck:
 		case Instruction.DebugPopTypeMultiple:
 			return TwoByteInstruction(self, instruction, index, sb);
 		case Instruction.Move:
