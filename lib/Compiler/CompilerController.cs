@@ -381,9 +381,7 @@ public sealed class CompilerController
 		if (compiler.parser.Match(TokenKind.OpenCurlyBrackets))
 			BlockStatement();
 		else if (compiler.parser.Match(TokenKind.Let))
-			VariableDeclaration(false);
-		else if (compiler.parser.Match(TokenKind.Mut))
-			VariableDeclaration(true);
+			VariableDeclaration();
 		else if (compiler.parser.Match(TokenKind.While))
 			WhileStatement();
 		else if (compiler.parser.Match(TokenKind.For))
@@ -437,8 +435,10 @@ public sealed class CompilerController
 		compiler.EndScope(scope, 0);
 	}
 
-	private void VariableDeclaration(bool mutable)
+	private void VariableDeclaration()
 	{
+		var mutable = compiler.parser.Match(TokenKind.Mut);
+
 		if (compiler.parser.Match(TokenKind.OpenCurlyBrackets))
 			MultipleVariableDeclaration(mutable);
 		else
@@ -939,7 +939,7 @@ public sealed class CompilerController
 		if (storage.isValid)
 		{
 			if (!self.compiler.localVariables.buffer[storage.variableIndex].isMutable)
-				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try using 'mut' instead of 'let'");
+				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let'");
 
 			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
@@ -970,7 +970,7 @@ public sealed class CompilerController
 		else
 		{
 			Expression(self);
-			self.compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let' or 'mut'");
+			self.compiler.AddSoftError(slice, "Can not write to undeclared variable. Try declaring it with 'let mut'");
 		}
 	}
 
@@ -1033,7 +1033,7 @@ public sealed class CompilerController
 		}
 		else
 		{
-			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let' or 'mut'");
+			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 		}
 	}
