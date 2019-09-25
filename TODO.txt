@@ -1,5 +1,6 @@
 # DOING
 set keyword
+arrumar o array mutability
 
 # NEXT
 ref
