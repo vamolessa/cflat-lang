@@ -1014,19 +1014,15 @@ public sealed class CompilerController
 
 		if (!self.compiler.ResolveToLocalVariableIndex(slice, out storage.variableIndex))
 		{
-			if (self.compiler.loopNesting.count == 0)
+			if (
+				self.compiler.loopNesting.count == 0 ||
+				!CompilerHelper.AreEqual(self.compiler.parser.tokenizer.source, slice, "it")
+			)
 				return storage;
 
-			if (!CompilerHelper.AreEqual(self.compiler.parser.tokenizer.source, slice, "it"))
-				return storage;
-
-			for (var i = 0; i < self.compiler.localVariables.count; i++)
+			for (var i = self.compiler.localVariables.count - 1; i >= 0; i--)
 			{
-				var localVar = self.compiler.localVariables.buffer[i];
-				if (localVar.depth != self.compiler.scopeDepth)
-					continue;
-
-				if (localVar.IsIteration)
+				if (self.compiler.localVariables.buffer[i].IsIteration)
 				{
 					storage.variableIndex = i;
 					break;
