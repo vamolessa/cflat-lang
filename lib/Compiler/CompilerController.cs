@@ -216,7 +216,7 @@ public sealed class CompilerController
 					continue;
 				}
 
-				compiler.AddLocalVariable(paramSlice, paramType, false, true);
+				compiler.AddLocalVariable(paramSlice, paramType, VariableFlags.Used);
 				builder.WithParam(paramType);
 			} while (compiler.parser.Match(TokenKind.Comma) || compiler.parser.Match(TokenKind.End));
 		}
@@ -521,7 +521,7 @@ public sealed class CompilerController
 		{
 			var declaration = declarations.buffer[i];
 			var elementType = compiler.chunk.tupleElementTypes.buffer[tupleElements.index + i];
-			compiler.AddLocalVariable(declaration.slice, elementType, declaration.isMutable, false);
+			compiler.AddLocalVariable(declaration.slice, elementType, declaration.isMutable ? VariableFlags.Mutable : VariableFlags.None);
 		}
 	}
 
@@ -652,21 +652,16 @@ public sealed class CompilerController
 
 		var scope = compiler.BeginScope();
 
-		var itVarIsMutable = compiler.parser.Match(TokenKind.Mut);
-		compiler.parser.Consume(TokenKind.Identifier, "Expected iteration variable name");
-		var slice = compiler.parser.previousToken.slice;
 		compiler.EmitLoadLiteral(new ValueData(0), TypeKind.Int);
 		compiler.DebugEmitPushType(new ValueType(TypeKind.Int));
 
-		var itVarIndex = compiler.AddLocalVariable(slice, new ValueType(TypeKind.Int), itVarIsMutable, true);
+		var itVarIndex = compiler.AddLocalVariable(new Slice(), new ValueType(TypeKind.Int), VariableFlags.Used | VariableFlags.Iteration);
 		var itVar = compiler.localVariables.buffer[itVarIndex];
 
-		compiler.parser.Consume(TokenKind.Comma, "Expected comma after iteration variable name");
 		var expressionSlice = Expression(this);
-		var toVarIndex = compiler.DeclareLocalVariable(compiler.parser.previousToken.slice, false);
-		compiler.localVariables.buffer[toVarIndex].isUsed = true;
-		if (!compiler.localVariables.buffer[toVarIndex].type.IsKind(TypeKind.Int))
-			compiler.AddSoftError(expressionSlice, "Expected expression of type int");
+		if (!compiler.typeStack.PopLast().IsKind(TypeKind.Int))
+			compiler.AddSoftError(expressionSlice, "Expected expression of type int as repeat count");
+		var countVarIndex = compiler.AddLocalVariable(new Slice(), new ValueType(TypeKind.Int), VariableFlags.Used);
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after repeat statement");
 
@@ -1018,24 +1013,45 @@ public sealed class CompilerController
 		var storage = new Storage();
 
 		if (!self.compiler.ResolveToLocalVariableIndex(slice, out storage.variableIndex))
-			return storage;
-
-		ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
-		storage.isValid = true;
-		storage.type = localVar.type;
-		storage.stackIndex = localVar.stackIndex;
-
-		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
-			if (!FieldAccess(
-				self,
-				ref slice,
-				ref storage.type,
-				ref storage.stackIndex
-			))
-			{
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+			if (self.compiler.loopNesting.count == 0)
 				return storage;
+
+			if (!CompilerHelper.AreEqual(self.compiler.parser.tokenizer.source, slice, "it"))
+				return storage;
+
+			for (var i = 0; i < self.compiler.localVariables.count; i++)
+			{
+				var localVar = self.compiler.localVariables.buffer[i];
+				if (localVar.depth != self.compiler.scopeDepth)
+					continue;
+
+				if (localVar.IsIteration)
+				{
+					storage.variableIndex = i;
+					break;
+				}
+			}
+		}
+
+		{
+			var localVar = self.compiler.localVariables.buffer[storage.variableIndex];
+			storage.isValid = true;
+			storage.type = localVar.type;
+			storage.stackIndex = localVar.stackIndex;
+
+			while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
+			{
+				if (!FieldAccess(
+					self,
+					ref slice,
+					ref storage.type,
+					ref storage.stackIndex
+				))
+				{
+					self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+					return storage;
+				}
 			}
 		}
 
@@ -1058,7 +1074,7 @@ public sealed class CompilerController
 	{
 		if (storage.isValid)
 		{
-			if (!self.compiler.localVariables.buffer[storage.variableIndex].isMutable)
+			if (!self.compiler.localVariables.buffer[storage.variableIndex].IsMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
 
 			var expressionSlice = Expression(self);
@@ -1098,7 +1114,7 @@ public sealed class CompilerController
 	{
 		if (storage.isValid)
 		{
-			self.compiler.localVariables.buffer[storage.variableIndex].isUsed = true;
+			self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
 			self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
 			self.compiler.typeStack.PushBack(storage.type);
 			self.compiler.DebugEmitPushType(storage.type);

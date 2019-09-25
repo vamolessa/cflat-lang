@@ -16,23 +16,45 @@ public readonly struct CompileError
 	}
 }
 
+[System.Flags]
+public enum VariableFlags : byte
+{
+	None = 0b000,
+	Mutable = 0b001,
+	Used = 0b010,
+	Iteration = 0b100,
+}
+
 public struct LocalVariable
 {
 	public Slice slice;
 	public int stackIndex;
 	public int depth;
 	public ValueType type;
-	public bool isMutable;
-	public bool isUsed;
+	public VariableFlags flags;
 
-	public LocalVariable(Slice slice, int stackIndex, int depth, ValueType type, bool isMutable, bool isUsed)
+	public bool IsMutable
+	{
+		get { return (flags & VariableFlags.Mutable) != 0; }
+	}
+
+	public bool IsUsed
+	{
+		get { return (flags & VariableFlags.Used) != 0; }
+	}
+
+	public bool IsIteration
+	{
+		get { return (flags & VariableFlags.Iteration) != 0; }
+	}
+
+	public LocalVariable(Slice slice, int stackIndex, int depth, ValueType type, VariableFlags flags)
 	{
 		this.slice = slice;
 		this.stackIndex = stackIndex;
 		this.depth = depth;
 		this.type = type;
-		this.isMutable = isMutable;
-		this.isUsed = isUsed;
+		this.flags = flags;
 	}
 }
 

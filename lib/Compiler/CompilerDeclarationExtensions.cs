@@ -1,7 +1,7 @@
 public static class CompilerDeclarationExtensions
 {
 	// VARIABLES
-	public static int AddLocalVariable(this Compiler self, Slice slice, ValueType type, bool mutable, bool isUsed)
+	public static int AddLocalVariable(this Compiler self, Slice slice, ValueType type, VariableFlags flags)
 	{
 		var stackIndex = 0;
 		if (self.localVariables.count > 0)
@@ -11,15 +11,14 @@ public static class CompilerDeclarationExtensions
 		}
 
 		if (CompilerHelper.AreEqual(self.parser.tokenizer.source, slice, "_"))
-			isUsed = true;
+			flags |= VariableFlags.Used;
 
 		self.localVariables.PushBack(new LocalVariable(
 			slice,
 			stackIndex,
 			self.scopeDepth,
 			type,
-			mutable,
-			isUsed
+			flags
 		));
 
 		return self.localVariables.count - 1;
@@ -37,7 +36,7 @@ public static class CompilerDeclarationExtensions
 		if (self.typeStack.count > 0)
 			type = self.typeStack.PopLast();
 
-		return self.AddLocalVariable(slice, type, mutable, false);
+		return self.AddLocalVariable(slice, type, mutable ? VariableFlags.Mutable : VariableFlags.None);
 	}
 
 	public static bool ResolveToLocalVariableIndex(this Compiler self, Slice slice, out int index)

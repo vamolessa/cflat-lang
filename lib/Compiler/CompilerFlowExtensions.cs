@@ -13,8 +13,8 @@ public static class CompilerFlowExtensions
 		for (var i = scope.localVariablesStartIndex; i < self.localVariables.count; i++)
 		{
 			var variable = self.localVariables.buffer[i];
-			if (!variable.isUsed)
-				self.AddSoftError(variable.slice, "Unused variable");
+			if (!variable.IsUsed)
+				self.AddSoftError(variable.slice, "Unused variable '{0}'", CompilerHelper.GetSlice(self, variable.slice));
 		}
 
 		var localCount = self.localVariables.count - scope.localVariablesStartIndex;
