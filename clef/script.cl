@@ -7,9 +7,12 @@ struct S {
 	b: bool
 }
 
+fn getS(ts: [mut T]): S {
+	S{a=ts, b=true}
+}
+
 fn main() {
-	let mut s = S{a=[T{x=0.0}, 1], b=true}
-	set s.a[0].x = 1.0
-	print s
-	print s.a[0]
+	let ts = [T{x=0.0}, 1]
+	set getS(mut ts).a[0].x = 1.0
+	print ts[0]
 }
