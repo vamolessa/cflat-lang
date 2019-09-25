@@ -1,4 +1,5 @@
 fn main() {
-	let a = [0, 7]
-	print length(a)
+	let mut a = 3
+	set a = 7
+	print a
 }

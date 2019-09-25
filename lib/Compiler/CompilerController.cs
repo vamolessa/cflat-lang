@@ -399,6 +399,8 @@ public sealed class CompilerController
 			BlockStatement();
 		else if (compiler.parser.Match(TokenKind.Let))
 			VariableDeclaration();
+		else if (compiler.parser.Match(TokenKind.Set))
+			SetStatement();
 		else if (compiler.parser.Match(TokenKind.While))
 			WhileStatement();
 		else if (compiler.parser.Match(TokenKind.Repeat))
@@ -521,6 +523,95 @@ public sealed class CompilerController
 			var elementType = compiler.chunk.tupleElementTypes.buffer[tupleElements.index + i];
 			compiler.AddLocalVariable(declaration.slice, elementType, declaration.isMutable, false);
 		}
+	}
+
+	public void SetStatement()
+	{
+		compiler.parser.Consume(TokenKind.Identifier, "Expected identifier");
+		var slice = compiler.parser.previousToken.slice;
+
+		var storage = GetStorage(this, ref slice);
+		if (storage.isValid)
+		{
+			if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
+			{
+				Access(this, slice, ref storage);
+				SetArrayElement(slice, storage.type);
+			}
+			else if (compiler.parser.Match(TokenKind.OpenParenthesis))
+			{
+				Access(this, slice, ref storage);
+				SetFunctionReturn(slice, storage.type);
+			}
+			else
+			{
+				compiler.parser.Consume(TokenKind.Equal, "Expected '=' before expression");
+				Assign(this, slice, ref storage);
+			}
+		}
+		else if (compiler.ResolveToFunctionIndex(slice, out var functionIndex))
+		{
+			compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
+			var function = compiler.chunk.functions.buffer[functionIndex];
+			var type = new ValueType(TypeKind.Function, function.typeIndex);
+			SetFunctionReturn(slice, type);
+		}
+		else if (compiler.ResolveToNativeFunctionIndex(slice, out var nativeFunctionIndex))
+		{
+			compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
+			var function = compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
+			var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
+			SetFunctionReturn(slice, type);
+		}
+		else
+		{
+			compiler.AddHardError(slice, "Could not find variable of function named '{0}'", CompilerHelper.GetSlice(compiler, slice));
+			return;
+		}
+	}
+
+	private void SetArrayElement(Slice slice, ValueType arrayType)
+	{
+		if (!GetIndexStorage(this, arrayType, ref slice, out var storage))
+			return;
+
+		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
+		{
+			IndexAccess(this, ref storage);
+			SetArrayElement(slice, storage.type);
+		}
+		if (compiler.parser.Match(TokenKind.OpenParenthesis))
+		{
+			IndexAccess(this, ref storage);
+			SetFunctionReturn(slice, storage.type);
+		}
+		else
+		{
+			compiler.parser.Consume(TokenKind.Equal, "Expected '=' before expression");
+			if (!arrayType.IsMutable)
+				compiler.AddSoftError(slice, "Can not write to immutable array. Try adding 'mut' after '[' at its declaration");
+
+			IndexAssign(this, ref storage);
+		}
+	}
+
+	private void SetFunctionReturn(Slice slice, ValueType functionType)
+	{
+		compiler.typeStack.PushBack(functionType);
+		compiler.DebugEmitPushType(functionType);
+
+		Call(this, Precedence.Call, slice);
+		slice = Slice.FromTo(slice, compiler.parser.previousToken.slice);
+
+		var returnType = compiler.typeStack.PopLast();
+
+		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
+		{
+			SetArrayElement(slice, returnType);
+			return;
+		}
+
+		compiler.AddHardError(slice, "Can not write to temporary value. Try assigning it to a variable first");
 	}
 
 	public void WhileStatement()
@@ -922,35 +1013,39 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void Identifier(CompilerController self, Precedence precedence, Slice previousSlice)
+	private static Storage GetStorage(CompilerController self, ref Slice slice)
 	{
 		var storage = new Storage();
 
-		var slice = self.compiler.parser.previousToken.slice;
-		if (self.compiler.ResolveToLocalVariableIndex(slice, out storage.variableIndex))
-		{
-			ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
-			storage.isValid = true;
-			storage.type = localVar.type;
-			storage.stackIndex = localVar.stackIndex;
+		if (!self.compiler.ResolveToLocalVariableIndex(slice, out storage.variableIndex))
+			return storage;
 
-			if (self.compiler.parser.Match(TokenKind.Dot))
+		ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
+		storage.isValid = true;
+		storage.type = localVar.type;
+		storage.stackIndex = localVar.stackIndex;
+
+		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
+		{
+			if (!FieldAccess(
+				self,
+				ref slice,
+				ref storage.type,
+				ref storage.stackIndex
+			))
 			{
-				do
-				{
-					if (!FieldAccess(
-						self,
-						ref slice,
-						ref storage.type,
-						ref storage.stackIndex
-					))
-					{
-						self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-						break;
-					}
-				} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
+				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+				return storage;
 			}
 		}
+
+		return storage;
+	}
+
+	public static void Identifier(CompilerController self, Precedence precedence, Slice previousSlice)
+	{
+		var slice = self.compiler.parser.previousToken.slice;
+		var storage = GetStorage(self, ref slice);
 
 		var canAssign = precedence <= Precedence.Assignment;
 		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
@@ -1139,11 +1234,10 @@ public sealed class CompilerController
 		return;
 	}
 
-	public static void Index(CompilerController self, Precedence precedence, Slice previousSlice)
+	private static bool GetIndexStorage(CompilerController self, ValueType arrayType, ref Slice slice, out IndexStorage storage)
 	{
-		var arrayType = self.compiler.typeStack.PopLast();
 		if (!arrayType.IsArray)
-			self.compiler.AddSoftError(previousSlice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
+			self.compiler.AddSoftError(slice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
 
 		var indexExpressionSlice = Expression(self);
 		var indexExpressionType = self.compiler.typeStack.PopLast();
@@ -1152,9 +1246,8 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array indexing");
 
-		var slice = previousSlice;
 		var offset = 0;
-		var storage = new IndexStorage();
+		storage = new IndexStorage();
 		storage.hasFieldAccess = false;
 		storage.type = arrayType.ToArrayElementType();
 		storage.elementSize = storage.type.GetSize(self.compiler.chunk);
@@ -1170,16 +1263,27 @@ public sealed class CompilerController
 			))
 			{
 				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-				return;
+				return false;
 			}
 		}
 
 		storage.offset = (byte)offset;
 
+		return true;
+	}
+
+	public static void Index(CompilerController self, Precedence precedence, Slice previousSlice)
+	{
+		var arrayType = self.compiler.typeStack.PopLast();
+		var slice = previousSlice;
+
+		if (!GetIndexStorage(self, arrayType, ref slice, out var storage))
+			return;
+
 		if (self.compiler.parser.Match(TokenKind.Equal))
 		{
 			if (!arrayType.IsMutable)
-				self.compiler.AddSoftError(previousSlice, "Can not write to immutable array. Try adding 'mut' after '[' at its declaration.");
+				self.compiler.AddSoftError(previousSlice, "Can not write to immutable array. Try adding 'mut' after '[' at its declaration");
 
 			IndexAssign(self, ref storage);
 		}
@@ -1245,7 +1349,7 @@ public sealed class CompilerController
 
 	public static void Call(CompilerController self, Precedence precedence, Slice previousSlice)
 	{
-		var slice = self.compiler.parser.previousToken.slice;
+		var slice = previousSlice;
 
 		var type = self.compiler.typeStack.PopLast();
 		var isFunction = self.compiler.chunk.GetFunctionType(type, out var functionType);
@@ -1447,9 +1551,9 @@ public sealed class CompilerController
 					c.typeStack.PushBack(new ValueType(TypeKind.Bool));
 					break;
 				}
-				if (!aType.IsSimple || !bType.IsSimple)
+				if (!aType.IsSimple && !aType.IsArray)
 				{
-					c.AddSoftError(slice, "'{0}' operator can only be applied to bools, ints, floats and strings. Got types {1} and {2}", operatorName, aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk));
+					c.AddSoftError(slice, "'{0}' operator can not be applied to unit, tuples or structs types. Got type {1}", operatorName, aType.ToString(self.compiler.chunk));
 					break;
 				}
 
@@ -1459,6 +1563,9 @@ public sealed class CompilerController
 					c.EmitInstruction(Instruction.EqualBool);
 					break;
 				case TypeKind.Int:
+				case TypeKind.Function:
+				case TypeKind.NativeFunction:
+				case TypeKind.NativeObject:
 					c.EmitInstruction(Instruction.EqualInt);
 					break;
 				case TypeKind.Float:
@@ -1468,7 +1575,7 @@ public sealed class CompilerController
 					c.EmitInstruction(Instruction.EqualString);
 					break;
 				default:
-					c.AddSoftError(slice, "'{0}' operator can only be applied to bools, ints, floats and string. Got types {1} and {2}", operatorName, aType.ToString(self.compiler.chunk));
+					c.AddSoftError(slice, "'{0}' operator can not be applied to unit, tuples or structs types. Got type {1}", operatorName, aType.ToString(self.compiler.chunk));
 					break;
 				}
 

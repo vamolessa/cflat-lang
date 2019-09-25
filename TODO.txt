@@ -1,3 +1,6 @@
+# DOING
+set keyword
+
 # NEXT
 ref
 function prototype
@@ -10,4 +13,3 @@ debugger
 
 # MAYBE??
 mut for struct fields
-set keyword
