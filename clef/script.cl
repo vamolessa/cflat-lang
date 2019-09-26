@@ -15,7 +15,7 @@ fn getT(): T {
 	T{x=6.0}
 }
 
-fn main2() {
+fn main() {
 	let ts = [T{x=0.0}, 1]
 	set getS(mut ts).a[0].x = 1.0
 	print ts[0]
