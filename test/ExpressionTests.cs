@@ -81,4 +81,14 @@ public sealed class ExpressionTests
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v.value);
 	}
+
+	[Theory]
+	[InlineData("{let mut a=0 a=2 a}")]
+	public void TestAssignmentExpressionError(string source)
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Int>(source, out var a);
+		});
+	}
 }
