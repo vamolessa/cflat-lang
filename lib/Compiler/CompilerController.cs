@@ -1327,9 +1327,6 @@ public sealed class CompilerController
 			self.compiler.EmitInstruction(Instruction.AssignArrayElement);
 			self.compiler.EmitByte(storage.elementSize);
 		}
-
-		self.compiler.typeStack.PushBack(storage.type);
-		self.compiler.DebugEmitPushType(storage.type);
 	}
 
 	public static void Call(CompilerController self, Precedence precedence, Slice previousSlice)

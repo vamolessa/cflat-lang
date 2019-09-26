@@ -287,11 +287,7 @@ internal static class VirtualMachineInstructions
 					heapStartIndex += index * size;
 
 					for (var i = 0; i < size; i++)
-					{
-						var value = stack[stackStartIndex + i];
-						vm.valueHeap.buffer[heapStartIndex + i] = value;
-						stack[stackSize++] = value;
-					}
+						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
 					break;
 				}
 			case Instruction.LoadArrayElement:
@@ -338,11 +334,7 @@ internal static class VirtualMachineInstructions
 					heapStartIndex += index * elementSize + offset;
 
 					for (var i = 0; i < fieldSize; i++)
-					{
-						var value = stack[stackStartIndex + i];
-						vm.valueHeap.buffer[heapStartIndex + i] = value;
-						stack[stackSize++] = value;
-					}
+						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
 					break;
 				}
 			case Instruction.LoadArrayElementField:
