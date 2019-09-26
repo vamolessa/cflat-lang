@@ -122,7 +122,7 @@ public sealed class FunctionTests
 
 	[Theory]
 	[InlineData("fn f():int{getSs()[0].a}", 2)]
-	[InlineData("fn f():int{getSs()[1].b}", 3)]
+	[InlineData("fn f():int{getSs()[0].b}", 3)]
 	private void ReturnStructArrayTest(string source, int expected)
 	{
 		var declarations = "struct S{a:int,b:int} fn getSs():[mut S]{[S{a=2,b=3},1]} ";
