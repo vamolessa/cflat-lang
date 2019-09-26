@@ -73,8 +73,7 @@ public sealed class ExpressionTests
 
 	[Theory]
 	[InlineData("{let mut a=4 set a=a+1 a}", 5)]
-	[InlineData("{let mut a=4 set a=a=5 a}", 5)]
-	[InlineData("{let mut a=4 set a=a=a+1 a}", 5)]
+	[InlineData("{let mut a=4 set a=5 set a=a a}", 5)]
 	[InlineData("{let mut a=4 let mut b=5 set b=7 set a=b a}", 7)]
 	public void AssignmentIntTests(string source, int expected)
 	{

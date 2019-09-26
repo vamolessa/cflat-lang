@@ -1055,11 +1055,8 @@ public sealed class CompilerController
 			GetStorage(self, ref slice, ref storage);
 		}
 
-		var canAssign = precedence <= Precedence.Assignment;
-		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
-			Assign(self, slice, ref storage);
-		else
-			Access(self, slice, ref storage);
+		Access(self, slice, ref storage);
+
 	}
 
 	private static void Assign(CompilerController self, Slice slice, ref Storage storage)
@@ -1080,7 +1077,8 @@ public sealed class CompilerController
 					expressionType.ToString(self.compiler.chunk)
 				);
 			}
-			self.compiler.typeStack.PushBack(storage.type);
+
+			self.compiler.DebugEmitPopType(1);
 
 			var varTypeSize = storage.type.GetSize(self.compiler.chunk);
 			if (varTypeSize > 1)
@@ -1277,18 +1275,7 @@ public sealed class CompilerController
 		var slice = previousSlice;
 
 		GetIndexStorage(self, arrayType, ref slice, out var storage);
-
-		if (self.compiler.parser.Match(TokenKind.Equal))
-		{
-			if (!arrayType.IsMutable)
-				self.compiler.AddSoftError(previousSlice, "Can not write to immutable array. Try adding 'mut' after '[' at its declaration");
-
-			IndexAssign(self, ref storage);
-		}
-		else
-		{
-			IndexAccess(self, ref storage);
-		}
+		IndexAccess(self, ref storage);
 	}
 
 	private static void IndexAccess(CompilerController self, ref IndexStorage storage)

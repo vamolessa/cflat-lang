@@ -20,15 +20,15 @@ public sealed class StructTests
 	}
 
 	[Theory]
-	[InlineData("struct S{a:int} fn f():int{let mut s=S{a=0}s.a=3 s.a}", 3)]
-	[InlineData("struct S{a:int,b:int} fn f():int{let mut s=S{a=0,b=0}s.a=3 s.a}", 3)]
-	[InlineData("struct S{a:int,b:int} fn f():int{let mut s=S{a=0,b=0}s.b=7 s.b}", 7)]
-	[InlineData("struct S{a:int,b:int,c:int} fn f():int{let mut s=S{a=0,b=0,c=0}s.a=3 s.a}", 3)]
-	[InlineData("struct S{a:int,b:int,c:int} fn f():int{let mut s=S{a=0,b=0,c=0}s.b=7 s.b}", 7)]
-	[InlineData("struct S{a:int,b:int,c:int} fn f():int{let mut s=S{a=0,b=0,c=0}s.c=9 s.c}", 9)]
-	[InlineData("struct S{a:int,b:int} struct T{s:S,c:int} fn f():int{let mut t=T{s=S{a=0,b=0},c=0}t.s.a=3 t.s.a}", 3)]
-	[InlineData("struct S{a:int,b:int} struct T{s:S,c:int} fn f():int{let mut t=T{s=S{a=0,b=0},c=0}t.s.b=7 t.s.b}", 7)]
-	[InlineData("struct S{a:int,b:int} struct T{s:S,c:int} fn f():int{let mut t=T{s=S{a=0,b=0},c=0}t.c=9 t.c}", 9)]
+	[InlineData("struct S{a:int} fn f():int{let mut s=S{a=0}set s.a=3 s.a}", 3)]
+	[InlineData("struct S{a:int,b:int} fn f():int{let mut s=S{a=0,b=0}set s.a=3 s.a}", 3)]
+	[InlineData("struct S{a:int,b:int} fn f():int{let mut s=S{a=0,b=0}set s.b=7 s.b}", 7)]
+	[InlineData("struct S{a:int,b:int,c:int} fn f():int{let mut s=S{a=0,b=0,c=0}set s.a=3 s.a}", 3)]
+	[InlineData("struct S{a:int,b:int,c:int} fn f():int{let mut s=S{a=0,b=0,c=0}set s.b=7 s.b}", 7)]
+	[InlineData("struct S{a:int,b:int,c:int} fn f():int{let mut s=S{a=0,b=0,c=0}set s.c=9 s.c}", 9)]
+	[InlineData("struct S{a:int,b:int} struct T{s:S,c:int} fn f():int{let mut t=T{s=S{a=0,b=0},c=0}set t.s.a=3 t.s.a}", 3)]
+	[InlineData("struct S{a:int,b:int} struct T{s:S,c:int} fn f():int{let mut t=T{s=S{a=0,b=0},c=0}set t.s.b=7 t.s.b}", 7)]
+	[InlineData("struct S{a:int,b:int} struct T{s:S,c:int} fn f():int{let mut t=T{s=S{a=0,b=0},c=0}set t.c=9 t.c}", 9)]
 	public void StructSetFieldTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);

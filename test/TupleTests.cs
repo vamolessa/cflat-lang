@@ -6,7 +6,7 @@ public sealed class TupleTests
 	[InlineData("fn f():int{let{a,b}={true,3} a b}", 3)]
 	[InlineData("fn f():int{let{_,b}={true,3} b}", 3)]
 	[InlineData("fn f():int{let t={true,3} let{a,b}=t a b}", 3)]
-	[InlineData("fn f():int{let{_,mut b}={true,3} b=5 b}", 5)]
+	[InlineData("fn f():int{let{_,mut b}={true,3} set b=5 b}", 5)]
 	public void TupleDeconstructionTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);

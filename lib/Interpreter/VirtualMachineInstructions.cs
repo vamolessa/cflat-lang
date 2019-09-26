@@ -194,7 +194,7 @@ internal static class VirtualMachineInstructions
 			case Instruction.AssignLocal:
 				{
 					var index = frame.baseStackIndex + bytes[codeIndex++];
-					stack[index] = stack[stackSize - 1];
+					stack[index] = stack[--stackSize];
 					break;
 				}
 			case Instruction.LoadLocal:
@@ -206,10 +206,12 @@ internal static class VirtualMachineInstructions
 			case Instruction.AssignLocalMultiple:
 				{
 					var dstIdx = frame.baseStackIndex + bytes[codeIndex++];
-					var size = bytes[codeIndex++];
-					var srcIdx = stackSize - size;
 
-					while (srcIdx < stackSize)
+					var endIndex = stackSize;
+					stackSize -= bytes[codeIndex++];
+					var srcIdx = stackSize;
+
+					while (srcIdx < endIndex)
 						stack[dstIdx++] = stack[srcIdx++];
 					break;
 				}

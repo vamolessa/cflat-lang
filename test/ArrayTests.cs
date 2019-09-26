@@ -142,15 +142,15 @@ public sealed class ArrayTests
 	}
 
 	[Theory]
-	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33},1] a[0].a=99 a[0].a}", 99)]
-	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33},1] a[0].b=99 a[0].b}", 99)]
-	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33},1] a[0].c=99 a[0].c}", 99)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] a[0].a.f0=99 a[0].a.f0}", 99)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] a[0].a.f1=99 a[0].a.f1}", 99)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] a[0].b.f0=99 a[0].b.f0}", 99)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] a[0].c.f0=99 a[0].c.f0}", 99)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] a[0].c.f1=99 a[0].c.f1}", 99)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] a[0].c.f2=99 a[0].c.f2}", 99)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33},1] set a[0].a=99 a[0].a}", 99)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33},1] set a[0].b=99 a[0].b}", 99)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33},1] set a[0].c=99 a[0].c}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] set a[0].a.f0=99 a[0].a.f0}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] set a[0].a.f1=99 a[0].a.f1}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] set a[0].b.f0=99 a[0].b.f0}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] set a[0].c.f0=99 a[0].c.f0}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] set a[0].c.f1=99 a[0].c.f1}", 99)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}},1] set a[0].c.f2=99 a[0].c.f2}", 99)]
 	public void IntArrayFieldIndexAssignmentTest(string source, int expected)
 	{
 		var declarations =
