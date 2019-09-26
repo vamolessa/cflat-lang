@@ -95,4 +95,40 @@ public sealed class FunctionTests
 			TestHelper.Run<Int>(source, out var a);
 		});
 	}
+
+	[Theory]
+	[InlineData("fn f():int{getS().a}", 2)]
+	[InlineData("fn f():int{getS().b}", 3)]
+	private void ReturnStructTest(string source, int expected)
+	{
+		var declarations = "struct S{a:int,b:int} fn getS():S{S{a=2,b=3}} ";
+		source = declarations + source;
+		var v = TestHelper.Run<Int>(source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
+
+	[Theory]
+	[InlineData("fn f():int{getA()[0]}", 7)]
+	[InlineData("fn f():int{getA()[1]}", 8)]
+	private void ReturnArrayTest(string source, int expected)
+	{
+		var declarations = "fn getA():[mut int]{let a=[7,2] a[1]=8 a} ";
+		source = declarations + source;
+		var v = TestHelper.Run<Int>(source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
+
+	[Theory]
+	[InlineData("fn f():int{getSs()[0].a}", 2)]
+	[InlineData("fn f():int{getSs()[1].b}", 3)]
+	private void ReturnStructArrayTest(string source, int expected)
+	{
+		var declarations = "struct S{a:int,b:int} fn getSs():[mut S]{[S{a=2,b=3},1]} ";
+		source = declarations + source;
+		var v = TestHelper.Run<Int>(source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
 }
