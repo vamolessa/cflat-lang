@@ -129,11 +129,11 @@ public sealed class ArrayTests
 	}
 
 	[Theory]
-	[InlineData("{let a=[5,1] a[0]=99 a[0]}", 99)]
-	[InlineData("{let a=[7,9] a[0]=99 a[0]}", 99)]
-	[InlineData("{let a=[7,9] a[1]=99 a[1]}", 99)]
-	[InlineData("{let a=[7,9] a[8]=99 a[8]}", 99)]
-	[InlineData("{let a=[7,9] a[4+2*2]=99 a[4+2*2]}", 99)]
+	[InlineData("{let a=[5,1] set a[0]=99 a[0]}", 99)]
+	[InlineData("{let a=[7,9] set a[0]=99 a[0]}", 99)]
+	[InlineData("{let a=[7,9] set a[1]=99 a[1]}", 99)]
+	[InlineData("{let a=[7,9] set a[8]=99 a[8]}", 99)]
+	[InlineData("{let a=[7,9] set a[4+2*2]=99 a[4+2*2]}", 99)]
 	public void IntArrayIndexAssignmentTest(string source, int expected)
 	{
 		var v = TestHelper.RunExpression<Int>(source, out var a);

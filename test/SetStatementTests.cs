@@ -14,4 +14,14 @@ public sealed class SetStatementTests
 		a.AssertSuccessCall();
 		Assert.Equal(9, v.value);
 	}
+
+	[Theory]
+	[InlineData("fn getInt():int{0} fn f(){set getInt()=9}")]
+	public void TestSetError(string source)
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Unit>(source, out var a);
+		});
+	}
 }

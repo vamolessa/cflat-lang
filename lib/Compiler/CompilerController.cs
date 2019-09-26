@@ -814,7 +814,7 @@ public sealed class CompilerController
 		}
 		else if (
 			self.compiler.parser.Check(TokenKind.Let) ||
-			self.compiler.parser.Check(TokenKind.Mut) ||
+			self.compiler.parser.Check(TokenKind.Set) ||
 			self.compiler.parser.Check(TokenKind.While) ||
 			self.compiler.parser.Check(TokenKind.Repeat) ||
 			self.compiler.parser.Check(TokenKind.Break) ||

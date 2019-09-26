@@ -113,7 +113,7 @@ public sealed class FunctionTests
 	[InlineData("fn f():int{getA()[1]}", 8)]
 	private void ReturnArrayTest(string source, int expected)
 	{
-		var declarations = "fn getA():[mut int]{let a=[7,2] a[1]=8 a} ";
+		var declarations = "fn getA():[mut int]{let a=[7,2] set a[1]=8 a} ";
 		source = declarations + source;
 		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
