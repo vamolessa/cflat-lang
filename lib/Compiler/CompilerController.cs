@@ -11,7 +11,6 @@ public sealed class CompilerController
 
 	private struct Storage
 	{
-		public bool isValid;
 		public int variableIndex;
 		public ValueType type;
 		public int stackIndex;
@@ -530,9 +529,17 @@ public sealed class CompilerController
 		compiler.parser.Consume(TokenKind.Identifier, "Expected identifier");
 		var slice = compiler.parser.previousToken.slice;
 
-		var storage = GetStorage(this, ref slice);
-		if (storage.isValid)
+		if (compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
 		{
+			var localVar = compiler.localVariables.buffer[variableIndex];
+			var storage = new Storage
+			{
+				variableIndex = variableIndex,
+				type = localVar.type,
+				stackIndex = localVar.stackIndex
+			};
+
+			GetStorage(this, ref slice, ref storage);
 			if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 			{
 				Access(this, slice, ref storage);
@@ -554,6 +561,8 @@ public sealed class CompilerController
 			compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
 			var function = compiler.chunk.functions.buffer[functionIndex];
 			var type = new ValueType(TypeKind.Function, function.typeIndex);
+
+			compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name on set statement");
 			SetFunctionReturn(slice, type);
 		}
 		else if (compiler.ResolveToNativeFunctionIndex(slice, out var nativeFunctionIndex))
@@ -561,6 +570,8 @@ public sealed class CompilerController
 			compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
 			var function = compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
 			var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
+
+			compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name on set statement");
 			SetFunctionReturn(slice, type);
 		}
 		else
@@ -572,8 +583,7 @@ public sealed class CompilerController
 
 	private void SetArrayElement(Slice slice, ValueType arrayType)
 	{
-		if (!GetIndexStorage(this, arrayType, ref slice, out var storage))
-			return;
+		GetIndexStorage(this, arrayType, ref slice, out var storage);
 
 		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 		{
@@ -603,15 +613,20 @@ public sealed class CompilerController
 		Call(this, Precedence.Call, slice);
 		slice = Slice.FromTo(slice, compiler.parser.previousToken.slice);
 
-		var returnType = compiler.typeStack.PopLast();
-
-		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
+		if (compiler.parser.Match(TokenKind.Dot))
 		{
-			SetArrayElement(slice, returnType);
-			return;
+			Dot(this, Precedence.Call, slice);
+			slice = Slice.FromTo(slice, compiler.parser.previousToken.slice);
 		}
 
-		compiler.AddHardError(slice, "Can not write to temporary value. Try assigning it to a variable first");
+		var type = compiler.typeStack.PopLast();
+
+		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
+			SetArrayElement(slice, type);
+		else if (compiler.parser.Match(TokenKind.OpenParenthesis))
+			SetFunctionReturn(slice, type);
+		else
+			compiler.AddHardError(slice, "Can not write to temporary value. Try assigning it to a variable first");
 	}
 
 	public void WhileStatement()
@@ -1008,56 +1023,37 @@ public sealed class CompilerController
 		}
 	}
 
-	private static Storage GetStorage(CompilerController self, ref Slice slice)
+	private static void GetStorage(CompilerController self, ref Slice slice, ref Storage storage)
 	{
-		var storage = new Storage();
-
-		if (!self.compiler.ResolveToLocalVariableIndex(slice, out storage.variableIndex))
+		var hasError = false;
+		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
-			if (
-				self.compiler.loopNesting.count == 0 ||
-				!CompilerHelper.AreEqual(self.compiler.parser.tokenizer.source, slice, "it")
-			)
-				return storage;
+			if (hasError)
+				continue;
 
-			for (var i = self.compiler.localVariables.count - 1; i >= 0; i--)
-			{
-				if (self.compiler.localVariables.buffer[i].IsIteration)
-				{
-					storage.variableIndex = i;
-					break;
-				}
-			}
+			hasError = !FieldAccess(
+				self,
+				ref slice,
+				ref storage.type,
+				ref storage.stackIndex
+			);
 		}
-
-		{
-			var localVar = self.compiler.localVariables.buffer[storage.variableIndex];
-			storage.isValid = true;
-			storage.type = localVar.type;
-			storage.stackIndex = localVar.stackIndex;
-
-			while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
-			{
-				if (!FieldAccess(
-					self,
-					ref slice,
-					ref storage.type,
-					ref storage.stackIndex
-				))
-				{
-					self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-					return storage;
-				}
-			}
-		}
-
-		return storage;
 	}
 
 	public static void Identifier(CompilerController self, Precedence precedence, Slice previousSlice)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
-		var storage = GetStorage(self, ref slice);
+		var storage = new Storage { variableIndex = -1 };
+
+		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
+		{
+			var localVar = self.compiler.localVariables.buffer[variableIndex];
+			storage.variableIndex = variableIndex;
+			storage.type = localVar.type;
+			storage.stackIndex = localVar.stackIndex;
+
+			GetStorage(self, ref slice, ref storage);
+		}
 
 		var canAssign = precedence <= Precedence.Assignment;
 		if (canAssign && self.compiler.parser.Match(TokenKind.Equal))
@@ -1068,7 +1064,7 @@ public sealed class CompilerController
 
 	private static void Assign(CompilerController self, Slice slice, ref Storage storage)
 	{
-		if (storage.isValid)
+		if (storage.variableIndex >= 0)
 		{
 			if (!self.compiler.localVariables.buffer[storage.variableIndex].IsMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
@@ -1108,7 +1104,7 @@ public sealed class CompilerController
 
 	private static void Access(CompilerController self, Slice slice, ref Storage storage)
 	{
-		if (storage.isValid)
+		if (storage.variableIndex >= 0)
 		{
 			self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
 			self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
@@ -1174,6 +1170,7 @@ public sealed class CompilerController
 	{
 		if (!self.compiler.chunk.GetStructType(type, out var structType))
 		{
+			type = new ValueType(TypeKind.Unit);
 			self.compiler.AddSoftError(slice, "Accessed value must be a struct");
 			return false;
 		}
@@ -1203,50 +1200,43 @@ public sealed class CompilerController
 		var sb = new StringBuilder();
 		self.compiler.chunk.FormatStructType(structTypeIndex, sb);
 		self.compiler.AddSoftError(slice, "Could not find such field for struct of type {0}", sb);
+		type = new ValueType(TypeKind.Unit);
 		return false;
 	}
 
 	public static void Dot(CompilerController self, Precedence precedence, Slice previousSlice)
 	{
-		var slice = previousSlice;
-		var type = self.compiler.typeStack.PopLast();
-		var offset = 0;
-
-		var structSize = type.GetSize(self.compiler.chunk);
-
-		do
+		var storage = new Storage
 		{
-			if (!FieldAccess(
-				self,
-				ref slice,
-				ref type,
-				ref offset
-			))
-			{
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-				return;
-			}
-		} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
+			type = self.compiler.typeStack.PopLast(),
+			stackIndex = 0,
+		};
 
-		var fieldSize = type.GetSize(self.compiler.chunk);
-		var sizeAboveField = structSize - offset - fieldSize;
+		var slice = previousSlice;
+		var structSize = storage.type.GetSize(self.compiler.chunk);
+
+		if (FieldAccess(self, ref slice, ref storage.type, ref storage.stackIndex))
+			GetStorage(self, ref slice, ref storage);
+
+		var fieldSize = storage.type.GetSize(self.compiler.chunk);
+		var sizeAboveField = structSize - storage.stackIndex - fieldSize;
 
 		self.compiler.EmitPop(sizeAboveField);
 		self.compiler.DebugEmitPopType(1);
 
-		if (offset > 0)
+		if (storage.stackIndex > 0)
 		{
 			self.compiler.EmitInstruction(Instruction.Move);
-			self.compiler.EmitByte((byte)offset);
+			self.compiler.EmitByte((byte)storage.stackIndex);
 			self.compiler.EmitByte((byte)fieldSize);
 		}
 
-		self.compiler.typeStack.PushBack(type);
-		self.compiler.DebugEmitPushType(type);
+		self.compiler.typeStack.PushBack(storage.type);
+		self.compiler.DebugEmitPushType(storage.type);
 		return;
 	}
 
-	private static bool GetIndexStorage(CompilerController self, ValueType arrayType, ref Slice slice, out IndexStorage storage)
+	private static void GetIndexStorage(CompilerController self, ValueType arrayType, ref Slice slice, out IndexStorage storage)
 	{
 		if (!arrayType.IsArray)
 			self.compiler.AddSoftError(slice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
@@ -1264,24 +1254,21 @@ public sealed class CompilerController
 		storage.type = arrayType.ToArrayElementType();
 		storage.elementSize = storage.type.GetSize(self.compiler.chunk);
 
+		var hasError = false;
 		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
 			storage.hasFieldAccess = true;
-			if (!FieldAccess(
+			if (hasError)
+				continue;
+			hasError = !FieldAccess(
 				self,
 				ref slice,
 				ref storage.type,
 				ref offset
-			))
-			{
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-				return false;
-			}
+			);
 		}
 
 		storage.offset = (byte)offset;
-
-		return true;
 	}
 
 	public static void Index(CompilerController self, Precedence precedence, Slice previousSlice)
@@ -1289,8 +1276,7 @@ public sealed class CompilerController
 		var arrayType = self.compiler.typeStack.PopLast();
 		var slice = previousSlice;
 
-		if (!GetIndexStorage(self, arrayType, ref slice, out var storage))
-			return;
+		GetIndexStorage(self, arrayType, ref slice, out var storage);
 
 		if (self.compiler.parser.Match(TokenKind.Equal))
 		{

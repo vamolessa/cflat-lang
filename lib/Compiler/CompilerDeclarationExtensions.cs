@@ -53,6 +53,18 @@ public static class CompilerDeclarationExtensions
 			}
 		}
 
+		if (self.loopNesting.count > 0 || CompilerHelper.AreEqual(source, slice, "it"))
+		{
+			for (var i = self.localVariables.count - 1; i >= 0; i--)
+			{
+				if (self.localVariables.buffer[i].IsIteration)
+				{
+					index = i;
+					return true;
+				}
+			}
+		}
+
 		index = 0;
 		return false;
 	}
