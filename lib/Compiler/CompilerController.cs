@@ -962,7 +962,7 @@ public sealed class CompilerController
 	public static void And(CompilerController self, Slice previousSlice)
 	{
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(previousSlice, "Expected bool expression before and");
+			self.compiler.AddSoftError(previousSlice, "Expected bool expression before '&&'");
 
 		var jump = self.compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		self.compiler.EmitInstruction(Instruction.Pop);
@@ -971,7 +971,7 @@ public sealed class CompilerController
 		self.compiler.EndEmitForwardJump(jump);
 
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(rightSlice, "Expected bool expression after and");
+			self.compiler.AddSoftError(rightSlice, "Expected bool expression after '&&'");
 
 		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 	}
@@ -979,7 +979,7 @@ public sealed class CompilerController
 	public static void Or(CompilerController self, Slice previousSlice)
 	{
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(previousSlice, "Expected bool expression before or");
+			self.compiler.AddSoftError(previousSlice, "Expected bool expression before '||'");
 
 		var jump = self.compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		self.compiler.EmitInstruction(Instruction.Pop);
@@ -988,7 +988,7 @@ public sealed class CompilerController
 		self.compiler.EndEmitForwardJump(jump);
 
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(rightSlice, "Expected bool expression after or");
+			self.compiler.AddSoftError(rightSlice, "Expected bool expression after '||'");
 
 		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 	}

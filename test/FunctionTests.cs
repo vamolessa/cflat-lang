@@ -131,4 +131,27 @@ public sealed class FunctionTests
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v.value);
 	}
+
+	[Theory]
+	[InlineData("fn f() fn f(){}")]
+	[InlineData("fn a(x:bool) fn b(x:bool){if x{a(!x)}} fn a(x:bool){b(x)} fn f(){a(true)}")]
+	private void FunctionPrototypeTest(string source)
+	{
+		TestHelper.Run<Unit>(source, out var a);
+		a.AssertSuccessCall();
+	}
+
+	[Theory]
+	[InlineData("fn f(a:int) fn f(){}")]
+	[InlineData("fn a() fn f(){}")]
+	[InlineData("fn f() fn f() fn f(){}")]
+	[InlineData("fn f(){} fn f()")]
+	[InlineData("fn a() fn a() fn f(){}")]
+	private void FunctionPrototypeTestError(string source)
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Unit>(source, out var a);
+		});
+	}
 }

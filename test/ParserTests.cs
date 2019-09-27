@@ -34,10 +34,10 @@ public sealed class ParserTest
 	[InlineData("(1 + 2) + 3 == 4 + 5")]
 	[InlineData("1 < 2 != 3 >= 4")]
 	[InlineData("true != false")]
-	[InlineData("true or false")]
-	[InlineData("true and !false")]
-	[InlineData("true and false or 3 > 2")]
-	[InlineData("{let assign = true or false assign}")]
+	[InlineData("true || false")]
+	[InlineData("true && !false")]
+	[InlineData("true && false || 3 > 2")]
+	[InlineData("{let assign = true || false assign}")]
 	public void TestExpressions(string source)
 	{
 		var result = CompileExpression(source);

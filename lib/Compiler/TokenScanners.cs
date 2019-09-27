@@ -10,8 +10,8 @@ public static class TokenScanners
 		new ExactScanner("return").ForToken(TokenKind.Return),
 		new ExactScanner("break").ForToken(TokenKind.Break),
 		new CharScanner('!').ForToken(TokenKind.Bang),
-		new ExactScanner("and").ForToken(TokenKind.And),
-		new ExactScanner("or").ForToken(TokenKind.Or),
+		new ExactScanner("&&").ForToken(TokenKind.And),
+		new ExactScanner("||").ForToken(TokenKind.Or),
 		new ExactScanner("length").ForToken(TokenKind.Length),
 
 		new CharScanner('@').ForToken(TokenKind.At),

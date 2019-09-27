@@ -54,16 +54,16 @@ public sealed class ExpressionTests
 	}
 
 	[Theory]
-	[InlineData("true and true", true)]
-	[InlineData("true and false", false)]
-	[InlineData("false and true", false)]
-	[InlineData("false and false", false)]
-	[InlineData("true or true", true)]
-	[InlineData("true or false", true)]
-	[InlineData("false or true", true)]
-	[InlineData("false or false", false)]
-	[InlineData("{let mut a=false true or {set a=true false} a}", false)]
-	[InlineData("{let mut a=false false and {set a=true true} a}", false)]
+	[InlineData("true && true", true)]
+	[InlineData("true && false", false)]
+	[InlineData("false && true", false)]
+	[InlineData("false && false", false)]
+	[InlineData("true || true", true)]
+	[InlineData("true || false", true)]
+	[InlineData("false || true", true)]
+	[InlineData("false || false", false)]
+	[InlineData("{let mut a=false true || {set a=true false} a}", false)]
+	[InlineData("{let mut a=false false && {set a=true true} a}", false)]
 	public void LogicalTests(string source, bool expected)
 	{
 		var v = TestHelper.RunExpression<Bool>(source, out var a);
