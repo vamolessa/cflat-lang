@@ -53,4 +53,16 @@ public sealed class ValueTests
 		var typeSize = type.GetSize(chunk);
 		Assert.Equal(expectedSize, typeSize);
 	}
+
+	[Fact]
+	public void MutabilityTests()
+	{
+		var immutType = new ValueType(0, TypeKind.Unit, TypeFlags.None);
+		var mutType = new ValueType(0, TypeKind.Unit, TypeFlags.Mutable);
+
+		Assert.True(immutType.Accepts(immutType));
+		Assert.True(immutType.Accepts(mutType));
+		Assert.False(mutType.Accepts(immutType));
+		Assert.True(mutType.Accepts(mutType));
+	}
 }

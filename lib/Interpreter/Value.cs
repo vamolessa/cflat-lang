@@ -112,6 +112,11 @@ public readonly struct ValueType
 			index == other.index;
 	}
 
+	public bool Accepts(ValueType other)
+	{
+		return IsEqualTo(IsMutable ? other : other.ToImmutableType());
+	}
+
 	public bool IsKind(TypeKind kind)
 	{
 		return this.kind == kind && flags == 0 && index == 0;

@@ -234,7 +234,7 @@ public sealed class CompilerController
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
-		if (builder.returnType.kind == TypeKind.Unit)
+		if (builder.returnType.IsKind(TypeKind.Unit))
 		{
 			BlockStatement();
 			compiler.EmitInstruction(Instruction.LoadUnit);
@@ -243,7 +243,7 @@ public sealed class CompilerController
 		{
 			Block(this);
 			var type = compiler.typeStack.PopLast();
-			if (!type.IsEqualTo(builder.returnType))
+			if (!builder.returnType.Accepts(type))
 				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", builder.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
 
@@ -763,7 +763,7 @@ public sealed class CompilerController
 		compiler.EmitInstruction(Instruction.Return);
 		compiler.EmitByte(expectedType.GetSize(compiler.chunk));
 
-		if (!returnType.IsEqualTo(expectedType))
+		if (!expectedType.Accepts(returnType))
 			compiler.AddSoftError(
 				slice,
 				"Wrong return type. Expected {0}. Got {1}",
@@ -924,7 +924,7 @@ public sealed class CompilerController
 			}
 
 			var elseType = self.compiler.typeStack.PopLast();
-			if (!elseType.IsEqualTo(thenType))
+			if (!thenType.Accepts(elseType))
 				self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "If expression must produce values of the same type on both branches. Found types: {0} and {1}", thenType, elseType);
 		}
 		else
@@ -1061,7 +1061,7 @@ public sealed class CompilerController
 
 			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
-			if (!expressionType.IsEqualTo(storage.type))
+			if (!storage.type.Accepts(expressionType))
 			{
 				self.compiler.AddSoftError(
 					expressionSlice,
@@ -1098,6 +1098,7 @@ public sealed class CompilerController
 		if (storage.variableIndex >= 0)
 		{
 			self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
+
 			self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
 			self.compiler.typeStack.PushBack(storage.type);
 			self.compiler.DebugEmitPushType(storage.type);
@@ -1134,7 +1135,7 @@ public sealed class CompilerController
 					self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after field value expression");
 
 				var expressionType = self.compiler.typeStack.PopLast();
-				if (!expressionType.IsEqualTo(field.type))
+				if (!field.type.Accepts(expressionType))
 				{
 					self.compiler.AddSoftError(
 						self.compiler.parser.previousToken.slice,
@@ -1296,7 +1297,7 @@ public sealed class CompilerController
 	{
 		var expressionSlice = Expression(self);
 		var expressionType = self.compiler.typeStack.PopLast();
-		if (!expressionType.IsEqualTo(storage.type))
+		if (!storage.type.Accepts(expressionType))
 		{
 			self.compiler.AddSoftError(
 				expressionSlice,
@@ -1336,7 +1337,6 @@ public sealed class CompilerController
 		{
 			do
 			{
-				var passAsMutable = self.compiler.parser.Match(TokenKind.Mut);
 				var argSlice = Expression(self);
 				var argType = self.compiler.typeStack.PopLast();
 
@@ -1347,12 +1347,7 @@ public sealed class CompilerController
 				{
 					var paramType = self.compiler.chunk.functionParamTypes.buffer[functionType.parameters.index + argIndex];
 
-					if (!passAsMutable && paramType.IsArray)
-						argType = argType.ToImmutableType();
-					else if (passAsMutable && !paramType.IsArray)
-						self.compiler.AddSoftError(argSlice, "Can not apply modifier 'mut' to type {0}", argType.ToString(self.compiler.chunk));
-
-					if (!argType.IsEqualTo(paramType))
+					if (!paramType.Accepts(argType))
 					{
 						self.compiler.AddSoftError(
 							argSlice,
@@ -1526,7 +1521,7 @@ public sealed class CompilerController
 					c.typeStack.PushBack(new ValueType(TypeKind.Bool));
 					break;
 				}
-				if (!aType.IsSimple && !aType.IsArray)
+				if (!aType.IsSimple)
 				{
 					c.AddSoftError(slice, "'{0}' operator can not be applied to unit, tuples or structs types. Got type {1}", operatorName, aType.ToString(self.compiler.chunk));
 					break;

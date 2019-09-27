@@ -1,10 +1,10 @@
-struct S{x:int,y:int}
+fn f(a: [int]) {
+	set a[0] = 1
+}
 
 fn main() {
-	let mut a = S{x=0,y=0}
-	set a = S{x=1,y=1}
-	set a = S{x=2,y=2}
-	set a = S{x=3,y=3}
-
-	print a
+	let a = [2, 1]
+	let b = a
+	set b[0] = 1
+	f(a)
 }

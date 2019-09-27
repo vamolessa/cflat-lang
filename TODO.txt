@@ -1,9 +1,7 @@
-# DOING
-arrumar o array mutability
+function prototype
 
 # NEXT
 ref
-function prototype
 
 # LATER
 clojure
