@@ -3,6 +3,13 @@ using System.Diagnostics;
 [DebuggerTypeProxy(typeof(ByteCodeChunkDebugView))]
 public sealed class ByteCodeChunk
 {
+	public enum AddFunctionResult
+	{
+		Success,
+		AlreadyDefined,
+		TypeMismatch,
+	}
+
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<Slice> slices = new Buffer<Slice>(256);
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
@@ -54,9 +61,45 @@ public sealed class ByteCodeChunk
 		return new FunctionTypeBuilder(this);
 	}
 
-	public void AddFunction(string name, ushort typeIndex)
+	public AddFunctionResult AddFunction(string name, ushort typeIndex, bool hasBody, Slice slice, out int functionIndex)
 	{
-		functions.PushBack(new Function(name, bytes.count, typeIndex));
+		functionIndex = functions.count;
+		var result = AddFunctionResult.Success;
+
+		if (name.Length > 0)
+		{
+			for (var i = 0; i < functions.count; i++)
+			{
+				var function = functions.buffer[i];
+				if (function.name != name)
+					continue;
+
+				functionIndex = i;
+
+				if (!hasBody || function.codeIndex >= 0)
+				{
+					result = AddFunctionResult.AlreadyDefined;
+					break;
+				}
+
+				if (function.typeIndex != typeIndex)
+				{
+					result = AddFunctionResult.TypeMismatch;
+					break;
+				}
+
+				functions.buffer[i] = new Function(name, bytes.count, typeIndex);
+				return AddFunctionResult.Success;
+			}
+		}
+
+		functions.PushBack(new Function(
+			name,
+			hasBody ? bytes.count : -slice.index,
+			typeIndex
+		));
+
+		return result;
 	}
 
 	public TupleTypeBuilder BeginTupleType()

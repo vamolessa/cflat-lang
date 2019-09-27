@@ -43,6 +43,18 @@ public sealed class CompilerController
 			Declaration();
 
 		compiler.EmitInstruction(Instruction.Halt);
+
+		for (var i = 0; i < compiler.chunk.functions.count; i++)
+		{
+			var function = compiler.chunk.functions.buffer[i];
+			if (function.codeIndex < 0)
+			{
+				var slice = new Slice(-function.codeIndex, 1);
+				var functionType = new ValueType(TypeKind.Function, function.typeIndex);
+				compiler.AddSoftError(slice, "Pending definition for function prototype '{0}' {1}", function.name, functionType.ToString(compiler.chunk));
+			}
+		}
+
 		return compiler.errors;
 	}
 
@@ -171,6 +183,7 @@ public sealed class CompilerController
 	{
 		const int MaxParamCount = 8;
 
+		var requireBody = slice.length == 0;
 		var source = compiler.parser.tokenizer.source;
 		var builder = compiler.BeginFunctionDeclaration();
 		var paramStartIndex = compiler.localVariables.count;
@@ -191,18 +204,18 @@ public sealed class CompilerController
 					continue;
 				}
 
-				var hasDuplicate = false;
+				var hasDuplicatedParameter = false;
 				for (var i = 0; i < builder.parameterCount; i++)
 				{
 					var otherSlice = compiler.localVariables.buffer[paramStartIndex + i].slice;
 					if (CompilerHelper.AreEqual(source, paramSlice, otherSlice))
 					{
-						hasDuplicate = true;
+						hasDuplicatedParameter = true;
 						break;
 					}
 				}
 
-				if (hasDuplicate)
+				if (hasDuplicatedParameter)
 				{
 					compiler.AddSoftError(paramSlice, "Function already has a parameter named '{0}'", CompilerHelper.GetSlice(compiler, paramSlice));
 					continue;
@@ -217,11 +230,22 @@ public sealed class CompilerController
 		if (compiler.parser.Match(TokenKind.Colon))
 			builder.returnType = compiler.ParseType("Expected function return type", 0);
 
-		compiler.EndFunctionDeclaration(builder, slice);
+		if (requireBody)
+		{
+			compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
+		}
+		else if (!compiler.parser.Match(TokenKind.OpenCurlyBrackets))
+		{
+			compiler.localVariables.count -= builder.parameterCount;
+			compiler.EndFunctionDeclaration(builder, slice, false);
+			return;
+		}
+
 		compiler.functionReturnTypeStack.PushBack(builder.returnType);
+		var functionIndex = compiler.EndFunctionDeclaration(builder, slice, true);
 
 		{
-			var functionTypeIndex = compiler.chunk.functions.buffer[compiler.chunk.functions.count - 1].typeIndex;
+			var functionTypeIndex = compiler.chunk.functions.buffer[functionIndex].typeIndex;
 			var functionType = compiler.chunk.functionTypes.buffer[functionTypeIndex];
 			compiler.DebugEmitPushFrame();
 			compiler.DebugEmitPushType(new ValueType(TypeKind.Function, functionTypeIndex));
@@ -231,8 +255,6 @@ public sealed class CompilerController
 				compiler.DebugEmitPushType(paramType);
 			}
 		}
-
-		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before function body");
 
 		if (builder.returnType.IsKind(TypeKind.Unit))
 		{
@@ -1726,7 +1748,7 @@ public sealed class CompilerController
 			{
 				self.compiler.AddSoftError(
 					slice,
-					"Inconpatible return type of native method '{0}'. Expected '{1}'. Got '{2}'",
+					"Inconpatible return type of native method '{0}'. Expected {1}. Got {2}",
 					methodName,
 					returnType.ToString(self.compiler.chunk),
 					method.ReturnType.Name

@@ -75,14 +75,55 @@ public static class CompilerDeclarationExtensions
 		return self.chunk.BeginFunctionType();
 	}
 
-	public static void EndFunctionDeclaration(this Compiler self, FunctionTypeBuilder builder, Slice slice)
+	public static int EndFunctionDeclaration(this Compiler self, FunctionTypeBuilder builder, Slice slice, bool hasBody)
 	{
+		var name = CompilerHelper.GetSlice(self, slice);
 		var result = builder.Build(out var index);
+		var functionIndex = -1;
+
 		if (self.CheckFunctionBuild(result, slice))
 		{
-			var name = CompilerHelper.GetSlice(self, slice);
-			self.chunk.AddFunction(name, index);
+			switch (self.chunk.AddFunction(name, index, hasBody, slice, out functionIndex))
+			{
+			case ByteCodeChunk.AddFunctionResult.AlreadyDefined:
+				self.AddSoftError(slice, "There's already a function named '{0}'", name);
+				break;
+			case ByteCodeChunk.AddFunctionResult.TypeMismatch:
+				if (self.ResolveToFunctionIndex(slice, out int prototypeIndex))
+				{
+					var typeIndex = self.chunk.functions.buffer[prototypeIndex].typeIndex;
+					var prototypeType = new ValueType(TypeKind.Function, typeIndex);
+					var functionType = new ValueType(TypeKind.Function, index);
+
+					self.AddSoftError(
+						slice,
+						"Type mismatch between function '{0}' prototype and its body. Expected {1}. Got {2}",
+						name,
+						prototypeType.ToString(self.chunk),
+						functionType.ToString(self.chunk)
+					);
+				}
+				else
+				{
+					self.AddSoftError(slice, "Type mismatch between function '{0}' prototype and its body", name);
+				}
+				break;
+			default:
+				break;
+			}
 		}
+
+		if (functionIndex < 0)
+		{
+			functionIndex = self.chunk.functions.count;
+			if (self.chunk.functionTypes.count < ushort.MaxValue)
+				self.chunk.functionTypes.PushBack(new FunctionType(new Slice(), new ValueType(TypeKind.Unit), 0));
+			var typeIndex = self.chunk.functionTypes.count - 1;
+
+			self.chunk.functions.PushBack(new Function(name, -slice.index, (ushort)typeIndex));
+		}
+
+		return functionIndex;
 	}
 
 	public static bool ResolveToFunctionIndex(this Compiler self, Slice slice, out int index)
