@@ -4,6 +4,14 @@ ref
 # LATER
 clojure
 multiple bytecodes
+- current bytecode
+- bytecode dependency array (buffer)
+- instructions:
+	- Call => CallExternal
+	- CallNative => CallNativeExternal
+	- CallNativeAuto => CallNativeAutoExternal ??
+	- Print => PrintExternal ??
+	- LoadLiteral => LoadLiteralExternal
 bytecode serialization
 debugger
 
