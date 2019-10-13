@@ -147,7 +147,7 @@ public sealed class InterfaceTests
 	{
 		var clef = new Clef();
 		clef.AddFunction(ClassTestFunction, ClassTestFunction);
-		var c = TestHelper.RunExpression<Object>(clef, source, out var a).value as MyClass;
+		var c = TestHelper.RunExpression<Object<MyClass>>(clef, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(n, c.boxed);
 	}

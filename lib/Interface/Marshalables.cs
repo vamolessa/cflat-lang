@@ -128,6 +128,23 @@ public struct Object : IMarshalable
 	}
 }
 
+public struct Object<T> : IObject where T : class
+{
+	public T value;
+
+	public Object(T value)
+	{
+		this.value = value;
+	}
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		object o = value;
+		marshaler.Marshal(ref o, null);
+		value = o as T;
+	}
+}
+
 public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalable
 {
 	internal VirtualMachine vm;

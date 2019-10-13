@@ -2,6 +2,10 @@ public interface IStruct : IMarshalable
 {
 }
 
+public interface IObject : IMarshalable
+{
+}
+
 public interface IMarshalable
 {
 	void Marshal<M>(ref M marshaler) where M : IMarshaler;
@@ -62,10 +66,15 @@ internal static class Marshal
 
 		if (marshalType.isSome)
 			return new ReflectionData(marshalType.value, Marshal.SizeOf<T>.size);
-		else if (typeof(IStruct).IsAssignableFrom(type))
-			return new StructDefinitionMarshaler(chunk).GetReflectionData<T>();
 		else if (typeof(ITuple).IsAssignableFrom(type))
 			return new TupleDefinitionMarshaler(chunk).GetReflectionData<T>();
+		else if (typeof(IStruct).IsAssignableFrom(type))
+			return new StructDefinitionMarshaler(chunk).GetReflectionData<T>();
+		else if (typeof(IObject).IsAssignableFrom(type))
+		{
+			Marshal.SizeOf<T>.size = 1;
+			return new ReflectionData(new ValueType(TypeKind.NativeObject), 1);
+		}
 		else if (typeof(IReflectable).IsAssignableFrom(type))
 			return (new T() as IReflectable).GetReflectionData(chunk);
 
@@ -136,7 +145,7 @@ public interface IMarshaler
 	void Marshal(ref object value, string name);
 }
 
-internal interface IDefinitionMarshaler : IMarshaler
+internal interface IDefinitionMarshaler
 {
 	Marshal.ReflectionData GetReflectionData<T>() where T : struct, IMarshalable;
 }
@@ -247,7 +256,7 @@ internal struct HeapWriteMarshaler : IMarshaler
 	}
 }
 
-internal struct TupleDefinitionMarshaler : IDefinitionMarshaler
+internal struct TupleDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 {
 	internal ByteCodeChunk chunk;
 	internal TupleTypeBuilder builder;
@@ -285,7 +294,7 @@ internal struct TupleDefinitionMarshaler : IDefinitionMarshaler
 	}
 }
 
-internal struct StructDefinitionMarshaler : IDefinitionMarshaler
+internal struct StructDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 {
 	internal ByteCodeChunk chunk;
 	internal StructTypeBuilder builder;
@@ -329,7 +338,7 @@ internal struct StructDefinitionMarshaler : IDefinitionMarshaler
 	}
 }
 
-internal struct FunctionDefinitionMarshaler : IDefinitionMarshaler
+internal struct FunctionDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 {
 	internal ByteCodeChunk chunk;
 	internal FunctionTypeBuilder builder;
