@@ -148,7 +148,7 @@ public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalab
 	{
 		get
 		{
-			var size = global::Marshal.ReflectOn<T>(vm.chunk).size;
+			var size = global::Marshal.SizeOf<T>.size;
 			var marshaler = new HeapReadMarshaler(vm, heapStartIndex + size * index);
 			var value = default(T);
 			value.Marshal(ref marshaler);
@@ -157,7 +157,7 @@ public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalab
 
 		set
 		{
-			var size = global::Marshal.ReflectOn<T>(vm.chunk).size;
+			var size = global::Marshal.SizeOf<T>.size;
 			var marshaler = new HeapWriteMarshaler(vm, heapStartIndex + size * index);
 			value.Marshal(ref marshaler);
 		}
