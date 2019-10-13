@@ -91,7 +91,7 @@ public sealed class InterfaceTests
 	[Theory]
 	[InlineData("MyStruct{x=0,y=0,z=0}", 0, 0, 0)]
 	[InlineData("MyStruct{x=1,y=2,z=3}", 1, 2, 3)]
-	public void MarshalPointStruct(string source, int x, int y, int z)
+	public void MarshalStructTest(string source, int x, int y, int z)
 	{
 		var clef = new Clef();
 		clef.AddStruct<MyStruct>();

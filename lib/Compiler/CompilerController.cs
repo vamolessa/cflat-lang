@@ -369,7 +369,7 @@ public sealed class CompilerController
 		if (defaultValueType.IsArray)
 			self.compiler.AddSoftError(defaultValueSlice, "Can not declare array of arrays");
 
-		self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after array element default value");
+		self.compiler.parser.Consume(TokenKind.Colon, "Expected ':' after array element default value");
 
 		var lengthSlice = Expression(self);
 		var lengthType = self.compiler.typeStack.PopLast();
