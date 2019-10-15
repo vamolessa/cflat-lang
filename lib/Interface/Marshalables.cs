@@ -168,10 +168,7 @@ public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalab
 	Marshal.ReflectionData IReflectable.GetReflectionData(ByteCodeChunk chunk)
 	{
 		global::Marshal.SizeOf<Array<T>>.size = 1;
-		return new Marshal.ReflectionData(
-			global::Marshal.ReflectOn<T>(chunk).type.ToArrayType().ToMutableType(),
-			1
-		);
+		return new Marshal.ReflectionData(global::Marshal.ReflectOn<T>(chunk).type.ToArrayType().ToMutableType());
 	}
 }
 

@@ -23,12 +23,10 @@ internal static class Marshal
 	internal readonly struct ReflectionData
 	{
 		public readonly ValueType type;
-		public readonly byte size;
 
-		public ReflectionData(ValueType type, byte size)
+		public ReflectionData(ValueType type)
 		{
 			this.type = type;
-			this.size = size;
 		}
 	}
 
@@ -63,7 +61,7 @@ internal static class Marshal
 		var marshalType = Marshal.BasicTypeOf<T>.type;
 
 		if (marshalType.isSome)
-			return new ReflectionData(marshalType.value, Marshal.SizeOf<T>.size);
+			return new ReflectionData(marshalType.value);
 		else if (typeof(ITuple).IsAssignableFrom(type))
 			return new TupleDefinitionMarshaler(chunk).GetReflectionData<T>();
 		else if (typeof(IStruct).IsAssignableFrom(type))
@@ -273,10 +271,7 @@ internal struct TupleDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 		if (result == TupleTypeBuilder.Result.Success)
 		{
 			global::Marshal.SizeOf<T>.size = chunk.tupleTypes.buffer[typeIndex].size;
-			return new Marshal.ReflectionData(
-				new ValueType(TypeKind.Tuple, typeIndex),
-				global::Marshal.SizeOf<T>.size
-			);
+			return new Marshal.ReflectionData(new ValueType(TypeKind.Tuple, typeIndex));
 		}
 
 		throw new Marshal.InvalidReflectionException();
@@ -317,10 +312,7 @@ internal struct StructDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 		)
 		{
 			global::Marshal.SizeOf<T>.size = chunk.structTypes.buffer[typeIndex].size;
-			return new Marshal.ReflectionData(
-				new ValueType(TypeKind.Struct, typeIndex),
-				global::Marshal.SizeOf<T>.size
-			);
+			return new Marshal.ReflectionData(new ValueType(TypeKind.Struct, typeIndex));
 		}
 
 		throw new Marshal.InvalidReflectionException();
@@ -341,7 +333,7 @@ internal struct ObjectDefinitionMarshaler : IDefinitionMarshaler
 	public Marshal.ReflectionData GetReflectionData<T>() where T : struct, IMarshalable
 	{
 		Marshal.SizeOf<T>.size = 1;
-		return new Marshal.ReflectionData(new ValueType(TypeKind.NativeObject), 1);
+		return new Marshal.ReflectionData(new ValueType(TypeKind.NativeObject));
 	}
 }
 
@@ -377,10 +369,7 @@ internal struct FunctionDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 		var result = builder.Build(out var typeIndex);
 		if (result == FunctionTypeBuilder.Result.Success)
 		{
-			return new Marshal.ReflectionData(
-				new ValueType(TypeKind.Function, typeIndex),
-				chunk.functionTypes.buffer[typeIndex].parametersSize
-			);
+			return new Marshal.ReflectionData(new ValueType(TypeKind.Function, typeIndex));
 		}
 
 		throw new Marshal.InvalidReflectionException();
