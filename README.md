@@ -1,3 +1,3 @@
-# Clef Language
+# CFlat Language
 
-A static typed script language easy to embed inside an C#/Unity environment.
+A statically typed script language easy to embed in a C# environment
