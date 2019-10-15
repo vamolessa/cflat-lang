@@ -17,7 +17,7 @@ public interface IContext
 	NativeFunctionBody<string> BodyOfString([CallerMemberName] string functionName = "");
 	NativeFunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple;
 	NativeFunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct;
-	NativeFunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
+	NativeFunctionBody<Object<T>> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class;
 
 	R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
@@ -68,7 +68,7 @@ public struct RuntimeContext : IContext
 	public NativeFunctionBody<string> BodyOfString([CallerMemberName] string functionName = "") => new NativeFunctionBody<string>(vm);
 	public NativeFunctionBody<T> BodyOfTuple<T>([CallerMemberName] string functionName = "") where T : struct, ITuple => new NativeFunctionBody<T>(vm);
 	public NativeFunctionBody<T> BodyOfStruct<T>([CallerMemberName] string functionName = "") where T : struct, IStruct => new NativeFunctionBody<T>(vm);
-	public NativeFunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new NativeFunctionBody<object>(vm);
+	public NativeFunctionBody<Object<T>> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class => new NativeFunctionBody<Object<T>>(vm);
 
 	public R CallFunction<A, R>(Function<A, R> function, ref A arguments)
 		where A : struct, ITuple
@@ -209,7 +209,7 @@ public struct DefinitionContext : IContext
 		builder.returnType = Marshal.ReflectOnStruct<T>(chunk).type;
 		throw new DefinitionReturn(functionName, builder);
 	}
-	public NativeFunctionBody<object> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
+	public NativeFunctionBody<Object<T>> BodyOfObject<T>([CallerMemberName] string functionName = "") where T : class
 	{
 		builder.returnType = new ValueType(TypeKind.NativeObject);
 		throw new DefinitionReturn(functionName, builder);

@@ -53,7 +53,7 @@ public static class NativeFunctionBodyExtensions
 		return default;
 	}
 
-	public static Return Return(this NativeFunctionBody<object> self, object value)
+	public static Return Return<T>(this NativeFunctionBody<Object<T>> self, T value) where T : class
 	{
 		self.vm.valueStack.PushBack(new ValueData(self.vm.nativeObjects.count));
 		self.vm.nativeObjects.PushBack(value);
