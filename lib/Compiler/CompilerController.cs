@@ -517,7 +517,7 @@ public sealed class CompilerController
 		var expressionSlice = Expression(this);
 
 		var expressionType = compiler.typeStack.PopLast();
-		if (expressionType.kind != TypeKind.Tuple)
+		if (expressionType.Kind != TypeKind.Tuple)
 		{
 			compiler.AddSoftError(expressionSlice, "Expression must be a tuple");
 			return;
@@ -1399,16 +1399,16 @@ public sealed class CompilerController
 		var popCount = isFunction ? functionType.parameters.length + 1 : 1;
 		self.compiler.DebugEmitPopType((byte)popCount);
 
-		if (type.kind == TypeKind.Function)
+		if (type.Kind == TypeKind.Function)
 			self.compiler.EmitInstruction(Instruction.Call);
-		else if (type.kind == TypeKind.NativeFunction)
+		else if (type.Kind == TypeKind.NativeFunction)
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
 		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersSize : 0));
 		var returnType = isFunction ? functionType.returnType : new ValueType(TypeKind.Unit);
 		self.compiler.typeStack.PushBack(returnType);
 
-		if (type.kind == TypeKind.NativeFunction)
+		if (type.Kind == TypeKind.NativeFunction)
 			self.compiler.DebugEmitPushType(returnType);
 	}
 
@@ -1553,7 +1553,7 @@ public sealed class CompilerController
 					break;
 				}
 
-				switch (aType.kind)
+				switch (aType.Kind)
 				{
 				case TypeKind.Bool:
 					c.EmitInstruction(Instruction.EqualBool);

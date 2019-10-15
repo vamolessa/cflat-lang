@@ -65,7 +65,7 @@ public sealed class FunctionTests
 		for (var i = 0; i < fieldKinds.Length; i++)
 		{
 			var functionParamType = chunk.functionParamTypes.buffer[i];
-			fieldKinds[i] = functionParamType.kind;
+			fieldKinds[i] = functionParamType.Kind;
 		}
 		Assert.Equal(expectedParamsKinds, fieldKinds);
 	}

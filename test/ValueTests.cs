@@ -27,13 +27,13 @@ public sealed class ValueTests
 	public void ValueTypeTests(TypeKind kind, ushort index, TypeFlags flags)
 	{
 		byte b0, b1, b2, b3;
-		var type = new ValueType(index, kind, flags);
+		var type = new ValueType(kind, flags, index);
 		type.Write(out b0, out b1, out b2, out b3);
 		type = ValueType.Read(b0, b1, b2, b3);
 
-		Assert.Equal(kind, type.kind);
+		Assert.Equal(kind, type.Kind);
 		Assert.Equal(index, type.index);
-		Assert.Equal(flags, type.flags);
+		Assert.Equal(flags, type.Flags);
 	}
 
 	[Theory]
@@ -52,5 +52,21 @@ public sealed class ValueTests
 		var type = new ValueType(TypeKind.Struct, chunk.structTypes.count - 1);
 		var typeSize = type.GetSize(chunk);
 		Assert.Equal(expectedSize, typeSize);
+	}
+
+	[Fact]
+	public void ArrayTypeTest()
+	{
+		var arrayType = new ValueType(TypeKind.Int, TypeFlags.Array, 18);
+		Assert.True(arrayType.IsArray);
+		Assert.Equal(TypeKind.Int, arrayType.Kind);
+		Assert.Equal(TypeFlags.Array, arrayType.Flags);
+		Assert.Equal(18, arrayType.index);
+
+		arrayType = new ValueType(TypeKind.Int, 18).ToArrayType();
+		Assert.True(arrayType.IsArray);
+		Assert.Equal(TypeKind.Int, arrayType.Kind);
+		Assert.Equal(TypeFlags.Array, arrayType.Flags);
+		Assert.Equal(18, arrayType.index);
 	}
 }

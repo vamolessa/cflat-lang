@@ -35,7 +35,7 @@ public static class VirtualMachineHelper
 			return;
 		}
 
-		switch (type.kind)
+		switch (type.Kind)
 		{
 		case TypeKind.Unit:
 			sb.Append("{}");
