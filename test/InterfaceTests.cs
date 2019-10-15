@@ -18,9 +18,9 @@ public sealed class InterfaceTests
 	[InlineData("TupleTestFunction({4,false})", 5, true)]
 	public void TupleIoTest(string source, int n, bool b)
 	{
-		var clef = new Clef();
-		clef.AddFunction(TupleTestFunction, TupleTestFunction);
-		var t = TestHelper.RunExpression<Tuple<Int, Bool>>(clef, source, out var a);
+		var cflat = new CFlat();
+		cflat.AddFunction(TupleTestFunction, TupleTestFunction);
+		var t = TestHelper.RunExpression<Tuple<Int, Bool>>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(n, t.e0.value);
 		Assert.Equal(b, t.e1.value);
@@ -52,9 +52,9 @@ public sealed class InterfaceTests
 	[InlineData("NamedTupleTestFunction({4,false})", 5, true)]
 	public void NamedTupleIoTest(string source, int n, bool b)
 	{
-		var clef = new Clef();
-		clef.AddFunction(NamedTupleTestFunction, NamedTupleTestFunction);
-		var t = TestHelper.RunExpression<MyTuple>(clef, source, out var a);
+		var cflat = new CFlat();
+		cflat.AddFunction(NamedTupleTestFunction, NamedTupleTestFunction);
+		var t = TestHelper.RunExpression<MyTuple>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(n, t.n);
 		Assert.Equal(b, t.b);
@@ -78,10 +78,10 @@ public sealed class InterfaceTests
 	public void AddStructTwiceTest()
 	{
 		var source = "MyStruct{x=0,y=0,z=0}";
-		var clef = new Clef();
-		clef.AddStruct<MyStruct>();
-		clef.AddStruct<MyStruct>();
-		var s = TestHelper.RunExpression<MyStruct>(clef, source, out var a);
+		var cflat = new CFlat();
+		cflat.AddStruct<MyStruct>();
+		cflat.AddStruct<MyStruct>();
+		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(0, s.x);
 		Assert.Equal(0, s.y);
@@ -93,10 +93,10 @@ public sealed class InterfaceTests
 	[InlineData("MyStruct{x=1,y=2,z=3}", 1, 2, 3)]
 	public void MarshalStructTest(string source, int x, int y, int z)
 	{
-		var clef = new Clef();
-		clef.AddStruct<MyStruct>();
-		clef.AddStruct<MyStruct>();
-		var s = TestHelper.RunExpression<MyStruct>(clef, source, out var a);
+		var cflat = new CFlat();
+		cflat.AddStruct<MyStruct>();
+		cflat.AddStruct<MyStruct>();
+		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(x, s.x);
 		Assert.Equal(y, s.y);
@@ -119,9 +119,9 @@ public sealed class InterfaceTests
 	[InlineData("StructTestFunction(MyStruct{x=1,y=2,z=3})", 2, 3, 4)]
 	public void StructIoTest(string source, int x, int y, int z)
 	{
-		var clef = new Clef();
-		clef.AddFunction(StructTestFunction, StructTestFunction);
-		var s = TestHelper.RunExpression<MyStruct>(clef, source, out var a);
+		var cflat = new CFlat();
+		cflat.AddFunction(StructTestFunction, StructTestFunction);
+		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(x, s.x);
 		Assert.Equal(y, s.y);
@@ -145,9 +145,9 @@ public sealed class InterfaceTests
 	[InlineData("ClassTestFunction(4))", 4)]
 	public void ClassIoTest(string source, int n)
 	{
-		var clef = new Clef();
-		clef.AddFunction(ClassTestFunction, ClassTestFunction);
-		var c = TestHelper.RunExpression<Object<MyClass>>(clef, source, out var a).value;
+		var cflat = new CFlat();
+		cflat.AddFunction(ClassTestFunction, ClassTestFunction);
+		var c = TestHelper.RunExpression<Object<MyClass>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(n, c.boxed);
 	}
@@ -163,17 +163,17 @@ public sealed class InterfaceTests
 	public void FunctionCallTest()
 	{
 		var source = "fn some_function(a:int):int{a+1} fn f():int{FunctionTestFunction()}";
-		var clef = new Clef();
-		clef.AddFunction(FunctionTestFunction, FunctionTestFunction);
+		var cflat = new CFlat();
+		cflat.AddFunction(FunctionTestFunction, FunctionTestFunction);
 
-		var compileErrors = clef.CompileSource(source, TestHelper.CompilerMode);
+		var compileErrors = cflat.CompileSource(source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, 1));
 
-		someFunction = clef.GetFunction<Tuple<Int>, Int>("some_function").value;
+		someFunction = cflat.GetFunction<Tuple<Int>, Int>("some_function").value;
 
-		var n = clef.GetFunction<Empty, Int>("f").value.Call(clef, new Empty());
-		Assert.False(clef.GetError().isSome);
+		var n = cflat.GetFunction<Empty, Int>("f").value.Call(cflat, new Empty());
+		Assert.False(cflat.GetError().isSome);
 		Assert.Equal(7, n.value);
 	}
 }

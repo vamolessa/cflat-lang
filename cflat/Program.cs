@@ -21,7 +21,7 @@ public static class Program
 			return;
 		}
 
-		ConsoleHelper.Write("Usage: clef [script]");
+		ConsoleHelper.Write("Usage: cflat [script]");
 		System.Environment.Exit(64);
 	}
 

@@ -100,9 +100,9 @@ public sealed class ArrayTests
 	[InlineData("{let a=[5:4] a[99999]}")]
 	public void IntArrayIndexingError(string source)
 	{
-		var clef = new Clef();
-		var v = TestHelper.RunExpression<Int>(clef, source, out var a);
-		Assert.True(clef.GetError().isSome);
+		var cflat = new CFlat();
+		var v = TestHelper.RunExpression<Int>(cflat, source, out var a);
+		Assert.True(cflat.GetError().isSome);
 	}
 
 	[Theory]

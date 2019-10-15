@@ -7,7 +7,7 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "test", "test\test.csproj", 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib", "lib\lib.csproj", "{A7D4803A-E414-45DC-94BF-A1F67143A5DF}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "clef", "clef\clef.csproj", "{18809835-FB3B-4B1A-AB12-9FA37CF3C318}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cflat", "cflat\cflat.csproj", "{18809835-FB3B-4B1A-AB12-9FA37CF3C318}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

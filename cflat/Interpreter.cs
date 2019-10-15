@@ -20,15 +20,15 @@ public static class Interpreter
 
 	public static void RunSource(string source, bool printDisassembled)
 	{
-		var clef = new Clef();
+		var cflat = new CFlat();
 
-		clef.AddSearchingAssembly(typeof(System.Console));
-		clef.AddSearchingAssembly(typeof(Interpreter));
+		cflat.AddSearchingAssembly(typeof(System.Console));
+		cflat.AddSearchingAssembly(typeof(Interpreter));
 
-		clef.AddFunction(StartStopwatch, StartStopwatch);
-		clef.AddFunction(StopStopwatch, StopStopwatch);
+		cflat.AddFunction(StartStopwatch, StartStopwatch);
+		cflat.AddFunction(StopStopwatch, StopStopwatch);
 
-		var compileErrors = clef.CompileSource(source, Mode.Debug);
+		var compileErrors = cflat.CompileSource(source, Mode.Debug);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
@@ -42,24 +42,24 @@ public static class Interpreter
 
 		if (printDisassembled)
 		{
-			ConsoleHelper.Write(clef.Disassemble());
+			ConsoleHelper.Write(cflat.Disassemble());
 			ConsoleHelper.LineBreak();
 		}
 
-		var main = clef.GetFunction<Empty, Unit>("main");
+		var main = cflat.GetFunction<Empty, Unit>("main");
 		if (main.isSome)
-			System.Console.WriteLine("RESULT: {0}", main.value.Call(clef, new Empty()));
+			System.Console.WriteLine("RESULT: {0}", main.value.Call(cflat, new Empty()));
 		else
 			System.Console.WriteLine("NOT FOUNDED");
 
-		var runtimeError = clef.GetError();
+		var runtimeError = cflat.GetError();
 		if (runtimeError.isSome)
 		{
 			var error = VirtualMachineHelper.FormatError(source, runtimeError.value, 2, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
-			ConsoleHelper.Error(clef.TraceCallStack());
+			ConsoleHelper.Error(cflat.TraceCallStack());
 
 			System.Environment.ExitCode = 70;
 		}

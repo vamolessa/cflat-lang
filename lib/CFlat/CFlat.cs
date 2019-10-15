@@ -1,4 +1,4 @@
-public sealed class Clef
+public sealed class CFlat
 {
 	internal readonly VirtualMachine virtualMachine = new VirtualMachine();
 	internal readonly CompilerController compiler = new CompilerController();

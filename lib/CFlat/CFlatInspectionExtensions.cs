@@ -2,7 +2,7 @@ using System.Text;
 
 public static class ClefInspectionExtensions
 {
-	public static string TraceCallStack(this Clef self)
+	public static string TraceCallStack(this CFlat self)
 	{
 		var vm = self.virtualMachine;
 		var sb = new StringBuilder();
@@ -48,7 +48,7 @@ public static class ClefInspectionExtensions
 		return sb.ToString();
 	}
 
-	public static string Disassemble(this Clef self)
+	public static string Disassemble(this CFlat self)
 	{
 		var sb = new StringBuilder();
 		self.byteCode.Disassemble(self.source, "script", sb);
