@@ -113,7 +113,7 @@ public sealed class FunctionTests
 	[InlineData("fn f():int{getA()[1]}", 8)]
 	private void ReturnArrayTest(string source, int expected)
 	{
-		var declarations = "fn getA():[mut int]{let a=[7:2] set a[1]=8 a} ";
+		var declarations = "fn getA():[int]{let mut a=[7:2] set a[1]=8 a} ";
 		source = declarations + source;
 		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();
@@ -125,7 +125,7 @@ public sealed class FunctionTests
 	[InlineData("fn f():int{getSs()[0].b}", 3)]
 	private void ReturnStructArrayTest(string source, int expected)
 	{
-		var declarations = "struct S{a:int,b:int} fn getSs():[mut S]{[S{a=2,b=3}:1]} ";
+		var declarations = "struct S{a:int,b:int} fn getSs():[S]{[S{a=2,b=3}:1]} ";
 		source = declarations + source;
 		var v = TestHelper.Run<Int>(source, out var a);
 		a.AssertSuccessCall();

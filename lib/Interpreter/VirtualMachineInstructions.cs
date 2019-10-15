@@ -78,51 +78,6 @@ internal static class VirtualMachineInstructions
 					}
 					break;
 				}
-			case Instruction.CallNativeAuto:
-				{
-					var callIndex = bytes[codeIndex++];
-					var call = vm.chunk.nativeCalls.buffer[callIndex];
-					var stackTop = stackSize - call.argumentsSize;
-
-					vm.callframeStack.PushBackUnchecked(
-						new CallFrame(
-							0,
-							stackTop + 1,
-							0,
-							CallFrame.Type.AutoNativeFunction
-						)
-					);
-
-					var reader = new StackReadMarshaler(vm, stackTop);
-					var arguments = new object[call.argumentTypes.Length];
-					for (var i = 0; i < arguments.Length; i++)
-						arguments[i] = Marshal.GetObject(ref reader, call.argumentTypes[i]);
-
-					try
-					{
-						var result = call.methodInfo.Invoke(null, arguments);
-						if (call.returnType.IsKind(TypeKind.Unit))
-							stackBuffer.PushBackUnchecked(new ValueData());
-						else if (call.returnType.IsKind(TypeKind.Bool) && result is bool b)
-							stackBuffer.PushBackUnchecked(new ValueData(b));
-						else if (call.returnType.IsKind(TypeKind.Int) && result is int i)
-							stackBuffer.PushBackUnchecked(new ValueData(i));
-						else if (call.returnType.IsKind(TypeKind.Float) && result is float f)
-							stackBuffer.PushBackUnchecked(new ValueData(f));
-						else
-						{
-							stackBuffer.PushBackUnchecked(new ValueData(vm.nativeObjects.count));
-							vm.nativeObjects.PushBackUnchecked(result);
-						}
-						VirtualMachineHelper.Return(vm, call.returnType.GetSize(vm.chunk));
-					}
-					catch (System.Exception e)
-					{
-						vm.Error(e.ToString());
-						return;
-					}
-					break;
-				}
 			case Instruction.Return:
 				VirtualMachineHelper.Return(vm, bytes[codeIndex++]);
 				break;

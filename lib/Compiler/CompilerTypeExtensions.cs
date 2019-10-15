@@ -163,8 +163,6 @@ public static class CompilerTypeExtensions
 
 	private static Option<ValueType> ParseArrayType(this Compiler self, int recursionLevel)
 	{
-		var isMutable = self.parser.Match(TokenKind.Mut);
-
 		var elementType = self.ParseType("Expected array element type", recursionLevel);
 		self.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array type");
 		if (elementType.IsArray)
@@ -173,10 +171,6 @@ public static class CompilerTypeExtensions
 			return Option.None;
 		}
 
-		var arrayType = elementType.ToArrayType();
-		if (isMutable)
-			arrayType = arrayType.ToMutableType();
-
-		return Option.Some(arrayType);
+		return Option.Some(elementType.ToArrayType());
 	}
 }

@@ -193,6 +193,7 @@ public sealed class CompilerController
 		{
 			do
 			{
+				var isMutable = compiler.parser.Match(TokenKind.Mut);
 				compiler.parser.Consume(TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.parser.previousToken.slice;
 				compiler.parser.Consume(TokenKind.Colon, "Expected ':' after parameter name");
@@ -221,7 +222,10 @@ public sealed class CompilerController
 					continue;
 				}
 
-				compiler.AddLocalVariable(paramSlice, paramType, VariableFlags.Used);
+				var paramFlags = VariableFlags.Used;
+				if (isMutable)
+					paramFlags |= VariableFlags.Mutable;
+				compiler.AddLocalVariable(paramSlice, paramType, paramFlags);
 				builder.WithParam(paramType);
 			} while (compiler.parser.Match(TokenKind.Comma) || compiler.parser.Match(TokenKind.End));
 		}
@@ -378,7 +382,7 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
 
-		var arrayType = defaultValueType.ToArrayType().ToMutableType();
+		var arrayType = defaultValueType.ToArrayType();
 		self.compiler.typeStack.PushBack(arrayType);
 
 		self.compiler.DebugEmitPopType(2);
@@ -558,7 +562,7 @@ public sealed class CompilerController
 			if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 			{
 				Access(this, slice, ref storage);
-				SetArrayElement(slice, storage.type);
+				SetArrayElement(slice, storage.type, localVar.IsMutable);
 			}
 			else if (compiler.parser.Match(TokenKind.OpenParenthesis))
 			{
@@ -591,19 +595,19 @@ public sealed class CompilerController
 		}
 		else
 		{
-			compiler.AddHardError(slice, "Could not find variable of function named '{0}'", CompilerHelper.GetSlice(compiler, slice));
+			compiler.AddHardError(slice, "Could not find variable or function named '{0}'", CompilerHelper.GetSlice(compiler, slice));
 			return;
 		}
 	}
 
-	private void SetArrayElement(Slice slice, ValueType arrayType)
+	private void SetArrayElement(Slice slice, ValueType arrayType, bool isMutable)
 	{
 		GetIndexStorage(this, arrayType, ref slice, out var storage);
 
 		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 		{
 			IndexAccess(this, ref storage);
-			SetArrayElement(slice, storage.type);
+			SetArrayElement(slice, storage.type, isMutable);
 		}
 		if (compiler.parser.Match(TokenKind.OpenParenthesis))
 		{
@@ -613,8 +617,8 @@ public sealed class CompilerController
 		else
 		{
 			compiler.parser.Consume(TokenKind.Equal, "Expected '=' before expression");
-			if (!arrayType.IsMutable)
-				compiler.AddSoftError(slice, "Can not write to immutable array. Try adding 'mut' after '[' at its declaration");
+			if (!isMutable)
+				compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
 
 			IndexAssign(this, ref storage);
 		}
@@ -637,7 +641,7 @@ public sealed class CompilerController
 		var type = compiler.typeStack.PopLast();
 
 		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
-			SetArrayElement(slice, type);
+			SetArrayElement(slice, type, true);
 		else if (compiler.parser.Match(TokenKind.OpenParenthesis))
 			SetFunctionReturn(slice, type);
 		else
@@ -1641,143 +1645,5 @@ public sealed class CompilerController
 		default:
 			return;
 		}
-	}
-
-	public static void NativeCall(CompilerController self, Slice previousSlice)
-	{
-		var identifiers = new Buffer<string>(8);
-		var slice = self.compiler.parser.previousToken.slice;
-		do
-		{
-			self.compiler.parser.Consume(TokenKind.Identifier, "Expected native identifier");
-			identifiers.PushBackUnchecked(CompilerHelper.GetPreviousSlice(self.compiler));
-		} while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End));
-		slice = Slice.FromTo(slice, self.compiler.parser.previousToken.slice);
-
-		var methods = new System.Reflection.MethodInfo[0];
-		string methodName = null;
-
-		if (identifiers.count < 2)
-		{
-			self.compiler.AddSoftError(slice, "Expected at least 2 identifiers separated by '.'");
-		}
-		else
-		{
-			var typeName = string.Join(".", identifiers.buffer, 0, identifiers.count - 1);
-
-			System.Type type = null;
-			for (var i = 0; i < self.searchingAssemblies.count; i++)
-			{
-				var assembly = self.searchingAssemblies.buffer[i];
-				type = assembly.GetType(typeName);
-				if (type != null)
-					break;
-			}
-
-			if (type != null)
-			{
-				methods = type.GetMethods();
-				methodName = identifiers.buffer[identifiers.count - 1];
-			}
-			else
-			{
-				self.compiler.AddSoftError(slice, "Could not find type '{0}'", typeName);
-			}
-		}
-
-		var expressionTypes = new Buffer<ValueType>(8);
-		var argumentsSize = 0;
-
-		self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' before native function call argument");
-		while (
-			!self.compiler.parser.Check(TokenKind.CloseParenthesis) &&
-			!self.compiler.parser.Check(TokenKind.End)
-		)
-		{
-			Expression(self);
-			var expressionType = self.compiler.typeStack.PopLast();
-			expressionTypes.PushBack(expressionType);
-			argumentsSize = expressionType.GetSize(self.compiler.chunk);
-
-			if (!self.compiler.parser.Check(TokenKind.CloseParenthesis))
-				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after native function call argument");
-		}
-		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after native function call argument");
-
-		if (argumentsSize > byte.MaxValue)
-		{
-			self.compiler.AddSoftError(
-				slice,
-				"Native function call arguments size is too big. Max is {0}", byte.MaxValue
-			);
-			argumentsSize = byte.MaxValue;
-		}
-
-		System.Reflection.MethodInfo method = null;
-		foreach (var m in methods)
-		{
-			if (m.Name != methodName)
-				goto NoMatch;
-
-			var parameters = m.GetParameters();
-			if (parameters.Length != expressionTypes.count)
-				goto NoMatch;
-
-			for (var i = 0; i < parameters.Length; i++)
-			{
-				if (!expressionTypes.buffer[i].IsCompatibleWithNativeType(parameters[i].ParameterType))
-					goto NoMatch;
-			}
-
-			method = m;
-			break;
-		NoMatch:;
-		}
-
-		var returnType = self.compiler.parser.Match(TokenKind.Colon) ?
-			self.compiler.ParseType("Expected native function call return type", 0) :
-			new ValueType(TypeKind.Unit);
-
-		if (!string.IsNullOrEmpty(methodName))
-		{
-			if (method == null)
-			{
-				self.compiler.AddSoftError(slice, "Could not find native method '{0}'", methodName);
-			}
-			else if (!returnType.IsCompatibleWithNativeType(method.ReturnType))
-			{
-				self.compiler.AddSoftError(
-					slice,
-					"Inconpatible return type of native method '{0}'. Expected {1}. Got {2}",
-					methodName,
-					returnType.ToString(self.compiler.chunk),
-					method.ReturnType.Name
-				);
-				method = null;
-			}
-		}
-
-		self.compiler.DebugEmitPopType((byte)expressionTypes.count);
-
-		if (self.compiler.chunk.nativeCalls.count > byte.MaxValue)
-		{
-			self.compiler.AddSoftError(
-				slice,
-				"Too many native function calls. Max is {0}", byte.MaxValue
-			);
-			return;
-		}
-
-		self.compiler.EmitInstruction(Instruction.CallNativeAuto);
-		self.compiler.EmitByte((byte)self.compiler.chunk.nativeCalls.count);
-		self.compiler.chunk.nativeCalls.PushBack(new NativeCall(
-			method,
-			returnType,
-			expressionTypes.ToArray(),
-			(byte)argumentsSize
-		));
-
-		self.compiler.typeStack.PushBack(returnType);
-		self.compiler.DebugEmitPushType(returnType);
 	}
 }

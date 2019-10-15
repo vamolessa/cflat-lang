@@ -45,7 +45,6 @@ public sealed class ParseRules
 		Set(TokenKind.Function, CompilerController.FunctionExpression, null, Precedence.None);
 		Set(TokenKind.Int, CompilerController.Unary, null, Precedence.None);
 		Set(TokenKind.Float, CompilerController.Unary, null, Precedence.None);
-		Set(TokenKind.At, CompilerController.NativeCall, null, Precedence.None);
 	}
 
 	public Precedence GetPrecedence(TokenKind kind)

@@ -64,11 +64,6 @@ public readonly struct ValueType
 		get { return flags == 0 && index == 0; }
 	}
 
-	public bool IsMutable
-	{
-		get { return (flags & TypeFlags.Mutable) != 0; }
-	}
-
 	public bool IsArray
 	{
 		get { return (flags & TypeFlags.Array) != 0; }
@@ -114,7 +109,7 @@ public readonly struct ValueType
 
 	public bool Accepts(ValueType other)
 	{
-		return IsEqualTo(IsMutable ? other : other.ToImmutableType());
+		return IsEqualTo(other);
 	}
 
 	public bool IsKind(TypeKind kind)
@@ -150,16 +145,6 @@ public readonly struct ValueType
 		}
 	}
 
-	public ValueType ToMutableType()
-	{
-		return new ValueType(index, kind, flags | TypeFlags.Mutable);
-	}
-
-	public ValueType ToImmutableType()
-	{
-		return new ValueType(index, kind, flags & ~TypeFlags.Mutable);
-	}
-
 	public ValueType ToArrayElementType()
 	{
 		return new ValueType(kind, index);
@@ -175,8 +160,6 @@ public readonly struct ValueType
 		if (IsArray)
 		{
 			sb.Append('[');
-			if (IsMutable)
-				sb.Append("mut ");
 			ToArrayElementType().Format(chunk, sb);
 			sb.Append(']');
 			return;
@@ -226,27 +209,6 @@ public readonly struct ValueType
 		var sb = new StringBuilder();
 		Format(chunk, sb);
 		return sb.ToString();
-	}
-
-	public bool IsCompatibleWithNativeType(System.Type type)
-	{
-		switch (kind)
-		{
-		case TypeKind.Unit:
-			return type == typeof(void);
-		case TypeKind.Bool:
-			return type == typeof(bool);
-		case TypeKind.Int:
-			return type == typeof(int);
-		case TypeKind.Float:
-			return type == typeof(float);
-		case TypeKind.String:
-			return type == typeof(string);
-		case TypeKind.NativeObject:
-			return type.IsClass;
-		default:
-			return false;
-		}
 	}
 }
 
