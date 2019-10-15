@@ -95,7 +95,6 @@ public sealed class InterfaceTests
 	{
 		var cflat = new CFlat();
 		cflat.AddStruct<MyStruct>();
-		cflat.AddStruct<MyStruct>();
 		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(x, s.x);
@@ -128,9 +127,44 @@ public sealed class InterfaceTests
 		Assert.Equal(z, s.z);
 	}
 
+	public struct MyNestingStruct : IStruct
+	{
+		public MyStruct a;
+		public bool b;
+
+		public void Marshal<M>(ref M marshaler) where M : IMarshaler
+		{
+			marshaler.Marshal(ref a, nameof(a));
+			marshaler.Marshal(ref b, nameof(b));
+		}
+	}
+
+	[Theory]
+	[InlineData("MyNestingStruct{a=MyStruct{x=0,y=0,z=0},b=true}", 0, 0, 0, true)]
+	[InlineData("MyNestingStruct{a=MyStruct{x=1,y=2,z=3},b=false}", 1, 2, 3, false)]
+	public void MarshalNestingStructTest(string source, int x, int y, int z, bool b)
+	{
+		var cflat = new CFlat();
+		cflat.AddStruct<MyNestingStruct>();
+		var s = TestHelper.RunExpression<MyNestingStruct>(cflat, source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(x, s.a.x);
+		Assert.Equal(y, s.a.y);
+		Assert.Equal(z, s.a.z);
+		Assert.Equal(b, s.b);
+	}
+
 	public sealed class MyClass
 	{
 		public int boxed;
+	}
+
+	[Fact]
+	public void AddClassTwiceTest()
+	{
+		var cflat = new CFlat();
+		cflat.AddClass<MyClass>();
+		cflat.AddClass<MyClass>();
 	}
 
 	public static Return CreateClassTestFunction<C>(ref C context) where C : IContext

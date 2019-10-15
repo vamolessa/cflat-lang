@@ -163,8 +163,7 @@ internal struct StackReadMarshaler : IMarshaler
 	public void Marshal(ref int value, string name) => value = vm.valueStack.buffer[stackIndex++].asInt;
 	public void Marshal(ref float value, string name) => value = vm.valueStack.buffer[stackIndex++].asFloat;
 	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.valueStack.buffer[stackIndex++].asInt] as string;
-	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable =>
-		value.Marshal(ref this);
+	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void MarshalObject(ref object value) => value = vm.nativeObjects.buffer[vm.valueStack.buffer[stackIndex++].asInt];
 }
 
@@ -216,8 +215,7 @@ internal struct HeapReadMarshaler : IMarshaler
 	public void Marshal(ref int value, string name) => value = vm.valueHeap.buffer[heapIndex++].asInt;
 	public void Marshal(ref float value, string name) => value = vm.valueHeap.buffer[heapIndex++].asFloat;
 	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.valueHeap.buffer[heapIndex++].asInt] as string;
-	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable =>
-		value.Marshal(ref this);
+	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void MarshalObject(ref object value) => value = vm.nativeObjects.buffer[vm.valueHeap.buffer[heapIndex++].asInt];
 }
 

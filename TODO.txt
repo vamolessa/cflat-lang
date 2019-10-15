@@ -1,8 +1,4 @@
 # NEXT
-NativeObject => index do System.Type
-NativeObject type resolution
-
-reflection data => valuetype ??
 ref
 
 # LATER
