@@ -48,14 +48,12 @@ internal static class Marshal
 			BasicTypeOf<Int>.type = Option.Some(new ValueType(TypeKind.Int));
 			BasicTypeOf<Float>.type = Option.Some(new ValueType(TypeKind.Float));
 			BasicTypeOf<String>.type = Option.Some(new ValueType(TypeKind.String));
-			BasicTypeOf<Object>.type = Option.Some(new ValueType(TypeKind.NativeObject));
 
 			SizeOf<Unit>.size = 1;
 			SizeOf<Bool>.size = 1;
 			SizeOf<Int>.size = 1;
 			SizeOf<Float>.size = 1;
 			SizeOf<String>.size = 1;
-			SizeOf<Object>.size = 1;
 		}
 	}
 
@@ -71,10 +69,7 @@ internal static class Marshal
 		else if (typeof(IStruct).IsAssignableFrom(type))
 			return new StructDefinitionMarshaler(chunk).GetReflectionData<T>();
 		else if (typeof(IObject).IsAssignableFrom(type))
-		{
-			Marshal.SizeOf<T>.size = 1;
-			return new ReflectionData(new ValueType(TypeKind.NativeObject), 1);
-		}
+			return new ObjectDefinitionMarshaler(chunk).GetReflectionData<T>();
 		else if (typeof(IReflectable).IsAssignableFrom(type))
 			return (new T() as IReflectable).GetReflectionData(chunk);
 
@@ -116,12 +111,6 @@ internal static class Marshal
 		else if (type.IsKind(TypeKind.String))
 		{
 			var v = default(String);
-			v.Marshal(ref marshaler);
-			return v.value;
-		}
-		else if (type.IsKind(TypeKind.NativeObject))
-		{
-			var v = default(Object);
 			v.Marshal(ref marshaler);
 			return v.value;
 		}
@@ -335,6 +324,24 @@ internal struct StructDefinitionMarshaler : IMarshaler, IDefinitionMarshaler
 		}
 
 		throw new Marshal.InvalidReflectionException();
+	}
+}
+
+internal struct ObjectDefinitionMarshaler : IDefinitionMarshaler
+{
+	internal ByteCodeChunk chunk;
+	internal StructTypeBuilder builder;
+
+	public ObjectDefinitionMarshaler(ByteCodeChunk chunk)
+	{
+		this.chunk = chunk;
+		this.builder = chunk.BeginStructType();
+	}
+
+	public Marshal.ReflectionData GetReflectionData<T>() where T : struct, IMarshalable
+	{
+		Marshal.SizeOf<T>.size = 1;
+		return new Marshal.ReflectionData(new ValueType(TypeKind.NativeObject), 1);
 	}
 }
 

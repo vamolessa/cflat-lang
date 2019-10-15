@@ -113,21 +113,6 @@ public struct String : IMarshalable
 	}
 }
 
-public struct Object : IMarshalable
-{
-	public object value;
-
-	public Object(object value)
-	{
-		this.value = value;
-	}
-
-	public void Marshal<M>(ref M marshaler) where M : IMarshaler
-	{
-		marshaler.Marshal(ref value, null);
-	}
-}
-
 public struct Object<T> : IObject where T : class
 {
 	public T value;
