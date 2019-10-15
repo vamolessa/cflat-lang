@@ -42,12 +42,6 @@ public static class ClefInspectionExtensions
 				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
 				sb.AppendLine();
 				break;
-			case CallFrame.Type.AutoNativeFunction:
-				sb.Append("[auto-native function] ");
-
-				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
-				sb.AppendLine();
-				break;
 			}
 		}
 

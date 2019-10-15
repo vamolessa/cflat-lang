@@ -1,8 +1,12 @@
 # NEXT
-reflection data => valuetype
+NativeObject => index do System.Type
+NativeObject type resolution
+
+reflection data => valuetype ??
 ref
 
 # LATER
+mut ref ??
 clojure
 multiple bytecodes
 - current bytecode
@@ -10,7 +14,6 @@ multiple bytecodes
 - instructions:
 	- Call => CallExternal
 	- CallNative => CallNativeExternal
-	- CallNativeAuto => CallNativeAutoExternal ??
 	- Print => PrintExternal ??
 	- LoadLiteral => LoadLiteralExternal
 bytecode serialization

@@ -19,7 +19,6 @@ internal struct CallFrame
 		EntryPoint,
 		Function,
 		NativeFunction,
-		AutoNativeFunction,
 	}
 
 	public int codeIndex;

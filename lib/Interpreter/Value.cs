@@ -313,19 +313,3 @@ public readonly struct StructTypeField
 		this.type = type;
 	}
 }
-
-public readonly struct NativeCall
-{
-	public readonly MethodInfo methodInfo;
-	public readonly ValueType returnType;
-	public readonly ValueType[] argumentTypes;
-	public readonly byte argumentsSize;
-
-	public NativeCall(MethodInfo methodInfo, ValueType returnType, ValueType[] argumentTypes, byte argumentsSize)
-	{
-		this.methodInfo = methodInfo;
-		this.returnType = returnType;
-		this.argumentTypes = argumentTypes;
-		this.argumentsSize = argumentsSize;
-	}
-}
