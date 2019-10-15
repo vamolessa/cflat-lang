@@ -32,7 +32,6 @@ public sealed class CompilerController
 
 	public readonly Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
-	public Buffer<System.Reflection.Assembly> searchingAssemblies = new Buffer<System.Reflection.Assembly>();
 
 	public Buffer<CompileError> Compile(string source, ByteCodeChunk chunk, Mode mode)
 	{
@@ -1561,7 +1560,7 @@ public sealed class CompilerController
 				case TypeKind.Int:
 				case TypeKind.Function:
 				case TypeKind.NativeFunction:
-				case TypeKind.NativeObject:
+				case TypeKind.NativeClass:
 					c.EmitInstruction(Instruction.EqualInt);
 					break;
 				case TypeKind.Float:

@@ -77,12 +77,10 @@ public static class CompilerTypeExtensions
 			type = Option.Some(new ValueType(TypeKind.Float));
 		else if (self.parser.Match(TokenKind.String))
 			type = Option.Some(new ValueType(TypeKind.String));
-		else if (self.parser.Match(TokenKind.Object))
-			type = Option.Some(new ValueType(TypeKind.NativeObject));
 		else if (self.parser.Match(TokenKind.OpenCurlyBrackets))
 			type = self.ParseTupleType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Identifier))
-			type = self.ParseStructType(recursionLevel + 1);
+			type = self.ParseStructOrClassType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Function))
 			type = self.ParseFunctionType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.OpenSquareBrackets))
@@ -121,7 +119,7 @@ public static class CompilerTypeExtensions
 		return Option.Some(type);
 	}
 
-	private static Option<ValueType> ParseStructType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseStructOrClassType(this Compiler self, int recursionLevel)
 	{
 		var source = self.parser.tokenizer.source;
 		var slice = self.parser.previousToken.slice;
@@ -131,6 +129,13 @@ public static class CompilerTypeExtensions
 			var structName = self.chunk.structTypes.buffer[i].name;
 			if (CompilerHelper.AreEqual(source, slice, structName))
 				return Option.Some(new ValueType(TypeKind.Struct, i));
+		}
+
+		for (var i = 0; i < self.chunk.classTypes.count; i++)
+		{
+			var className = self.chunk.classTypes.buffer[i].name;
+			if (CompilerHelper.AreEqual(source, slice, className))
+				return Option.Some(new ValueType(TypeKind.NativeClass, i));
 		}
 
 		return Option.None;

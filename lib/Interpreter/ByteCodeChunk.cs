@@ -23,6 +23,7 @@ public sealed class ByteCodeChunk
 	public Buffer<ValueType> tupleElementTypes = new Buffer<ValueType>(16);
 	public Buffer<StructType> structTypes = new Buffer<StructType>(8);
 	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(16);
+	public Buffer<ClassType> classTypes = new Buffer<ClassType>(8);
 
 	public void WriteByte(byte value, Slice slice)
 	{
@@ -109,6 +110,11 @@ public sealed class ByteCodeChunk
 	public StructTypeBuilder BeginStructType()
 	{
 		return new StructTypeBuilder(this);
+	}
+
+	public ClassTypeBuilder BeginClassType()
+	{
+		return new ClassTypeBuilder(this);
 	}
 
 	public bool GetFunctionType(ValueType type, out FunctionType functionType)

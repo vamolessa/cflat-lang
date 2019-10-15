@@ -4,7 +4,7 @@ public static class Interpreter
 
 	public static Return StartStopwatch<C>(ref C context) where C : IContext
 	{
-		var body = context.BodyOfObject<System.Diagnostics.Stopwatch>();
+		var body = context.Body<Class<System.Diagnostics.Stopwatch>>();
 		var sw = new System.Diagnostics.Stopwatch();
 		sw.Start();
 		return body.Return(sw);
@@ -12,8 +12,8 @@ public static class Interpreter
 
 	public static Return StopStopwatch<C>(ref C context) where C : IContext
 	{
-		var sw = context.ArgObject<System.Diagnostics.Stopwatch>();
-		var body = context.BodyOfFloat();
+		var sw = context.Arg<Class<System.Diagnostics.Stopwatch>>().value;
+		var body = context.Body<Float>();
 		sw.Stop();
 		return body.Return((float)sw.Elapsed.TotalSeconds);
 	}
@@ -21,9 +21,6 @@ public static class Interpreter
 	public static void RunSource(string source, bool printDisassembled)
 	{
 		var cflat = new CFlat();
-
-		cflat.AddSearchingAssembly(typeof(System.Console));
-		cflat.AddSearchingAssembly(typeof(Interpreter));
 
 		cflat.AddFunction(StartStopwatch, StartStopwatch);
 		cflat.AddFunction(StopStopwatch, StopStopwatch);

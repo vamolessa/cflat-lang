@@ -113,11 +113,16 @@ public struct String : IMarshalable
 	}
 }
 
-public struct Object<T> : IObject where T : class
+public struct Class<T> : IClass where T : class
 {
 	public T value;
 
-	public Object(T value)
+	public System.Type ClassType
+	{
+		get { return typeof(T); }
+	}
+
+	public Class(T value)
 	{
 		this.value = value;
 	}
@@ -125,8 +130,18 @@ public struct Object<T> : IObject where T : class
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		object o = value;
-		marshaler.Marshal(ref o, null);
+		marshaler.MarshalObject(ref o);
 		value = o as T;
+	}
+
+	public static implicit operator Class<T>(T value)
+	{
+		return new Class<T>(value);
+	}
+
+	public static implicit operator T(Class<T> self)
+	{
+		return self.value;
 	}
 }
 

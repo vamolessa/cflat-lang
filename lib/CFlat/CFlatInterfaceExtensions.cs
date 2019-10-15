@@ -1,11 +1,5 @@
 public static class ClefInterfaceExtensions
 {
-	public static void AddSearchingAssembly(this CFlat self, System.Type containedType)
-	{
-		var assembly = System.Reflection.Assembly.GetAssembly(containedType);
-		self.compiler.searchingAssemblies.PushBack(assembly);
-	}
-
 	public static Option<Function<A, R>> GetFunction<A, R>(this CFlat self, string functionName)
 		where A : struct, ITuple
 		where R : struct, IMarshalable
@@ -42,9 +36,14 @@ public static class ClefInterfaceExtensions
 		return Option.None;
 	}
 
-	public static void AddRegisterError(this CFlat self, string errorFormat, params object[] args)
+	public static void AddStruct<T>(this CFlat self) where T : struct, IStruct
 	{
-		self.registerErrors.PushBack(new CompileError(new Slice(), string.Format(errorFormat, args)));
+		Marshal.ReflectOnStruct<T>(self.byteCode);
+	}
+
+	public static void AddClass<T>(this CFlat self) where T : class
+	{
+		Marshal.ReflectOnClass<Class<T>>(self.byteCode);
 	}
 
 	public static bool AddFunction(this CFlat self, NativeCallback<DefinitionContext> definitionFunction, NativeCallback<RuntimeContext> runtimeFunction)
@@ -73,20 +72,15 @@ public static class ClefInterfaceExtensions
 				return true;
 			}
 		}
-		catch (System.Exception e)
-		{
-			context.builder.Cancel();
-			self.registerErrors.PushBack(new CompileError(
-				new Slice(),
-				"Error when adding native function\n" + e.Message
-			));
-		}
+		// catch (System.Exception e)
+		// {
+		// 	context.builder.Cancel();
+		// 	self.registerErrors.PushBack(new CompileError(
+		// 		new Slice(),
+		// 		"Error when adding native function\n" + e.Message
+		// 	));
+		// }
 
 		return false;
-	}
-
-	public static void AddStruct<T>(this CFlat self) where T : struct, IStruct
-	{
-		Marshal.ReflectOnStruct<T>(self.byteCode);
 	}
 }

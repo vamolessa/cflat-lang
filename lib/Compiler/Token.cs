@@ -5,7 +5,7 @@ public enum TokenKind
 	Dot, Comma, Colon, Bang, And, Or, Length,
 
 	Let, Mut, Ref, Set,
-	Bool, Int, Float, String, Object,
+	Bool, Int, Float, String,
 
 	Print,
 

@@ -127,7 +127,7 @@ public static class VirtualMachineHelper
 				sb.Append('}');
 				return;
 			}
-		case TypeKind.NativeObject:
+		case TypeKind.NativeClass:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				if (idx >= vm.nativeObjects.count)

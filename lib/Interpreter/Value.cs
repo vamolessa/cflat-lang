@@ -1,4 +1,3 @@
-using System.Reflection;
 using System.Runtime.InteropServices;
 using System.Text;
 
@@ -42,7 +41,7 @@ public enum TypeKind : byte
 	NativeFunction,
 	Tuple,
 	Struct,
-	NativeObject,
+	NativeClass,
 }
 
 [System.Flags]
@@ -213,8 +212,9 @@ public readonly struct ValueType
 		case TypeKind.Struct:
 			chunk.FormatStructType(index, sb);
 			break;
-		case TypeKind.NativeObject:
-			sb.Append("native object");
+		case TypeKind.NativeClass:
+			sb.Append("native ");
+			sb.Append(chunk.classTypes.buffer[index].name);
 			break;
 		default:
 			sb.Append("unreachable");
@@ -308,6 +308,18 @@ public readonly struct StructTypeField
 	public readonly ValueType type;
 
 	public StructTypeField(string name, ValueType type)
+	{
+		this.name = name;
+		this.type = type;
+	}
+}
+
+public readonly struct ClassType
+{
+	public readonly string name;
+	public readonly System.Type type;
+
+	public ClassType(string name, System.Type type)
 	{
 		this.name = name;
 		this.type = type;

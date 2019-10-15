@@ -103,6 +103,7 @@ public struct FunctionTypeBuilder
 			return Result.ParametersTooBig;
 		}
 
+		typeIndex = (ushort)chunk.functionTypes.count;
 		chunk.functionTypes.PushBack(new FunctionType(
 			new Slice(
 				parametersIndex,
@@ -112,7 +113,6 @@ public struct FunctionTypeBuilder
 			(byte)parametersSize
 		));
 
-		typeIndex = (ushort)(chunk.functionTypes.count - 1);
 		return Result.Success;
 	}
 }
@@ -223,6 +223,7 @@ public struct TupleTypeBuilder
 			return Result.ElementsTooBig;
 		}
 
+		typeIndex = (ushort)chunk.tupleTypes.count;
 		chunk.tupleTypes.PushBack(new TupleType(
 			new Slice(
 				elementsIndex,
@@ -231,7 +232,6 @@ public struct TupleTypeBuilder
 			(byte)size
 		));
 
-		typeIndex = (ushort)(chunk.tupleTypes.count - 1);
 		return Result.Success;
 	}
 }
@@ -326,6 +326,7 @@ public struct StructTypeBuilder
 		else if (size >= byte.MaxValue)
 			size = byte.MaxValue;
 
+		typeIndex = (ushort)chunk.structTypes.count;
 		chunk.structTypes.PushBack(new StructType(
 			name,
 			new Slice(
@@ -335,7 +336,46 @@ public struct StructTypeBuilder
 			(byte)size
 		));
 
-		typeIndex = (ushort)(chunk.structTypes.count - 1);
+		return Result.Success;
+	}
+}
+
+public struct ClassTypeBuilder
+{
+	public enum Result
+	{
+		Success,
+		TooManyClasses,
+		DuplicatedName,
+	}
+
+	public ByteCodeChunk chunk;
+
+	public ClassTypeBuilder(ByteCodeChunk chunk)
+	{
+		this.chunk = chunk;
+	}
+
+	public Result Build(string name, System.Type type, out ushort typeIndex)
+	{
+		if (chunk.classTypes.count >= ushort.MaxValue)
+		{
+			typeIndex = 0;
+			return Result.TooManyClasses;
+		}
+
+		for (var i = 0; i < chunk.classTypes.count; i++)
+		{
+			if (chunk.classTypes.buffer[i].name == name)
+			{
+				typeIndex = (ushort)i;
+				return Result.DuplicatedName;
+			}
+		}
+
+		typeIndex = (ushort)chunk.classTypes.count;
+		chunk.classTypes.PushBack(new ClassType(name, type));
+
 		return Result.Success;
 	}
 }
