@@ -85,7 +85,7 @@ public sealed class VirtualMachine
 
 		error = Option.Some(new RuntimeError(
 			ip,
-			ip >= 0 ? chunk.slices.buffer[ip] : new Slice(),
+			ip >= 0 ? chunk.sourceSlices.buffer[ip] : new Slice(),
 			message
 		));
 	}

@@ -16,8 +16,9 @@ public static class Program
 
 		if (args.Length == 1)
 		{
-			var source = ReadFile(args[0]);
-			Interpreter.RunSource(source, true);
+			var filename = args[0];
+			var source = ReadFile(filename);
+			Interpreter.RunSource(filename, source, true);
 			return;
 		}
 

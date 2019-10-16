@@ -11,7 +11,8 @@ public sealed class ByteCodeChunk
 	}
 
 	public Buffer<byte> bytes = new Buffer<byte>(256);
-	public Buffer<Slice> slices = new Buffer<Slice>(256);
+	public Buffer<Slice> sourceSlices = new Buffer<Slice>(256);
+	public Buffer<int> sourceStartIndexes = new Buffer<int>();
 	public Buffer<ValueData> literalData = new Buffer<ValueData>(64);
 	public Buffer<TypeKind> literalKinds = new Buffer<TypeKind>(64);
 	public Buffer<string> stringLiterals = new Buffer<string>(16);
@@ -28,7 +29,7 @@ public sealed class ByteCodeChunk
 	public void WriteByte(byte value, Slice slice)
 	{
 		bytes.PushBack(value);
-		slices.PushBack(slice);
+		sourceSlices.PushBack(slice);
 	}
 
 	public int AddValueLiteral(ValueData value, TypeKind kind)

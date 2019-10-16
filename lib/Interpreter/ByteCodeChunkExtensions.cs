@@ -14,6 +14,17 @@ public sealed class ByteCodeChunkDebugView
 
 public static class ByteCodeChunkExtensions
 {
+	public static int FindSourceIndex(this ByteCodeChunk self, int codeIndex)
+	{
+		for (var i = 0; i < self.sourceStartIndexes.count; i++)
+		{
+			if (codeIndex >= self.sourceStartIndexes.buffer[i])
+				return i;
+		}
+
+		return -1;
+	}
+
 	public static void FormatFunction(this ByteCodeChunk self, int functionIndex, StringBuilder sb)
 	{
 		if (functionIndex >= self.functions.count)
@@ -132,36 +143,44 @@ public static class ByteCodeChunkExtensions
 		sb.AppendLine("== end ==");
 	}
 
-	public static void Disassemble(this ByteCodeChunk self, string source, string chunkName, StringBuilder sb)
+	internal static void Disassemble(this ByteCodeChunk self, CFlat.Source[] sources, StringBuilder sb)
 	{
+		var currentSourceIndex = -1;
+
 		sb.Append("== ");
-		sb.Append(chunkName);
-		sb.Append(" [");
 		sb.Append(self.bytes.count);
-		sb.AppendLine(" bytes] ==");
+		sb.AppendLine(" bytes ==");
 		sb.AppendLine("line byte instruction");
 
 		for (var index = 0; index < self.bytes.count;)
 		{
+			var sourceIndex = self.FindSourceIndex(index);
+			var source = sources[sourceIndex];
+			if (sourceIndex != currentSourceIndex)
+			{
+				sb.Append("== ");
+				sb.Append(source.name);
+				sb.Append(" ==");
+				currentSourceIndex = sourceIndex;
+			}
+
 			PrintFunctionName(self, index, sb);
-			PrintLineNumber(self, source, index, sb);
+			PrintLineNumber(self, source.content, index, sb);
 			index = DisassembleInstruction(self, index, sb);
 			sb.AppendLine();
 		}
 
-		sb.Append("== ");
-		sb.Append(chunkName);
-		sb.AppendLine(" end ==");
+		sb.AppendLine("== end ==");
 	}
 
 	private static void PrintLineNumber(ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
-		var currentSourceIndex = self.slices.buffer[index].index;
+		var currentSourceIndex = self.sourceSlices.buffer[index].index;
 		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex, 1);
 		var lastLine = -1;
 		if (index > 0)
 		{
-			var lastSourceIndex = self.slices.buffer[index - 1].index;
+			var lastSourceIndex = self.sourceSlices.buffer[index - 1].index;
 			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
 		}
 

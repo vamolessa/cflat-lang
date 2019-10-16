@@ -18,14 +18,14 @@ public static class Interpreter
 		return body.Return((float)sw.Elapsed.TotalSeconds);
 	}
 
-	public static void RunSource(string source, bool printDisassembled)
+	public static void RunSource(string sourceName, string source, bool printDisassembled)
 	{
 		var cflat = new CFlat();
 
 		cflat.AddFunction(StartStopwatch, StartStopwatch);
 		cflat.AddFunction(StopStopwatch, StopStopwatch);
 
-		var compileErrors = cflat.CompileSource(source, Mode.Debug);
+		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
@@ -43,6 +43,7 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
+		cflat.Load();
 		var main = cflat.GetFunction<Empty, Unit>("main");
 		if (main.isSome)
 			System.Console.WriteLine("RESULT: {0}", main.value.Call(cflat, new Empty()));

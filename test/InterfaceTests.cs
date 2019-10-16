@@ -210,10 +210,11 @@ public sealed class InterfaceTests
 		var cflat = new CFlat();
 		cflat.AddFunction(FunctionTestFunction, FunctionTestFunction);
 
-		var compileErrors = cflat.CompileSource(source, TestHelper.CompilerMode);
+		var compileErrors = cflat.CompileSource("tests", source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, 1));
 
+		cflat.Load();
 		someFunction = cflat.GetFunction<Tuple<Int>, Int>("some_function").value;
 
 		var n = cflat.GetFunction<Empty, Int>("f").value.Call(cflat, new Empty());

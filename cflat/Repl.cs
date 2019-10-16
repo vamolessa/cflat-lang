@@ -30,7 +30,7 @@ public static class Repl
 			if (source.Length == 0)
 				break;
 
-			Interpreter.RunSource(source, false);
+			Interpreter.RunSource("repl", source, false);
 		}
 	}
 }

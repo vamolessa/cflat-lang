@@ -56,10 +56,11 @@ public static class TestHelper
 	public static R Run<R>(CFlat cflat, string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		var compileErrors = cflat.CompileSource(source, CompilerMode);
+		var compileErrors = cflat.CompileSource("tests", source, CompilerMode);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
+		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
 		return cflat.GetFunction<Empty, R>("f").value.Call(cflat, new Empty());
 	}
@@ -77,6 +78,7 @@ public static class TestHelper
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
 
+		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
 		return cflat.GetFunction<Empty, R>(string.Empty).value.Call(cflat, new Empty());
 	}

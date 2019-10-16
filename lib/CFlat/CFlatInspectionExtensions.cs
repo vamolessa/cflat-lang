@@ -11,7 +11,9 @@ public static class ClefInspectionExtensions
 		for (var i = vm.callframeStack.count - 1; i >= 0; i--)
 		{
 			var callframe = vm.callframeStack.buffer[i];
-			var sourceIndex = vm.chunk.slices.buffer[callframe.codeIndex - 1].index;
+			var codeIndex = callframe.codeIndex - 1;
+			var sourceIndex = vm.chunk.sourceSlices.buffer[codeIndex].index;
+			var source = self.sources.buffer[vm.chunk.FindSourceIndex(codeIndex)];
 
 			switch (callframe.type)
 			{
@@ -19,7 +21,7 @@ public static class ClefInspectionExtensions
 				break;
 			case CallFrame.Type.Function:
 				var pos = CompilerHelper.GetLineAndColumn(
-					self.source,
+					source.content,
 					sourceIndex,
 					1
 				);
@@ -31,7 +33,7 @@ public static class ClefInspectionExtensions
 
 				sb.Append(" => ");
 				var line = CompilerHelper.GetLines(
-					self.source,
+					source.content,
 					pos.line - 1,
 					pos.line - 1
 				);
@@ -51,7 +53,7 @@ public static class ClefInspectionExtensions
 	public static string Disassemble(this CFlat self)
 	{
 		var sb = new StringBuilder();
-		self.chunk.Disassemble(self.source, "script", sb);
+		self.chunk.Disassemble(self.sources.buffer, sb);
 		return sb.ToString();
 	}
 }

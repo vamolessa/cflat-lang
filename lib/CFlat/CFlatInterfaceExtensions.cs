@@ -53,7 +53,7 @@ public static class ClefInterfaceExtensions
 		{
 			definitionFunction(ref context);
 			context.builder.Cancel();
-			self.registerErrors.PushBack(new CompileError(
+			self.compileErrors.PushBack(new CompileError(
 				new Slice(),
 				"No native function body found"
 			));
@@ -75,7 +75,7 @@ public static class ClefInterfaceExtensions
 		catch (System.Exception e)
 		{
 			context.builder.Cancel();
-			self.registerErrors.PushBack(new CompileError(
+			self.compileErrors.PushBack(new CompileError(
 				new Slice(),
 				"Error when adding native function\n" + e.Message
 			));

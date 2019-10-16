@@ -3,7 +3,7 @@ using Xunit;
 public sealed class ByteCodeChunkTests
 {
 	[Fact]
-	public unsafe void TupleDeclarationTest()
+	public void TupleDeclarationTest()
 	{
 		var chunk = new ByteCodeChunk();
 
