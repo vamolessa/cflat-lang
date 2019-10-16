@@ -1,18 +1,9 @@
 # NEXT
-multiple bytecodes
-- current bytecode
-- bytecode dependency array (buffer)
-- instructions:
-	- Call => CallExternal
-	- CallNative => CallNativeExternal
-	- Print => PrintExternal ??
-	- LoadLiteral => LoadLiteralExternal
+ref
 
 # LATER
-ref
-mut ref ??
+mut ref
 clojure
-bytecode serialization
 debugger
 
 # MAYBE??
