@@ -39,7 +39,7 @@ public sealed class Compiler
 
 		isInPanicMode = false;
 		this.linking = linking;
-		this.chunk = linking.byteCodeChunk;
+		this.chunk = linking?.byteCodeChunk;
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;

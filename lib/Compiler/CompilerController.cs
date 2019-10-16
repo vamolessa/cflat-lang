@@ -87,7 +87,7 @@ public sealed class CompilerController
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte(topType.GetSize(chunk));
+		compiler.EmitByte(topType.GetSize(compiler.chunk));
 
 		compiler.EmitInstruction(Instruction.Halt);
 		return compiler.errors;
