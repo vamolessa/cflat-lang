@@ -71,10 +71,11 @@ public sealed class TupleTests
 	public void NestedTupleTest(string source, int[] expectedSlices, TypeKind[] expectedElementKinds)
 	{
 		var compiler = new CompilerController();
-		var chunk = new ByteCodeChunk();
+		var linking = new Linking();
+		var chunk = linking.byteCodeChunk;
 
 		string error = null;
-		var errors = compiler.Compile(source, chunk, TestHelper.CompilerMode);
+		var errors = compiler.Compile(linking, TestHelper.CompilerMode, source);
 		if (errors.count > 0)
 			error = CompilerHelper.FormatError(source, errors, 1, 8);
 		Assert.Null(error);

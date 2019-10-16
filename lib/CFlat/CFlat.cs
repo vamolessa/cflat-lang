@@ -12,7 +12,7 @@ public sealed class CFlat
 			return registerErrors;
 
 		this.source = source;
-		var errors = compiler.Compile(source, linking.byteCodeChunk, mode);
+		var errors = compiler.Compile(linking, mode, source);
 		if (errors.count == 0)
 			virtualMachine.Load(linking);
 		return errors;
@@ -24,7 +24,7 @@ public sealed class CFlat
 			return registerErrors;
 
 		this.source = source;
-		var errors = compiler.CompileExpression(source, linking.byteCodeChunk, mode);
+		var errors = compiler.CompileExpression( linking, mode, source);
 		if (errors.count == 0)
 			virtualMachine.Load(linking);
 		return errors;

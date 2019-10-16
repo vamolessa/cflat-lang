@@ -5,6 +5,7 @@ public sealed class Compiler
 	public Buffer<CompileError> errors = new Buffer<CompileError>();
 
 	public bool isInPanicMode;
+	public Linking linking;
 	public ByteCodeChunk chunk;
 	public Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 
@@ -25,10 +26,10 @@ public sealed class Compiler
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		this.parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(null, null, Mode.Release);
+		Reset(null, Mode.Release, null);
 	}
 
-	public void Reset(string source, ByteCodeChunk chunk, Mode mode)
+	public void Reset(Linking linking, Mode mode, string source)
 	{
 		parser.tokenizer.Reset(source);
 		parser.Reset();
@@ -37,7 +38,8 @@ public sealed class Compiler
 		this.mode = mode;
 
 		isInPanicMode = false;
-		this.chunk = chunk;
+		this.linking = linking;
+		this.chunk = linking.byteCodeChunk;
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;

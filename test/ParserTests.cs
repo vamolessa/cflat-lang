@@ -6,7 +6,7 @@ public sealed class ParserTest
 	{
 		const int TabSize = 8;
 		var compiler = new CompilerController();
-		var compileErrors = compiler.CompileExpression(source, new ByteCodeChunk(), TestHelper.CompilerMode);
+		var compileErrors = compiler.CompileExpression(new Linking(), TestHelper.CompilerMode, source);
 		if (compileErrors.count > 0)
 			return "COMPILE ERROR: " + CompilerHelper.FormatError(source, compileErrors, 1, TabSize);
 		return null;
