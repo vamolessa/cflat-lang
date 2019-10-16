@@ -44,7 +44,7 @@ public struct RuntimeContext : IContext
 
 		vm.valueStack.PushBack(new ValueData(function.functionIndex));
 		vm.callframeStack.PushBack(new CallFrame(
-			vm.chunk.bytes.count - 1,
+			vm.linking.byteCodeChunk.bytes.count - 1,
 			vm.valueStack.count,
 			0,
 			CallFrame.Type.EntryPoint
@@ -125,5 +125,13 @@ public struct DefinitionContext : IContext
 		var reflection = marshaler.GetReflectionData();
 
 		throw new ReflectionReturn(reflection);
+	}
+}
+
+public static class ContextExtensions
+{
+	public static NativeFunctionBody<Unit> Body<C>(this C self, [CallerMemberName] string functionName = "") where C : IContext
+	{
+		return self.Body<Unit>(functionName);
 	}
 }

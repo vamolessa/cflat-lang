@@ -49,7 +49,7 @@ internal struct DebugData
 
 public sealed class VirtualMachine
 {
-	internal ByteCodeChunk chunk;
+	internal Linking linking;
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<ValueData> valueHeap = new Buffer<ValueData>(256);
@@ -57,9 +57,9 @@ public sealed class VirtualMachine
 	internal DebugData debugData = new DebugData();
 	internal Option<RuntimeError> error;
 
-	public void Load(ByteCodeChunk chunk)
+	public void Load(Linking linking)
 	{
-		this.chunk = chunk;
+		this.linking = linking;
 		error = Option.None;
 
 		callframeStack.count = 0;
@@ -68,11 +68,11 @@ public sealed class VirtualMachine
 
 		nativeObjects = new Buffer<object>
 		{
-			buffer = new object[chunk.stringLiterals.buffer.Length],
-			count = chunk.stringLiterals.count
+			buffer = new object[linking.byteCodeChunk.stringLiterals.buffer.Length],
+			count = linking.byteCodeChunk.stringLiterals.count
 		};
 		for (var i = 0; i < nativeObjects.count; i++)
-			nativeObjects.buffer[i] = chunk.stringLiterals.buffer[i];
+			nativeObjects.buffer[i] = linking.byteCodeChunk.stringLiterals.buffer[i];
 
 		debugData.Clear();
 	}
@@ -85,7 +85,7 @@ public sealed class VirtualMachine
 
 		error = Option.Some(new RuntimeError(
 			ip,
-			ip >= 0 ? chunk.slices.buffer[ip] : new Slice(),
+			ip >= 0 ? linking.byteCodeChunk.slices.buffer[ip] : new Slice(),
 			message
 		));
 	}

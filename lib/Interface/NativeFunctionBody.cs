@@ -19,3 +19,11 @@ public readonly struct NativeFunctionBody<T> where T : struct, IMarshalable
 		return default;
 	}
 }
+
+public static class NativeFunctionBodyExtensions
+{
+	public static Return Return(this NativeFunctionBody<Unit> self)
+	{
+		return self.Return(new Unit());
+	}
+}

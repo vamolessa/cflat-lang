@@ -177,9 +177,9 @@ public sealed class InterfaceTests
 	public static Return ModifyClassTestFunction<C>(ref C context) where C : IContext
 	{
 		var c = context.Arg<Class<MyClass>>().value;
-		var body = context.Body<Unit>();
+		var body = context.Body();
 		c.boxed += 1;
-		return body.Return(new Unit());
+		return body.Return();
 	}
 
 	[Theory]

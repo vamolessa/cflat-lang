@@ -131,9 +131,9 @@ public static class CompilerTypeExtensions
 				return Option.Some(new ValueType(TypeKind.Struct, i));
 		}
 
-		for (var i = 0; i < self.chunk.classTypes.count; i++)
+		for (var i = 0; i < self.chunk.nativeClassTypes.count; i++)
 		{
-			var className = self.chunk.classTypes.buffer[i].name;
+			var className = self.chunk.nativeClassTypes.buffer[i].name;
 			if (CompilerHelper.AreEqual(source, slice, className))
 				return Option.Some(new ValueType(TypeKind.NativeClass, i));
 		}

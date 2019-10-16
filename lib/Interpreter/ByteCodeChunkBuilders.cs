@@ -358,23 +358,23 @@ public struct ClassTypeBuilder
 
 	public Result Build(string name, System.Type type, out ushort typeIndex)
 	{
-		if (chunk.classTypes.count >= ushort.MaxValue)
+		if (chunk.nativeClassTypes.count >= ushort.MaxValue)
 		{
 			typeIndex = 0;
 			return Result.TooManyClasses;
 		}
 
-		for (var i = 0; i < chunk.classTypes.count; i++)
+		for (var i = 0; i < chunk.nativeClassTypes.count; i++)
 		{
-			if (chunk.classTypes.buffer[i].name == name)
+			if (chunk.nativeClassTypes.buffer[i].name == name)
 			{
 				typeIndex = (ushort)i;
 				return Result.DuplicatedName;
 			}
 		}
 
-		typeIndex = (ushort)chunk.classTypes.count;
-		chunk.classTypes.PushBack(new ClassType(name, type));
+		typeIndex = (ushort)chunk.nativeClassTypes.count;
+		chunk.nativeClassTypes.PushBack(new NativeClassType(name, type));
 
 		return Result.Success;
 	}

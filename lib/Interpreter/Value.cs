@@ -214,7 +214,7 @@ public readonly struct ValueType
 			break;
 		case TypeKind.NativeClass:
 			sb.Append("native ");
-			sb.Append(chunk.classTypes.buffer[index].name);
+			sb.Append(chunk.nativeClassTypes.buffer[index].name);
 			break;
 		default:
 			sb.Append("unreachable");
@@ -314,12 +314,12 @@ public readonly struct StructTypeField
 	}
 }
 
-public readonly struct ClassType
+public readonly struct NativeClassType
 {
 	public readonly string name;
 	public readonly System.Type type;
 
-	public ClassType(string name, System.Type type)
+	public NativeClassType(string name, System.Type type)
 	{
 		this.name = name;
 		this.type = type;

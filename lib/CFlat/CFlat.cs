@@ -2,7 +2,7 @@ public sealed class CFlat
 {
 	internal readonly VirtualMachine virtualMachine = new VirtualMachine();
 	internal readonly CompilerController compiler = new CompilerController();
-	internal readonly ByteCodeChunk byteCode = new ByteCodeChunk();
+	internal readonly Linking linking = new Linking();
 	internal string source;
 	internal Buffer<CompileError> registerErrors = new Buffer<CompileError>();
 
@@ -12,9 +12,9 @@ public sealed class CFlat
 			return registerErrors;
 
 		this.source = source;
-		var errors = compiler.Compile(source, byteCode, mode);
+		var errors = compiler.Compile(source, linking.byteCodeChunk, mode);
 		if (errors.count == 0)
-			virtualMachine.Load(byteCode);
+			virtualMachine.Load(linking);
 		return errors;
 	}
 
@@ -24,9 +24,9 @@ public sealed class CFlat
 			return registerErrors;
 
 		this.source = source;
-		var errors = compiler.CompileExpression(source, byteCode, mode);
+		var errors = compiler.CompileExpression(source, linking.byteCodeChunk, mode);
 		if (errors.count == 0)
-			virtualMachine.Load(byteCode);
+			virtualMachine.Load(linking);
 		return errors;
 	}
 
