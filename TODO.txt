@@ -17,3 +17,14 @@ debugger
 
 # MAYBE??
 mut for struct fields
+
+----
+
+from outside:
+- function
+- struct
+- tuple types compatibility
+
+when linking:
+- check structs match
+- check functions match
