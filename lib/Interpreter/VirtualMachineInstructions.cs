@@ -9,23 +9,25 @@ internal static class VirtualMachineInstructions
 		var debugSb = new StringBuilder();
 #endif
 
-		var bytes = vm.linking.byteCodeChunk.bytes.buffer;
 		ref var stackBuffer = ref vm.valueStack;
 		var stack = vm.valueStack.buffer;
 		ref var stackSize = ref vm.valueStack.count;
 
 		while (true)
 		{
-#if DEBUG_TRACE
-			var ip = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
-			debugSb.Clear();
-			VirtualMachineHelper.TraceStack(vm, debugSb);
-			vm.linking.byteCodeChunk.DisassembleInstruction(ip, debugSb);
-			System.Console.WriteLine(debugSb);
-#endif
-
 			ref var frame = ref vm.callframeStack.buffer[vm.callframeStack.count - 1];
 			ref var codeIndex = ref frame.codeIndex;
+			var bytes = vm.linking.chunks.buffer[frame.chunkIndex].bytes.buffer;
+
+#if DEBUG_TRACE
+			{
+				var ip = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
+				debugSb.Clear();
+				VirtualMachineHelper.TraceStack(vm, debugSb);
+				vm.linking.chunks.buffer[frame.chunkIndex].DisassembleInstruction(ip, debugSb);
+				System.Console.WriteLine(debugSb);
+			}
+#endif
 
 			var nextInstruction = (Instruction)bytes[codeIndex++];
 			switch (nextInstruction)
@@ -38,10 +40,11 @@ internal static class VirtualMachineInstructions
 					var size = bytes[codeIndex++];
 					var stackTop = stackSize - size;
 					var functionIndex = stack[stackTop - 1].asInt;
-					var function = vm.linking.byteCodeChunk.functions.buffer[functionIndex];
+					var function = vm.linking.chunks.buffer[frame.chunkIndex].functions.buffer[functionIndex];
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
+							frame.chunkIndex,
 							function.codeIndex,
 							stackTop,
 							(ushort)functionIndex,
@@ -54,10 +57,11 @@ internal static class VirtualMachineInstructions
 				{
 					var stackTop = stackSize - bytes[codeIndex++];
 					var functionIndex = stack[stackTop - 1].asInt;
-					var function = vm.linking.byteCodeChunk.nativeFunctions.buffer[functionIndex];
+					var function = vm.linking.chunks.buffer[frame.chunkIndex].nativeFunctions.buffer[functionIndex];
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
+							0,
 							0,
 							stackTop,
 							(ushort)functionIndex,
@@ -91,7 +95,7 @@ internal static class VirtualMachineInstructions
 					);
 
 					var sb = new StringBuilder();
-					var size = type.GetSize(vm.linking.byteCodeChunk);
+					var size = type.GetSize(vm.linking.chunks.buffer[type.chunkIndex]);
 
 					VirtualMachineHelper.ValueToString(
 						vm,
@@ -136,7 +140,7 @@ internal static class VirtualMachineInstructions
 			case Instruction.LoadLiteral:
 				{
 					var index = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					stackBuffer.PushBackUnchecked(vm.linking.byteCodeChunk.literalData.buffer[index]);
+					stackBuffer.PushBackUnchecked(vm.linking.chunks.buffer[frame.chunkIndex].literalData.buffer[index]);
 					break;
 				}
 			case Instruction.LoadFunction:

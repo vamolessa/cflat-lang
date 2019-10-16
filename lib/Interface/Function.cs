@@ -4,10 +4,12 @@ public sealed class Function<A, R>
 {
 	internal readonly int codeIndex;
 	internal readonly ushort functionIndex;
+	internal readonly byte chunkIndex;
 	internal readonly byte parametersSize;
 
-	internal Function(int codeIndex, ushort functionIndex, byte parametersSize)
+	internal Function(byte chunkIndex, int codeIndex, ushort functionIndex, byte parametersSize)
 	{
+		this.chunkIndex = chunkIndex;
 		this.codeIndex = codeIndex;
 		this.functionIndex = functionIndex;
 		this.parametersSize = parametersSize;

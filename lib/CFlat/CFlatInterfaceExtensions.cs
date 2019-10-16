@@ -7,30 +7,36 @@ public static class ClefInterfaceExtensions
 		if (self.compiler.compiler.errors.count > 0)
 			return Option.None;
 
-		var context = new DefinitionContext(self.linking.byteCodeChunk);
-		try
+		for (var i = 1; i < self.linking.chunks.count; i++)
 		{
-			var arguments = default(A);
-			context.CallFunction<A, R>(null, ref arguments);
-		}
-		catch (DefinitionContext.ReflectionReturn reflection)
-		{
-			var data = reflection.reflectionData;
-			for (var i = 0; i < self.linking.byteCodeChunk.functions.count; i++)
+			var chunk = self.linking.chunks.buffer[i];
+			var context = new DefinitionContext(chunk);
+
+			try
 			{
-				var function = self.linking.byteCodeChunk.functions.buffer[i];
-				if (function.name == functionName && function.typeIndex == data.type.index)
+				var arguments = default(A);
+				context.CallFunction<A, R>(null, ref arguments);
+			}
+			catch (DefinitionContext.ReflectionReturn reflection)
+			{
+				var type = reflection.reflectionData.type;
+				for (var j = 0; j < chunk.functions.count; j++)
 				{
-					return Option.Some(new Function<A, R>(
-						function.codeIndex,
-						(ushort)i,
-						self.linking.byteCodeChunk.functionTypes.buffer[function.typeIndex].parametersSize
-					));
+					var function = chunk.functions.buffer[j];
+					if (function.name == functionName && function.typeIndex == type.index)
+					{
+						return Option.Some(new Function<A, R>(
+							(byte)i,
+							function.codeIndex,
+							(ushort)j,
+							chunk.functionTypes.buffer[function.typeIndex].parametersSize
+						));
+					}
 				}
 			}
-		}
-		catch (Marshal.InvalidReflectionException)
-		{
+			catch (Marshal.InvalidReflectionException)
+			{
+			}
 		}
 
 		return Option.None;
@@ -38,17 +44,19 @@ public static class ClefInterfaceExtensions
 
 	public static void AddStruct<T>(this CFlat self) where T : struct, IStruct
 	{
-		Marshal.ReflectOnStruct<T>(self.linking.byteCodeChunk);
+		Marshal.ReflectOnStruct<T>(self.linking.BindingChunk);
 	}
 
 	public static void AddClass<T>(this CFlat self) where T : class
 	{
-		Marshal.ReflectOnClass<Class<T>>(self.linking.byteCodeChunk);
+		Marshal.ReflectOnClass<Class<T>>(self.linking.BindingChunk);
 	}
 
 	public static bool AddFunction(this CFlat self, NativeCallback<DefinitionContext> definitionFunction, NativeCallback<RuntimeContext> runtimeFunction)
 	{
-		var context = new DefinitionContext(self.linking.byteCodeChunk);
+		var chunk = self.linking.BindingChunk;
+		var context = new DefinitionContext(chunk);
+
 		try
 		{
 			definitionFunction(ref context);
@@ -63,10 +71,10 @@ public static class ClefInterfaceExtensions
 			var result = context.builder.Build(out var typeIndex);
 			if (self.compiler.compiler.CheckFunctionBuild(result, new Slice()))
 			{
-				self.linking.byteCodeChunk.nativeFunctions.PushBack(new NativeFunction(
+				chunk.nativeFunctions.PushBack(new NativeFunction(
 					definition.functionName,
 					typeIndex,
-					context.builder.returnType.GetSize(self.linking.byteCodeChunk),
+					context.builder.returnType.GetSize(chunk),
 					runtimeFunction
 				));
 				return true;

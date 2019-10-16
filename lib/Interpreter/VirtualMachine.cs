@@ -14,7 +14,7 @@ public readonly struct RuntimeError
 
 internal struct CallFrame
 {
-	public enum Type : ushort
+	public enum Type : byte
 	{
 		EntryPoint,
 		Function,
@@ -24,10 +24,12 @@ internal struct CallFrame
 	public int codeIndex;
 	public int baseStackIndex;
 	public ushort functionIndex;
+	public byte chunkIndex;
 	public Type type;
 
-	public CallFrame(int codeIndex, int baseStackIndex, ushort functionIndex, Type type)
+	public CallFrame(byte chunkIndex, int codeIndex, int baseStackIndex, ushort functionIndex, Type type)
 	{
+		this.chunkIndex = chunkIndex;
 		this.codeIndex = codeIndex;
 		this.baseStackIndex = baseStackIndex;
 		this.functionIndex = functionIndex;
@@ -53,7 +55,7 @@ public sealed class VirtualMachine
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
 	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
 	internal Buffer<ValueData> valueHeap = new Buffer<ValueData>(256);
-	internal Buffer<object> nativeObjects;
+	internal Buffer<object> nativeObjects = new Buffer<object>();
 	internal DebugData debugData = new DebugData();
 	internal Option<RuntimeError> error;
 
@@ -65,14 +67,16 @@ public sealed class VirtualMachine
 		callframeStack.count = 0;
 		valueStack.count = 0;
 		valueHeap.count = 0;
+		nativeObjects.count = 0;
 
-		nativeObjects = new Buffer<object>
+		for (var i = 0; i < linking.chunks.count; i++)
 		{
-			buffer = new object[linking.byteCodeChunk.stringLiterals.buffer.Length],
-			count = linking.byteCodeChunk.stringLiterals.count
-		};
-		for (var i = 0; i < nativeObjects.count; i++)
-			nativeObjects.buffer[i] = linking.byteCodeChunk.stringLiterals.buffer[i];
+			var chunk = linking.chunks.buffer[i];
+			var baseIndex = nativeObjects.count;
+			nativeObjects.Grow(chunk.stringLiterals.count);
+			for (var j = 0; j < chunk.stringLiterals.count; j++)
+				nativeObjects.buffer[baseIndex + j] = chunk.stringLiterals.buffer[j];
+		}
 
 		debugData.Clear();
 	}
@@ -80,12 +84,19 @@ public sealed class VirtualMachine
 	public void Error(string message)
 	{
 		var ip = -1;
+		var chunkIndex = -1;
 		if (callframeStack.count > 0)
-			ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
+		{
+			var callframe = callframeStack.buffer[callframeStack.count - 1];
+			ip = callframe.codeIndex;
+			chunkIndex = callframe.chunkIndex;
+		}
 
 		error = Option.Some(new RuntimeError(
 			ip,
-			ip >= 0 ? linking.byteCodeChunk.slices.buffer[ip] : new Slice(),
+			ip >= 0 && chunkIndex >= 0 ?
+				linking.chunks.buffer[chunkIndex].slices.buffer[ip] :
+				new Slice(),
 			message
 		));
 	}

@@ -44,12 +44,14 @@ public struct RuntimeContext : IContext
 
 		vm.valueStack.PushBack(new ValueData(function.functionIndex));
 		vm.callframeStack.PushBack(new CallFrame(
-			vm.linking.byteCodeChunk.bytes.count - 1,
+			function.chunkIndex,
+			vm.linking.chunks.buffer[function.chunkIndex].bytes.count - 1,
 			vm.valueStack.count,
 			0,
 			CallFrame.Type.EntryPoint
 		));
 		vm.callframeStack.PushBack(new CallFrame(
+			function.chunkIndex,
 			function.codeIndex,
 			vm.valueStack.count,
 			function.functionIndex,

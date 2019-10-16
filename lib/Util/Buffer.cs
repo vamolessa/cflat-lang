@@ -17,7 +17,7 @@ public struct Buffer<T>
 	public void Grow(int size)
 	{
 		if (buffer == null)
-			buffer = new T[MinCapacity];
+			buffer = new T[System.Math.Max(size, MinCapacity)];
 		GrowUnchecked(size);
 	}
 

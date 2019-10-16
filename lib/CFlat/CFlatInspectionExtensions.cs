@@ -11,7 +11,8 @@ public static class ClefInspectionExtensions
 		for (var i = vm.callframeStack.count - 1; i >= 0; i--)
 		{
 			var callframe = vm.callframeStack.buffer[i];
-			var sourceIndex = vm.linking.byteCodeChunk.slices.buffer[callframe.codeIndex - 1].index;
+			var chunk = vm.linking.chunks.buffer[callframe.chunkIndex];
+			var sourceIndex = chunk.slices.buffer[callframe.codeIndex - 1].index;
 
 			switch (callframe.type)
 			{
@@ -27,7 +28,7 @@ public static class ClefInspectionExtensions
 				sb.Append(pos.line);
 				sb.Append("] ");
 
-				vm.linking.byteCodeChunk.FormatFunction(callframe.functionIndex, sb);
+				chunk.FormatFunction(callframe.functionIndex, sb);
 
 				sb.Append(" => ");
 				var line = CompilerHelper.GetLines(
@@ -39,7 +40,7 @@ public static class ClefInspectionExtensions
 				break;
 			case CallFrame.Type.NativeFunction:
 				sb.Append("[native function] ");
-				vm.linking.byteCodeChunk.FormatNativeFunction(callframe.functionIndex, sb);
+				chunk.FormatNativeFunction(callframe.functionIndex, sb);
 				sb.AppendLine();
 				break;
 			}
@@ -51,7 +52,8 @@ public static class ClefInspectionExtensions
 	public static string Disassemble(this CFlat self)
 	{
 		var sb = new StringBuilder();
-		self.linking.byteCodeChunk.Disassemble(self.source, "script", sb);
+		for (var i = 0; i < self.linking.chunks.count; i++)
+			self.linking.chunks.buffer[i].Disassemble(self.source, "chunk " + i, sb);
 		return sb.ToString();
 	}
 }

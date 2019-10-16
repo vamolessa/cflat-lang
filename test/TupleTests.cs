@@ -72,13 +72,14 @@ public sealed class TupleTests
 	{
 		var compiler = new CompilerController();
 		var linking = new Linking();
-		var chunk = linking.byteCodeChunk;
 
 		string error = null;
 		var errors = compiler.Compile(linking, TestHelper.CompilerMode, source);
 		if (errors.count > 0)
 			error = CompilerHelper.FormatError(source, errors, 1, 8);
 		Assert.Null(error);
+
+		var chunk = linking.chunks.buffer[1];
 
 		var sliceCount = expectedSlices.Length / 2;
 		Assert.Equal(sliceCount, chunk.tupleTypes.count);

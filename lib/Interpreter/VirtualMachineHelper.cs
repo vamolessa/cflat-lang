@@ -17,6 +17,8 @@ public static class VirtualMachineHelper
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 	{
+		var chunk = vm.linking.chunks.buffer[type.chunkIndex];
+
 		if (type.IsArray)
 		{
 			var heapStartIndex = vm.valueStack.buffer[index].asInt;
@@ -27,7 +29,7 @@ public static class VirtualMachineHelper
 			}
 
 			sb.Append('[');
-			type.ToArrayElementType().Format(vm.linking.byteCodeChunk, sb);
+			type.ToArrayElementType().Format(chunk, sb);
 			sb.Append(':');
 			var arrayLength = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
 			sb.Append(arrayLength);
@@ -66,63 +68,63 @@ public static class VirtualMachineHelper
 		case TypeKind.Function:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
-				vm.linking.byteCodeChunk.FormatFunction(idx, sb);
+				chunk.FormatFunction(idx, sb);
 				return;
 			}
 		case TypeKind.NativeFunction:
 			{
 				var idx = vm.valueStack.buffer[index].asInt;
 				sb.Append("native ");
-				vm.linking.byteCodeChunk.FormatNativeFunction(idx, sb);
+				chunk.FormatNativeFunction(idx, sb);
 				return;
 			}
 		case TypeKind.Tuple:
 			{
-				if (type.index >= vm.linking.byteCodeChunk.tupleTypes.count)
+				if (type.index >= chunk.tupleTypes.count)
 				{
 					sb.Append("<!>");
 					return;
 				}
 
-				var tupleType = vm.linking.byteCodeChunk.tupleTypes.buffer[type.index];
+				var tupleType = chunk.tupleTypes.buffer[type.index];
 				sb.Append('{');
 				var offset = 0;
 				for (var i = 0; i < tupleType.elements.length; i++)
 				{
 					var elementIndex = tupleType.elements.index + i;
-					var elementType = vm.linking.byteCodeChunk.tupleElementTypes.buffer[elementIndex];
+					var elementType = chunk.tupleElementTypes.buffer[elementIndex];
 					ValueToString(vm, index + offset, elementType, sb);
 					if (i < tupleType.elements.length - 1)
 						sb.Append(',');
 
-					offset += elementType.GetSize(vm.linking.byteCodeChunk);
+					offset += elementType.GetSize(chunk);
 				}
 				sb.Append('}');
 				return;
 			}
 		case TypeKind.Struct:
 			{
-				if (type.index >= vm.linking.byteCodeChunk.structTypes.count)
+				if (type.index >= chunk.structTypes.count)
 				{
 					sb.Append("<!>");
 					return;
 				}
 
-				var structType = vm.linking.byteCodeChunk.structTypes.buffer[type.index];
+				var structType = chunk.structTypes.buffer[type.index];
 				sb.Append(structType.name);
 				sb.Append('{');
 				var offset = 0;
 				for (var i = 0; i < structType.fields.length; i++)
 				{
 					var fieldIndex = structType.fields.index + i;
-					var field = vm.linking.byteCodeChunk.structTypeFields.buffer[fieldIndex];
+					var field = chunk.structTypeFields.buffer[fieldIndex];
 					sb.Append(field.name);
 					sb.Append('=');
 					ValueToString(vm, index + offset, field.type, sb);
 					if (i < structType.fields.length - 1)
 						sb.Append(',');
 
-					offset += field.type.GetSize(vm.linking.byteCodeChunk);
+					offset += field.type.GetSize(chunk);
 				}
 				sb.Append('}');
 				return;
@@ -163,8 +165,9 @@ public static class VirtualMachineHelper
 			if (typeIndex < vm.debugData.typeStack.count)
 			{
 				var type = vm.debugData.typeStack.buffer[typeIndex++];
+				var chunk = vm.linking.chunks.buffer[type.chunkIndex];
 				ValueToString(vm, valueIndex, type, sb);
-				valueIndex += type.GetSize(vm.linking.byteCodeChunk);
+				valueIndex += type.GetSize(chunk);
 			}
 			else
 			{

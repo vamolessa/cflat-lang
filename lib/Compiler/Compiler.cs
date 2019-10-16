@@ -39,10 +39,16 @@ public sealed class Compiler
 
 		isInPanicMode = false;
 		this.linking = linking;
-		this.chunk = linking?.byteCodeChunk;
+		chunk = null;
 		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;
+
+		if (linking != null)
+		{
+			chunk = new ByteCodeChunk();
+			linking.chunks.PushBack(chunk);
+		}
 	}
 
 	public Compiler AddSoftError(Slice slice, string format, params object[] args)
