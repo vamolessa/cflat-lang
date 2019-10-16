@@ -49,7 +49,7 @@ public sealed class CompilerController
 			if (function.codeIndex < 0)
 			{
 				var slice = new Slice(-function.codeIndex, 1);
-				var functionType = new ValueType(TypeKind.Function, function.typeIndex);
+				var functionType = new ValueType(TypeKind.Function, compiler.chunk.id.index, function.typeIndex);
 				compiler.AddSoftError(slice, "Pending definition for function prototype '{0}' {1}", function.name, functionType.ToString(compiler.chunk));
 			}
 		}
@@ -63,7 +63,7 @@ public sealed class CompilerController
 
 		{
 			compiler.DebugEmitPushFrame();
-			compiler.DebugEmitPushType(new ValueType(TypeKind.Function, compiler.chunk.functionTypes.count));
+			compiler.DebugEmitPushType(new ValueType(TypeKind.Function, compiler.chunk.id.index, compiler.chunk.functionTypes.count));
 		}
 
 		compiler.parser.Next();
@@ -516,7 +516,7 @@ public sealed class CompilerController
 		var expressionSlice = Expression(this);
 
 		var expressionType = compiler.typeStack.PopLast();
-		if (expressionType.Kind != TypeKind.Tuple)
+		if (expressionType.kind != TypeKind.Tuple)
 		{
 			compiler.AddSoftError(expressionSlice, "Expression must be a tuple");
 			return;
@@ -1398,16 +1398,16 @@ public sealed class CompilerController
 		var popCount = isFunction ? functionType.parameters.length + 1 : 1;
 		self.compiler.DebugEmitPopType((byte)popCount);
 
-		if (type.Kind == TypeKind.Function)
+		if (type.kind == TypeKind.Function)
 			self.compiler.EmitInstruction(Instruction.Call);
-		else if (type.Kind == TypeKind.NativeFunction)
+		else if (type.kind == TypeKind.NativeFunction)
 			self.compiler.EmitInstruction(Instruction.CallNative);
 
 		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersSize : 0));
 		var returnType = isFunction ? functionType.returnType : new ValueType(TypeKind.Unit);
 		self.compiler.typeStack.PushBack(returnType);
 
-		if (type.Kind == TypeKind.NativeFunction)
+		if (type.kind == TypeKind.NativeFunction)
 			self.compiler.DebugEmitPushType(returnType);
 	}
 
@@ -1552,7 +1552,7 @@ public sealed class CompilerController
 					break;
 				}
 
-				switch (aType.Kind)
+				switch (aType.kind)
 				{
 				case TypeKind.Bool:
 					c.EmitInstruction(Instruction.EqualBool);

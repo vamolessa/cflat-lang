@@ -112,10 +112,14 @@ public static class CompilerEmitExtensions
 
 	public static void EmitType(this Compiler self, ValueType type)
 	{
-		type.Write(out var b0, out var b1, out var b2, out var b3);
+		type.Write(out var b0, out var b1, out var b2, out var b3, out var b4, out var b5, out var b6, out var b7);
 		self.EmitByte(b0);
 		self.EmitByte(b1);
 		self.EmitByte(b2);
 		self.EmitByte(b3);
+		self.EmitByte(b4);
+		self.EmitByte(b5);
+		self.EmitByte(b6);
+		self.EmitByte(b7);
 	}
 }

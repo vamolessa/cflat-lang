@@ -13,8 +13,8 @@ public sealed class ValueTests
 		Assert.Equal(4, Marshal.SizeOf(typeof(ValueData)));
 
 		AssertIsBlitable<ValueType>();
-		Assert.Equal(4, sizeof(ValueType));
-		Assert.Equal(4, Marshal.SizeOf(typeof(ValueType)));
+		Assert.Equal(8, sizeof(ValueType));
+		Assert.Equal(8, Marshal.SizeOf(typeof(ValueType)));
 	}
 
 	[Theory]

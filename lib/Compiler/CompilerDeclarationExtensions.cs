@@ -89,18 +89,18 @@ public static class CompilerDeclarationExtensions
 				self.AddSoftError(slice, "There's already a function named '{0}'", name);
 				break;
 			case ByteCodeChunk.AddFunctionResult.TypeMismatch:
-				if (self.ResolveToFunctionIndex(slice, out int prototypeIndex))
+				if (self.ResolveToFunctionIndex(slice, out var chunk, out var prototypeIndex))
 				{
-					var typeIndex = self.chunk.functions.buffer[prototypeIndex].typeIndex;
-					var prototypeType = new ValueType(TypeKind.Function, typeIndex);
-					var functionType = new ValueType(TypeKind.Function, index);
+					var typeIndex = chunk.functions.buffer[prototypeIndex].typeIndex;
+					var prototypeType = new ValueType(chunk.id, TypeKind.Function, typeIndex);
+					var functionType = new ValueType(builder.chunk.id, TypeKind.Function, index);
 
 					self.AddSoftError(
 						slice,
 						"Type mismatch between function '{0}' prototype and its body. Expected {1}. Got {2}",
 						name,
-						prototypeType.ToString(self.chunk),
-						functionType.ToString(self.chunk)
+						prototypeType.ToString(chunk),
+						functionType.ToString(builder.chunk)
 					);
 				}
 				else
@@ -126,20 +126,25 @@ public static class CompilerDeclarationExtensions
 		return functionIndex;
 	}
 
-	public static bool ResolveToFunctionIndex(this Compiler self, Slice slice, out int index)
+	public static bool ResolveToFunctionIndex(this Compiler self, Slice slice, out ByteCodeChunk chunk, out int index)
 	{
 		var source = self.parser.tokenizer.source;
 
-		for (var i = 0; i < self.chunk.functions.count; i++)
+		for (var i = self.linking.chunks.count - 1; i >= 0; i--)
 		{
-			var f = self.chunk.functions.buffer[i];
-			if (CompilerHelper.AreEqual(source, slice, f.name))
+			chunk = self.linking.chunks.buffer[i];
+			for (var j = 0; j < self.chunk.functions.count; j++)
 			{
-				index = i;
-				return true;
+				var f = self.chunk.functions.buffer[j];
+				if (CompilerHelper.AreEqual(source, slice, f.name))
+				{
+					index = j;
+					return true;
+				}
 			}
 		}
 
+		chunk = null;
 		index = 0;
 		return false;
 	}

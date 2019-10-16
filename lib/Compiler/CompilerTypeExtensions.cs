@@ -115,7 +115,7 @@ public static class CompilerTypeExtensions
 		if (!self.CheckTupleBuild(result, self.parser.previousToken.slice))
 			return Option.None;
 
-		var type = new ValueType(TypeKind.Tuple, tupleTypeIndex);
+		var type = new ValueType(self.chunk.id, TypeKind.Tuple, tupleTypeIndex);
 		return Option.Some(type);
 	}
 
@@ -124,12 +124,13 @@ public static class CompilerTypeExtensions
 		var source = self.parser.tokenizer.source;
 		var slice = self.parser.previousToken.slice;
 
-		for (var i = 0; i < self.chunk.structTypes.count; i++)
-		{
-			var structName = self.chunk.structTypes.buffer[i].name;
-			if (CompilerHelper.AreEqual(source, slice, structName))
-				return Option.Some(new ValueType(TypeKind.Struct, i));
-		}
+		for (var i = 0; i < self.linking.)
+			for (var j = 0; j < self.chunk.structTypes.count; j++)
+			{
+				var structName = self.chunk.structTypes.buffer[j].name;
+				if (CompilerHelper.AreEqual(source, slice, structName))
+					return Option.Some(new ValueType(TypeKind.Struct, j));
+			}
 
 		for (var i = 0; i < self.chunk.nativeClassTypes.count; i++)
 		{

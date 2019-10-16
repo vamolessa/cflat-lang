@@ -7,13 +7,20 @@ public sealed class Linking
 		get { return chunks.buffer[0]; }
 	}
 
-	public ByteCodeChunk GetTypeChunk(ValueType type)
+	public ByteCodeChunk FindChunk(ChunkId chunkId)
 	{
-		return chunks.buffer[type.chunkIndex];
+		for (var i = 0; i < chunks.count; i++)
+		{
+			var chunk = chunks.buffer[i];
+			if (chunk.id.IsEqualTo(chunkId))
+				return chunk;
+		}
+
+		return null;
 	}
 
 	public Linking()
 	{
-		chunks.PushBack(new ByteCodeChunk());
+		chunks.PushBack(new ByteCodeChunk(new ChunkId()));
 	}
 }

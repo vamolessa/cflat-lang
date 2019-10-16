@@ -26,10 +26,10 @@ public sealed class Compiler
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		this.parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(null, Mode.Release, null);
+		Reset(null, Mode.Release, null, null);
 	}
 
-	public void Reset(Linking linking, Mode mode, string source)
+	public void Reset(Linking linking, Mode mode, string source, string name)
 	{
 		parser.tokenizer.Reset(source);
 		parser.Reset();
@@ -46,7 +46,7 @@ public sealed class Compiler
 
 		if (linking != null)
 		{
-			chunk = new ByteCodeChunk();
+			chunk = new ByteCodeChunk(new ChunkId(name));
 			linking.chunks.PushBack(chunk);
 		}
 	}

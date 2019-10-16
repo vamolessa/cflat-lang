@@ -1,5 +1,25 @@
 using System.Diagnostics;
 
+public readonly struct ChunkId
+{
+	public readonly uint raw;
+
+	public ChunkId(uint raw)
+	{
+		this.raw = raw;
+	}
+
+	public ChunkId(string value)
+	{
+		this.raw = unchecked((uint)value.GetHashCode());
+	}
+
+	public bool IsEqualTo(ChunkId other)
+	{
+		return raw == other.raw;
+	}
+}
+
 [DebuggerTypeProxy(typeof(ByteCodeChunkDebugView))]
 public sealed class ByteCodeChunk
 {
@@ -9,6 +29,9 @@ public sealed class ByteCodeChunk
 		AlreadyDefined,
 		TypeMismatch,
 	}
+
+	public readonly ChunkId id;
+	public Buffer<ChunkId> dependencies = new Buffer<ChunkId>();
 
 	public Buffer<byte> bytes = new Buffer<byte>(256);
 	public Buffer<Slice> slices = new Buffer<Slice>(256);
@@ -24,6 +47,11 @@ public sealed class ByteCodeChunk
 	public Buffer<StructType> structTypes = new Buffer<StructType>(8);
 	public Buffer<StructTypeField> structTypeFields = new Buffer<StructTypeField>(16);
 	public Buffer<NativeClassType> nativeClassTypes = new Buffer<NativeClassType>(8);
+
+	public ByteCodeChunk(ChunkId id)
+	{
+		this.id = id;
+	}
 
 	public void WriteByte(byte value, Slice slice)
 	{
@@ -119,7 +147,7 @@ public sealed class ByteCodeChunk
 
 	public bool GetFunctionType(ValueType type, out FunctionType functionType)
 	{
-		if (type.Kind == TypeKind.Function || type.Kind == TypeKind.NativeFunction)
+		if (type.kind == TypeKind.Function || type.kind == TypeKind.NativeFunction)
 		{
 			functionType = functionTypes.buffer[type.index];
 			return true;
@@ -131,7 +159,7 @@ public sealed class ByteCodeChunk
 
 	public bool GetStructType(ValueType type, out StructType structType)
 	{
-		if (type.Kind == TypeKind.Struct)
+		if (type.kind == TypeKind.Struct)
 		{
 			structType = structTypes.buffer[type.index];
 			return true;
