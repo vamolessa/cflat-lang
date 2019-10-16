@@ -9,7 +9,7 @@ internal static class VirtualMachineInstructions
 		var debugSb = new StringBuilder();
 #endif
 
-		var bytes = vm.linking.byteCodeChunk.bytes.buffer;
+		var bytes = vm.chunk.bytes.buffer;
 		ref var stackBuffer = ref vm.valueStack;
 		var stack = vm.valueStack.buffer;
 		ref var stackSize = ref vm.valueStack.count;
@@ -20,7 +20,7 @@ internal static class VirtualMachineInstructions
 			var ip = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
 			debugSb.Clear();
 			VirtualMachineHelper.TraceStack(vm, debugSb);
-			vm.linking.byteCodeChunk.DisassembleInstruction(ip, debugSb);
+			vm.chunk.DisassembleInstruction(ip, debugSb);
 			System.Console.WriteLine(debugSb);
 #endif
 
@@ -38,7 +38,7 @@ internal static class VirtualMachineInstructions
 					var size = bytes[codeIndex++];
 					var stackTop = stackSize - size;
 					var functionIndex = stack[stackTop - 1].asInt;
-					var function = vm.linking.byteCodeChunk.functions.buffer[functionIndex];
+					var function = vm.chunk.functions.buffer[functionIndex];
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
@@ -54,7 +54,7 @@ internal static class VirtualMachineInstructions
 				{
 					var stackTop = stackSize - bytes[codeIndex++];
 					var functionIndex = stack[stackTop - 1].asInt;
-					var function = vm.linking.byteCodeChunk.nativeFunctions.buffer[functionIndex];
+					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
@@ -91,7 +91,7 @@ internal static class VirtualMachineInstructions
 					);
 
 					var sb = new StringBuilder();
-					var size = type.GetSize(vm.linking.byteCodeChunk);
+					var size = type.GetSize(vm.chunk);
 
 					VirtualMachineHelper.ValueToString(
 						vm,
@@ -136,7 +136,7 @@ internal static class VirtualMachineInstructions
 			case Instruction.LoadLiteral:
 				{
 					var index = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					stackBuffer.PushBackUnchecked(vm.linking.byteCodeChunk.literalData.buffer[index]);
+					stackBuffer.PushBackUnchecked(vm.chunk.literalData.buffer[index]);
 					break;
 				}
 			case Instruction.LoadFunction:

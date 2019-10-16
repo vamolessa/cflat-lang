@@ -45,9 +45,8 @@ public sealed class ValueTests
 	public void StructSizeTests(string source, int expectedSize)
 	{
 		var cc = new CompilerController();
-		var linking = new Linking();
-		var chunk = linking.byteCodeChunk;
-		var errors = cc.Compile(linking, TestHelper.CompilerMode, source);
+		var chunk = new ByteCodeChunk();
+		var errors = cc.Compile(chunk, TestHelper.CompilerMode, source);
 		Assert.Empty(errors.ToArray());
 
 		var type = new ValueType(TypeKind.Struct, chunk.structTypes.count - 1);

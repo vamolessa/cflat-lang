@@ -40,11 +40,10 @@ public sealed class FunctionTests
 	public void NestedFunctionExpressionTest(string source, int[] expectedSlices, TypeKind[] expectedParamsKinds)
 	{
 		var compiler = new CompilerController();
-		var linking = new Linking();
-		var chunk = linking.byteCodeChunk;
+		var chunk = new ByteCodeChunk();
 
 		string error = null;
-		var errors = compiler.Compile(linking, TestHelper.CompilerMode, source);
+		var errors = compiler.Compile(chunk, TestHelper.CompilerMode, source);
 		if (errors.count > 0)
 			error = CompilerHelper.FormatError(source, errors, 1, 8);
 		Assert.Null(error);

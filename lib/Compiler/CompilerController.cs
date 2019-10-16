@@ -33,9 +33,9 @@ public sealed class CompilerController
 	public readonly Compiler compiler = new Compiler();
 	public readonly ParseRules parseRules = new ParseRules();
 
-	public Buffer<CompileError> Compile(Linking linking, Mode mode, string source)
+	public Buffer<CompileError> Compile(ByteCodeChunk chunk, Mode mode, string source)
 	{
-		compiler.Reset(linking, mode, source);
+		compiler.Reset(chunk, mode, source);
 
 		compiler.parser.Next();
 		while (!compiler.parser.Match(TokenKind.End))
@@ -57,9 +57,9 @@ public sealed class CompilerController
 		return compiler.errors;
 	}
 
-	public Buffer<CompileError> CompileExpression(Linking linking, Mode mode, string source)
+	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, Mode mode, string source)
 	{
-		compiler.Reset(linking, mode, source);
+		compiler.Reset(chunk, mode, source);
 
 		{
 			compiler.DebugEmitPushFrame();
