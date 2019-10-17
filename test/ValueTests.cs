@@ -31,9 +31,9 @@ public sealed class ValueTests
 		type.Write(out b0, out b1, out b2, out b3);
 		type = ValueType.Read(b0, b1, b2, b3);
 
-		Assert.Equal(kind, type.Kind);
+		Assert.Equal(kind, type.kind);
 		Assert.Equal(index, type.index);
-		Assert.Equal(flags, type.Flags);
+		Assert.Equal(flags, type.flags);
 	}
 
 	[Theory]
@@ -59,14 +59,14 @@ public sealed class ValueTests
 	{
 		var arrayType = new ValueType(TypeKind.Int, TypeFlags.Array, 18);
 		Assert.True(arrayType.IsArray);
-		Assert.Equal(TypeKind.Int, arrayType.Kind);
-		Assert.Equal(TypeFlags.Array, arrayType.Flags);
+		Assert.Equal(TypeKind.Int, arrayType.kind);
+		Assert.Equal(TypeFlags.Array, arrayType.flags);
 		Assert.Equal(18, arrayType.index);
 
 		arrayType = new ValueType(TypeKind.Int, 18).ToArrayType();
 		Assert.True(arrayType.IsArray);
-		Assert.Equal(TypeKind.Int, arrayType.Kind);
-		Assert.Equal(TypeFlags.Array, arrayType.Flags);
+		Assert.Equal(TypeKind.Int, arrayType.kind);
+		Assert.Equal(TypeFlags.Array, arrayType.flags);
 		Assert.Equal(18, arrayType.index);
 	}
 }

@@ -120,7 +120,7 @@ public sealed class ByteCodeChunk
 
 	public bool GetFunctionType(ValueType type, out FunctionType functionType)
 	{
-		if (type.Kind == TypeKind.Function || type.Kind == TypeKind.NativeFunction)
+		if (type.kind == TypeKind.Function || type.kind == TypeKind.NativeFunction)
 		{
 			functionType = functionTypes.buffer[type.index];
 			return true;
@@ -132,7 +132,7 @@ public sealed class ByteCodeChunk
 
 	public bool GetStructType(ValueType type, out StructType structType)
 	{
-		if (type.Kind == TypeKind.Struct)
+		if (type.kind == TypeKind.Struct)
 		{
 			structType = structTypes.buffer[type.index];
 			return true;

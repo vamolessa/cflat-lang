@@ -16,7 +16,7 @@ public static class TokenScanners
 
 		new ExactScanner("let").ForToken(TokenKind.Let),
 		new ExactScanner("mut").ForToken(TokenKind.Mut),
-		new ExactScanner("ref").ForToken(TokenKind.Ref),
+		new ExactScanner("&").ForToken(TokenKind.Ref),
 		new ExactScanner("set").ForToken(TokenKind.Set),
 
 		new ExactScanner("bool").ForToken(TokenKind.Bool),

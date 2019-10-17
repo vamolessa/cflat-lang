@@ -96,7 +96,7 @@ public sealed class TupleTests
 		for (var i = 0; i < elementKinds.Length; i++)
 		{
 			var elementType = chunk.tupleElementTypes.buffer[i];
-			elementKinds[i] = elementType.Kind;
+			elementKinds[i] = elementType.kind;
 		}
 		Assert.Equal(expectedElementKinds, elementKinds);
 	}

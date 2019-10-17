@@ -32,7 +32,7 @@ public struct ValueData
 
 public enum TypeKind : byte
 {
-	Unit = 0b0000,
+	Unit,
 	Bool,
 	Int,
 	Float,
@@ -47,81 +47,64 @@ public enum TypeKind : byte
 [System.Flags]
 public enum TypeFlags : byte
 {
-	None = 0b0000 << 4,
-	Array = 0b0001 << 4,
-	Reference = 0b0010 << 4,
-	MutableReference = 0b0100 << 4,
+	None = 0b0000,
+	Array = 0b0001,
+	Reference = 0b0010,
+	MutableReference = 0b0100,
 }
 
 public readonly struct ValueType
 {
-	public readonly byte chunkIndex;
-	private readonly byte kindAndFlags;
+	public readonly TypeKind kind;
+	public readonly TypeFlags flags;
 	public readonly ushort index;
-
-	public TypeKind Kind
-	{
-		get { return (TypeKind)(kindAndFlags & 0b00001111); }
-	}
-
-	public TypeFlags Flags
-	{
-		get { return (TypeFlags)(kindAndFlags & 0b11110000); }
-	}
 
 	public bool IsSimple
 	{
-		get { return index == 0 && Flags == TypeFlags.None; }
+		get { return index == 0 && flags == TypeFlags.None; }
 	}
 
 	public bool IsArray
 	{
-		get { return (Flags & TypeFlags.Array) != 0; }
+		get { return (flags & TypeFlags.Array) != 0; }
 	}
 
 	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
 	{
 		return new ValueType(
-			b0,
-			b1,
+			(TypeKind)b0,
+			(TypeFlags)b1,
 			BytesHelper.BytesToUShort(b2, b3)
 		);
 	}
 
 	public ValueType(TypeKind kind)
 	{
-		this.chunkIndex = 0;
-		this.kindAndFlags = (byte)kind;
+		this.kind = kind;
+		this.flags = TypeFlags.None;
 		this.index = 0;
 	}
 
 	public ValueType(TypeKind kind, int index)
 	{
-		this.chunkIndex = 0;
-		this.kindAndFlags = (byte)kind;
+		this.kind = kind;
+		this.flags = TypeFlags.None;
 		this.index = (ushort)index;
 	}
 
 	public ValueType(TypeKind kind, TypeFlags flags, ushort index)
 	{
-		this.chunkIndex = 0;
-		this.kindAndFlags = (byte)((byte)kind | (byte)flags);
-		this.index = index;
-	}
-
-	public ValueType(byte chunkIndex, byte metadata, ushort index)
-	{
-		this.chunkIndex = chunkIndex;
-		this.kindAndFlags = metadata;
+		this.kind = kind;
+		this.flags = flags;
 		this.index = index;
 	}
 
 	public bool IsEqualTo(ValueType other)
 	{
 		return
-			index == other.index &&
-			chunkIndex == other.chunkIndex &&
-			kindAndFlags == other.kindAndFlags;
+			kind == other.kind &&
+			flags == other.flags &&
+			index == other.index;
 	}
 
 	public bool Accepts(ValueType other)
@@ -131,13 +114,13 @@ public readonly struct ValueType
 
 	public bool IsKind(TypeKind kind)
 	{
-		return this.Kind == kind && Flags == 0 && index == 0;
+		return this.kind == kind && flags == 0 && index == 0;
 	}
 
 	public void Write(out byte b0, out byte b1, out byte b2, out byte b3)
 	{
-		b0 = chunkIndex;
-		b1 = kindAndFlags;
+		b0 = (byte)kind;
+		b1 = (byte)flags;
 
 		BytesHelper.UShortToBytes(
 			index,
@@ -151,7 +134,7 @@ public readonly struct ValueType
 		if (IsArray)
 			return 1;
 
-		switch (Kind)
+		switch (kind)
 		{
 		case TypeKind.Tuple:
 			return chunk.tupleTypes.buffer[index].size;
@@ -164,12 +147,12 @@ public readonly struct ValueType
 
 	public ValueType ToArrayElementType()
 	{
-		return new ValueType(Kind, index);
+		return new ValueType(kind, index);
 	}
 
 	public ValueType ToArrayType()
 	{
-		return new ValueType(Kind, Flags | TypeFlags.Array, index);
+		return new ValueType(kind, flags | TypeFlags.Array, index);
 	}
 
 	public void Format(ByteCodeChunk chunk, StringBuilder sb)
@@ -182,7 +165,7 @@ public readonly struct ValueType
 			return;
 		}
 
-		switch (Kind)
+		switch (kind)
 		{
 		case TypeKind.Unit:
 			sb.Append("{}");
