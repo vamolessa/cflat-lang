@@ -18,7 +18,6 @@ public sealed class CompilerController
 
 	private struct IndexStorage
 	{
-		public bool hasFieldAccess;
 		public byte elementSize;
 		public byte offset;
 		public ValueType type;
@@ -1122,11 +1121,32 @@ public sealed class CompilerController
 	{
 		if (storage.variableIndex >= 0)
 		{
-			self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
+			ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
+			localVar.flags |= VariableFlags.Used;
 
-			self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
-			self.compiler.typeStack.PushBack(storage.type);
-			self.compiler.DebugEmitPushType(storage.type);
+			if (storage.type.IsReference)
+			{
+				var hasFieldAccess = storage.stackIndex > localVar.stackIndex;
+				if (hasFieldAccess)
+				{
+					self.compiler.AddSoftError(slice, "NOT IMPLEMENTED");
+				}
+				else
+				{
+					self.compiler.EmitInstruction(Instruction.LoadReference);
+					self.compiler.EmitByte((byte)storage.stackIndex);
+				}
+
+				var referredType = storage.type.ToReferredType();
+				self.compiler.typeStack.PushBack(referredType);
+				self.compiler.DebugEmitPushType(referredType);
+			}
+			else
+			{
+				self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
+				self.compiler.typeStack.PushBack(storage.type);
+				self.compiler.DebugEmitPushType(storage.type);
+			}
 		}
 		else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
 		{
@@ -1267,14 +1287,12 @@ public sealed class CompilerController
 
 		var offset = 0;
 		storage = new IndexStorage();
-		storage.hasFieldAccess = false;
 		storage.type = arrayType.ToArrayElementType();
 		storage.elementSize = storage.type.GetSize(self.compiler.chunk);
 
 		var hasError = false;
 		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
-			storage.hasFieldAccess = true;
 			if (hasError)
 				continue;
 			hasError = !FieldAccess(
@@ -1301,18 +1319,10 @@ public sealed class CompilerController
 	{
 		self.compiler.DebugEmitPopType(2);
 
-		if (storage.hasFieldAccess)
-		{
-			self.compiler.EmitInstruction(Instruction.LoadArrayElementField);
-			self.compiler.EmitByte(storage.elementSize);
-			self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
-			self.compiler.EmitByte(storage.offset);
-		}
-		else
-		{
-			self.compiler.EmitInstruction(Instruction.LoadArrayElement);
-			self.compiler.EmitByte(storage.elementSize);
-		}
+		self.compiler.EmitInstruction(Instruction.LoadArrayElement);
+		self.compiler.EmitByte(storage.elementSize);
+		self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
+		self.compiler.EmitByte(storage.offset);
 
 		self.compiler.typeStack.PushBack(storage.type);
 		self.compiler.DebugEmitPushType(storage.type);
@@ -1334,18 +1344,10 @@ public sealed class CompilerController
 
 		self.compiler.DebugEmitPopType(3);
 
-		if (storage.hasFieldAccess)
-		{
-			self.compiler.EmitInstruction(Instruction.AssignArrayElementField);
-			self.compiler.EmitByte(storage.elementSize);
-			self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
-			self.compiler.EmitByte(storage.offset);
-		}
-		else
-		{
-			self.compiler.EmitInstruction(Instruction.AssignArrayElement);
-			self.compiler.EmitByte(storage.elementSize);
-		}
+		self.compiler.EmitInstruction(Instruction.AssignArrayElement);
+		self.compiler.EmitByte(storage.elementSize);
+		self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
+		self.compiler.EmitByte(storage.offset);
 	}
 
 	public static void Call(CompilerController self, Slice previousSlice)
@@ -1411,7 +1413,7 @@ public sealed class CompilerController
 			self.compiler.DebugEmitPushType(returnType);
 	}
 
-	public static void Ref(CompilerController self, Slice previousSlice)
+	public static void Reference(CompilerController self, Slice previousSlice)
 	{
 		var isMutable = self.compiler.parser.Match(TokenKind.Mut);
 
@@ -1450,7 +1452,8 @@ public sealed class CompilerController
 
 				if (storage.type.IsReference)
 				{
-					Access(self, slice, ref storage);
+					self.compiler.AddSoftError(slice, "NOT IMPLEMENTED");
+					//Access(self, slice, ref storage);
 				}
 				else
 				{

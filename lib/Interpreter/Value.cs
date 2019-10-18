@@ -181,9 +181,7 @@ public readonly struct ValueType
 	{
 		if (IsReference)
 		{
-			sb.Append('&');
-			if (IsMutable)
-				sb.Append("mut ");
+			sb.Append(IsMutable ? "&mut " : "&");
 			ToReferredType().Format(chunk, sb);
 			return;
 		}

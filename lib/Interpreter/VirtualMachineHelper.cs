@@ -19,18 +19,8 @@ public static class VirtualMachineHelper
 	{
 		if (type.IsReference)
 		{
-			sb.Append('&');
-			if (type.IsMutable)
-				sb.Append("mut ");
-
-			var address = vm.valueStack.buffer[index].asInt;
-			if (address <= 0 || address > vm.valueStack.count)
-			{
-				sb.Append("<!>");
-				return;
-			}
-
-			ValueToString(vm, address, type.ToReferredType(), sb);
+			sb.Append(type.IsMutable ? "&mut " : "&");
+			sb.Append(vm.valueStack.buffer[index].asInt);
 			return;
 		}
 

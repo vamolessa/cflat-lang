@@ -224,51 +224,6 @@ internal static class VirtualMachineInstructions
 				break;
 			case Instruction.AssignArrayElement:
 				{
-					var size = bytes[codeIndex++];
-
-					stackSize -= size;
-					var stackStartIndex = stackSize;
-
-					var index = stack[--stackSize].asInt;
-					var heapStartIndex = stack[--stackSize].asInt;
-
-					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
-					if (index < 0 || index >= length)
-					{
-						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
-						return;
-					}
-
-					heapStartIndex += index * size;
-
-					for (var i = 0; i < size; i++)
-						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
-					break;
-				}
-			case Instruction.LoadArrayElement:
-				{
-					var size = bytes[codeIndex++];
-
-					var index = stack[--stackSize].asInt;
-					var heapStartIndex = stack[--stackSize].asInt;
-
-					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
-					if (index < 0 || index >= length)
-					{
-						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
-						return;
-					}
-
-					heapStartIndex += index * size;
-					var stackStartIndex = stackSize;
-					stackBuffer.GrowUnchecked(size);
-
-					for (var i = 0; i < size; i++)
-						stack[stackStartIndex + i] = vm.valueHeap.buffer[heapStartIndex + i];
-					break;
-				}
-			case Instruction.AssignArrayElementField:
-				{
 					var elementSize = bytes[codeIndex++];
 					var fieldSize = bytes[codeIndex++];
 					var offset = bytes[codeIndex++];
@@ -292,7 +247,7 @@ internal static class VirtualMachineInstructions
 						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
 					break;
 				}
-			case Instruction.LoadArrayElementField:
+			case Instruction.LoadArrayElement:
 				{
 					var elementSize = bytes[codeIndex++];
 					var fieldSize = bytes[codeIndex++];
@@ -320,6 +275,20 @@ internal static class VirtualMachineInstructions
 				{
 					var index = frame.baseStackIndex + bytes[codeIndex++];
 					stackBuffer.PushBackUnchecked(new ValueData(index));
+					break;
+				}
+			case Instruction.AssignReference:
+				{
+					// var index = frame.baseStackIndex + bytes[codeIndex++];
+					// index = stack[index].asInt;
+					// stack[index] = stack[--stackSize];
+					break;
+				}
+			case Instruction.LoadReference:
+				{
+					var index = frame.baseStackIndex + bytes[codeIndex++];
+					index = stack[index].asInt;
+					stackBuffer.PushBackUnchecked(stack[index]);
 					break;
 				}
 			case Instruction.NegateInt:
