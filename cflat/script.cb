@@ -1,5 +1,1 @@
-fn main() {
-	let a = 3
-	let r = &a
-	print r
-}
+struct S{a:int,b:bool}fn main(){let v=S{a=3,b=true}let r=&v let r2=&r.a r2}

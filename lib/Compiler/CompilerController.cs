@@ -515,7 +515,7 @@ public sealed class CompilerController
 		var expressionSlice = Expression(this);
 
 		var expressionType = compiler.typeStack.PopLast();
-		if (expressionType.kind != TypeKind.Tuple)
+		if (expressionType.kind != TypeKind.Tuple || expressionType.flags != TypeFlags.None)
 		{
 			compiler.AddSoftError(expressionSlice, "Expression must be a tuple");
 			return;
@@ -1479,6 +1479,7 @@ public sealed class CompilerController
 		else
 		{
 			self.compiler.AddHardError(slice, "Could not find variable or function named '{0}'", CompilerHelper.GetSlice(self.compiler, slice));
+			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			return;
 		}
 	}
