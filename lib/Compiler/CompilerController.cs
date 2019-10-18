@@ -1433,29 +1433,33 @@ public sealed class CompilerController
 			// }
 			// else
 			{
-				var storageIsMutable = localVar.IsMutable || storage.type.IsMutable;
+				var storageIsMutable = localVar.IsMutable || localVar.type.IsMutable;
 				if (isMutable && !storageIsMutable)
 				{
-					self.compiler.AddSoftError(slice, "Can not mutably reference an immutable variable");
+					self.compiler.AddSoftError(slice, "Can not create a mutable reference to an immutable variable");
 					return;
 				}
 
-				if (storage.type.IsReference)
+				self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
+
+				if (localVar.type.IsReference)
 				{
-					self.compiler.AddSoftError(slice, "NOT IMPLEMENTED");
-					//Access(self, slice, ref storage);
+					self.compiler.EmitLoadLocal(localVar.stackIndex, localVar.type);
+					if (storage.offset > 0)
+					{
+						self.compiler.EmitLoadLiteral(new ValueData(storage.offset), TypeKind.Int);
+						self.compiler.EmitInstruction(Instruction.AddInt);
+					}
 				}
 				else
 				{
-					self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
-
 					self.compiler.EmitInstruction(Instruction.CreateStackReference);
 					self.compiler.EmitByte((byte)storage.offset);
-
-					var referenceType = storage.type.ToReferenceType(isMutable);
-					self.compiler.DebugEmitPushType(referenceType);
-					self.compiler.typeStack.PushBack(referenceType);
 				}
+
+				var referenceType = storage.type.ToReferenceType(isMutable);
+				self.compiler.DebugEmitPushType(referenceType);
+				self.compiler.typeStack.PushBack(referenceType);
 			}
 		}
 		// else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))

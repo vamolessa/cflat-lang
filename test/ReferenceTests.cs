@@ -44,6 +44,9 @@ public sealed class ReferenceTests
 	[InlineData("struct P{x:int,y:int}struct S{a:int,b:P,c:bool}fn f():int{let v=S{a=3,b=P{x=11,y=12},c=true}let r=&v.b.y r}", 12)]
 	[InlineData("struct S{a:int,b:bool}fn f():int{let v=S{a=3,b=true}let r=&v let r2=&r.a r2}", 3)]
 	[InlineData("fn f():int{let v={3,true} let r=&v let{a,_}=r a}", 3)]
+	[InlineData("fn f():int{let v=3 let r=&v let r2=&r r2}", 3)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let v=P{x=11,y=12}let r=&v let r2=&r.x r2}", 11)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let v=P{x=11,y=12}let r=&v let r2=&r.y r2}", 12)]
 	public void LoadIntReferenceTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
