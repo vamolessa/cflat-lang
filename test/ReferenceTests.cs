@@ -14,6 +14,7 @@ public sealed class ReferenceTests
 	[InlineData("struct P{x:float,y:float}struct S{a:int,b:P,c:bool}fn f(){let v=S{a=3,b=P{x=11.0,y=12.0},c=true}let _=&v.b.y}")]
 	[InlineData("fn f(){let v=true let r=&v let _=&r}")]
 	[InlineData("struct S{a:int,b:bool}fn f(){let v=S{a=3,b=true}let r=&v let _=&r.a}")]
+	[InlineData("fn b(a:int){} fn f(){let v=3 let r=&v b(r)}")]
 	public void CreateReferenceTests(string source)
 	{
 		TestHelper.Run<Unit>(source, out var a);
@@ -26,6 +27,8 @@ public sealed class ReferenceTests
 	[InlineData("fn b(){} fn f(){let _=&b}")]
 	[InlineData("fn b():int{3} fn f(){let _=&b()}")]
 	[InlineData("fn f(){let t={3,true} let{a,b}=&t}")]
+	[InlineData("fn f(){let v=3 let _={true,&v}}")]
+	[InlineData("fn f(){let v=3 let _=[&v:1]}")]
 	public void CreateReferenceErrors(string source)
 	{
 		Assert.Throws<CompileErrorException>(() =>

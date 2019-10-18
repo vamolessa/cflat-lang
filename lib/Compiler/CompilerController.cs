@@ -330,11 +330,12 @@ public sealed class CompilerController
 		compiler.EndStructDeclaration(builder, slice);
 	}
 
-	public static void FinishTupleExpression(CompilerController self, ValueType firstElementType)
+	public static void FinishTupleExpression(CompilerController self, Slice slice, ValueType firstElementType)
 	{
-		var slice = self.compiler.parser.previousToken.slice;
-
 		var builder = self.compiler.chunk.BeginTupleType();
+
+		if (firstElementType.IsReference)
+			self.compiler.AddSoftError(slice, "Can not create tuple containing references");
 		builder.WithElement(firstElementType);
 
 		while (
@@ -343,8 +344,10 @@ public sealed class CompilerController
 		)
 		{
 			self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after element value expression");
-			Expression(self);
+			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
+			if (expressionType.IsReference)
+				self.compiler.AddSoftError(expressionSlice, "Can not create tuple containing references");
 			builder.WithElement(expressionType);
 		}
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple expression");
@@ -369,7 +372,9 @@ public sealed class CompilerController
 		var defaultValueSlice = Expression(self);
 		var defaultValueType = self.compiler.typeStack.PopLast();
 		if (defaultValueType.IsArray)
-			self.compiler.AddSoftError(defaultValueSlice, "Can not declare array of arrays");
+			self.compiler.AddSoftError(defaultValueSlice, "Can not create array of arrays");
+		if (defaultValueType.IsReference)
+			self.compiler.AddSoftError(defaultValueSlice, "Can not create array of references");
 
 		self.compiler.parser.Consume(TokenKind.Colon, "Expected ':' after array element default value");
 
@@ -847,12 +852,12 @@ public sealed class CompilerController
 		else
 		{
 			var scope = self.compiler.BeginScope();
-			Expression(self);
+			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
 			if (self.compiler.parser.Check(TokenKind.Comma))
 			{
 				self.compiler.scopeDepth -= 1;
-				FinishTupleExpression(self, expressionType);
+				FinishTupleExpression(self, expressionSlice, expressionType);
 			}
 			else
 			{
