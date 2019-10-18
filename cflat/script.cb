@@ -1,5 +1,12 @@
+//fn main2() {
+//	let a = 3
+//	let r = &a
+//	print r
+//}
+
 fn main() {
-	let a = 3
-	let r = &a
-	print r
+	let t={true,3}
+	let{a,b}=t
+	print a
+	print b
 }

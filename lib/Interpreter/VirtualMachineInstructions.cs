@@ -173,8 +173,8 @@ internal static class VirtualMachineInstructions
 			case Instruction.LoadLocalMultiple:
 				{
 					var srcIdx = frame.baseStackIndex + bytes[codeIndex++];
-					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
 					var dstIdx = stackSize;
+					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
 
 					while (dstIdx < stackSize)
 						stack[dstIdx++] = stack[srcIdx++];
@@ -293,8 +293,8 @@ internal static class VirtualMachineInstructions
 				{
 					var srcIdx = frame.baseStackIndex + bytes[codeIndex++];
 					srcIdx = stack[srcIdx].asInt + bytes[codeIndex++];
-					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
 					var dstIdx = stackSize;
+					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
 
 					while (dstIdx < stackSize)
 						stack[dstIdx++] = stack[srcIdx++];
