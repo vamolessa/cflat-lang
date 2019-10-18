@@ -173,10 +173,9 @@ internal static class VirtualMachineInstructions
 			case Instruction.LoadLocalMultiple:
 				{
 					var srcIdx = frame.baseStackIndex + bytes[codeIndex++];
-					var size = bytes[codeIndex++];
+					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
 					var dstIdx = stackSize;
 
-					stackBuffer.GrowUnchecked(size);
 					while (dstIdx < stackSize)
 						stack[dstIdx++] = stack[srcIdx++];
 					break;
@@ -279,16 +278,26 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.AssignReference:
 				{
-					// var index = frame.baseStackIndex + bytes[codeIndex++];
-					// index = stack[index].asInt;
-					// stack[index] = stack[--stackSize];
+					var dstIdx = frame.baseStackIndex + bytes[codeIndex++];
+					dstIdx = stack[dstIdx].asInt + bytes[codeIndex++];
+
+					var endIndex = stackSize;
+					stackSize -= bytes[codeIndex++];
+					var srcIdx = stackSize;
+
+					while (srcIdx < endIndex)
+						stack[dstIdx++] = stack[srcIdx++];
 					break;
 				}
 			case Instruction.LoadReference:
 				{
-					var index = frame.baseStackIndex + bytes[codeIndex++];
-					index = stack[index].asInt;
-					stackBuffer.PushBackUnchecked(stack[index]);
+					var srcIdx = frame.baseStackIndex + bytes[codeIndex++];
+					srcIdx = stack[srcIdx].asInt + bytes[codeIndex++];
+					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
+					var dstIdx = stackSize;
+
+					while (dstIdx < stackSize)
+						stack[dstIdx++] = stack[srcIdx++];
 					break;
 				}
 			case Instruction.NegateInt:

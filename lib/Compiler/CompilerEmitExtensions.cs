@@ -55,7 +55,7 @@ public static class CompilerEmitExtensions
 		{
 			self.EmitInstruction(Instruction.LoadLocalMultiple);
 			self.EmitByte((byte)stackIndex);
-			return self.EmitByte((byte)typeSize);
+			return self.EmitByte(typeSize);
 		}
 		else
 		{

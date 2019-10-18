@@ -28,10 +28,10 @@ public enum VariableFlags : byte
 public struct LocalVariable
 {
 	public Slice slice;
-	public int stackIndex;
 	public int depth;
 	public ValueType type;
 	public VariableFlags flags;
+	public byte stackIndex;
 
 	public bool IsMutable
 	{
@@ -48,7 +48,7 @@ public struct LocalVariable
 		get { return (flags & VariableFlags.Iteration) != 0; }
 	}
 
-	public LocalVariable(Slice slice, int stackIndex, int depth, ValueType type, VariableFlags flags)
+	public LocalVariable(Slice slice, byte stackIndex, int depth, ValueType type, VariableFlags flags)
 	{
 		this.slice = slice;
 		this.stackIndex = stackIndex;

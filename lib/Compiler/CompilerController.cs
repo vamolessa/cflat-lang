@@ -13,7 +13,7 @@ public sealed class CompilerController
 	{
 		public int variableIndex;
 		public ValueType type;
-		public int stackIndex;
+		public byte offset;
 	}
 
 	private struct IndexStorage
@@ -553,7 +553,7 @@ public sealed class CompilerController
 			{
 				variableIndex = variableIndex,
 				type = localVar.type,
-				stackIndex = localVar.stackIndex
+				offset = localVar.stackIndex
 			};
 
 			GetStorage(this, ref slice, ref storage);
@@ -1052,7 +1052,7 @@ public sealed class CompilerController
 				self,
 				ref slice,
 				ref storage.type,
-				ref storage.stackIndex
+				ref storage.offset
 			);
 		}
 	}
@@ -1067,7 +1067,6 @@ public sealed class CompilerController
 			var localVar = self.compiler.localVariables.buffer[variableIndex];
 			storage.variableIndex = variableIndex;
 			storage.type = localVar.type;
-			storage.stackIndex = localVar.stackIndex;
 
 			GetStorage(self, ref slice, ref storage);
 		}
@@ -1080,7 +1079,8 @@ public sealed class CompilerController
 	{
 		if (storage.variableIndex >= 0)
 		{
-			if (!self.compiler.localVariables.buffer[storage.variableIndex].IsMutable)
+			var localVar = self.compiler.localVariables.buffer[storage.variableIndex];
+			if (!localVar.IsMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
 
 			var expressionSlice = Expression(self);
@@ -1101,13 +1101,13 @@ public sealed class CompilerController
 			if (varTypeSize > 1)
 			{
 				self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
-				self.compiler.EmitByte((byte)storage.stackIndex);
-				self.compiler.EmitByte((byte)varTypeSize);
+				self.compiler.EmitByte((byte)(localVar.stackIndex + storage.offset));
+				self.compiler.EmitByte(varTypeSize);
 			}
 			else
 			{
 				self.compiler.EmitInstruction(Instruction.AssignLocal);
-				self.compiler.EmitByte((byte)storage.stackIndex);
+				self.compiler.EmitByte(storage.offset);
 			}
 		}
 		else
@@ -1124,26 +1124,19 @@ public sealed class CompilerController
 			ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
 			localVar.flags |= VariableFlags.Used;
 
-			if (storage.type.IsReference)
+			if (localVar.type.IsReference)
 			{
-				var hasFieldAccess = storage.stackIndex > localVar.stackIndex;
-				if (hasFieldAccess)
-				{
-					self.compiler.AddSoftError(slice, "NOT IMPLEMENTED");
-				}
-				else
-				{
-					self.compiler.EmitInstruction(Instruction.LoadReference);
-					self.compiler.EmitByte((byte)storage.stackIndex);
-				}
+				self.compiler.EmitInstruction(Instruction.LoadReference);
+				self.compiler.EmitByte(localVar.stackIndex);
+				self.compiler.EmitByte(storage.offset);
+				self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
 
-				var referredType = storage.type.ToReferredType();
-				self.compiler.typeStack.PushBack(referredType);
-				self.compiler.DebugEmitPushType(referredType);
+				self.compiler.typeStack.PushBack(storage.type);
+				self.compiler.DebugEmitPushType(storage.type);
 			}
 			else
 			{
-				self.compiler.EmitLoadLocal(storage.stackIndex, storage.type);
+				self.compiler.EmitLoadLocal(localVar.stackIndex + storage.offset, storage.type);
 				self.compiler.typeStack.PushBack(storage.type);
 				self.compiler.DebugEmitPushType(storage.type);
 			}
@@ -1203,7 +1196,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static bool FieldAccess(CompilerController self, ref Slice slice, ref ValueType type, ref int stackIndex)
+	public static bool FieldAccess(CompilerController self, ref Slice slice, ref ValueType type, ref byte stackOffset)
 	{
 		if (!self.compiler.chunk.GetStructType(type, out var structType))
 		{
@@ -1217,7 +1210,7 @@ public sealed class CompilerController
 		self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
 		slice = self.compiler.parser.previousToken.slice;
 
-		var offset = 0;
+		byte offset = 0;
 		var source = self.compiler.parser.tokenizer.source;
 
 		for (var i = 0; i < structType.fields.length; i++)
@@ -1227,7 +1220,7 @@ public sealed class CompilerController
 			if (CompilerHelper.AreEqual(source, slice, field.name))
 			{
 				type = field.type;
-				stackIndex += offset;
+				stackOffset += offset;
 				return true;
 			}
 
@@ -1243,29 +1236,25 @@ public sealed class CompilerController
 
 	public static void Dot(CompilerController self, Slice previousSlice)
 	{
-		var storage = new Storage
-		{
-			type = self.compiler.typeStack.PopLast(),
-			stackIndex = 0,
-		};
+		var storage = new Storage { type = self.compiler.typeStack.PopLast() };
 
 		var slice = previousSlice;
 		var structSize = storage.type.GetSize(self.compiler.chunk);
 
-		if (FieldAccess(self, ref slice, ref storage.type, ref storage.stackIndex))
+		if (FieldAccess(self, ref slice, ref storage.type, ref storage.offset))
 			GetStorage(self, ref slice, ref storage);
 
 		var fieldSize = storage.type.GetSize(self.compiler.chunk);
-		var sizeAboveField = structSize - storage.stackIndex - fieldSize;
+		var sizeAboveField = structSize - storage.offset - fieldSize;
 
 		self.compiler.EmitPop(sizeAboveField);
 		self.compiler.DebugEmitPopType(1);
 
-		if (storage.stackIndex > 0)
+		if (storage.offset > 0)
 		{
 			self.compiler.EmitInstruction(Instruction.Move);
-			self.compiler.EmitByte((byte)storage.stackIndex);
-			self.compiler.EmitByte((byte)fieldSize);
+			self.compiler.EmitByte(storage.offset);
+			self.compiler.EmitByte(fieldSize);
 		}
 
 		self.compiler.typeStack.PushBack(storage.type);
@@ -1285,7 +1274,7 @@ public sealed class CompilerController
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array indexing");
 
-		var offset = 0;
+		byte offset = 0;
 		storage = new IndexStorage();
 		storage.type = arrayType.ToArrayElementType();
 		storage.elementSize = storage.type.GetSize(self.compiler.chunk);
@@ -1426,8 +1415,7 @@ public sealed class CompilerController
 			var storage = new Storage
 			{
 				variableIndex = variableIndex,
-				type = localVar.type,
-				stackIndex = localVar.stackIndex
+				type = localVar.type
 			};
 
 			GetStorage(self, ref slice, ref storage);
@@ -1460,7 +1448,7 @@ public sealed class CompilerController
 					self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
 
 					self.compiler.EmitInstruction(Instruction.CreateStackReference);
-					self.compiler.EmitByte((byte)storage.stackIndex);
+					self.compiler.EmitByte((byte)storage.offset);
 
 					var referenceType = storage.type.ToReferenceType(isMutable);
 					self.compiler.DebugEmitPushType(referenceType);

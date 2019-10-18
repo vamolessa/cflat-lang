@@ -254,8 +254,6 @@ public static class ByteCodeChunkExtensions
 		case Instruction.IncrementLocalInt:
 		case Instruction.CreateArray:
 		case Instruction.CreateStackReference:
-		case Instruction.AssignReference:
-		case Instruction.LoadReference:
 		case Instruction.RepeatLoopCheck:
 		case Instruction.DebugPopTypeMultiple:
 			return TwoByteInstruction(self, instruction, index, sb);
@@ -265,6 +263,8 @@ public static class ByteCodeChunkExtensions
 			return ThreeByteInstruction(self, instruction, index, sb);
 		case Instruction.AssignArrayElement:
 		case Instruction.LoadArrayElement:
+		case Instruction.AssignReference:
+		case Instruction.LoadReference:
 			return FourByteInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
 			return LoadLiteralInstruction(self, instruction, index, sb);

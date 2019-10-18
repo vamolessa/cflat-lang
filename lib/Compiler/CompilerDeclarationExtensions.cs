@@ -3,11 +3,11 @@ public static class CompilerDeclarationExtensions
 	// VARIABLES
 	public static int AddLocalVariable(this Compiler self, Slice slice, ValueType type, VariableFlags flags)
 	{
-		var stackIndex = 0;
+		byte stackIndex = 0;
 		if (self.localVariables.count > 0)
 		{
 			var lastVar = self.localVariables.buffer[self.localVariables.count - 1];
-			stackIndex = lastVar.stackIndex + lastVar.type.GetSize(self.chunk);
+			stackIndex = (byte)(lastVar.stackIndex + lastVar.type.GetSize(self.chunk));
 		}
 
 		if (CompilerHelper.AreEqual(self.parser.tokenizer.source, slice, "_"))
