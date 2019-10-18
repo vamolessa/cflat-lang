@@ -1042,6 +1042,8 @@ public sealed class CompilerController
 
 	private static void GetStorage(CompilerController self, ref Slice slice, ref Storage storage)
 	{
+		storage.type = storage.type.ToReferredType();
+
 		var hasError = false;
 		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
