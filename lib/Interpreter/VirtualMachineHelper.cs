@@ -17,10 +17,27 @@ public static class VirtualMachineHelper
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 	{
+		if (type.IsReference)
+		{
+			sb.Append('&');
+			if (type.IsMutable)
+				sb.Append("mut ");
+
+			var address = vm.valueStack.buffer[index].asInt;
+			if (address <= 0 || address > vm.valueStack.count)
+			{
+				sb.Append("<!>");
+				return;
+			}
+
+			ValueToString(vm, address, type.ToReferredType(), sb);
+			return;
+		}
+
 		if (type.IsArray)
 		{
 			var heapStartIndex = vm.valueStack.buffer[index].asInt;
-			if (heapStartIndex <= 0)
+			if (heapStartIndex <= 0 || heapStartIndex > vm.valueHeap.count)
 			{
 				sb.Append("<!>");
 				return;

@@ -249,11 +249,12 @@ public static class ByteCodeChunkExtensions
 		case Instruction.CallNative:
 		case Instruction.Return:
 		case Instruction.PopMultiple:
-		case Instruction.LoadLocal:
 		case Instruction.AssignLocal:
+		case Instruction.LoadLocal:
 		case Instruction.IncrementLocalInt:
 		case Instruction.CreateArray:
 		case Instruction.AssignArrayElement:
+		case Instruction.CreateStackReference:
 		case Instruction.LoadArrayElement:
 		case Instruction.RepeatLoopCheck:
 		case Instruction.DebugPopTypeMultiple:

@@ -28,6 +28,7 @@ public enum Instruction
 	AssignArrayElement,
 	AssignArrayElementField,
 	LoadArrayElementField,
+	CreateStackReference,
 	NegateInt,
 	NegateFloat,
 	AddInt,

@@ -1415,7 +1415,79 @@ public sealed class CompilerController
 	{
 		var isMutable = self.compiler.parser.Match(TokenKind.Mut);
 
+		self.compiler.parser.Consume(TokenKind.Identifier, "Expected identifier");
+		var slice = self.compiler.parser.previousToken.slice;
 
+		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
+		{
+			var localVar = self.compiler.localVariables.buffer[variableIndex];
+			var storage = new Storage
+			{
+				variableIndex = variableIndex,
+				type = localVar.type,
+				stackIndex = localVar.stackIndex
+			};
+
+			GetStorage(self, ref slice, ref storage);
+			// if (self.compiler.parser.Match(TokenKind.OpenSquareBrackets))
+			// {
+			// 	Access(self, slice, ref storage);
+			// 	SetArrayElement(slice, storage.type, localVar.IsMutable);
+			// }
+			// else if (self.compiler.parser.Match(TokenKind.OpenParenthesis))
+			// {
+			// 	Access(self, slice, ref storage);
+			// 	SetFunctionReturn(slice, storage.type);
+			// }
+			// else
+			{
+				var storageIsMutable = localVar.IsMutable || storage.type.IsMutable;
+				if (isMutable && !storageIsMutable)
+				{
+					self.compiler.AddSoftError(slice, "Can not mutably reference an immutable variable");
+					return;
+				}
+
+				if (storage.type.IsReference)
+				{
+					Access(self, slice, ref storage);
+				}
+				else
+				{
+					self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
+
+					self.compiler.EmitInstruction(Instruction.CreateStackReference);
+					self.compiler.EmitByte((byte)storage.stackIndex);
+
+					var referenceType = storage.type.ToReferenceType(isMutable);
+					self.compiler.DebugEmitPushType(referenceType);
+					self.compiler.typeStack.PushBack(referenceType);
+				}
+			}
+		}
+		// else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
+		// {
+		// 	self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
+		// 	var function = self.compiler.chunk.functions.buffer[functionIndex];
+		// 	var type = new ValueType(TypeKind.Function, function.typeIndex);
+
+		// 	self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name on set statement");
+		// 	SetFunctionReturn(slice, type);
+		// }
+		// else if (self.compiler.ResolveToNativeFunctionIndex(slice, out var nativeFunctionIndex))
+		// {
+		// 	self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
+		// 	var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
+		// 	var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
+
+		// 	self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name on set statement");
+		// 	SetFunctionReturn(slice, type);
+		// }
+		else
+		{
+			self.compiler.AddHardError(slice, "Could not find variable or function named '{0}'", CompilerHelper.GetSlice(self.compiler, slice));
+			return;
+		}
 	}
 
 	public static void Unary(CompilerController self, Slice previousSlice)

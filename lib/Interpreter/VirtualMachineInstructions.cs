@@ -316,6 +316,12 @@ internal static class VirtualMachineInstructions
 						stack[stackStartIndex + i] = vm.valueHeap.buffer[heapStartIndex + i];
 					break;
 				}
+			case Instruction.CreateStackReference:
+				{
+					var index = frame.baseStackIndex + bytes[codeIndex++];
+					stackBuffer.PushBackUnchecked(new ValueData(index));
+					break;
+				}
 			case Instruction.NegateInt:
 				stack[stackSize - 1].asInt = -stack[stackSize - 1].asInt;
 				break;

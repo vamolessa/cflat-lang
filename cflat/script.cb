@@ -1,3 +1,5 @@
 fn main() {
-	print "hello!"
+	let a = 3
+	let r = &a
+	print r
 }

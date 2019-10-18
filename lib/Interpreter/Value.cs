@@ -50,7 +50,7 @@ public enum TypeFlags : byte
 	None = 0b0000,
 	Array = 0b0001,
 	Reference = 0b0010,
-	MutableReference = 0b0100,
+	Mutable = 0b0100,
 }
 
 public readonly struct ValueType
@@ -66,7 +66,17 @@ public readonly struct ValueType
 
 	public bool IsArray
 	{
-		get { return (flags & TypeFlags.Array) != 0; }
+		get { return flags == TypeFlags.Array; }
+	}
+
+	public bool IsReference
+	{
+		get { return (flags & TypeFlags.Reference) != 0; }
+	}
+
+	public bool IsMutable
+	{
+		get { return (flags & TypeFlags.Mutable) != 0; }
 	}
 
 	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
@@ -131,7 +141,7 @@ public readonly struct ValueType
 
 	public byte GetSize(ByteCodeChunk chunk)
 	{
-		if (IsArray)
+		if (flags != TypeFlags.None)
 			return 1;
 
 		switch (kind)
@@ -147,7 +157,7 @@ public readonly struct ValueType
 
 	public ValueType ToArrayElementType()
 	{
-		return new ValueType(kind, index);
+		return new ValueType(kind, flags & ~TypeFlags.Array, index);
 	}
 
 	public ValueType ToArrayType()
@@ -155,8 +165,29 @@ public readonly struct ValueType
 		return new ValueType(kind, flags | TypeFlags.Array, index);
 	}
 
+	public ValueType ToReferenceType(bool mutable)
+	{
+		var mutableFlag = mutable ? TypeFlags.Mutable : TypeFlags.None;
+		return new ValueType(kind, flags | TypeFlags.Reference | mutableFlag, index);
+	}
+
+	public ValueType ToReferredType()
+	{
+		var mask = ~(TypeFlags.Reference | TypeFlags.Mutable);
+		return new ValueType(kind, flags & mask, index);
+	}
+
 	public void Format(ByteCodeChunk chunk, StringBuilder sb)
 	{
+		if (IsReference)
+		{
+			sb.Append('&');
+			if (IsMutable)
+				sb.Append("mut ");
+			ToReferredType().Format(chunk, sb);
+			return;
+		}
+
 		if (IsArray)
 		{
 			sb.Append('[');
