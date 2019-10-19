@@ -231,7 +231,13 @@ public sealed class CompilerController
 		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.parser.Match(TokenKind.Colon))
+		{
+			var returnSlice = compiler.parser.currentToken.slice;
 			builder.returnType = compiler.ParseType("Expected function return type");
+			returnSlice = Slice.FromTo(returnSlice, compiler.parser.previousToken.slice);
+			if (builder.returnType.IsReference)
+				compiler.AddSoftError(returnSlice, "Function can not return a reference");
+		}
 
 		if (requireBody)
 		{

@@ -30,6 +30,7 @@ public sealed class MutabilityTests
 	[InlineData("fn f(){let mut a=0 let _=&mut a}")]
 	[InlineData("fn f(){let mut a=0 let r=&mut a let _=&r}")]
 	[InlineData("fn f(){let mut a=0 let r=&mut a let _=&mut r}")]
+	[InlineData("fn b(r:&int){} fn f(){let mut v=3 b(&mut v)}")]
 	public void ReferenceMutabilityTests(string source)
 	{
 		TestHelper.Run<Unit>(source, out var a);
@@ -42,6 +43,7 @@ public sealed class MutabilityTests
 	[InlineData("fn f(){let mut a=0 let r=&a let _=&mut r}")]
 	[InlineData("fn f(){let a=0 let r=&a set r=2}")]
 	[InlineData("fn f(){let mut a=0 let r=&a set r=2}")]
+	[InlineData("fn b(r:&mut int){} fn f(){let mut v=3 b(&v)}")]
 	public void ReferenceMutabilityErrors(string source)
 	{
 		Assert.Throws<CompileErrorException>(() =>

@@ -1,12 +1,12 @@
-struct P {
-	x:int,
-	y:int,
+fn f(a:&mut int) {
+	print "from function"
+	print a
+	set a=a+1
 }
 
 fn main() {
-	let mut a = P{x=11,y=22}
-	let r = &mut a.y
-	set r = 34
-	print a
-	print r
+	let mut x=3
+	f(&mut x)
+	print "from main"
+	print x
 }

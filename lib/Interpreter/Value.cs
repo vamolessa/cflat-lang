@@ -119,7 +119,9 @@ public readonly struct ValueType
 
 	public bool Accepts(ValueType other)
 	{
-		return IsEqualTo(other);
+		return IsMutable ?
+			IsEqualTo(other) :
+			IsEqualTo(new ValueType(other.kind, other.flags & ~TypeFlags.Mutable, other.index));
 	}
 
 	public bool IsKind(TypeKind kind)
