@@ -195,11 +195,12 @@ public sealed class CompilerController
 				compiler.parser.Consume(TokenKind.Identifier, "Expected parameter name");
 				var paramSlice = compiler.parser.previousToken.slice;
 				compiler.parser.Consume(TokenKind.Colon, "Expected ':' after parameter name");
-				var paramType = compiler.ParseType("Expected parameter type", 0);
+				var paramType = compiler.ParseType("Expected parameter type");
+				var paramAndTypeSlice = Slice.FromTo(paramSlice, compiler.parser.previousToken.slice);
 
 				if (builder.parameterCount >= MaxParamCount)
 				{
-					compiler.AddSoftError(paramSlice, "Function can not have more than {0} parameters", MaxParamCount);
+					compiler.AddSoftError(paramAndTypeSlice, "Function can not have more than {0} parameters", MaxParamCount);
 					continue;
 				}
 
@@ -216,7 +217,7 @@ public sealed class CompilerController
 
 				if (hasDuplicatedParameter)
 				{
-					compiler.AddSoftError(paramSlice, "Function already has a parameter named '{0}'", CompilerHelper.GetSlice(compiler, paramSlice));
+					compiler.AddSoftError(paramAndTypeSlice, "Function already has a parameter named '{0}'", CompilerHelper.GetSlice(compiler, paramSlice));
 					continue;
 				}
 
@@ -230,7 +231,7 @@ public sealed class CompilerController
 		compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function parameter list");
 
 		if (compiler.parser.Match(TokenKind.Colon))
-			builder.returnType = compiler.ParseType("Expected function return type", 0);
+			builder.returnType = compiler.ParseType("Expected function return type");
 
 		if (requireBody)
 		{
@@ -301,7 +302,12 @@ public sealed class CompilerController
 			compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
 			var fieldSlice = compiler.parser.previousToken.slice;
 			compiler.parser.Consume(TokenKind.Colon, "Expected ':' after field name");
-			var fieldType = compiler.ParseType("Expected field type", 0);
+			var fieldType = compiler.ParseType("Expected field type");
+			var fieldAndTypeSlice = Slice.FromTo(fieldSlice, compiler.parser.previousToken.slice);
+
+			if (fieldType.IsReference)
+				compiler.AddSoftError(fieldAndTypeSlice, "Struct can not contain reference fields");
+
 			if (!compiler.parser.Check(TokenKind.CloseCurlyBrackets))
 				compiler.parser.Consume(TokenKind.Comma, "Expected ',' after field type");
 
@@ -319,7 +325,7 @@ public sealed class CompilerController
 			var fieldName = CompilerHelper.GetSlice(compiler, fieldSlice);
 			if (hasDuplicate)
 			{
-				compiler.AddSoftError(fieldSlice, "Struct already has a field named '{0}'", fieldName);
+				compiler.AddSoftError(fieldAndTypeSlice, "Struct already has a field named '{0}'", fieldName);
 				continue;
 			}
 

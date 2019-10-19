@@ -59,11 +59,17 @@ public static class CompilerTypeExtensions
 		}
 	}
 
-	public static ValueType ParseType(this Compiler self, string error, int recursionLevel)
+	public static ValueType ParseType(this Compiler self, string error)
+	{
+		var slice = self.parser.currentToken.slice;
+		return self.ParseTypeRecursive(error, slice, 0);
+	}
+
+	private static ValueType ParseTypeRecursive(this Compiler self, string error, Slice slice, int recursionLevel)
 	{
 		if (recursionLevel > 8)
 		{
-			self.AddSoftError(self.parser.previousToken.slice, "Type is nested too deeply");
+			self.AddSoftError(slice, "Type is nested too deeply");
 			return new ValueType(TypeKind.Unit);
 		}
 
@@ -78,22 +84,26 @@ public static class CompilerTypeExtensions
 		else if (self.parser.Match(TokenKind.String))
 			type = Option.Some(new ValueType(TypeKind.String));
 		else if (self.parser.Match(TokenKind.OpenCurlyBrackets))
-			type = self.ParseTupleType(recursionLevel + 1);
+			type = self.ParseTupleType(slice, recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Identifier))
 			type = self.ParseStructOrClassType(recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.Function))
-			type = self.ParseFunctionType(recursionLevel + 1);
+			type = self.ParseFunctionType(slice, recursionLevel + 1);
 		else if (self.parser.Match(TokenKind.OpenSquareBrackets))
-			type = self.ParseArrayType(recursionLevel + 1);
+			type = self.ParseArrayType(slice, recursionLevel + 1);
+		else if (self.parser.Match(TokenKind.Ampersand))
+			type = self.ParseReferenceType(slice, recursionLevel + 1);
 
 		if (type.isSome)
 			return type.value;
 
-		self.AddSoftError(self.parser.previousToken.slice, error);
+		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+
+		self.AddSoftError(slice, error);
 		return new ValueType(TypeKind.Unit);
 	}
 
-	private static Option<ValueType> ParseTupleType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseTupleType(this Compiler self, Slice slice, int recursionLevel)
 	{
 		var source = self.parser.tokenizer.source;
 		var builder = self.chunk.BeginTupleType();
@@ -104,15 +114,18 @@ public static class CompilerTypeExtensions
 			!self.parser.Check(TokenKind.End)
 		)
 		{
-			var elementType = self.ParseType("Expected tuple element type", recursionLevel);
+			slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+			var elementType = self.ParseTypeRecursive("Expected tuple element type", slice, recursionLevel);
 			if (!self.parser.Check(TokenKind.CloseCurlyBrackets))
 				self.parser.Consume(TokenKind.Comma, "Expected ',' after element type");
 			builder.WithElement(elementType);
 		}
 		self.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple elements");
 
+		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+
 		var result = builder.Build(out var tupleTypeIndex);
-		if (!self.CheckTupleBuild(result, self.parser.previousToken.slice))
+		if (!self.CheckTupleBuild(result, slice))
 			return Option.None;
 
 		var type = new ValueType(TypeKind.Tuple, tupleTypeIndex);
@@ -141,7 +154,7 @@ public static class CompilerTypeExtensions
 		return Option.None;
 	}
 
-	private static Option<ValueType> ParseFunctionType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseFunctionType(this Compiler self, Slice slice, int recursionLevel)
 	{
 		var builder = self.chunk.BeginFunctionType();
 
@@ -150,32 +163,56 @@ public static class CompilerTypeExtensions
 		{
 			do
 			{
-				var paramType = self.ParseType("Expected function parameter type", recursionLevel);
+				slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+				var paramType = self.ParseTypeRecursive("Expected function parameter type", slice, recursionLevel);
 				builder.WithParam(paramType);
 			} while (self.parser.Match(TokenKind.Comma));
 		}
 		self.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after function type parameter list");
 		if (self.parser.Match(TokenKind.Colon))
-			builder.returnType = self.ParseType("Expected function return type", recursionLevel);
+		{
+			slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+			builder.returnType = self.ParseTypeRecursive("Expected function return type", slice, recursionLevel);
+		}
+
+		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
 
 		var result = builder.Build(out var typeIndex);
-		if (!self.CheckFunctionBuild(result, self.parser.previousToken.slice))
+		if (!self.CheckFunctionBuild(result, slice))
 			return Option.None;
 
 		var type = new ValueType(TypeKind.Function, typeIndex);
 		return Option.Some(type);
 	}
 
-	private static Option<ValueType> ParseArrayType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseArrayType(this Compiler self, Slice slice, int recursionLevel)
 	{
-		var elementType = self.ParseType("Expected array element type", recursionLevel);
+		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+		var elementType = self.ParseTypeRecursive("Expected array element type", slice, recursionLevel);
 		self.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array type");
+		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+
 		if (elementType.IsArray)
 		{
-			self.AddSoftError(self.parser.previousToken.slice, "Can not declare array of arrays");
+			self.AddSoftError(slice, "Can not declare array of arrays");
 			return Option.None;
 		}
 
 		return Option.Some(elementType.ToArrayType());
+	}
+
+	private static Option<ValueType> ParseReferenceType(this Compiler self, Slice slice, int recursionLevel)
+	{
+		var isMutable = self.parser.Match(TokenKind.Mut);
+
+		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
+		var referredType = self.ParseTypeRecursive("Expected referred type", slice, recursionLevel);
+		if (referredType.IsReference)
+		{
+			self.AddSoftError(slice, "Can not declare reference of reference");
+			return Option.None;
+		}
+
+		return Option.Some(referredType.ToReferenceType(isMutable));
 	}
 }

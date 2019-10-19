@@ -1,8 +1,7 @@
 # NEXT
-ref
+heap ref
 
 # LATER
-mut ref
 clojure
 debugger
 

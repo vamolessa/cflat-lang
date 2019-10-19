@@ -38,6 +38,26 @@ public sealed class ReferenceTests
 	}
 
 	[Theory]
+	[InlineData("fn b(r:&int){} fn f(){}")]
+	[InlineData("fn b(r:&mut int){} fn f(){}")]
+	public void ReferenceDeclarationTests(string source)
+	{
+		TestHelper.Run<Unit>(source, out var a);
+		a.AssertSuccessCall();
+	}
+
+	[Theory]
+	[InlineData("struct S{r:&int} fn f(){}")]
+	[InlineData("struct S{r:&mut int} fn f(){}")]
+	public void ReferenceDeclarationErrors(string source)
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Unit>(source, out var a);
+		});
+	}
+
+	[Theory]
 	[InlineData("fn f():int{let v=3 let r=&v r}", 3)]
 	[InlineData("struct S{a:int,b:bool}fn f():int{let v=S{a=3,b=true}let r=&v r.a}", 3)]
 	[InlineData("struct S{a:int,b:bool}fn f():int{let v=S{a=3,b=true}let r=&v.a r}", 3)]
