@@ -24,13 +24,4 @@ public sealed class SetStatementTests
 			TestHelper.Run<Unit>(source, out var a);
 		});
 	}
-
-	[Fact]
-	public void MutVariableNeverChangesError()
-	{
-		Assert.Throws<CompileErrorException>(() =>
-		{
-			TestHelper.Run<Unit>("fn f(){let mut v=3}", out var a);
-		});
-	}
 }

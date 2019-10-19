@@ -1435,7 +1435,8 @@ public sealed class CompilerController
 		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
 		{
 			ref var localVar = ref self.compiler.localVariables.buffer[variableIndex];
-			localVar.flags |= VariableFlags.Changed;
+			if (isMutable)
+				localVar.flags |= VariableFlags.Changed;
 
 			var storage = new Storage
 			{
