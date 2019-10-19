@@ -11,7 +11,7 @@ public static class CompilerDeclarationExtensions
 		}
 
 		if (self.parser.tokenizer.source[slice.index] == '_')
-			flags |= VariableFlags.Used;
+			flags |= VariableFlags.Used | VariableFlags.Changed;
 
 		self.localVariables.PushBack(new LocalVariable(
 			slice,

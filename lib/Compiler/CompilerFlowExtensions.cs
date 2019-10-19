@@ -15,6 +15,8 @@ public static class CompilerFlowExtensions
 			var variable = self.localVariables.buffer[i];
 			if (!variable.IsUsed)
 				self.AddSoftError(variable.slice, "Unused variable '{0}'", CompilerHelper.GetSlice(self, variable.slice));
+			if (variable.IsMutable && !variable.IsChanged)
+				self.AddSoftError(variable.slice, "Mutable variable '{0}' never changes", CompilerHelper.GetSlice(self, variable.slice));
 		}
 
 		var localCount = self.localVariables.count - scope.localVariablesStartIndex;

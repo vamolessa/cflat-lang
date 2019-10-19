@@ -18,9 +18,9 @@ public sealed class CompilerController
 
 	private struct IndexStorage
 	{
-		public byte elementSize;
-		public byte offset;
 		public ValueType type;
+		public byte offset;
+		public byte elementSize;
 	}
 
 	private struct VariableDeclarationInfo
@@ -565,7 +565,9 @@ public sealed class CompilerController
 
 		if (compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
 		{
-			var localVar = compiler.localVariables.buffer[variableIndex];
+			ref var localVar = ref compiler.localVariables.buffer[variableIndex];
+			localVar.flags |= VariableFlags.Changed;
+
 			var storage = new Storage
 			{
 				variableIndex = variableIndex,
@@ -1097,6 +1099,7 @@ public sealed class CompilerController
 		if (storage.variableIndex >= 0)
 		{
 			ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
+
 			var storageIsMutable = localVar.IsMutable || localVar.type.IsMutable;
 			if (!storageIsMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable");
@@ -1431,7 +1434,9 @@ public sealed class CompilerController
 
 		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
 		{
-			var localVar = self.compiler.localVariables.buffer[variableIndex];
+			ref var localVar = ref self.compiler.localVariables.buffer[variableIndex];
+			localVar.flags |= VariableFlags.Changed;
+
 			var storage = new Storage
 			{
 				variableIndex = variableIndex,

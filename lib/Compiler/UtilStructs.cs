@@ -19,10 +19,11 @@ public readonly struct CompileError
 [System.Flags]
 public enum VariableFlags : byte
 {
-	None = 0b000,
-	Mutable = 0b001,
-	Used = 0b010,
-	Iteration = 0b100,
+	None = 0b0000,
+	Iteration = 0b0001,
+	Mutable = 0b0010,
+	Used = 0b0100,
+	Changed = 0b1000,
 }
 
 public struct LocalVariable
@@ -32,6 +33,11 @@ public struct LocalVariable
 	public ValueType type;
 	public VariableFlags flags;
 	public byte stackIndex;
+
+	public bool IsIteration
+	{
+		get { return (flags & VariableFlags.Iteration) != 0; }
+	}
 
 	public bool IsMutable
 	{
@@ -43,9 +49,9 @@ public struct LocalVariable
 		get { return (flags & VariableFlags.Used) != 0; }
 	}
 
-	public bool IsIteration
+	public bool IsChanged
 	{
-		get { return (flags & VariableFlags.Iteration) != 0; }
+		get { return (flags & VariableFlags.Changed) != 0; }
 	}
 
 	public LocalVariable(Slice slice, byte stackIndex, int depth, ValueType type, VariableFlags flags)

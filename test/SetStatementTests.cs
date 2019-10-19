@@ -15,13 +15,22 @@ public sealed class SetStatementTests
 		Assert.Equal(9, v.value);
 	}
 
-	[Theory]
-	[InlineData("fn getInt():int{0} fn f(){set getInt()=9}")]
-	public void TestSetError(string source)
+	[Fact]
+	public void TestSetFunctionReturnError()
 	{
+		var source = "fn getInt():int{0} fn f(){set getInt()=9}";
 		Assert.Throws<CompileErrorException>(() =>
 		{
 			TestHelper.Run<Unit>(source, out var a);
+		});
+	}
+
+	[Fact]
+	public void MutVariableNeverChangesError()
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Unit>("fn f(){let mut v=3}", out var a);
 		});
 	}
 }
