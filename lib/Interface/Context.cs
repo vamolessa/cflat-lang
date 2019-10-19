@@ -42,14 +42,14 @@ public struct RuntimeContext : IContext
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
 
-		vm.valueStack.PushBack(new ValueData(function.functionIndex));
-		vm.callframeStack.PushBack(new CallFrame(
+		vm.valueStack.PushBackUnchecked(new ValueData(function.functionIndex));
+		vm.callframeStack.PushBackUnchecked(new CallFrame(
 			vm.chunk.bytes.count - 1,
 			vm.valueStack.count,
 			0,
 			CallFrame.Type.EntryPoint
 		));
-		vm.callframeStack.PushBack(new CallFrame(
+		vm.callframeStack.PushBackUnchecked(new CallFrame(
 			function.codeIndex,
 			vm.valueStack.count,
 			function.functionIndex,

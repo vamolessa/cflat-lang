@@ -1084,7 +1084,7 @@ public sealed class CompilerController
 	{
 		if (storage.variableIndex >= 0)
 		{
-			var localVar = self.compiler.localVariables.buffer[storage.variableIndex];
+			ref var localVar = ref self.compiler.localVariables.buffer[storage.variableIndex];
 			var storageIsMutable = localVar.IsMutable || localVar.type.IsMutable;
 			if (!storageIsMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable");
@@ -1105,6 +1105,9 @@ public sealed class CompilerController
 
 			if (localVar.type.IsReference)
 			{
+				if (localVar.type.IsMutable)
+					localVar.flags |= VariableFlags.Used;
+
 				self.compiler.EmitInstruction(Instruction.SetReference);
 				self.compiler.EmitByte(localVar.stackIndex);
 				self.compiler.EmitByte(storage.offset);

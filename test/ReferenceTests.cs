@@ -56,4 +56,23 @@ public sealed class ReferenceTests
 		a.AssertSuccessCall();
 		Assert.Equal(expected, v.value);
 	}
+
+	[Theory]
+	[InlineData("fn f():int{let mut v=3 let r=&mut v set r=5 v}", 5)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=P{x=1,y=2}let r=&mut v set r=P{x=5,y=2} v.x}", 5)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=P{x=1,y=2}let r=&mut v set r.x=5 v.x}", 5)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=P{x=1,y=2}let r=&mut v set r.y=7 v.y}", 7)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=P{x=1,y=2}let r=&mut v.x set r=7 v.x}", 7)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=P{x=1,y=2}let r=&mut v.y set r=9 v.y}", 9)]
+	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v set r.b.x=5 v.b.x}", 5)]
+	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r.x=5 v.b.x}", 5)]
+	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r.y=8 v.b.y}", 8)]
+	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r=P{x=3,y=4} v.b.x}", 3)]
+	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r=P{x=3,y=4} v.b.y}", 4)]
+	public void SetIntReferenceTests(string source, int expected)
+	{
+		var v = TestHelper.Run<Int>(source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(expected, v.value);
+	}
 }

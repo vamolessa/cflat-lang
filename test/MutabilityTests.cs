@@ -40,6 +40,8 @@ public sealed class MutabilityTests
 	[InlineData("fn f(){let a=0 let _=&mut a}")]
 	[InlineData("fn f(){let a=0 let r=&a let _=&mut r}")]
 	[InlineData("fn f(){let mut a=0 let r=&a let _=&mut r}")]
+	[InlineData("fn f(){let a=0 let r=&a set r=2}")]
+	[InlineData("fn f(){let mut a=0 let r=&a set r=2}")]
 	public void ReferenceMutabilityErrors(string source)
 	{
 		Assert.Throws<CompileErrorException>(() =>

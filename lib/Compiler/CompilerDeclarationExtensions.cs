@@ -10,7 +10,7 @@ public static class CompilerDeclarationExtensions
 			stackIndex = (byte)(lastVar.stackIndex + lastVar.type.GetSize(self.chunk));
 		}
 
-		if (CompilerHelper.AreEqual(self.parser.tokenizer.source, slice, "_"))
+		if (self.parser.tokenizer.source[slice.index] == '_')
 			flags |= VariableFlags.Used;
 
 		self.localVariables.PushBack(new LocalVariable(

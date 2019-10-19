@@ -83,12 +83,28 @@ public sealed class ExpressionTests
 	}
 
 	[Theory]
-	[InlineData("{let mut a=0 a=2 a}")]
+	[InlineData("fn f():int{let mut a=0 a=2 a}")]
 	public void TestAssignmentExpressionError(string source)
 	{
 		Assert.Throws<CompileErrorException>(() =>
 		{
 			TestHelper.Run<Int>(source, out var a);
+		});
+	}
+
+	[Fact]
+	public void VariableUsageTest()
+	{
+		TestHelper.Run<Unit>("fn f(){let _a=0}", out var a);
+		a.AssertSuccessCall();
+	}
+
+	[Fact]
+	public void VariableUsageError()
+	{
+		Assert.Throws<CompileErrorException>(() =>
+		{
+			TestHelper.Run<Unit>("fn f(){let a=0}", out var a);
 		});
 	}
 }
