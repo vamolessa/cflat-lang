@@ -5,7 +5,8 @@ struct P {
 
 fn main() {
 	let mut a = P{x=11,y=22}
-	let r = &a
-	let s = &mut r.y
-	print s
+	let r = &mut a.y
+	set r = 34
+	print a
+	print r
 }

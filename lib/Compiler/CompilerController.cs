@@ -558,7 +558,6 @@ public sealed class CompilerController
 			{
 				variableIndex = variableIndex,
 				type = localVar.type,
-				offset = localVar.stackIndex
 			};
 
 			GetStorage(this, ref slice, ref storage);
@@ -1079,7 +1078,6 @@ public sealed class CompilerController
 		}
 
 		Access(self, slice, ref storage);
-
 	}
 
 	private static void Assign(CompilerController self, Slice slice, ref Storage storage)
@@ -1087,8 +1085,9 @@ public sealed class CompilerController
 		if (storage.variableIndex >= 0)
 		{
 			var localVar = self.compiler.localVariables.buffer[storage.variableIndex];
-			if (!localVar.IsMutable)
-				self.compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
+			var storageIsMutable = localVar.IsMutable || localVar.type.IsMutable;
+			if (!storageIsMutable)
+				self.compiler.AddSoftError(slice, "Can not write to immutable variable");
 
 			var expressionSlice = Expression(self);
 			var expressionType = self.compiler.typeStack.PopLast();
@@ -1104,17 +1103,16 @@ public sealed class CompilerController
 
 			self.compiler.DebugEmitPopType(1);
 
-			var varTypeSize = storage.type.GetSize(self.compiler.chunk);
-			if (varTypeSize > 1)
+			if (localVar.type.IsReference)
 			{
-				self.compiler.EmitInstruction(Instruction.AssignLocalMultiple);
-				self.compiler.EmitByte((byte)(localVar.stackIndex + storage.offset));
-				self.compiler.EmitByte(varTypeSize);
+				self.compiler.EmitInstruction(Instruction.SetReference);
+				self.compiler.EmitByte(localVar.stackIndex);
+				self.compiler.EmitByte(storage.offset);
+				self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
 			}
 			else
 			{
-				self.compiler.EmitInstruction(Instruction.AssignLocal);
-				self.compiler.EmitByte(storage.offset);
+				self.compiler.EmitSetLocal(localVar.stackIndex + storage.offset, storage.type);
 			}
 		}
 		else
@@ -1340,7 +1338,7 @@ public sealed class CompilerController
 
 		self.compiler.DebugEmitPopType(3);
 
-		self.compiler.EmitInstruction(Instruction.AssignArrayElement);
+		self.compiler.EmitInstruction(Instruction.SetArrayElement);
 		self.compiler.EmitByte(storage.elementSize);
 		self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
 		self.compiler.EmitByte(storage.offset);

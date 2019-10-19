@@ -146,7 +146,7 @@ internal static class VirtualMachineInstructions
 					stackBuffer.PushBackUnchecked(new ValueData(index));
 					break;
 				}
-			case Instruction.AssignLocal:
+			case Instruction.SetLocal:
 				{
 					var index = frame.baseStackIndex + bytes[codeIndex++];
 					stack[index] = stack[--stackSize];
@@ -158,7 +158,7 @@ internal static class VirtualMachineInstructions
 					stackBuffer.PushBackUnchecked(stack[index]);
 					break;
 				}
-			case Instruction.AssignLocalMultiple:
+			case Instruction.SetLocalMultiple:
 				{
 					var dstIdx = frame.baseStackIndex + bytes[codeIndex++];
 
@@ -221,7 +221,7 @@ internal static class VirtualMachineInstructions
 			case Instruction.LoadArrayLength:
 				stack[stackSize - 1] = vm.valueHeap.buffer[stack[stackSize - 1].asInt - 1];
 				break;
-			case Instruction.AssignArrayElement:
+			case Instruction.SetArrayElement:
 				{
 					var elementSize = bytes[codeIndex++];
 					var fieldSize = bytes[codeIndex++];
@@ -276,7 +276,7 @@ internal static class VirtualMachineInstructions
 					stackBuffer.PushBackUnchecked(new ValueData(index));
 					break;
 				}
-			case Instruction.AssignReference:
+			case Instruction.SetReference:
 				{
 					var dstIdx = frame.baseStackIndex + bytes[codeIndex++];
 					dstIdx = stack[dstIdx].asInt + bytes[codeIndex++];

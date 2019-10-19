@@ -160,7 +160,7 @@ public static class ByteCodeChunkExtensions
 			{
 				sb.Append("== ");
 				sb.Append(source.name);
-				sb.Append(" ==");
+				sb.AppendLine(" ==");
 				currentSourceIndex = sourceIndex;
 			}
 
@@ -249,7 +249,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.CallNative:
 		case Instruction.Return:
 		case Instruction.PopMultiple:
-		case Instruction.AssignLocal:
+		case Instruction.SetLocal:
 		case Instruction.LoadLocal:
 		case Instruction.IncrementLocalInt:
 		case Instruction.CreateArray:
@@ -258,12 +258,12 @@ public static class ByteCodeChunkExtensions
 		case Instruction.DebugPopTypeMultiple:
 			return TwoByteInstruction(self, instruction, index, sb);
 		case Instruction.Move:
-		case Instruction.AssignLocalMultiple:
+		case Instruction.SetLocalMultiple:
 		case Instruction.LoadLocalMultiple:
 			return ThreeByteInstruction(self, instruction, index, sb);
-		case Instruction.AssignArrayElement:
+		case Instruction.SetArrayElement:
 		case Instruction.LoadArrayElement:
-		case Instruction.AssignReference:
+		case Instruction.SetReference:
 		case Instruction.LoadReference:
 			return FourByteInstruction(self, instruction, index, sb);
 		case Instruction.LoadLiteral:
