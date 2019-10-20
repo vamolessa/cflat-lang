@@ -165,12 +165,20 @@ public sealed class ArrayTests
 	}
 
 	[Fact]
+	public void ArrayMutabilityTest()
+	{
+		var source = "fn func(mut a:[int]){set a[0]=8} fn f(){func([0:1])}";
+			TestHelper.Run<Unit>(source, out var a);
+		a.AssertSuccessCall();
+	}
+
+	[Fact]
 	public void ArrayMutabilityError()
 	{
 		var source = "fn func(a:[int]){set a[0]=8} fn f(){func([0:1])}";
 		Assert.Throws<CompileErrorException>(() =>
 		{
-			TestHelper.Run<Int>(source, out var a);
+			TestHelper.Run<Unit>(source, out var a);
 		});
 	}
 }

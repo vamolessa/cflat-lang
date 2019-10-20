@@ -192,7 +192,7 @@ internal struct TupleDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler w
 	}
 }
 
-internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler where A : struct, IMarshalable
+internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler where A : struct, IStruct
 {
 	internal ByteCodeChunk chunk;
 	internal StructTypeBuilder builder;
@@ -221,11 +221,11 @@ internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler 
 			result == StructTypeBuilder.Result.Success ||
 			(
 				result == StructTypeBuilder.Result.DuplicatedName &&
-				global::Marshal.SizeOf<A>.size > 0
+				global::Marshal.SizeOf<Struct<A>>.size > 0
 			)
 		)
 		{
-			global::Marshal.SizeOf<A>.size = chunk.structTypes.buffer[typeIndex].size;
+			global::Marshal.SizeOf<Struct<A>>.size = chunk.structTypes.buffer[typeIndex].size;
 			return new ValueType(TypeKind.Struct, typeIndex);
 		}
 

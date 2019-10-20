@@ -168,6 +168,7 @@ public sealed class InterfaceTests
 
 		public void Marshal<M>(ref M marshaler) where M : IMarshaler
 		{
+			marshaler.Marshal(ref a, nameof(a));
 		}
 	}
 

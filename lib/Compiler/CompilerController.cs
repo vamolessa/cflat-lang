@@ -1183,29 +1183,66 @@ public sealed class CompilerController
 		else if (self.compiler.ResolveToStructTypeIndex(slice, out var structIndex))
 		{
 			var structType = self.compiler.chunk.structTypes.buffer[structIndex];
+			var currentFieldIndex = 0;
 			self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' before struct initializer");
-			for (var i = 0; i < structType.fields.length; i++)
+			while (
+				!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
+				!self.compiler.parser.Check(TokenKind.End)
+			)
 			{
-				var fieldIndex = structType.fields.index + i;
-				var field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
-				self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name '{0}'. Don't forget to initialize them in order of declaration", field.name);
+				Option<StructTypeField> field = Option.None;
+				if (currentFieldIndex < structType.fields.length)
+				{
+					var fieldIndex = structType.fields.index + currentFieldIndex;
+					field = self.compiler.chunk.structTypeFields.buffer[fieldIndex];
+				}
+				else if (currentFieldIndex == structType.fields.length)
+				{
+					self.compiler.AddSoftError(
+						self.compiler.parser.currentToken.slice,
+						"Too many fields in struct creation"
+					);
+				}
+
+				var fieldSlice = self.compiler.parser.currentToken.slice;
+				self.compiler.parser.Consume(TokenKind.Identifier, "Expected field name");
+				if (field.isSome && !CompilerHelper.AreEqual(self.compiler.parser.tokenizer.source, fieldSlice, fieldSlice))
+				{
+					self.compiler.AddSoftError(
+						fieldSlice,
+						"Expected field name '{0}'. Struct fields must be created in declaration order",
+						field.value.name
+					);
+				}
+
 				self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
 
-				Expression(self);
+				var expressionSlice = Expression(self);
+				fieldSlice = Slice.FromTo(fieldSlice, expressionSlice);
+
 				if (!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets))
 					self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after field value expression");
 
 				var expressionType = self.compiler.typeStack.PopLast();
-				if (!field.type.Accepts(expressionType))
+				if (field.isSome && !field.value.type.Accepts(expressionType))
 				{
 					self.compiler.AddSoftError(
-						self.compiler.parser.previousToken.slice,
+						fieldSlice,
 						"Wrong type for field '{0}' initializer. Expected {1}. Got {2}",
-						field.name,
-						field.type.ToString(self.compiler.chunk),
+						field.value.name,
+						field.value.type.ToString(self.compiler.chunk),
 						expressionType.ToString(self.compiler.chunk)
 					);
 				}
+
+				currentFieldIndex += 1;
+			}
+			if (currentFieldIndex < structType.fields.length)
+			{
+				self.compiler.AddSoftError(
+					self.compiler.parser.previousToken.slice,
+					"Too few fields in struct creation"
+				);
 			}
 			self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Struct, structIndex));

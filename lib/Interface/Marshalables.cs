@@ -164,7 +164,7 @@ public struct Struct<T> : IMarshalable where T : struct, IStruct
 
 	public ValueType GetType(ByteCodeChunk chunk)
 	{
-		return new StructDefinitionMarshaler<Struct<T>>(chunk).GetDefinedType();
+		return new StructDefinitionMarshaler<T>(chunk).GetDefinedType();
 	}
 
 	public static implicit operator Struct<T>(T value)
@@ -222,12 +222,12 @@ public struct Class<T> : IMarshalable where T : class
 public struct Array<T> : IMarshalable where T : struct, IMarshalable
 {
 	internal VirtualMachine vm;
-	internal int heapStartIndex;
+	internal int headAddress;
 
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		vm = marshaler.VirtualMachine;
-		marshaler.Marshal(ref heapStartIndex, null);
+		marshaler.Marshal(ref headAddress, null);
 	}
 
 	public ValueType GetType(ByteCodeChunk chunk)
@@ -238,7 +238,7 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 
 	public int Length
 	{
-		get { return vm.valueHeap.buffer[heapStartIndex - 1].asInt; }
+		get { return vm.valueHeap.buffer[headAddress - 1].asInt; }
 	}
 
 	public T this[int index]
@@ -246,7 +246,7 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 		get
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new HeapReadMarshaler(vm, heapStartIndex + size * index);
+			var marshaler = new HeapReadMarshaler(vm, headAddress + size * index);
 			var value = default(T);
 			value.Marshal(ref marshaler);
 			return value;
@@ -255,11 +255,79 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 		set
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new HeapWriteMarshaler(vm, heapStartIndex + size * index);
+			var marshaler = new HeapWriteMarshaler(vm, headAddress + size * index);
 			value.Marshal(ref marshaler);
 		}
 	}
 }
+
+public struct Ref<T> : IMarshalable where T : struct, IMarshalable
+{
+	internal VirtualMachine vm;
+	internal int address;
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		vm = marshaler.VirtualMachine;
+		marshaler.Marshal(ref address, null);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Ref<T>>.size = 1;
+		return global::Marshal.TypeOf<T>(chunk).ToReferenceType(false);
+	}
+
+	public T Value
+	{
+		get
+		{
+			var size = global::Marshal.SizeOf<T>.size;
+			var marshaler = new StackReadMarshaler(vm, address);
+			var value = default(T);
+			value.Marshal(ref marshaler);
+			return value;
+		}
+	}
+}
+
+public struct MutRef<T> : IMarshalable where T : struct, IMarshalable
+{
+	internal VirtualMachine vm;
+	internal int address;
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		vm = marshaler.VirtualMachine;
+		marshaler.Marshal(ref address, null);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<MutRef<T>>.size = 1;
+		return global::Marshal.TypeOf<T>(chunk).ToReferenceType(true);
+	}
+
+	public T Value
+	{
+		get
+		{
+			var size = global::Marshal.SizeOf<T>.size;
+			var marshaler = new StackReadMarshaler(vm, address);
+			var value = default(T);
+			value.Marshal(ref marshaler);
+			return value;
+		}
+
+		set
+		{
+			var size = global::Marshal.SizeOf<T>.size;
+			var marshaler = new StackWriteMarshaler(vm, address);
+			value.Marshal(ref marshaler);
+		}
+	}
+}
+
 
 public interface ITuple : IMarshalable { }
 
