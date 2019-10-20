@@ -211,4 +211,25 @@ public sealed class InterfaceTests
 		Assert.False(cflat.GetError().isSome);
 		Assert.Equal(7, n.value);
 	}
+
+	[Fact]
+	public void FunctionCompatibilityTest()
+	{
+		var source = "fn bar(f:fn():int){} fn foo():int{0} fn f(){bar(foo) bar(FunctionTestFunction)}";
+		var cflat = new CFlat();
+		cflat.AddFunction(FunctionTestFunction, FunctionTestFunction);
+		TestHelper.Run<Unit>(cflat, source, out var a);
+		a.AssertSuccessCall();
+	}
+
+	[Theory]
+	[InlineData("fn f():int{0}")]
+	[InlineData("fn f(a:bool){}")]
+	public void FunctionNotFoundErrors(string source)
+	{
+		Assert.Throws<FunctionNotFoundException>(() =>
+		{
+			TestHelper.Run<Unit>(source, out var a);
+		});
+	}
 }

@@ -5,6 +5,10 @@ public sealed class CompileErrorException : System.Exception
 	public CompileErrorException(string error) : base(error) { }
 }
 
+public sealed class FunctionNotFoundException : System.Exception
+{
+}
+
 public static class TestHelper
 {
 	public static readonly Mode CompilerMode = Mode.Debug;
@@ -62,7 +66,11 @@ public static class TestHelper
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
-		return cflat.GetFunction<Empty, R>("f").value.Call(cflat, new Empty());
+		var function = cflat.GetFunction<Empty, R>("f");
+		if (!function.isSome)
+			throw new FunctionNotFoundException();
+
+		return function.value.Call(cflat, new Empty());
 	}
 
 	public static R RunExpression<R>(string source, out CallAssertion assertion)
@@ -80,6 +88,10 @@ public static class TestHelper
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
-		return cflat.GetFunction<Empty, R>(string.Empty).value.Call(cflat, new Empty());
+		var function = cflat.GetFunction<Empty, R>(string.Empty);
+		if (!function.isSome)
+			throw new FunctionNotFoundException();
+
+		return function.value.Call(cflat, new Empty());
 	}
 }

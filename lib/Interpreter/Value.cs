@@ -119,6 +119,8 @@ public readonly struct ValueType
 
 	public bool Accepts(ValueType other)
 	{
+		if (kind == TypeKind.Function && other.kind == TypeKind.NativeFunction)
+			other = new ValueType(TypeKind.Function, other.flags, other.index);
 		return IsEqualTo(other);
 	}
 

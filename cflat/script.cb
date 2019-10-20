@@ -1,12 +1,12 @@
-fn f(a:&mut int) {
-	print "from function"
-	print a
-	set a=a+1
+fn foo(sw: Stopwatch):float {
+	0.0
+}
+
+fn c(f: fn(Stopwatch):float) {
+
 }
 
 fn main() {
-	let mut x=3
-	f(&mut x)
-	print "from main"
-	print x
+	let a = &StopStopwatch
+	//c(StopStopwatch)
 }
