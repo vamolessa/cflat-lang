@@ -11,7 +11,6 @@ public static class VirtualMachineHelper
 			vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
 
 		vm.valueStack.count = stackTop + size;
-		--vm.callframeStack.count;
 	}
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)

@@ -58,15 +58,6 @@ internal static class VirtualMachineInstructions
 					var functionIndex = stack[stackTop - 1].asInt;
 					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
-					vm.callframeStack.PushBackUnchecked(
-						new CallFrame(
-							0,
-							stackTop,
-							(ushort)functionIndex,
-							CallFrame.Type.NativeFunction
-						)
-					);
-
 					try
 					{
 						var context = new RuntimeContext(vm, stackTop);
@@ -74,7 +65,15 @@ internal static class VirtualMachineInstructions
 					}
 					catch (System.Exception e)
 					{
-						vm.callframeStack.buffer[vm.callframeStack.count - 2].codeIndex = codeIndex;
+						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+						vm.callframeStack.PushBackUnchecked(
+							new CallFrame(
+								0,
+								stackTop,
+								(ushort)functionIndex,
+								CallFrame.Type.NativeFunction
+							)
+						);
 						vm.Error(string.Format("{0}\nnative stack trace:\n{1}", e.Message, e.StackTrace));
 						return;
 					}
@@ -84,6 +83,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.Return:
 				VirtualMachineHelper.Return(vm, --baseStackIndex, bytes[codeIndex++]);
+				--vm.callframeStack.count;
 				codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
 				baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
 				break;
@@ -204,6 +204,7 @@ internal static class VirtualMachineInstructions
 					var arrayLength = stack[--stackSize].asInt;
 					if (arrayLength < 0)
 					{
+						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
 						vm.Error("Negative array length");
 						return;
 					}
@@ -242,6 +243,7 @@ internal static class VirtualMachineInstructions
 					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
 					if (index < 0 || index >= length)
 					{
+						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
 						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
 						return;
 					}
@@ -264,6 +266,7 @@ internal static class VirtualMachineInstructions
 					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
 					if (index < 0 || index >= length)
 					{
+						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
 						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
 						return;
 					}
