@@ -2,10 +2,8 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
-	public static void Return(VirtualMachine vm, int size)
+	public static void Return(VirtualMachine vm, int stackTop, int size)
 	{
-		var stackTop = vm.callframeStack.buffer[--vm.callframeStack.count].baseStackIndex - 1;
-
 		var dstIdx = stackTop;
 		var srcIdx = vm.valueStack.count - size;
 
@@ -13,6 +11,7 @@ public static class VirtualMachineHelper
 			vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
 
 		vm.valueStack.count = stackTop + size;
+		--vm.callframeStack.count;
 	}
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)

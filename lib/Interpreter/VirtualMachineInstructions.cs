@@ -14,18 +14,17 @@ internal static class VirtualMachineInstructions
 		var stack = vm.valueStack.buffer;
 		ref var stackSize = ref vm.valueStack.count;
 
+		var codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
+		var baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+
 		while (true)
 		{
 #if DEBUG_TRACE
-			var ip = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
 			debugSb.Clear();
 			VirtualMachineHelper.TraceStack(vm, debugSb);
-			vm.chunk.DisassembleInstruction(ip, debugSb);
+			vm.chunk.DisassembleInstruction(codeIndex, debugSb);
 			System.Console.WriteLine(debugSb);
 #endif
-
-			ref var frame = ref vm.callframeStack.buffer[vm.callframeStack.count - 1];
-			ref var codeIndex = ref frame.codeIndex;
 
 			var nextInstruction = (Instruction)bytes[codeIndex++];
 			switch (nextInstruction)
@@ -36,14 +35,17 @@ internal static class VirtualMachineInstructions
 			case Instruction.Call:
 				{
 					var size = bytes[codeIndex++];
-					var stackTop = stackSize - size;
-					var functionIndex = stack[stackTop - 1].asInt;
+					baseStackIndex = stackSize - size;
+					var functionIndex = stack[baseStackIndex - 1].asInt;
 					var function = vm.chunk.functions.buffer[functionIndex];
+
+					vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+					codeIndex = function.codeIndex;
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
-							function.codeIndex,
-							stackTop,
+							codeIndex,
+							baseStackIndex,
 							(ushort)functionIndex,
 							CallFrame.Type.Function
 						)
@@ -69,17 +71,20 @@ internal static class VirtualMachineInstructions
 					{
 						var context = new RuntimeContext(vm, stackTop);
 						function.callback(ref context);
-						VirtualMachineHelper.Return(vm, function.returnSize);
 					}
 					catch (System.Exception e)
 					{
 						vm.Error(e.ToString());
 						return;
 					}
+
+					VirtualMachineHelper.Return(vm, stackTop, function.returnSize);
 					break;
 				}
 			case Instruction.Return:
-				VirtualMachineHelper.Return(vm, bytes[codeIndex++]);
+				VirtualMachineHelper.Return(vm, --baseStackIndex, bytes[codeIndex++]);
+				codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
+				baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
 				break;
 			case Instruction.Print:
 				{
@@ -148,19 +153,19 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.SetLocal:
 				{
-					var index = frame.baseStackIndex + bytes[codeIndex++];
+					var index = baseStackIndex + bytes[codeIndex++];
 					stack[index] = stack[--stackSize];
 					break;
 				}
 			case Instruction.LoadLocal:
 				{
-					var index = frame.baseStackIndex + bytes[codeIndex++];
+					var index = baseStackIndex + bytes[codeIndex++];
 					stackBuffer.PushBackUnchecked(stack[index]);
 					break;
 				}
 			case Instruction.SetLocalMultiple:
 				{
-					var dstIdx = frame.baseStackIndex + bytes[codeIndex++];
+					var dstIdx = baseStackIndex + bytes[codeIndex++];
 
 					var endIndex = stackSize;
 					stackSize -= bytes[codeIndex++];
@@ -172,7 +177,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.LoadLocalMultiple:
 				{
-					var srcIdx = frame.baseStackIndex + bytes[codeIndex++];
+					var srcIdx = baseStackIndex + bytes[codeIndex++];
 					var dstIdx = stackSize;
 					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
 
@@ -182,7 +187,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.IncrementLocalInt:
 				{
-					var index = frame.baseStackIndex + bytes[codeIndex++];
+					var index = baseStackIndex + bytes[codeIndex++];
 					++stack[index].asInt;
 					break;
 				}
@@ -272,13 +277,13 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.CreateStackReference:
 				{
-					var index = frame.baseStackIndex + bytes[codeIndex++];
+					var index = baseStackIndex + bytes[codeIndex++];
 					stackBuffer.PushBackUnchecked(new ValueData(index));
 					break;
 				}
 			case Instruction.SetReference:
 				{
-					var dstIdx = frame.baseStackIndex + bytes[codeIndex++];
+					var dstIdx = baseStackIndex + bytes[codeIndex++];
 					dstIdx = stack[dstIdx].asInt + bytes[codeIndex++];
 
 					var endIndex = stackSize;
@@ -291,7 +296,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.LoadReference:
 				{
-					var srcIdx = frame.baseStackIndex + bytes[codeIndex++];
+					var srcIdx = baseStackIndex + bytes[codeIndex++];
 					srcIdx = stack[srcIdx].asInt + bytes[codeIndex++];
 					var dstIdx = stackSize;
 					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
@@ -395,7 +400,7 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.RepeatLoopCheck:
 				{
-					var index = frame.baseStackIndex + bytes[codeIndex++];
+					var index = baseStackIndex + bytes[codeIndex++];
 					var less = stack[index].asInt < stack[index + 1].asInt;
 					stackBuffer.PushBackUnchecked(new ValueData(less));
 					break;

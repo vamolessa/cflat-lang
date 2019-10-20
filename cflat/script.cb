@@ -1,9 +1,4 @@
-fn foo(r:&mut int) {
-	let mut a = 3
-	set r = &mut a
-}
-
 fn main() {
-	let mut a = 0
-	foo(&mut a)
+	let _a = 0
+	let _b = StartStopwatch()
 }
