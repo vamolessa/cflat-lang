@@ -25,7 +25,7 @@ public static class Interpreter
 		cflat.AddFunction(StartStopwatch, StartStopwatch);
 		cflat.AddFunction(StopStopwatch, StopStopwatch);
 
-		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug);
+		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Release);
 		if (compileErrors.count > 0)
 		{
 			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);

@@ -1,4 +1,4 @@
-#define DEBUG_TRACE
+//#define DEBUG_TRACE
 using System.Text;
 
 internal static class VirtualMachineInstructions
@@ -74,7 +74,8 @@ internal static class VirtualMachineInstructions
 					}
 					catch (System.Exception e)
 					{
-						vm.Error(e.ToString());
+						vm.callframeStack.buffer[vm.callframeStack.count - 2].codeIndex = codeIndex;
+						vm.Error(string.Format("{0}\nnative stack trace:\n{1}", e.Message, e.StackTrace));
 						return;
 					}
 

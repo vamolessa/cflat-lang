@@ -1,0 +1,5 @@
+fn main() {
+	let sw = StartStopwatch()
+	let t = StopStopwatch(sw)
+	print {"time", t}
+}

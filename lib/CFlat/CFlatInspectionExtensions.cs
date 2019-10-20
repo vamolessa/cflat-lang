@@ -11,34 +11,37 @@ public static class ClefInspectionExtensions
 		for (var i = vm.callframeStack.count - 1; i >= 0; i--)
 		{
 			var callframe = vm.callframeStack.buffer[i];
-			var codeIndex = callframe.codeIndex - 1;
-			var sourceIndex = vm.chunk.sourceSlices.buffer[codeIndex].index;
-			var source = self.sources.buffer[vm.chunk.FindSourceIndex(codeIndex)];
 
 			switch (callframe.type)
 			{
 			case CallFrame.Type.EntryPoint:
 				break;
 			case CallFrame.Type.Function:
-				var pos = CompilerHelper.GetLineAndColumn(
-					source.content,
-					sourceIndex,
-					1
-				);
-				sb.Append("[line ");
-				sb.Append(pos.line);
-				sb.Append("] ");
+				{
+					var codeIndex = System.Math.Max(callframe.codeIndex - 1, 0);
+					var sourceIndex = vm.chunk.sourceSlices.buffer[codeIndex].index;
+					var source = self.sources.buffer[vm.chunk.FindSourceIndex(codeIndex)];
 
-				vm.chunk.FormatFunction(callframe.functionIndex, sb);
+					var pos = CompilerHelper.GetLineAndColumn(
+						source.content,
+						sourceIndex,
+						1
+					);
+					sb.Append("[line ");
+					sb.Append(pos.line);
+					sb.Append("] ");
 
-				sb.Append(" => ");
-				var line = CompilerHelper.GetLines(
-					source.content,
-					pos.line - 1,
-					pos.line - 1
-				);
-				sb.AppendLine(line.TrimStart());
-				break;
+					vm.chunk.FormatFunction(callframe.functionIndex, sb);
+
+					sb.Append(" => ");
+					var line = CompilerHelper.GetLines(
+						source.content,
+						pos.line - 1,
+						pos.line - 1
+					);
+					sb.AppendLine(line.TrimStart());
+					break;
+				}
 			case CallFrame.Type.NativeFunction:
 				sb.Append("[native function] ");
 				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);

@@ -1,4 +1,0 @@
-fn main() {
-	let _a = 0
-	let _b = StartStopwatch()
-}
