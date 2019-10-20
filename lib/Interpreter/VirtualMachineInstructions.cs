@@ -78,7 +78,7 @@ internal static class VirtualMachineInstructions
 						return;
 					}
 
-					VirtualMachineHelper.Return(vm, stackTop, function.returnSize);
+					VirtualMachineHelper.Return(vm, --stackTop, function.returnSize);
 					break;
 				}
 			case Instruction.Return:
