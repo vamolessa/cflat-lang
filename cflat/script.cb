@@ -1,12 +1,9 @@
-fn foo(sw: Stopwatch):float {
-	0.0
-}
-
-fn c(f: fn(Stopwatch):float) {
-
+fn foo(r:&mut int) {
+	let mut a = 3
+	set r = &mut a
 }
 
 fn main() {
-	let a = &StopStopwatch
-	//c(StopStopwatch)
+	let mut a = 0
+	foo(&mut a)
 }

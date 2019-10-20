@@ -91,7 +91,7 @@ public sealed class ReferenceTests
 	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r.y=8 v.b.y}", 8)]
 	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r=P{x=3,y=4} v.b.x}", 3)]
 	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r=P{x=3,y=4} v.b.y}", 4)]
-	[InlineData("fn b(r:&mut int){set r=r+1} fn f():int{let mut v=3 b(&mut v) v}", 4)]
+	[InlineData("fn inc(r:&mut int){set r=r+1} fn f():int{let mut v=3 inc(&mut v) v}", 4)]
 	public void SetIntReferenceTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);

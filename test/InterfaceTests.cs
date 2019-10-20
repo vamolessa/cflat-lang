@@ -232,4 +232,50 @@ public sealed class InterfaceTests
 			TestHelper.Run<Unit>(source, out var a);
 		});
 	}
+
+	public static Return ArrayTestFunction<C>(ref C context) where C : IContext
+	{
+		var a = context.Arg<Array<Int>>();
+		var body = context.Body();
+		var length = a.Length;
+		for (var i = 0; i < length; i++)
+			a[i] += 1;
+		return body.Return();
+	}
+
+	[Theory]
+	[InlineData("{let mut a=[0:3] set a[1]=1 set a[2]=2 ArrayTestFunction(a) a}", 1, 2, 3)]
+	[InlineData("{let mut a=[10:3] set a[1]=11 set a[2]=12 ArrayTestFunction(a) a}", 11, 12, 13)]
+	public void ArrayIoTest(string source, int e0, int e1, int e2)
+	{
+		var cflat = new CFlat();
+		cflat.AddFunction(ArrayTestFunction, ArrayTestFunction);
+		var array = TestHelper.RunExpression<Array<Int>>(cflat, source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(3, array.Length);
+		Assert.Equal(e0, array[0].value);
+		Assert.Equal(e1, array[1].value);
+		Assert.Equal(e2, array[2].value);
+	}
+
+	public static Return RefTestFunction<C>(ref C context) where C : IContext
+	{
+		var r = context.Arg<MutRef<Int>>();
+		var body = context.Body();
+		r.Value += 1;
+		return body.Return();
+	}
+
+	[Theory]
+	[InlineData("{let mut a=0 RefTestFunction(&mut a) a}", 1)]
+	[InlineData("{let mut a=15 RefTestFunction(&mut a) a}", 16)]
+	public void RefIoTest(string source, int n)
+	{
+		var cflat = new CFlat();
+		cflat.AddFunction(RefTestFunction, RefTestFunction);
+		var v = TestHelper.RunExpression<Int>(cflat, source, out var a);
+		a.AssertSuccessCall();
+		Assert.Equal(n, v.value);
+	}
+
 }
