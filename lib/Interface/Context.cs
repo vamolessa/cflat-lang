@@ -85,13 +85,13 @@ public struct DefinitionContext : IContext
 		}
 	}
 
-	internal sealed class ReflectionReturn : System.Exception
+	internal sealed class TypeReturn : System.Exception
 	{
-		public readonly Marshal.ReflectionData reflectionData;
+		public readonly ValueType type;
 
-		public ReflectionReturn(Marshal.ReflectionData reflectionData) : base("", null)
+		public TypeReturn(ValueType type) : base("", null)
 		{
-			this.reflectionData = reflectionData;
+			this.type = type;
 		}
 	}
 
@@ -106,13 +106,13 @@ public struct DefinitionContext : IContext
 
 	public T Arg<T>() where T : struct, IMarshalable
 	{
-		builder.WithParam(Marshal.ReflectOn<T>(chunk).type);
+		builder.WithParam(Marshal.TypeOf<T>(chunk));
 		return default;
 	}
 
 	public NativeFunctionBody<T> Body<T>([CallerMemberName] string functionName = "") where T : struct, IMarshalable
 	{
-		builder.returnType = Marshal.ReflectOn<T>(chunk).type;
+		builder.returnType = Marshal.TypeOf<T>(chunk);
 		throw new DefinitionReturn(functionName, builder);
 	}
 
@@ -122,9 +122,7 @@ public struct DefinitionContext : IContext
 	{
 		var marshaler = new FunctionDefinitionMarshaler<A, R>(chunk);
 		marshaler.Returns();
-		var reflection = marshaler.GetReflectionData();
-
-		throw new ReflectionReturn(reflection);
+		throw new TypeReturn(marshaler.GetDefinedType());
 	}
 }
 

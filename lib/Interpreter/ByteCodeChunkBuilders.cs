@@ -346,7 +346,6 @@ public struct ClassTypeBuilder
 	{
 		Success,
 		TooManyClasses,
-		DuplicatedName,
 	}
 
 	public ByteCodeChunk chunk;
@@ -369,7 +368,7 @@ public struct ClassTypeBuilder
 			if (chunk.nativeClassTypes.buffer[i].name == name)
 			{
 				typeIndex = (ushort)i;
-				return Result.DuplicatedName;
+				return Result.Success;
 			}
 		}
 

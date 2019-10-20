@@ -1,20 +1,12 @@
-public interface IStruct : IMarshalable
+public interface IStruct
 {
-}
-
-public interface IClass : IMarshalable
-{
-	System.Type ClassType { get; }
+	void Marshal<M>(ref M marshaler) where M : IMarshaler;
 }
 
 public interface IMarshalable
 {
 	void Marshal<M>(ref M marshaler) where M : IMarshaler;
-}
-
-internal interface IReflectable
-{
-	Marshal.ReflectionData GetReflectionData(ByteCodeChunk chunk);
+	ValueType GetType(ByteCodeChunk chunk);
 }
 
 internal static class Marshal
@@ -37,93 +29,9 @@ internal static class Marshal
 		public static byte size;
 	}
 
-	internal static class BasicTypeOf<T>
+	public static ValueType TypeOf<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
 	{
-		public static Option<ValueType> type;
-
-		static BasicTypeOf()
-		{
-			BasicTypeOf<Unit>.type = Option.Some(new ValueType(TypeKind.Unit));
-			BasicTypeOf<Bool>.type = Option.Some(new ValueType(TypeKind.Bool));
-			BasicTypeOf<Int>.type = Option.Some(new ValueType(TypeKind.Int));
-			BasicTypeOf<Float>.type = Option.Some(new ValueType(TypeKind.Float));
-			BasicTypeOf<String>.type = Option.Some(new ValueType(TypeKind.String));
-
-			SizeOf<Unit>.size = 1;
-			SizeOf<Bool>.size = 1;
-			SizeOf<Int>.size = 1;
-			SizeOf<Float>.size = 1;
-			SizeOf<String>.size = 1;
-		}
-	}
-
-	public static ReflectionData ReflectOn<T>(ByteCodeChunk chunk) where T : struct, IMarshalable
-	{
-		var type = typeof(T);
-		var marshalType = Marshal.BasicTypeOf<T>.type;
-
-		if (marshalType.isSome)
-			return new ReflectionData(marshalType.value);
-		else if (typeof(ITuple).IsAssignableFrom(type))
-			return new TupleDefinitionMarshaler<T>(chunk).GetReflectionData();
-		else if (typeof(IStruct).IsAssignableFrom(type))
-			return new StructDefinitionMarshaler<T>(chunk).GetReflectionData();
-		else if (typeof(IClass).IsAssignableFrom(type))
-			return new ClassDefinitionMarshaler<T>(chunk).GetReflectionData();
-		else if (typeof(IReflectable).IsAssignableFrom(type))
-			return (default(T) as IReflectable).GetReflectionData(chunk);
-
-		throw new InvalidReflectionException();
-	}
-
-	public static ReflectionData ReflectOnTuple<T>(ByteCodeChunk chunk) where T : struct, ITuple
-	{
-		var marshaler = new TupleDefinitionMarshaler<T>(chunk);
-		return marshaler.GetReflectionData();
-	}
-
-	public static ReflectionData ReflectOnStruct<T>(ByteCodeChunk chunk) where T : struct, IStruct
-	{
-		var marshaler = new StructDefinitionMarshaler<T>(chunk);
-		return marshaler.GetReflectionData();
-	}
-
-	public static ReflectionData ReflectOnClass<T>(ByteCodeChunk chunk) where T : struct, IClass
-	{
-		var marshaler = new ClassDefinitionMarshaler<T>(chunk);
-		return marshaler.GetReflectionData();
-	}
-
-	public static object GetObject(ref StackReadMarshaler marshaler, ValueType type)
-	{
-		if (type.IsKind(TypeKind.Bool))
-		{
-			var v = default(Bool);
-			v.Marshal(ref marshaler);
-			return v.value;
-		}
-		else if (type.IsKind(TypeKind.Int))
-		{
-			var v = default(Int);
-			v.Marshal(ref marshaler);
-			return v.value;
-		}
-		else if (type.IsKind(TypeKind.Float))
-		{
-			var v = default(Float);
-			v.Marshal(ref marshaler);
-			return v.value;
-		}
-		else if (type.IsKind(TypeKind.String))
-		{
-			var v = default(String);
-			v.Marshal(ref marshaler);
-			return v.value;
-		}
-		else
-		{
-			return null;
-		}
+		return default(T).GetType(chunk);
 	}
 }
 
@@ -142,7 +50,7 @@ public interface IMarshaler
 
 internal interface IDefinitionMarshaler
 {
-	Marshal.ReflectionData GetReflectionData();
+	ValueType GetDefinedType();
 }
 
 internal struct StackReadMarshaler : IMarshaler
@@ -267,17 +175,17 @@ internal struct TupleDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler w
 	public void Marshal(ref int value, string name) => builder.WithElement(new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithElement(new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithElement(new ValueType(TypeKind.String));
-	public void Marshal<B>(ref B value, string name) where B : struct, IMarshalable => builder.WithElement(global::Marshal.ReflectOn<B>(chunk).type);
+	public void Marshal<B>(ref B value, string name) where B : struct, IMarshalable => builder.WithElement(global::Marshal.TypeOf<B>(chunk));
 	public void MarshalObject(ref object value) => throw new Marshal.InvalidDefinitionException();
 
-	public Marshal.ReflectionData GetReflectionData()
+	public ValueType GetDefinedType()
 	{
 		default(A).Marshal(ref this);
 		var result = builder.Build(out var typeIndex);
 		if (result == TupleTypeBuilder.Result.Success)
 		{
 			global::Marshal.SizeOf<A>.size = chunk.tupleTypes.buffer[typeIndex].size;
-			return new Marshal.ReflectionData(new ValueType(TypeKind.Tuple, typeIndex));
+			return new ValueType(TypeKind.Tuple, typeIndex);
 		}
 
 		throw new Marshal.InvalidReflectionException();
@@ -302,10 +210,10 @@ internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler 
 	public void Marshal(ref int value, string name) => builder.WithField(name, new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithField(name, new ValueType(TypeKind.String));
-	public void Marshal<B>(ref B value, string name) where B : struct, IMarshalable => builder.WithField(name, global::Marshal.ReflectOn<B>(chunk).type);
+	public void Marshal<B>(ref B value, string name) where B : struct, IMarshalable => builder.WithField(name, global::Marshal.TypeOf<B>(chunk));
 	public void MarshalObject(ref object value) => throw new Marshal.InvalidDefinitionException();
 
-	public Marshal.ReflectionData GetReflectionData()
+	public ValueType GetDefinedType()
 	{
 		default(A).Marshal(ref this);
 		var result = builder.Build(typeof(A).Name, out var typeIndex);
@@ -318,38 +226,7 @@ internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler 
 		)
 		{
 			global::Marshal.SizeOf<A>.size = chunk.structTypes.buffer[typeIndex].size;
-			return new Marshal.ReflectionData(new ValueType(TypeKind.Struct, typeIndex));
-		}
-
-		throw new Marshal.InvalidReflectionException();
-	}
-}
-
-internal struct ClassDefinitionMarshaler<T> : IDefinitionMarshaler where T : struct, IMarshalable
-{
-	internal ByteCodeChunk chunk;
-	internal ClassTypeBuilder builder;
-
-	public ClassDefinitionMarshaler(ByteCodeChunk chunk)
-	{
-		this.chunk = chunk;
-		this.builder = chunk.BeginClassType();
-	}
-
-	public Marshal.ReflectionData GetReflectionData()
-	{
-		var classType = (default(T) as IClass).ClassType;
-		var result = builder.Build(classType.Name, classType, out var typeIndex);
-		if (
-			result == ClassTypeBuilder.Result.Success ||
-			(
-				result == ClassTypeBuilder.Result.DuplicatedName &&
-				global::Marshal.SizeOf<T>.size > 0
-			)
-		)
-		{
-			Marshal.SizeOf<T>.size = 1;
-			return new Marshal.ReflectionData(new ValueType(TypeKind.NativeClass, typeIndex));
+			return new ValueType(TypeKind.Struct, typeIndex);
 		}
 
 		throw new Marshal.InvalidReflectionException();
@@ -376,22 +253,20 @@ internal struct FunctionDefinitionMarshaler<A, R> : IMarshaler, IDefinitionMarsh
 	public void Marshal(ref int value, string name) => builder.WithParam(new ValueType(TypeKind.Int));
 	public void Marshal(ref float value, string name) => builder.WithParam(new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithParam(new ValueType(TypeKind.String));
-	public void Marshal<M>(ref M value, string name) where M : struct, IMarshalable => builder.WithParam(global::Marshal.ReflectOn<M>(chunk).type);
+	public void Marshal<M>(ref M value, string name) where M : struct, IMarshalable => builder.WithParam(global::Marshal.TypeOf<M>(chunk));
 	public void MarshalObject(ref object value) => throw new Marshal.InvalidDefinitionException();
 
 	public void Returns()
 	{
-		builder.returnType = global::Marshal.ReflectOn<R>(chunk).type;
+		builder.returnType = global::Marshal.TypeOf<R>(chunk);
 	}
 
-	public Marshal.ReflectionData GetReflectionData()
+	public ValueType GetDefinedType()
 	{
 		default(A).Marshal(ref this);
 		var result = builder.Build(out var typeIndex);
 		if (result == FunctionTypeBuilder.Result.Success)
-		{
-			return new Marshal.ReflectionData(new ValueType(TypeKind.Function, typeIndex));
-		}
+			return new ValueType(TypeKind.Function, typeIndex);
 
 		throw new Marshal.InvalidReflectionException();
 	}

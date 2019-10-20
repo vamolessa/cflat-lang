@@ -26,40 +26,6 @@ public sealed class InterfaceTests
 		Assert.Equal(b, t.e1.value);
 	}
 
-	public struct MyTuple : ITuple
-	{
-		public int n;
-		public bool b;
-
-		public void Marshal<M>(ref M marshaler) where M : IMarshaler
-		{
-			marshaler.Marshal(ref n, null);
-			marshaler.Marshal(ref b, null);
-		}
-	}
-
-	public static Return NamedTupleTestFunction<C>(ref C context) where C : IContext
-	{
-		var t = context.Arg<MyTuple>();
-		var body = context.Body<MyTuple>();
-		t.n += 1;
-		t.b = !t.b;
-		return body.Return(t);
-	}
-
-	[Theory]
-	[InlineData("NamedTupleTestFunction({1,true})", 2, false)]
-	[InlineData("NamedTupleTestFunction({4,false})", 5, true)]
-	public void NamedTupleIoTest(string source, int n, bool b)
-	{
-		var cflat = new CFlat();
-		cflat.AddFunction(NamedTupleTestFunction, NamedTupleTestFunction);
-		var t = TestHelper.RunExpression<MyTuple>(cflat, source, out var a);
-		a.AssertSuccessCall();
-		Assert.Equal(n, t.n);
-		Assert.Equal(b, t.b);
-	}
-
 	public struct MyStruct : IStruct
 	{
 		public int x;
@@ -81,7 +47,7 @@ public sealed class InterfaceTests
 		var cflat = new CFlat();
 		cflat.AddStruct<MyStruct>();
 		cflat.AddStruct<MyStruct>();
-		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
+		var s = TestHelper.RunExpression<Struct<MyStruct>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(0, s.x);
 		Assert.Equal(0, s.y);
@@ -95,7 +61,7 @@ public sealed class InterfaceTests
 	{
 		var cflat = new CFlat();
 		cflat.AddStruct<MyStruct>();
-		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
+		var s = TestHelper.RunExpression<Struct<MyStruct>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(x, s.x);
 		Assert.Equal(y, s.y);
@@ -104,8 +70,8 @@ public sealed class InterfaceTests
 
 	private static Return StructTestFunction<C>(ref C context) where C : IContext
 	{
-		var p = context.Arg<MyStruct>();
-		var body = context.Body<MyStruct>();
+		var p = context.Arg<Struct<MyStruct>>().value;
+		var body = context.Body<Struct<MyStruct>>();
 		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
 		p.x += 1;
 		p.y += 1;
@@ -120,7 +86,7 @@ public sealed class InterfaceTests
 	{
 		var cflat = new CFlat();
 		cflat.AddFunction(StructTestFunction, StructTestFunction);
-		var s = TestHelper.RunExpression<MyStruct>(cflat, source, out var a);
+		var s = TestHelper.RunExpression<Struct<MyStruct>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(x, s.x);
 		Assert.Equal(y, s.y);
@@ -129,7 +95,7 @@ public sealed class InterfaceTests
 
 	public struct MyNestingStruct : IStruct
 	{
-		public MyStruct a;
+		public Struct<MyStruct> a;
 		public bool b;
 
 		public void Marshal<M>(ref M marshaler) where M : IMarshaler
@@ -146,11 +112,11 @@ public sealed class InterfaceTests
 	{
 		var cflat = new CFlat();
 		cflat.AddStruct<MyNestingStruct>();
-		var s = TestHelper.RunExpression<MyNestingStruct>(cflat, source, out var a);
+		var s = TestHelper.RunExpression<Struct<MyNestingStruct>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
-		Assert.Equal(x, s.a.x);
-		Assert.Equal(y, s.a.y);
-		Assert.Equal(z, s.a.z);
+		Assert.Equal(x, s.a.value.x);
+		Assert.Equal(y, s.a.value.y);
+		Assert.Equal(z, s.a.value.z);
 		Assert.Equal(b, s.b);
 	}
 
@@ -194,6 +160,29 @@ public sealed class InterfaceTests
 		var c = TestHelper.Run<Class<MyClass>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(n, c.boxed);
+	}
+
+	public struct MyStructWithClass : IStruct
+	{
+		public Class<MyClass> a;
+
+		public void Marshal<M>(ref M marshaler) where M : IMarshaler
+		{
+		}
+	}
+
+	[Theory]
+	[InlineData("fn f():MyStructWithClass{MyStructWithClass{a=CreateClassTestFunction(2)}}", 2)]
+	[InlineData("fn f():MyStructWithClass{MyStructWithClass{a=CreateClassTestFunction(5)}}", 5)]
+	public void MyStructWithClassIoTest(string source, int n)
+	{
+		var cflat = new CFlat();
+		cflat.AddClass<MyClass>();
+		cflat.AddStruct<MyStructWithClass>();
+		cflat.AddFunction(CreateClassTestFunction, CreateClassTestFunction);
+		var s = TestHelper.Run<Struct<MyStructWithClass>>(cflat, source, out var a).value;
+		a.AssertSuccessCall();
+		Assert.Equal(n, s.a.value.boxed);
 	}
 
 	public static Return FunctionTestFunction<C>(ref C context) where C : IContext

@@ -3,6 +3,11 @@ public readonly struct Empty : ITuple
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		return new ValueType();
+	}
 }
 
 public readonly struct Unit : IMarshalable
@@ -10,6 +15,12 @@ public readonly struct Unit : IMarshalable
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		marshaler.Marshal(null);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Unit>.size = 1;
+		return new ValueType(TypeKind.Unit);
 	}
 }
 
@@ -25,6 +36,12 @@ public struct Bool : IMarshalable
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		marshaler.Marshal(ref value, null);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Bool>.size = 1;
+		return new ValueType(TypeKind.Bool);
 	}
 
 	public static implicit operator Bool(bool value)
@@ -52,6 +69,12 @@ public struct Int : IMarshalable
 		marshaler.Marshal(ref value, null);
 	}
 
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Int>.size = 1;
+		return new ValueType(TypeKind.Int);
+	}
+
 	public static implicit operator Int(int value)
 	{
 		return new Int(value);
@@ -75,6 +98,12 @@ public struct Float : IMarshalable
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		marshaler.Marshal(ref value, null);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Float>.size = 1;
+		return new ValueType(TypeKind.Float);
 	}
 
 	public static implicit operator Float(float value)
@@ -102,6 +131,12 @@ public struct String : IMarshalable
 		marshaler.Marshal(ref value, null);
 	}
 
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<String>.size = 1;
+		return new ValueType(TypeKind.String);
+	}
+
 	public static implicit operator String(string value)
 	{
 		return new String(value);
@@ -113,14 +148,39 @@ public struct String : IMarshalable
 	}
 }
 
-public struct Class<T> : IClass where T : class
+public struct Struct<T> : IMarshalable where T : struct, IStruct
 {
 	public T value;
 
-	public System.Type ClassType
+	public Struct(T value)
 	{
-		get { return typeof(T); }
+		this.value = value;
 	}
+
+	public void Marshal<M>(ref M marshaler) where M : IMarshaler
+	{
+		value.Marshal(ref marshaler);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		return new StructDefinitionMarshaler<Struct<T>>(chunk).GetDefinedType();
+	}
+
+	public static implicit operator Struct<T>(T value)
+	{
+		return new Struct<T>(value);
+	}
+
+	public static implicit operator T(Struct<T> self)
+	{
+		return self.value;
+	}
+}
+
+public struct Class<T> : IMarshalable where T : class
+{
+	public T value;
 
 	public Class(T value)
 	{
@@ -134,6 +194,20 @@ public struct Class<T> : IClass where T : class
 		value = o as T;
 	}
 
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		var classType = typeof(T);
+		var builder = chunk.BeginClassType();
+		var result = builder.Build(classType.Name, classType, out var typeIndex);
+		if (result == ClassTypeBuilder.Result.Success)
+		{
+			global::Marshal.SizeOf<Class<T>>.size = 1;
+			return new ValueType(TypeKind.NativeClass, typeIndex);
+		}
+
+		throw new Marshal.InvalidReflectionException();
+	}
+
 	public static implicit operator Class<T>(T value)
 	{
 		return new Class<T>(value);
@@ -145,7 +219,7 @@ public struct Class<T> : IClass where T : class
 	}
 }
 
-public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalable
+public struct Array<T> : IMarshalable where T : struct, IMarshalable
 {
 	internal VirtualMachine vm;
 	internal int heapStartIndex;
@@ -154,6 +228,12 @@ public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalab
 	{
 		vm = marshaler.VirtualMachine;
 		marshaler.Marshal(ref heapStartIndex, null);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		global::Marshal.SizeOf<Array<T>>.size = 1;
+		return global::Marshal.TypeOf<T>(chunk).ToArrayType();
 	}
 
 	public int Length
@@ -178,12 +258,6 @@ public struct Array<T> : IMarshalable, IReflectable where T : struct, IMarshalab
 			var marshaler = new HeapWriteMarshaler(vm, heapStartIndex + size * index);
 			value.Marshal(ref marshaler);
 		}
-	}
-
-	Marshal.ReflectionData IReflectable.GetReflectionData(ByteCodeChunk chunk)
-	{
-		global::Marshal.SizeOf<Array<T>>.size = 1;
-		return new Marshal.ReflectionData(global::Marshal.ReflectOn<T>(chunk).type.ToArrayType());
 	}
 }
 
@@ -236,6 +310,11 @@ public struct Tuple<E0> : ITuple
 	{
 		e0.Marshal(ref marshaler);
 	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		return new TupleDefinitionMarshaler<Tuple<E0>>(chunk).GetDefinedType();
+	}
 }
 
 public struct Tuple<E0, E1> : ITuple
@@ -255,6 +334,11 @@ public struct Tuple<E0, E1> : ITuple
 	{
 		e0.Marshal(ref marshaler);
 		e1.Marshal(ref marshaler);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		return new TupleDefinitionMarshaler<Tuple<E0, E1>>(chunk).GetDefinedType();
 	}
 }
 
@@ -279,6 +363,11 @@ public struct Tuple<E0, E1, E2> : ITuple
 		e0.Marshal(ref marshaler);
 		e1.Marshal(ref marshaler);
 		e2.Marshal(ref marshaler);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		return new TupleDefinitionMarshaler<Tuple<E0, E1, E2>>(chunk).GetDefinedType();
 	}
 }
 
@@ -307,5 +396,10 @@ public struct Tuple<E0, E1, E2, E3> : ITuple
 		e1.Marshal(ref marshaler);
 		e2.Marshal(ref marshaler);
 		e3.Marshal(ref marshaler);
+	}
+
+	public ValueType GetType(ByteCodeChunk chunk)
+	{
+		return new TupleDefinitionMarshaler<Tuple<E0, E1, E2, E3>>(chunk).GetDefinedType();
 	}
 }

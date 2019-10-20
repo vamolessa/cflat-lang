@@ -13,13 +13,13 @@ public static class ClefInterfaceExtensions
 			var arguments = default(A);
 			context.CallFunction<A, R>(null, ref arguments);
 		}
-		catch (DefinitionContext.ReflectionReturn reflection)
+		catch (DefinitionContext.TypeReturn ret)
 		{
-			var data = reflection.reflectionData;
+			var type = ret.type;
 			for (var i = 0; i < self.chunk.functions.count; i++)
 			{
 				var function = self.chunk.functions.buffer[i];
-				if (function.name == functionName && function.typeIndex == data.type.index)
+				if (function.name == functionName && function.typeIndex == type.index)
 				{
 					return Option.Some(new Function<A, R>(
 						function.codeIndex,
@@ -38,12 +38,12 @@ public static class ClefInterfaceExtensions
 
 	public static void AddStruct<T>(this CFlat self) where T : struct, IStruct
 	{
-		Marshal.ReflectOnStruct<T>(self.chunk);
+		Marshal.TypeOf<Struct<T>>(self.chunk);
 	}
 
 	public static void AddClass<T>(this CFlat self) where T : class
 	{
-		Marshal.ReflectOnClass<Class<T>>(self.chunk);
+		Marshal.TypeOf<Class<T>>(self.chunk);
 	}
 
 	public static bool AddFunction(this CFlat self, NativeCallback<DefinitionContext> definitionFunction, NativeCallback<RuntimeContext> runtimeFunction)

@@ -57,7 +57,7 @@ public sealed class VirtualMachine
 	internal DebugData debugData = new DebugData();
 	internal Option<RuntimeError> error;
 
-	public void Load(ByteCodeChunk chunk)
+	internal void Load(ByteCodeChunk chunk)
 	{
 		this.chunk = chunk;
 		error = Option.None;
@@ -77,7 +77,7 @@ public sealed class VirtualMachine
 		debugData.Clear();
 	}
 
-	public void Error(string message)
+	internal void Error(string message)
 	{
 		var ip = -1;
 		if (callframeStack.count > 0)
