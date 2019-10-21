@@ -14,12 +14,12 @@ public interface IContext
 public struct RuntimeContext : IContext
 {
 	private VirtualMachine vm;
-	private StackReadMarshaler marshaler;
+	private MemoryReadMarshaler marshaler;
 
 	public RuntimeContext(VirtualMachine vm, int argStackIndex)
 	{
 		this.vm = vm;
-		this.marshaler = new StackReadMarshaler(vm, argStackIndex);
+		this.marshaler = new MemoryReadMarshaler(vm, argStackIndex);
 	}
 
 	public T Arg<T>() where T : struct, IMarshalable
@@ -56,14 +56,14 @@ public struct RuntimeContext : IContext
 			CallFrame.Type.Function
 		));
 
-		var writer = new StackWriteMarshaler(vm, vm.memory.stackCount);
+		var writer = new MemoryWriteMarshaler(vm, vm.memory.stackCount);
 		vm.memory.GrowStack(function.parametersSize);
 		arguments.Marshal(ref writer);
 
 		VirtualMachineInstructions.RunTopFunction(vm);
 
 		vm.memory.stackCount -= Marshal.SizeOf<R>.size;
-		var reader = new StackReadMarshaler(vm, vm.memory.stackCount);
+		var reader = new MemoryReadMarshaler(vm, vm.memory.stackCount);
 		var result = default(R);
 		result.Marshal(ref reader);
 

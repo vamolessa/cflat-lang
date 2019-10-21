@@ -53,106 +53,54 @@ internal interface IDefinitionMarshaler
 	ValueType GetDefinedType();
 }
 
-internal struct StackReadMarshaler : IMarshaler
+internal struct MemoryReadMarshaler : IMarshaler
 {
 	private VirtualMachine vm;
-	private int stackIndex;
+	private int index;
 
-	public StackReadMarshaler(VirtualMachine vm, int stackIndex)
+	public MemoryReadMarshaler(VirtualMachine vm, int index)
 	{
 		this.vm = vm;
-		this.stackIndex = stackIndex;
+		this.index = index;
 	}
 
 	public VirtualMachine VirtualMachine { get { return vm; } }
 
-	public void Marshal(string name) => stackIndex++;
-	public void Marshal(ref bool value, string name) => value = vm.memory.values[stackIndex++].asBool;
-	public void Marshal(ref int value, string name) => value = vm.memory.values[stackIndex++].asInt;
-	public void Marshal(ref float value, string name) => value = vm.memory.values[stackIndex++].asFloat;
-	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.memory.values[stackIndex++].asInt] as string;
+	public void Marshal(string name) => index++;
+	public void Marshal(ref bool value, string name) => value = vm.memory.values[index++].asBool;
+	public void Marshal(ref int value, string name) => value = vm.memory.values[index++].asInt;
+	public void Marshal(ref float value, string name) => value = vm.memory.values[index++].asFloat;
+	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.memory.values[index++].asInt] as string;
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
-	public void MarshalObject(ref object value) => value = vm.nativeObjects.buffer[vm.memory.values[stackIndex++].asInt];
+	public void MarshalObject(ref object value) => value = vm.nativeObjects.buffer[vm.memory.values[index++].asInt];
 }
 
-internal struct StackWriteMarshaler : IMarshaler
+internal struct MemoryWriteMarshaler : IMarshaler
 {
 	private VirtualMachine vm;
-	private int stackIndex;
+	private int index;
 
-	public StackWriteMarshaler(VirtualMachine vm, int stackIndex)
+	public MemoryWriteMarshaler(VirtualMachine vm, int index)
 	{
 		this.vm = vm;
-		this.stackIndex = stackIndex;
+		this.index = index;
 	}
 
 	public VirtualMachine VirtualMachine { get { return vm; } }
 
-	public void Marshal(string name) => stackIndex++;
-	public void Marshal(ref bool value, string name) => vm.memory.values[stackIndex++].asBool = value;
-	public void Marshal(ref int value, string name) => vm.memory.values[stackIndex++].asInt = value;
-	public void Marshal(ref float value, string name) => vm.memory.values[stackIndex++].asFloat = value;
+	public void Marshal(string name) => index++;
+	public void Marshal(ref bool value, string name) => vm.memory.values[index++].asBool = value;
+	public void Marshal(ref int value, string name) => vm.memory.values[index++].asInt = value;
+	public void Marshal(ref float value, string name) => vm.memory.values[index++].asFloat = value;
 	public void Marshal(ref string value, string name)
 	{
-		vm.memory.values[stackIndex++].asInt = vm.nativeObjects.count;
+		vm.memory.values[index++].asInt = vm.nativeObjects.count;
 		vm.nativeObjects.PushBack(value);
 	}
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
 	public void MarshalObject(ref object value)
 	{
-		vm.memory.values[stackIndex++].asInt = vm.nativeObjects.count;
-		vm.nativeObjects.PushBack(value);
-	}
-}
-
-internal struct HeapReadMarshaler : IMarshaler
-{
-	private VirtualMachine vm;
-	private int heapIndex;
-
-	public HeapReadMarshaler(VirtualMachine vm, int heapIndex)
-	{
-		this.vm = vm;
-		this.heapIndex = heapIndex;
-	}
-
-	public VirtualMachine VirtualMachine { get { return vm; } }
-
-	public void Marshal(string name) => heapIndex++;
-	public void Marshal(ref bool value, string name) => value = vm.memory.values[heapIndex++].asBool;
-	public void Marshal(ref int value, string name) => value = vm.memory.values[heapIndex++].asInt;
-	public void Marshal(ref float value, string name) => value = vm.memory.values[heapIndex++].asFloat;
-	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.memory.values[heapIndex++].asInt] as string;
-	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
-	public void MarshalObject(ref object value) => value = vm.nativeObjects.buffer[vm.memory.values[heapIndex++].asInt];
-}
-
-internal struct HeapWriteMarshaler : IMarshaler
-{
-	private VirtualMachine vm;
-	private int heapIndex;
-
-	public HeapWriteMarshaler(VirtualMachine vm, int heapIndex)
-	{
-		this.vm = vm;
-		this.heapIndex = heapIndex;
-	}
-
-	public VirtualMachine VirtualMachine { get { return vm; } }
-
-	public void Marshal(string name) => heapIndex++;
-	public void Marshal(ref bool value, string name) => vm.memory.values[heapIndex++].asBool = value;
-	public void Marshal(ref int value, string name) => vm.memory.values[heapIndex++].asInt = value;
-	public void Marshal(ref float value, string name) => vm.memory.values[heapIndex++].asFloat = value;
-	public void Marshal(ref string value, string name)
-	{
-		vm.memory.values[heapIndex++].asInt = vm.nativeObjects.count;
-		vm.nativeObjects.PushBack(value);
-	}
-	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
-	public void MarshalObject(ref object value)
-	{
-		vm.memory.values[heapIndex++].asInt = vm.nativeObjects.count;
+		vm.memory.values[index++].asInt = vm.nativeObjects.count;
 		vm.nativeObjects.PushBack(value);
 	}
 }

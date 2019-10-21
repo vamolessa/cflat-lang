@@ -246,7 +246,7 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 		get
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new HeapReadMarshaler(vm, headAddress + size * index);
+			var marshaler = new MemoryReadMarshaler(vm, headAddress + size * index);
 			var value = default(T);
 			value.Marshal(ref marshaler);
 			return value;
@@ -255,7 +255,7 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 		set
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new HeapWriteMarshaler(vm, headAddress + size * index);
+			var marshaler = new MemoryWriteMarshaler(vm, headAddress + size * index);
 			value.Marshal(ref marshaler);
 		}
 	}
@@ -283,7 +283,7 @@ public struct Ref<T> : IMarshalable where T : struct, IMarshalable
 		get
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new StackReadMarshaler(vm, address);
+			var marshaler = new MemoryReadMarshaler(vm, address);
 			var value = default(T);
 			value.Marshal(ref marshaler);
 			return value;
@@ -313,7 +313,7 @@ public struct MutRef<T> : IMarshalable where T : struct, IMarshalable
 		get
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new StackReadMarshaler(vm, address);
+			var marshaler = new MemoryReadMarshaler(vm, address);
 			var value = default(T);
 			value.Marshal(ref marshaler);
 			return value;
@@ -322,7 +322,7 @@ public struct MutRef<T> : IMarshalable where T : struct, IMarshalable
 		set
 		{
 			var size = global::Marshal.SizeOf<T>.size;
-			var marshaler = new StackWriteMarshaler(vm, address);
+			var marshaler = new MemoryWriteMarshaler(vm, address);
 			value.Marshal(ref marshaler);
 		}
 	}
