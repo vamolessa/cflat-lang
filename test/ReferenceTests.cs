@@ -15,6 +15,7 @@ public sealed class ReferenceTests
 	[InlineData("fn f(){let v=true let r=&v let _=&r}")]
 	[InlineData("struct S{a:int,b:bool}fn f(){let v=S{a=3,b=true}let r=&v let _=&r.a}")]
 	[InlineData("fn b(a:int){} fn f(){let v=3 let r=&v b(r)}")]
+	[InlineData("fn f(){let v=[4:1] let _=&v[0]}")]
 	public void CreateReferenceTests(string source)
 	{
 		TestHelper.Run<Unit>(source, out var a);
@@ -29,6 +30,7 @@ public sealed class ReferenceTests
 	[InlineData("fn f(){let t={3,true} let{a,b}=&t}")]
 	[InlineData("fn f(){let v=3 let _={true,&v}}")]
 	[InlineData("fn f(){let v=3 let _=[&v:1]}")]
+	[InlineData("fn f(){let v=3 let _=[1:&v]}")]
 	public void CreateReferenceErrors(string source)
 	{
 		Assert.Throws<CompileErrorException>(() =>
@@ -72,6 +74,9 @@ public sealed class ReferenceTests
 	[InlineData("fn f():int{let v=3 let r=&v let r2=&r r2}", 3)]
 	[InlineData("struct P{x:int,y:int}fn f():int{let v=P{x=11,y=12}let r=&v let r2=&r.x r2}", 11)]
 	[InlineData("struct P{x:int,y:int}fn f():int{let v=P{x=11,y=12}let r=&v let r2=&r.y r2}", 12)]
+	[InlineData("fn f():int{let mut v=[1:3] set v[1]=47 let r=&v[1] r}", 47)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=[P{x=1,y=1}:3] set v[1]=P{x=45,y=67} let r=&v[1].x r}", 45)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=[P{x=1,y=1}:3] set v[1]=P{x=45,y=67} let r=&v[1].y r}", 67)]
 	public void LoadIntReferenceTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
@@ -92,6 +97,11 @@ public sealed class ReferenceTests
 	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r=P{x=3,y=4} v.b.x}", 3)]
 	[InlineData("struct P{x:int,y:int}struct S{a:bool,b:P,c:float}fn f():int{let mut v=S{a=true,b=P{x=1,y=2},c=0.3}let r=&mut v.b set r=P{x=3,y=4} v.b.y}", 4)]
 	[InlineData("fn inc(r:&mut int){set r=r+1} fn f():int{let mut v=3 inc(&mut v) v}", 4)]
+	[InlineData("fn f():int{let mut v=[1:3] let r=&mut v[1] set r=47 v[1]}", 47)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=[P{x=1,y=1}:3] let r=&mut v[1] set r.x=52 v[1].x}", 52)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=[P{x=1,y=1}:3] let r=&mut v[1] set r.y=52 v[1].y}", 52)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=[P{x=1,y=1}:3] let r=&mut v[1].x set r=46 v[1].x}", 46)]
+	[InlineData("struct P{x:int,y:int}fn f():int{let mut v=[P{x=1,y=1}:3] let r=&mut v[1].y set r=46 v[1].y}", 46)]
 	public void SetIntReferenceTests(string source, int expected)
 	{
 		var v = TestHelper.Run<Int>(source, out var a);
