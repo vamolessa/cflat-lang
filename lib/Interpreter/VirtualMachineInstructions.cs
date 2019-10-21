@@ -301,10 +301,12 @@ internal static class VirtualMachineInstructions
 					memory.PushBackStack(new ValueData(index));
 					break;
 				}
-			case Instruction.CreateHeapReference:
+			case Instruction.CreateArrayElementReference:
 				{
-					var index = baseStackIndex + bytes[codeIndex++];
-					// TODO
+					var elementSize = bytes[codeIndex++];
+					var arrayIndexOffset = elementSize * memory.values[--memory.stackCount].asInt;
+					var index = memory.values[--memory.stackCount].asInt + arrayIndexOffset + bytes[codeIndex++];
+					memory.PushBackStack(new ValueData(index));
 					break;
 				}
 			case Instruction.SetReference:

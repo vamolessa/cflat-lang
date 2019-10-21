@@ -568,27 +568,21 @@ public sealed class CompilerController
 			ref var localVar = ref compiler.localVariables.buffer[variableIndex];
 			localVar.flags |= VariableFlags.Changed;
 
-			var storage = new Storage
-			{
-				variableIndex = variableIndex,
-				type = localVar.type,
-			};
-
-			GetStorage(this, ref slice, ref storage);
+			var storage = GetStorage(this, variableIndex, localVar.type, ref slice);
 			if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 			{
-				Access(this, slice, ref storage);
+				Access(this, slice, storage);
 				SetArrayElement(slice, storage.type, localVar.IsMutable);
 			}
 			else if (compiler.parser.Match(TokenKind.OpenParenthesis))
 			{
-				Access(this, slice, ref storage);
+				Access(this, slice, storage);
 				SetFunctionReturn(slice, storage.type);
 			}
 			else
 			{
 				compiler.parser.Consume(TokenKind.Equal, "Expected '=' before expression");
-				Assign(this, slice, ref storage);
+				Assign(this, slice, storage);
 			}
 		}
 		else if (compiler.ResolveToFunctionIndex(slice, out var functionIndex))
@@ -618,16 +612,16 @@ public sealed class CompilerController
 
 	private void SetArrayElement(Slice slice, ValueType arrayType, bool isMutable)
 	{
-		GetIndexStorage(this, arrayType, ref slice, out var storage);
+		var storage = GetIndexStorage(this, arrayType, ref slice);
 
 		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 		{
-			IndexAccess(this, ref storage);
+			IndexAccess(this, storage);
 			SetArrayElement(slice, storage.type, isMutable);
 		}
-		if (compiler.parser.Match(TokenKind.OpenParenthesis))
+		else if (compiler.parser.Match(TokenKind.OpenParenthesis))
 		{
-			IndexAccess(this, ref storage);
+			IndexAccess(this, storage);
 			SetFunctionReturn(slice, storage.type);
 		}
 		else
@@ -636,7 +630,7 @@ public sealed class CompilerController
 			if (!isMutable)
 				compiler.AddSoftError(slice, "Can not write to immutable variable. Try adding 'mut' after 'let' at its declaration");
 
-			IndexAssign(this, ref storage);
+			IndexAssign(this, storage);
 		}
 	}
 
@@ -1058,11 +1052,13 @@ public sealed class CompilerController
 		}
 	}
 
-	private static void GetStorage(CompilerController self, ref Slice slice, ref Storage storage)
+	private static Storage GetStorage(CompilerController self, int variableIndex, ValueType type, ref Slice slice)
 	{
-		storage.type = storage.type.ToReferredType();
+		type = type.ToReferredType();
 
 		var hasError = false;
+		byte offset = 0;
+
 		while (self.compiler.parser.Match(TokenKind.Dot) || self.compiler.parser.Match(TokenKind.End))
 		{
 			if (hasError)
@@ -1071,10 +1067,17 @@ public sealed class CompilerController
 			hasError = !FieldAccess(
 				self,
 				ref slice,
-				ref storage.type,
-				ref storage.offset
+				ref type,
+				ref offset
 			);
 		}
+
+		return new Storage
+		{
+			variableIndex = variableIndex,
+			type = type,
+			offset = offset,
+		};
 	}
 
 	public static void Identifier(CompilerController self, Slice previousSlice)
@@ -1085,16 +1088,14 @@ public sealed class CompilerController
 		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
 		{
 			var localVar = self.compiler.localVariables.buffer[variableIndex];
-			storage.variableIndex = variableIndex;
-			storage.type = localVar.type;
 
-			GetStorage(self, ref slice, ref storage);
+			storage = GetStorage(self, variableIndex, localVar.type, ref slice);
 		}
 
-		Access(self, slice, ref storage);
+		Access(self, slice, storage);
 	}
 
-	private static void Assign(CompilerController self, Slice slice, ref Storage storage)
+	private static void Assign(CompilerController self, Slice slice, Storage storage)
 	{
 		if (storage.variableIndex >= 0)
 		{
@@ -1140,7 +1141,7 @@ public sealed class CompilerController
 		}
 	}
 
-	private static void Access(CompilerController self, Slice slice, ref Storage storage)
+	private static void Access(CompilerController self, Slice slice, Storage storage)
 	{
 		if (storage.variableIndex >= 0)
 		{
@@ -1301,8 +1302,12 @@ public sealed class CompilerController
 		var slice = previousSlice;
 		var structSize = storage.type.GetSize(self.compiler.chunk);
 
-		if (FieldAccess(self, ref slice, ref storage.type, ref storage.offset))
-			GetStorage(self, ref slice, ref storage);
+		byte offset = 0;
+		if (FieldAccess(self, ref slice, ref storage.type, ref offset))
+		{
+			storage = GetStorage(self, -1, storage.type, ref slice);
+			storage.offset += offset;
+		}
 
 		var fieldSize = storage.type.GetSize(self.compiler.chunk);
 		var sizeAboveField = structSize - storage.offset - fieldSize;
@@ -1322,7 +1327,7 @@ public sealed class CompilerController
 		return;
 	}
 
-	private static void GetIndexStorage(CompilerController self, ValueType arrayType, ref Slice slice, out IndexStorage storage)
+	private static IndexStorage GetIndexStorage(CompilerController self, ValueType arrayType, ref Slice slice)
 	{
 		if (!arrayType.IsArray)
 			self.compiler.AddSoftError(slice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
@@ -1335,7 +1340,7 @@ public sealed class CompilerController
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array indexing");
 
 		byte offset = 0;
-		storage = new IndexStorage();
+		var storage = new IndexStorage();
 		storage.type = arrayType.ToArrayElementType();
 		storage.elementSize = storage.type.GetSize(self.compiler.chunk);
 
@@ -1353,6 +1358,8 @@ public sealed class CompilerController
 		}
 
 		storage.offset = (byte)offset;
+
+		return storage;
 	}
 
 	public static void Index(CompilerController self, Slice previousSlice)
@@ -1360,11 +1367,11 @@ public sealed class CompilerController
 		var arrayType = self.compiler.typeStack.PopLast();
 		var slice = previousSlice;
 
-		GetIndexStorage(self, arrayType, ref slice, out var storage);
-		IndexAccess(self, ref storage);
+		var storage = GetIndexStorage(self, arrayType, ref slice);
+		IndexAccess(self, storage);
 	}
 
-	private static void IndexAccess(CompilerController self, ref IndexStorage storage)
+	private static void IndexAccess(CompilerController self, IndexStorage storage)
 	{
 		self.compiler.DebugEmitPopType(2);
 
@@ -1377,7 +1384,7 @@ public sealed class CompilerController
 		self.compiler.DebugEmitPushType(storage.type);
 	}
 
-	private static void IndexAssign(CompilerController self, ref IndexStorage storage)
+	private static void IndexAssign(CompilerController self, IndexStorage storage)
 	{
 		var expressionSlice = Expression(self);
 		var expressionType = self.compiler.typeStack.PopLast();
@@ -1475,32 +1482,21 @@ public sealed class CompilerController
 			if (isMutable)
 				localVar.flags |= VariableFlags.Changed;
 
-			var storage = new Storage
+			var storageIsMutable = localVar.IsMutable || localVar.type.IsMutable;
+			if (isMutable && !storageIsMutable)
 			{
-				variableIndex = variableIndex,
-				type = localVar.type
-			};
+				self.compiler.AddSoftError(slice, "Can not create a mutable reference to an immutable variable");
+			}
 
-			GetStorage(self, ref slice, ref storage);
-			// if (self.compiler.parser.Match(TokenKind.OpenSquareBrackets))
-			// {
-			// 	Access(self, slice, ref storage);
-			// 	SetArrayElement(slice, storage.type, localVar.IsMutable);
-			// }
-			// else if (self.compiler.parser.Match(TokenKind.OpenParenthesis))
-			// {
-			// 	Access(self, slice, ref storage);
-			// 	SetFunctionReturn(slice, storage.type);
-			// }
-			// else
+			var storage = GetStorage(self, variableIndex, localVar.type, ref slice);
+			var referredType = storage.type;
+			if (self.compiler.parser.Match(TokenKind.OpenSquareBrackets))
 			{
-				var storageIsMutable = localVar.IsMutable || localVar.type.IsMutable;
-				if (isMutable && !storageIsMutable)
-				{
-					self.compiler.AddSoftError(slice, "Can not create a mutable reference to an immutable variable");
-					return;
-				}
-
+				Access(self, slice, storage);
+				referredType = ReferenceArrayElement(self, slice, storage.type);
+			}
+			else
+			{
 				self.compiler.localVariables.buffer[storage.variableIndex].flags |= VariableFlags.Used;
 
 				if (localVar.type.IsReference)
@@ -1515,37 +1511,38 @@ public sealed class CompilerController
 				else
 				{
 					self.compiler.EmitInstruction(Instruction.CreateStackReference);
-					self.compiler.EmitByte((byte)storage.offset);
+					self.compiler.EmitByte(storage.offset);
 				}
-
-				var referenceType = storage.type.ToReferenceType(isMutable);
-				self.compiler.DebugEmitPushType(referenceType);
-				self.compiler.typeStack.PushBack(referenceType);
 			}
+
+			var referenceType = referredType.ToReferenceType(isMutable);
+			self.compiler.DebugEmitPushType(referenceType);
+			self.compiler.typeStack.PushBack(referenceType);
 		}
-		// else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
-		// {
-		// 	self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
-		// 	var function = self.compiler.chunk.functions.buffer[functionIndex];
-		// 	var type = new ValueType(TypeKind.Function, function.typeIndex);
-
-		// 	self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name on set statement");
-		// 	SetFunctionReturn(slice, type);
-		// }
-		// else if (self.compiler.ResolveToNativeFunctionIndex(slice, out var nativeFunctionIndex))
-		// {
-		// 	self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
-		// 	var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
-		// 	var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
-
-		// 	self.compiler.parser.Consume(TokenKind.OpenParenthesis, "Expected '(' after function name on set statement");
-		// 	SetFunctionReturn(slice, type);
-		// }
 		else
 		{
-			self.compiler.AddHardError(slice, "Could not find variable or function named '{0}'", CompilerHelper.GetSlice(self.compiler, slice));
+			self.compiler.AddHardError(slice, "Could not find variable named '{0}'", CompilerHelper.GetSlice(self.compiler, slice));
 			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			return;
+		}
+	}
+
+	private static ValueType ReferenceArrayElement(CompilerController self, Slice slice, ValueType arrayType)
+	{
+		var storage = GetIndexStorage(self, arrayType, ref slice);
+
+		if (self.compiler.parser.Match(TokenKind.OpenSquareBrackets))
+		{
+			IndexAccess(self, storage);
+			return ReferenceArrayElement(self, slice, storage.type);
+		}
+		else
+		{
+			self.compiler.EmitInstruction(Instruction.CreateArrayElementReference);
+			self.compiler.EmitByte(storage.elementSize);
+			self.compiler.EmitByte(storage.offset);
+
+			return storage.type;
 		}
 	}
 

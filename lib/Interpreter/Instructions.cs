@@ -27,7 +27,7 @@ public enum Instruction
 	SetArrayElement,
 	LoadArrayElement,
 	CreateStackReference,
-	CreateHeapReference,
+	CreateArrayElementReference,
 	SetReference,
 	LoadReference,
 	NegateInt,
