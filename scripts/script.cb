@@ -1,14 +1,17 @@
-fn fibonacci(n:int):int {
-	if n <= 1 {
-		return n
-	}
-
-	fibonacci(n - 2) + fibonacci(n - 1)
+struct P {
+	x:int,
+	y:int,
 }
 
 fn main() {
-	let sw = StartStopwatch()
-	fibonacci(30)
-	let s = StopStopwatch(sw)
-	print {"time", s}
+	let mut a = [P{x=1,y=2}:3]
+	set a[1] = P{x=11,y=12}
+	set a[2] = P{x=21,y=22}
+
+	let r = &mut a[1].y
+	set r = 56
+
+	print a[0]
+	print a[1]
+	print a[2]
 }
