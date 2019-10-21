@@ -2,15 +2,15 @@ using System.Text;
 
 public static class VirtualMachineHelper
 {
-	public static void Return(VirtualMachine vm, int stackTop, int size)
+	public static int Return(ValueData[] memory, int stackCount, int stackTop, int size)
 	{
 		var dstIdx = stackTop;
-		var srcIdx = vm.valueStack.count - size;
+		var srcIdx = stackCount - size;
 
-		while (srcIdx < vm.valueStack.count)
-			vm.valueStack.buffer[dstIdx++] = vm.valueStack.buffer[srcIdx++];
+		while (srcIdx < stackCount)
+			memory[dstIdx++] = memory[srcIdx++];
 
-		vm.valueStack.count = stackTop + size;
+		return stackTop + size;
 	}
 
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
@@ -18,14 +18,14 @@ public static class VirtualMachineHelper
 		if (type.IsReference)
 		{
 			sb.Append(type.IsMutable ? "&mut " : "&");
-			sb.Append(vm.valueStack.buffer[index].asInt);
+			sb.Append(vm.memory.values[index].asInt);
 			return;
 		}
 
 		if (type.IsArray)
 		{
-			var heapStartIndex = vm.valueStack.buffer[index].asInt;
-			if (heapStartIndex <= 0 || heapStartIndex > vm.valueHeap.count)
+			var heapStartIndex = vm.memory.values[index].asInt;
+			if (heapStartIndex < vm.memory.heapStart || heapStartIndex >= vm.memory.values.Length)
 			{
 				sb.Append("<!>");
 				return;
@@ -34,7 +34,7 @@ public static class VirtualMachineHelper
 			sb.Append('[');
 			type.ToArrayElementType().Format(vm.chunk, sb);
 			sb.Append(':');
-			var arrayLength = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
+			var arrayLength = vm.memory.values[heapStartIndex - 1].asInt;
 			sb.Append(arrayLength);
 			sb.Append(']');
 			return;
@@ -46,17 +46,17 @@ public static class VirtualMachineHelper
 			sb.Append("{}");
 			return;
 		case TypeKind.Bool:
-			sb.Append(vm.valueStack.buffer[index].asBool ? "true" : "false");
+			sb.Append(vm.memory.values[index].asBool ? "true" : "false");
 			return;
 		case TypeKind.Int:
-			sb.Append(vm.valueStack.buffer[index].asInt);
+			sb.Append(vm.memory.values[index].asInt);
 			return;
 		case TypeKind.Float:
-			sb.Append(vm.valueStack.buffer[index].asFloat);
+			sb.Append(vm.memory.values[index].asFloat);
 			return;
 		case TypeKind.String:
 			{
-				var idx = vm.valueStack.buffer[index].asInt;
+				var idx = vm.memory.values[index].asInt;
 				if (idx >= vm.nativeObjects.count)
 				{
 					sb.Append("<!>");
@@ -70,13 +70,13 @@ public static class VirtualMachineHelper
 			}
 		case TypeKind.Function:
 			{
-				var idx = vm.valueStack.buffer[index].asInt;
+				var idx = vm.memory.values[index].asInt;
 				vm.chunk.FormatFunction(idx, sb);
 				return;
 			}
 		case TypeKind.NativeFunction:
 			{
-				var idx = vm.valueStack.buffer[index].asInt;
+				var idx = vm.memory.values[index].asInt;
 				sb.Append("native ");
 				vm.chunk.FormatNativeFunction(idx, sb);
 				return;
@@ -134,7 +134,7 @@ public static class VirtualMachineHelper
 			}
 		case TypeKind.NativeClass:
 			{
-				var idx = vm.valueStack.buffer[index].asInt;
+				var idx = vm.memory.values[index].asInt;
 				if (idx >= vm.nativeObjects.count)
 				{
 					sb.Append("<!>");
@@ -162,7 +162,7 @@ public static class VirtualMachineHelper
 
 		var valueIndex = 0;
 		var typeIndex = 0;
-		while (valueIndex < vm.valueStack.count)
+		while (valueIndex < vm.memory.stackCount)
 		{
 			sb.Append("[");
 			if (typeIndex < vm.debugData.typeStack.count)

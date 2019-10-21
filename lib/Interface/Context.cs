@@ -42,28 +42,28 @@ public struct RuntimeContext : IContext
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
 
-		vm.valueStack.PushBackUnchecked(new ValueData(function.functionIndex));
+		vm.memory.PushBackStack(new ValueData(function.functionIndex));
 		vm.callframeStack.PushBackUnchecked(new CallFrame(
 			vm.chunk.bytes.count - 1,
-			vm.valueStack.count,
+			vm.memory.stackCount,
 			0,
 			CallFrame.Type.EntryPoint
 		));
 		vm.callframeStack.PushBackUnchecked(new CallFrame(
 			function.codeIndex,
-			vm.valueStack.count,
+			vm.memory.stackCount,
 			function.functionIndex,
 			CallFrame.Type.Function
 		));
 
-		var writer = new StackWriteMarshaler(vm, vm.valueStack.count);
-		vm.valueStack.GrowUnchecked(function.parametersSize);
+		var writer = new StackWriteMarshaler(vm, vm.memory.stackCount);
+		vm.memory.GrowStack(function.parametersSize);
 		arguments.Marshal(ref writer);
 
 		VirtualMachineInstructions.RunTopFunction(vm);
 
-		vm.valueStack.count -= Marshal.SizeOf<R>.size;
-		var reader = new StackReadMarshaler(vm, vm.valueStack.count);
+		vm.memory.stackCount -= Marshal.SizeOf<R>.size;
+		var reader = new StackReadMarshaler(vm, vm.memory.stackCount);
 		var result = default(R);
 		result.Marshal(ref reader);
 

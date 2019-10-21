@@ -51,8 +51,7 @@ public sealed class VirtualMachine
 {
 	internal ByteCodeChunk chunk;
 	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
-	internal Buffer<ValueData> valueStack = new Buffer<ValueData>(256);
-	internal Buffer<ValueData> valueHeap = new Buffer<ValueData>(256);
+	internal Memory memory = new Memory(256);
 	internal Buffer<object> nativeObjects;
 	internal DebugData debugData = new DebugData();
 	internal Option<RuntimeError> error;
@@ -63,8 +62,7 @@ public sealed class VirtualMachine
 		error = Option.None;
 
 		callframeStack.count = 0;
-		valueStack.count = 0;
-		valueHeap.count = 0;
+		memory.Reset();
 
 		nativeObjects = new Buffer<object>
 		{

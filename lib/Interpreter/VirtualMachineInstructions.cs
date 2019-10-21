@@ -10,9 +10,7 @@ internal static class VirtualMachineInstructions
 #endif
 
 		var bytes = vm.chunk.bytes.buffer;
-		ref var stackBuffer = ref vm.valueStack;
-		var stack = vm.valueStack.buffer;
-		ref var stackSize = ref vm.valueStack.count;
+		var memory = vm.memory;
 
 		var codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
 		var baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
@@ -21,6 +19,7 @@ internal static class VirtualMachineInstructions
 		{
 #if DEBUG_TRACE
 			debugSb.Clear();
+			vm.memory = memory;
 			VirtualMachineHelper.TraceStack(vm, debugSb);
 			vm.chunk.DisassembleInstruction(codeIndex, debugSb);
 			System.Console.WriteLine(debugSb);
@@ -31,12 +30,13 @@ internal static class VirtualMachineInstructions
 			{
 			case Instruction.Halt:
 				--vm.callframeStack.count;
+				vm.memory = memory;
 				return;
 			case Instruction.Call:
 				{
 					var size = bytes[codeIndex++];
-					baseStackIndex = stackSize - size;
-					var functionIndex = stack[baseStackIndex - 1].asInt;
+					baseStackIndex = memory.stackCount - size;
+					var functionIndex = memory.values[baseStackIndex - 1].asInt;
 					var function = vm.chunk.functions.buffer[functionIndex];
 
 					vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
@@ -54,9 +54,11 @@ internal static class VirtualMachineInstructions
 				}
 			case Instruction.CallNative:
 				{
-					var stackTop = stackSize - bytes[codeIndex++];
-					var functionIndex = stack[stackTop - 1].asInt;
+					var stackTop = memory.stackCount - bytes[codeIndex++];
+					var functionIndex = memory.values[stackTop - 1].asInt;
 					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
+
+					vm.memory = memory;
 
 					try
 					{
@@ -78,11 +80,22 @@ internal static class VirtualMachineInstructions
 						return;
 					}
 
-					VirtualMachineHelper.Return(vm, --stackTop, function.returnSize);
+					vm.memory.stackCount = VirtualMachineHelper.Return(
+						vm.memory.values,
+						vm.memory.stackCount,
+						--stackTop,
+						function.returnSize
+					);
+					memory = vm.memory;
 					break;
 				}
 			case Instruction.Return:
-				VirtualMachineHelper.Return(vm, --baseStackIndex, bytes[codeIndex++]);
+				memory.stackCount = VirtualMachineHelper.Return(
+					memory.values,
+					memory.stackCount,
+					--baseStackIndex,
+					bytes[codeIndex++]
+				);
 				--vm.callframeStack.count;
 				codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
 				baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
@@ -101,132 +114,133 @@ internal static class VirtualMachineInstructions
 
 					VirtualMachineHelper.ValueToString(
 						vm,
-						stackSize - size,
+						memory.stackCount - size,
 						type,
 						sb
 					);
-					stackSize -= size;
+					memory.stackCount -= size;
 
 					System.Console.WriteLine(sb);
 					break;
 				}
 			case Instruction.Pop:
-				--stackSize;
+				--memory.stackCount;
 				break;
 			case Instruction.PopMultiple:
-				stackSize -= bytes[codeIndex++];
+				memory.stackCount -= bytes[codeIndex++];
 				break;
 			case Instruction.Move:
 				{
 					var sizeUnderMove = bytes[codeIndex++];
 					var sizeToMove = bytes[codeIndex++];
 
-					var srcIdx = stackSize - sizeToMove;
+					var srcIdx = memory.stackCount - sizeToMove;
 					var dstIdx = srcIdx - sizeUnderMove;
 
-					while (srcIdx < stackSize)
-						stack[dstIdx++] = stack[srcIdx++];
+					while (srcIdx < memory.stackCount)
+						memory.values[dstIdx++] = memory.values[srcIdx++];
 
-					stackSize = dstIdx;
+					memory.stackCount = dstIdx;
 				}
 				break;
 			case Instruction.LoadUnit:
-				stackBuffer.PushBackUnchecked(new ValueData());
+				memory.PushBackStack(new ValueData());
 				break;
 			case Instruction.LoadFalse:
-				stackBuffer.PushBackUnchecked(new ValueData(false));
+				memory.PushBackStack(new ValueData(false));
 				break;
 			case Instruction.LoadTrue:
-				stackBuffer.PushBackUnchecked(new ValueData(true));
+				memory.PushBackStack(new ValueData(true));
 				break;
 			case Instruction.LoadLiteral:
 				{
 					var index = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					stackBuffer.PushBackUnchecked(vm.chunk.literalData.buffer[index]);
+					memory.PushBackStack(vm.chunk.literalData.buffer[index]);
 					break;
 				}
 			case Instruction.LoadFunction:
 			case Instruction.LoadNativeFunction:
 				{
 					var index = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					stackBuffer.PushBackUnchecked(new ValueData(index));
+					memory.PushBackStack(new ValueData(index));
 					break;
 				}
 			case Instruction.SetLocal:
 				{
 					var index = baseStackIndex + bytes[codeIndex++];
-					stack[index] = stack[--stackSize];
+					memory.values[index] = memory.values[--memory.stackCount];
 					break;
 				}
 			case Instruction.LoadLocal:
 				{
 					var index = baseStackIndex + bytes[codeIndex++];
-					stackBuffer.PushBackUnchecked(stack[index]);
+					memory.PushBackStack(memory.values[index]);
 					break;
 				}
 			case Instruction.SetLocalMultiple:
 				{
 					var dstIdx = baseStackIndex + bytes[codeIndex++];
 
-					var endIndex = stackSize;
-					stackSize -= bytes[codeIndex++];
-					var srcIdx = stackSize;
+					var endIndex = memory.stackCount;
+					memory.stackCount -= bytes[codeIndex++];
+					var srcIdx = memory.stackCount;
 
 					while (srcIdx < endIndex)
-						stack[dstIdx++] = stack[srcIdx++];
+						memory.values[dstIdx++] = memory.values[srcIdx++];
 					break;
 				}
 			case Instruction.LoadLocalMultiple:
 				{
 					var srcIdx = baseStackIndex + bytes[codeIndex++];
-					var dstIdx = stackSize;
-					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
+					var dstIdx = memory.stackCount;
+					memory.GrowStack(bytes[codeIndex++]);
 
-					while (dstIdx < stackSize)
-						stack[dstIdx++] = stack[srcIdx++];
+					while (dstIdx < memory.stackCount)
+						memory.values[dstIdx++] = memory.values[srcIdx++];
 					break;
 				}
 			case Instruction.IncrementLocalInt:
 				{
 					var index = baseStackIndex + bytes[codeIndex++];
-					++stack[index].asInt;
+					++memory.values[index].asInt;
 					break;
 				}
 			case Instruction.IntToFloat:
-				stack[stackSize - 1] = new ValueData((float)stack[stackSize - 1].asInt);
+				memory.values[memory.stackCount - 1] = new ValueData((float)memory.values[memory.stackCount - 1].asInt);
 				break;
 			case Instruction.FloatToInt:
-				stack[stackSize - 1] = new ValueData((int)stack[stackSize - 1].asFloat);
+				memory.values[memory.stackCount - 1] = new ValueData((int)memory.values[memory.stackCount - 1].asFloat);
 				break;
 			case Instruction.CreateArray:
 				{
 					var elementSize = bytes[codeIndex++];
-					var arrayLength = stack[--stackSize].asInt;
+					var arrayLength = memory.values[--memory.stackCount].asInt;
 					if (arrayLength < 0)
 					{
 						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
 						vm.Error("Negative array length");
+						vm.memory = memory;
 						return;
 					}
 
-					stackSize -= elementSize;
-
-					var heapStartIndex = vm.valueHeap.count;
 					var arraySize = elementSize * arrayLength;
-					vm.valueHeap.GrowUnchecked(arraySize + 1);
-					vm.valueHeap.buffer[heapStartIndex++] = new ValueData(arrayLength);
+					memory.GrowHeap(arraySize + 1);
+					var heapStartIndex = memory.heapStart;
+					memory.stackCount -= elementSize;
+
+					memory.values[heapStartIndex++] = new ValueData(arrayLength);
 
 					for (var i = 0; i < arraySize; i += elementSize)
 					{
 						for (var j = 0; j < elementSize; j++)
-							vm.valueHeap.buffer[heapStartIndex + i + j] = stack[stackSize + j];
+							memory.values[heapStartIndex + i + j] = memory.values[memory.stackCount + j];
 					}
 
-					stack[stackSize++] = new ValueData(heapStartIndex);
+					memory.values[memory.stackCount++] = new ValueData(heapStartIndex);
 					break;
 				}
 			case Instruction.LoadArrayLength:
-				stack[stackSize - 1] = vm.valueHeap.buffer[stack[stackSize - 1].asInt - 1];
+				memory.values[memory.stackCount - 1] = memory.values[memory.values[memory.stackCount - 1].asInt - 1];
 				break;
 			case Instruction.SetArrayElement:
 				{
@@ -234,24 +248,25 @@ internal static class VirtualMachineInstructions
 					var fieldSize = bytes[codeIndex++];
 					var offset = bytes[codeIndex++];
 
-					stackSize -= fieldSize;
-					var stackStartIndex = stackSize;
+					memory.stackCount -= fieldSize;
+					var stackStartIndex = memory.stackCount;
 
-					var index = stack[--stackSize].asInt;
-					var heapStartIndex = stack[--stackSize].asInt;
+					var index = memory.values[--memory.stackCount].asInt;
+					var heapStartIndex = memory.values[--memory.stackCount].asInt;
 
-					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
+					var length = memory.values[heapStartIndex - 1].asInt;
 					if (index < 0 || index >= length)
 					{
 						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
 						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
+						vm.memory = memory;
 						return;
 					}
 
 					heapStartIndex += index * elementSize + offset;
 
 					for (var i = 0; i < fieldSize; i++)
-						vm.valueHeap.buffer[heapStartIndex + i] = stack[stackStartIndex + i];
+						memory.values[heapStartIndex + i] = memory.values[stackStartIndex + i];
 					break;
 				}
 			case Instruction.LoadArrayElement:
@@ -260,114 +275,121 @@ internal static class VirtualMachineInstructions
 					var fieldSize = bytes[codeIndex++];
 					var offset = bytes[codeIndex++];
 
-					var index = stack[--stackSize].asInt;
-					var heapStartIndex = stack[--stackSize].asInt;
+					var index = memory.values[--memory.stackCount].asInt;
+					var heapStartIndex = memory.values[--memory.stackCount].asInt;
 
-					var length = vm.valueHeap.buffer[heapStartIndex - 1].asInt;
+					var length = memory.values[heapStartIndex - 1].asInt;
 					if (index < 0 || index >= length)
 					{
 						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
 						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
+						vm.memory = memory;
 						return;
 					}
 
 					heapStartIndex += index * elementSize + offset;
-					var stackStartIndex = stackSize;
-					stackBuffer.GrowUnchecked(fieldSize);
+					var stackStartIndex = memory.stackCount;
+					memory.GrowStack(fieldSize);
 
 					for (var i = 0; i < fieldSize; i++)
-						stack[stackStartIndex + i] = vm.valueHeap.buffer[heapStartIndex + i];
+						memory.values[stackStartIndex + i] = memory.values[heapStartIndex + i];
 					break;
 				}
 			case Instruction.CreateStackReference:
 				{
 					var index = baseStackIndex + bytes[codeIndex++];
-					stackBuffer.PushBackUnchecked(new ValueData(index));
+					memory.PushBackStack(new ValueData(index));
+					break;
+				}
+			case Instruction.CreateHeapReference:
+				{
+					var index = baseStackIndex + bytes[codeIndex++];
+					// TODO
 					break;
 				}
 			case Instruction.SetReference:
 				{
 					var dstIdx = baseStackIndex + bytes[codeIndex++];
-					dstIdx = stack[dstIdx].asInt + bytes[codeIndex++];
+					dstIdx = memory.values[dstIdx].asInt + bytes[codeIndex++];
 
-					var endIndex = stackSize;
-					stackSize -= bytes[codeIndex++];
-					var srcIdx = stackSize;
+					var endIndex = memory.stackCount;
+					memory.stackCount -= bytes[codeIndex++];
+					var srcIdx = memory.stackCount;
 
 					while (srcIdx < endIndex)
-						stack[dstIdx++] = stack[srcIdx++];
+						memory.values[dstIdx++] = memory.values[srcIdx++];
 					break;
 				}
 			case Instruction.LoadReference:
 				{
 					var srcIdx = baseStackIndex + bytes[codeIndex++];
-					srcIdx = stack[srcIdx].asInt + bytes[codeIndex++];
-					var dstIdx = stackSize;
-					stackBuffer.GrowUnchecked(bytes[codeIndex++]);
+					srcIdx = memory.values[srcIdx].asInt + bytes[codeIndex++];
+					var dstIdx = memory.stackCount;
+					memory.GrowStack(bytes[codeIndex++]);
 
-					while (dstIdx < stackSize)
-						stack[dstIdx++] = stack[srcIdx++];
+					while (dstIdx < memory.stackCount)
+						memory.values[dstIdx++] = memory.values[srcIdx++];
 					break;
 				}
 			case Instruction.NegateInt:
-				stack[stackSize - 1].asInt = -stack[stackSize - 1].asInt;
+				memory.values[memory.stackCount - 1].asInt = -memory.values[memory.stackCount - 1].asInt;
 				break;
 			case Instruction.NegateFloat:
-				stack[stackSize - 1].asFloat = -stack[stackSize - 1].asFloat;
+				memory.values[memory.stackCount - 1].asFloat = -memory.values[memory.stackCount - 1].asFloat;
 				break;
 			case Instruction.AddInt:
-				stack[stackSize - 2].asInt += stack[--stackSize].asInt;
+				memory.values[memory.stackCount - 2].asInt += memory.values[--memory.stackCount].asInt;
 				break;
 			case Instruction.AddFloat:
-				stack[stackSize - 2].asFloat += stack[--stackSize].asFloat;
+				memory.values[memory.stackCount - 2].asFloat += memory.values[--memory.stackCount].asFloat;
 				break;
 			case Instruction.SubtractInt:
-				stack[stackSize - 2].asInt -= stack[--stackSize].asInt;
+				memory.values[memory.stackCount - 2].asInt -= memory.values[--memory.stackCount].asInt;
 				break;
 			case Instruction.SubtractFloat:
-				stack[stackSize - 2].asFloat -= stack[--stackSize].asFloat;
+				memory.values[memory.stackCount - 2].asFloat -= memory.values[--memory.stackCount].asFloat;
 				break;
 			case Instruction.MultiplyInt:
-				stack[stackSize - 2].asInt *= stack[--stackSize].asInt;
+				memory.values[memory.stackCount - 2].asInt *= memory.values[--memory.stackCount].asInt;
 				break;
 			case Instruction.MultiplyFloat:
-				stack[stackSize - 2].asFloat *= stack[--stackSize].asFloat;
+				memory.values[memory.stackCount - 2].asFloat *= memory.values[--memory.stackCount].asFloat;
 				break;
 			case Instruction.DivideInt:
-				stack[stackSize - 2].asInt /= stack[--stackSize].asInt;
+				memory.values[memory.stackCount - 2].asInt /= memory.values[--memory.stackCount].asInt;
 				break;
 			case Instruction.DivideFloat:
-				stack[stackSize - 2].asFloat /= stack[--stackSize].asFloat;
+				memory.values[memory.stackCount - 2].asFloat /= memory.values[--memory.stackCount].asFloat;
 				break;
 			case Instruction.Not:
-				stack[stackSize - 1].asBool = !stack[stackSize - 1].asBool;
+				memory.values[memory.stackCount - 1].asBool = !memory.values[memory.stackCount - 1].asBool;
 				break;
 			case Instruction.EqualBool:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asBool == stack[--stackSize].asBool));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asBool == memory.values[--memory.stackCount].asBool));
 				break;
 			case Instruction.EqualInt:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asInt == stack[--stackSize].asInt));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asInt == memory.values[--memory.stackCount].asInt));
 				break;
 			case Instruction.EqualFloat:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asFloat == stack[--stackSize].asFloat));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asFloat == memory.values[--memory.stackCount].asFloat));
 				break;
 			case Instruction.EqualString:
-				stackBuffer.PushBackUnchecked(new ValueData(
-						(vm.nativeObjects.buffer[stack[--stackSize].asInt] as string).Equals(
-						vm.nativeObjects.buffer[stack[--stackSize].asInt] as string)
+				memory.PushBackStack(new ValueData(
+						(vm.nativeObjects.buffer[memory.values[--memory.stackCount].asInt] as string).Equals(
+						vm.nativeObjects.buffer[memory.values[--memory.stackCount].asInt] as string)
 					));
 				break;
 			case Instruction.GreaterInt:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asInt < stack[--stackSize].asInt));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asInt < memory.values[--memory.stackCount].asInt));
 				break;
 			case Instruction.GreaterFloat:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asFloat < stack[--stackSize].asFloat));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asFloat < memory.values[--memory.stackCount].asFloat));
 				break;
 			case Instruction.LessInt:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asInt > stack[--stackSize].asInt));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asInt > memory.values[--memory.stackCount].asInt));
 				break;
 			case Instruction.LessFloat:
-				stackBuffer.PushBackUnchecked(new ValueData(stack[--stackSize].asFloat > stack[--stackSize].asFloat));
+				memory.PushBackStack(new ValueData(memory.values[--memory.stackCount].asFloat > memory.values[--memory.stackCount].asFloat));
 				break;
 			case Instruction.JumpForward:
 				{
@@ -384,29 +406,29 @@ internal static class VirtualMachineInstructions
 			case Instruction.JumpForwardIfFalse:
 				{
 					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					if (!stack[stackSize - 1].asBool)
+					if (!memory.values[memory.stackCount - 1].asBool)
 						codeIndex += offset;
 					break;
 				}
 			case Instruction.JumpForwardIfTrue:
 				{
 					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					if (stack[stackSize - 1].asBool)
+					if (memory.values[memory.stackCount - 1].asBool)
 						codeIndex += offset;
 					break;
 				}
 			case Instruction.PopAndJumpForwardIfFalse:
 				{
 					var offset = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
-					if (!stack[--stackSize].asBool)
+					if (!memory.values[--memory.stackCount].asBool)
 						codeIndex += offset;
 					break;
 				}
 			case Instruction.RepeatLoopCheck:
 				{
 					var index = baseStackIndex + bytes[codeIndex++];
-					var less = stack[index].asInt < stack[index + 1].asInt;
-					stackBuffer.PushBackUnchecked(new ValueData(less));
+					var less = memory.values[index].asInt < memory.values[index + 1].asInt;
+					memory.PushBackStack(new ValueData(less));
 					break;
 				}
 			case Instruction.DebugPushFrame:

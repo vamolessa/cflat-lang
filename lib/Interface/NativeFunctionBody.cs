@@ -13,8 +13,8 @@ public readonly struct NativeFunctionBody<T> where T : struct, IMarshalable
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
 
-		var marshaler = new StackWriteMarshaler(vm, vm.valueStack.count);
-		vm.valueStack.GrowUnchecked(Marshal.SizeOf<T>.size);
+		var marshaler = new StackWriteMarshaler(vm, vm.memory.stackCount);
+		vm.memory.GrowStack(Marshal.SizeOf<T>.size);
 		value.Marshal(ref marshaler);
 		return default;
 	}

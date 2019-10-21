@@ -22,7 +22,7 @@ public sealed class Function<A, R>
 	{
 		var context = new RuntimeContext(
 			cflat.virtualMachine,
-			cflat.virtualMachine.valueStack.count - parametersSize
+			cflat.virtualMachine.memory.stackCount - parametersSize
 		);
 
 		return context.CallFunction<A, R>(this, ref arguments);

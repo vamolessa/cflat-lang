@@ -238,7 +238,7 @@ public struct Array<T> : IMarshalable where T : struct, IMarshalable
 
 	public int Length
 	{
-		get { return vm.valueHeap.buffer[headAddress - 1].asInt; }
+		get { return vm.memory.values[headAddress - 1].asInt; }
 	}
 
 	public T this[int index]
