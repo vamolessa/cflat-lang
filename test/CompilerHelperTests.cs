@@ -13,7 +13,7 @@ public sealed class CompilerHelperTests
 	[InlineData("a\na", 0, 1, "a\na")]
 	public void GetLinesTest(string source, int startLine, int endLine, string result)
 	{
-		var lines = CompilerHelper.GetLines(source, startLine, endLine);
+		var lines = FormattingHelper.GetLines(source, startLine, endLine);
 		Assert.Equal(result, lines);
 	}
 
@@ -24,7 +24,7 @@ public sealed class CompilerHelperTests
 	[InlineData("0123\n\t\t789", 7, 2, 9)]
 	public void GetLineAndColumnTest(string source, int index, int expectedLine, int expectedColumn)
 	{
-		var position = CompilerHelper.GetLineAndColumn(source, index, TabSize);
+		var position = FormattingHelper.GetLineAndColumn(source, index, TabSize);
 		Assert.Equal(expectedLine, position.line);
 		Assert.Equal(expectedColumn, position.column);
 	}

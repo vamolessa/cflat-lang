@@ -1,4 +1,4 @@
-public enum Instruction
+internal enum Instruction
 {
 	Halt,
 	Call,

@@ -1,24 +1,76 @@
 ﻿using System.Globalization;
-using System.Text;
 
-public readonly struct LineAndColumn
+[System.Flags]
+internal enum VariableFlags : byte
 {
-	public readonly int line;
-	public readonly int column;
+	None = 0b0000,
+	Iteration = 0b0001,
+	Mutable = 0b0010,
+	Used = 0b0100,
+	Changed = 0b1000,
+}
 
-	public LineAndColumn(int line, int column)
+internal struct LocalVariable
+{
+	public Slice slice;
+	public int depth;
+	public ValueType type;
+	public VariableFlags flags;
+	public byte stackIndex;
+
+	public bool IsIteration
 	{
-		this.line = line;
-		this.column = column;
+		get { return (flags & VariableFlags.Iteration) != 0; }
 	}
 
-	public override string ToString()
+	public bool IsMutable
 	{
-		return string.Format("line {0} column: {1}", line, column);
+		get { return (flags & VariableFlags.Mutable) != 0; }
+	}
+
+	public bool IsUsed
+	{
+		get { return (flags & VariableFlags.Used) != 0; }
+	}
+
+	public bool IsChanged
+	{
+		get { return (flags & VariableFlags.Changed) != 0; }
+	}
+
+	public LocalVariable(Slice slice, byte stackIndex, int depth, ValueType type, VariableFlags flags)
+	{
+		this.slice = slice;
+		this.stackIndex = stackIndex;
+		this.depth = depth;
+		this.type = type;
+		this.flags = flags;
 	}
 }
 
-public static class CompilerHelper
+internal readonly struct Scope
+{
+	public readonly int localVariablesStartIndex;
+
+	public Scope(int localVarStartIndex)
+	{
+		this.localVariablesStartIndex = localVarStartIndex;
+	}
+}
+
+internal readonly struct LoopBreak
+{
+	public readonly int jump;
+	public readonly byte nesting;
+
+	public LoopBreak(int jump, byte nesting)
+	{
+		this.jump = jump;
+		this.nesting = nesting;
+	}
+}
+
+internal static class CompilerHelper
 {
 	public static bool AreEqual(string source, Slice a, Slice b)
 	{
@@ -84,83 +136,5 @@ public static class CompilerHelper
 			compiler.parser.previousToken.slice.length - 2
 		);
 		return GetSlice(compiler, slice);
-	}
-
-	public static LineAndColumn GetLineAndColumn(string source, int index, int tabSize)
-	{
-		var line = 1;
-		var column = 1;
-
-		for (var i = 0; i < index; i++)
-		{
-			column += source[i] == '\t' ? tabSize : 1;
-
-			if (source[i] == '\n')
-			{
-				line += 1;
-				column = 1;
-			}
-		}
-
-		return new LineAndColumn(line, column);
-	}
-
-	public static string GetLines(string source, int startLine, int endLine)
-	{
-		var startLineIndex = 0;
-		var lineCount = 0;
-
-		for (var i = 0; i < source.Length; i++)
-		{
-			if (source[i] != '\n')
-				continue;
-
-			if (lineCount == endLine)
-				return source.Substring(startLineIndex, i - startLineIndex);
-
-			lineCount += 1;
-
-			if (lineCount == startLine)
-				startLineIndex = i + 1;
-		}
-
-		if (lineCount >= startLine && lineCount <= endLine)
-			return source.Substring(startLineIndex);
-
-		return "";
-	}
-
-	public static string FormatError(string source, Buffer<CompileError> errors, int contextSize, int tabSize)
-	{
-		var sb = new StringBuilder();
-
-		for (var i = 0; i < errors.count; i++)
-		{
-			var e = errors.buffer[i];
-			sb.Append(e.message);
-
-			if (e.slice.index == 0 && e.slice.length == 0)
-				continue;
-
-			var position = GetLineAndColumn(source, e.slice.index, tabSize);
-			var lines = GetLines(
-				source,
-				System.Math.Max(position.line - contextSize, 0),
-				System.Math.Max(position.line - 1, 0)
-			);
-
-			sb.Append(" (line: ");
-			sb.Append(position.line);
-			sb.Append(", column: ");
-			sb.Append(position.column);
-			sb.AppendLine(")");
-
-			sb.AppendLine(lines);
-			sb.Append(' ', position.column - 1);
-			sb.Append('^', e.slice.length > 0 ? e.slice.length : 1);
-			sb.Append(" here\n\n");
-		}
-
-		return sb.ToString();
 	}
 }

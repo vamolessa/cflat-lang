@@ -1,4 +1,4 @@
-﻿public sealed class Tokenizer
+﻿internal sealed class Tokenizer
 {
 	public string source;
 

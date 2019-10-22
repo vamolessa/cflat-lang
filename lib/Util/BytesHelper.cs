@@ -1,4 +1,4 @@
-public static class BytesHelper
+internal static class BytesHelper
 {
 	public static ushort BytesToUShort(byte b0, byte b1)
 	{

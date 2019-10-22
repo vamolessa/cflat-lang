@@ -57,11 +57,6 @@ public sealed class ByteCodeChunk
 		return AddValueLiteral(new ValueData(stringIndex), TypeKind.String);
 	}
 
-	public FunctionTypeBuilder BeginFunctionType()
-	{
-		return new FunctionTypeBuilder(this);
-	}
-
 	public AddFunctionResult AddFunction(string name, ushort typeIndex, bool hasBody, Slice slice, out int functionIndex)
 	{
 		functionIndex = functions.count;
@@ -101,21 +96,6 @@ public sealed class ByteCodeChunk
 		));
 
 		return result;
-	}
-
-	public TupleTypeBuilder BeginTupleType()
-	{
-		return new TupleTypeBuilder(this);
-	}
-
-	public StructTypeBuilder BeginStructType()
-	{
-		return new StructTypeBuilder(this);
-	}
-
-	public ClassTypeBuilder BeginClassType()
-	{
-		return new ClassTypeBuilder(this);
 	}
 
 	public bool GetFunctionType(ValueType type, out FunctionType functionType)

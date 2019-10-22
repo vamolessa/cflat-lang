@@ -1,4 +1,4 @@
-public static class TokenScanners
+internal static class TokenScanners
 {
 	public static readonly Scanner[] scanners = new Scanner[] {
 		new ExactScanner("fn").ForToken(TokenKind.Function),

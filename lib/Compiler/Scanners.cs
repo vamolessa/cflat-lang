@@ -1,4 +1,4 @@
-﻿public abstract class Scanner
+﻿internal abstract class Scanner
 {
 	public TokenKind tokenKind;
 
@@ -32,7 +32,7 @@
 	}
 }
 
-public sealed class WhiteSpaceScanner : Scanner
+internal sealed class WhiteSpaceScanner : Scanner
 {
 	public override int Scan(string input, int index)
 	{
@@ -43,7 +43,7 @@ public sealed class WhiteSpaceScanner : Scanner
 	}
 }
 
-public sealed class CharScanner : Scanner
+internal sealed class CharScanner : Scanner
 {
 	public readonly char ch;
 
@@ -58,7 +58,7 @@ public sealed class CharScanner : Scanner
 	}
 }
 
-public sealed class ExactScanner : Scanner
+internal sealed class ExactScanner : Scanner
 {
 	public readonly string match;
 
@@ -73,7 +73,7 @@ public sealed class ExactScanner : Scanner
 	}
 }
 
-public sealed class EnclosedScanner : Scanner
+internal sealed class EnclosedScanner : Scanner
 {
 	public readonly string beginMatch;
 	public readonly string endMatch;
@@ -99,7 +99,7 @@ public sealed class EnclosedScanner : Scanner
 	}
 }
 
-public sealed class IntegerNumberScanner : Scanner
+internal sealed class IntegerNumberScanner : Scanner
 {
 	public override int Scan(string input, int index)
 	{
@@ -116,7 +116,7 @@ public sealed class IntegerNumberScanner : Scanner
 	}
 }
 
-public sealed class RealNumberScanner : Scanner
+internal sealed class RealNumberScanner : Scanner
 {
 	public override int Scan(string input, int index)
 	{
@@ -146,7 +146,7 @@ public sealed class RealNumberScanner : Scanner
 	}
 }
 
-public sealed class IdentifierScanner : Scanner
+internal sealed class IdentifierScanner : Scanner
 {
 	public readonly string extraChars;
 

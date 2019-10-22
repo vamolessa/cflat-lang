@@ -1,17 +1,3 @@
-public readonly struct RuntimeError
-{
-	public readonly int instructionIndex;
-	public readonly Slice slice;
-	public readonly string message;
-
-	public RuntimeError(int instructionIndex, Slice slice, string message)
-	{
-		this.instructionIndex = instructionIndex;
-		this.slice = slice;
-		this.message = message;
-	}
-}
-
 internal struct CallFrame
 {
 	public enum Type : ushort
@@ -75,7 +61,7 @@ public sealed class VirtualMachine
 		debugData.Clear();
 	}
 
-	internal void Error(string message)
+	public void Error(string message)
 	{
 		var ip = -1;
 		if (callframeStack.count > 0)

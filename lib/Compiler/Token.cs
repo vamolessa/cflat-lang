@@ -1,4 +1,4 @@
-public enum TokenKind
+internal enum TokenKind
 {
 	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
 	Function, Struct, If, Else, Repeat, While, Return, Break,
@@ -20,7 +20,7 @@ public enum TokenKind
 	Error,
 }
 
-public enum Precedence
+internal enum Precedence
 {
 	None,
 	Assignment, // =
@@ -35,7 +35,7 @@ public enum Precedence
 	Primary
 }
 
-public readonly struct Token
+internal readonly struct Token
 {
 	public readonly TokenKind kind;
 	public readonly Slice slice;

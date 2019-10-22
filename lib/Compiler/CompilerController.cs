@@ -1,6 +1,6 @@
 using System.Text;
 
-public sealed class CompilerController
+internal sealed class CompilerController
 {
 	public enum StatementKind
 	{
@@ -30,7 +30,7 @@ public sealed class CompilerController
 	}
 
 	public readonly Compiler compiler = new Compiler();
-	public readonly ParseRules parseRules = new ParseRules();
+	private readonly ParseRules parseRules = new ParseRules();
 
 	public Buffer<CompileError> Compile(ByteCodeChunk chunk, Mode mode, string source)
 	{
@@ -92,7 +92,7 @@ public sealed class CompilerController
 		return compiler.errors;
 	}
 
-	public static Slice ParseWithPrecedence(CompilerController self, Precedence precedence)
+	private static Slice ParseWithPrecedence(CompilerController self, Precedence precedence)
 	{
 		var parser = self.compiler.parser;
 		parser.Next();
@@ -145,7 +145,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public void Declaration()
+	private void Declaration()
 	{
 		if (compiler.parser.Match(TokenKind.Function))
 			FunctionDeclaration();
@@ -156,13 +156,13 @@ public sealed class CompilerController
 		Syncronize();
 	}
 
-	public void FunctionDeclaration()
+	private void FunctionDeclaration()
 	{
 		compiler.parser.Consume(TokenKind.Identifier, "Expected function name");
 		ConsumeFunction(compiler.parser.previousToken.slice);
 	}
 
-	public static void FunctionExpression(CompilerController self, Slice previousSlice)
+	internal static void FunctionExpression(CompilerController self, Slice previousSlice)
 	{
 		var functionJump = self.compiler.BeginEmitForwardJump(Instruction.JumpForward);
 		self.ConsumeFunction(new Slice());
@@ -290,7 +290,7 @@ public sealed class CompilerController
 		compiler.localVariables.count -= builder.parameterCount;
 	}
 
-	public void StructDeclaration()
+	private void StructDeclaration()
 	{
 		compiler.parser.Consume(TokenKind.Identifier, "Expected struct name");
 		var slice = compiler.parser.previousToken.slice;
@@ -342,7 +342,7 @@ public sealed class CompilerController
 		compiler.EndStructDeclaration(builder, slice);
 	}
 
-	public static void FinishTupleExpression(CompilerController self, Slice slice, ValueType firstElementType)
+	internal static void FinishTupleExpression(CompilerController self, Slice slice, ValueType firstElementType)
 	{
 		var builder = self.compiler.chunk.BeginTupleType();
 
@@ -379,7 +379,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void ArrayExpression(CompilerController self, Slice previousSlice)
+	internal static void ArrayExpression(CompilerController self, Slice previousSlice)
 	{
 		var defaultValueSlice = Expression(self);
 		var defaultValueType = self.compiler.typeStack.PopLast();
@@ -408,7 +408,7 @@ public sealed class CompilerController
 		self.compiler.DebugEmitPushType(arrayType);
 	}
 
-	public static void LengthExpression(CompilerController self, Slice previousSlice)
+	internal static void LengthExpression(CompilerController self, Slice previousSlice)
 	{
 		var expressionSlice = Expression(self);
 		var expressionType = self.compiler.typeStack.PopLast();
@@ -423,7 +423,7 @@ public sealed class CompilerController
 		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Int));
 	}
 
-	public void Statement(out ValueType type, out StatementKind kind)
+	private void Statement(out ValueType type, out StatementKind kind)
 	{
 		type = new ValueType(TypeKind.Unit);
 		kind = StatementKind.Other;
@@ -448,7 +448,7 @@ public sealed class CompilerController
 			(type, kind) = (ExpressionStatement(), StatementKind.Expression);
 	}
 
-	public ValueType ExpressionStatement()
+	private ValueType ExpressionStatement()
 	{
 		Expression(this);
 		var type = compiler.typeStack.count > 0 ?
@@ -464,7 +464,7 @@ public sealed class CompilerController
 		return type;
 	}
 
-	public void BlockStatement()
+	private void BlockStatement()
 	{
 		var scope = compiler.BeginScope();
 		ValueType lastStatementType = new ValueType(TypeKind.Unit);
@@ -558,7 +558,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public void SetStatement()
+	private void SetStatement()
 	{
 		compiler.parser.Consume(TokenKind.Identifier, "Expected identifier");
 		var slice = compiler.parser.previousToken.slice;
@@ -658,7 +658,7 @@ public sealed class CompilerController
 			compiler.AddHardError(slice, "Can not write to temporary value. Try assigning it to a variable first");
 	}
 
-	public void WhileStatement()
+	private void WhileStatement()
 	{
 		var labelSlice = new Slice();
 		if (compiler.parser.Match(TokenKind.Colon))
@@ -685,7 +685,7 @@ public sealed class CompilerController
 		compiler.EndLoop();
 	}
 
-	public void RepeatStatement()
+	private void RepeatStatement()
 	{
 		var labelSlice = new Slice();
 		if (compiler.parser.Match(TokenKind.Colon))
@@ -821,18 +821,18 @@ public sealed class CompilerController
 		compiler.EmitType(type);
 	}
 
-	public static Slice Expression(CompilerController self)
+	internal static Slice Expression(CompilerController self)
 	{
 		return ParseWithPrecedence(self, Precedence.Assignment);
 	}
 
-	public static void Grouping(CompilerController self, Slice previousSlice)
+	internal static void Grouping(CompilerController self, Slice previousSlice)
 	{
 		Expression(self);
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after expression");
 	}
 
-	public static void BlockOrTupleExpression(CompilerController self, Slice previousSlice)
+	internal static void BlockOrTupleExpression(CompilerController self, Slice previousSlice)
 	{
 		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
 		{
@@ -873,7 +873,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void Block(CompilerController self)
+	internal static void Block(CompilerController self)
 	{
 		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
 		{
@@ -888,7 +888,7 @@ public sealed class CompilerController
 		FinishBlock(self, scope, firstStatementType, firstStatementKind);
 	}
 
-	public static void FinishBlock(CompilerController self, Scope scope, ValueType lastStatementType, StatementKind lastStatementKind)
+	internal static void FinishBlock(CompilerController self, Scope scope, ValueType lastStatementType, StatementKind lastStatementKind)
 	{
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
@@ -919,7 +919,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void If(CompilerController self, Slice previousSlice)
+	internal static void If(CompilerController self, Slice previousSlice)
 	{
 		var expressionSlice = Expression(self);
 
@@ -973,7 +973,7 @@ public sealed class CompilerController
 		self.compiler.typeStack.PushBack(thenType);
 	}
 
-	public static void And(CompilerController self, Slice previousSlice)
+	internal static void And(CompilerController self, Slice previousSlice)
 	{
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
 			self.compiler.AddSoftError(previousSlice, "Expected bool expression before '&&'");
@@ -990,7 +990,7 @@ public sealed class CompilerController
 		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 	}
 
-	public static void Or(CompilerController self, Slice previousSlice)
+	internal static void Or(CompilerController self, Slice previousSlice)
 	{
 		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
 			self.compiler.AddSoftError(previousSlice, "Expected bool expression before '||'");
@@ -1007,7 +1007,7 @@ public sealed class CompilerController
 		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 	}
 
-	public static void Literal(CompilerController self, Slice previousSlice)
+	internal static void Literal(CompilerController self, Slice previousSlice)
 	{
 		switch (self.compiler.parser.previousToken.kind)
 		{
@@ -1080,7 +1080,7 @@ public sealed class CompilerController
 		};
 	}
 
-	public static void Identifier(CompilerController self, Slice previousSlice)
+	internal static void Identifier(CompilerController self, Slice previousSlice)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
 		var storage = new Storage { variableIndex = -1 };
@@ -1257,7 +1257,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static bool FieldAccess(CompilerController self, ref Slice slice, ref ValueType type, ref byte stackOffset)
+	internal static bool FieldAccess(CompilerController self, ref Slice slice, ref ValueType type, ref byte stackOffset)
 	{
 		if (!self.compiler.chunk.GetStructType(type, out var structType))
 		{
@@ -1295,7 +1295,7 @@ public sealed class CompilerController
 		return false;
 	}
 
-	public static void Dot(CompilerController self, Slice previousSlice)
+	internal static void Dot(CompilerController self, Slice previousSlice)
 	{
 		var storage = new Storage { type = self.compiler.typeStack.PopLast() };
 
@@ -1362,7 +1362,7 @@ public sealed class CompilerController
 		return storage;
 	}
 
-	public static void Index(CompilerController self, Slice previousSlice)
+	internal static void Index(CompilerController self, Slice previousSlice)
 	{
 		var arrayType = self.compiler.typeStack.PopLast();
 		var slice = previousSlice;
@@ -1406,7 +1406,7 @@ public sealed class CompilerController
 		self.compiler.EmitByte(storage.offset);
 	}
 
-	public static void Call(CompilerController self, Slice previousSlice)
+	internal static void Call(CompilerController self, Slice previousSlice)
 	{
 		var slice = previousSlice;
 
@@ -1469,7 +1469,7 @@ public sealed class CompilerController
 			self.compiler.DebugEmitPushType(returnType);
 	}
 
-	public static void Reference(CompilerController self, Slice previousSlice)
+	internal static void Reference(CompilerController self, Slice previousSlice)
 	{
 		var isMutable = self.compiler.parser.Match(TokenKind.Mut);
 
@@ -1546,7 +1546,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void Unary(CompilerController self, Slice previousSlice)
+	internal static void Unary(CompilerController self, Slice previousSlice)
 	{
 		var opToken = self.compiler.parser.previousToken;
 
@@ -1616,7 +1616,7 @@ public sealed class CompilerController
 		}
 	}
 
-	public static void Binary(CompilerController self, Slice previousSlice)
+	internal static void Binary(CompilerController self, Slice previousSlice)
 	{
 		var c = self.compiler;
 		var opToken = c.parser.previousToken;

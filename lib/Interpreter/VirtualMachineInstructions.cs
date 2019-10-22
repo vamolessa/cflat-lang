@@ -62,8 +62,7 @@ internal static class VirtualMachineInstructions
 
 					try
 					{
-						var context = new RuntimeContext(vm, stackTop);
-						function.callback(ref context);
+						function.callback(vm);
 					}
 					catch (System.Exception e)
 					{

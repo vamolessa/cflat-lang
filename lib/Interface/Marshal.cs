@@ -45,7 +45,7 @@ public interface IMarshaler
 	void Marshal(ref float value, string name);
 	void Marshal(ref string value, string name);
 	void Marshal<T>(ref T value, string name) where T : struct, IMarshalable;
-	void MarshalObject(ref object value);
+	void MarshalNativeObject(ref object value);
 }
 
 internal interface IDefinitionMarshaler
@@ -72,7 +72,7 @@ internal struct MemoryReadMarshaler : IMarshaler
 	public void Marshal(ref float value, string name) => value = vm.memory.values[index++].asFloat;
 	public void Marshal(ref string value, string name) => value = vm.nativeObjects.buffer[vm.memory.values[index++].asInt] as string;
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
-	public void MarshalObject(ref object value) => value = vm.nativeObjects.buffer[vm.memory.values[index++].asInt];
+	public void MarshalNativeObject(ref object value) => value = vm.nativeObjects.buffer[vm.memory.values[index++].asInt];
 }
 
 internal struct MemoryWriteMarshaler : IMarshaler
@@ -98,7 +98,7 @@ internal struct MemoryWriteMarshaler : IMarshaler
 		vm.nativeObjects.PushBack(value);
 	}
 	public void Marshal<T>(ref T value, string name) where T : struct, IMarshalable => value.Marshal(ref this);
-	public void MarshalObject(ref object value)
+	public void MarshalNativeObject(ref object value)
 	{
 		vm.memory.values[index++].asInt = vm.nativeObjects.count;
 		vm.nativeObjects.PushBack(value);
@@ -124,7 +124,7 @@ internal struct TupleDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler w
 	public void Marshal(ref float value, string name) => builder.WithElement(new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithElement(new ValueType(TypeKind.String));
 	public void Marshal<B>(ref B value, string name) where B : struct, IMarshalable => builder.WithElement(global::Marshal.TypeOf<B>(chunk));
-	public void MarshalObject(ref object value) => throw new Marshal.InvalidDefinitionException();
+	public void MarshalNativeObject(ref object value) => throw new Marshal.InvalidDefinitionException();
 
 	public ValueType GetDefinedType()
 	{
@@ -159,7 +159,7 @@ internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler 
 	public void Marshal(ref float value, string name) => builder.WithField(name, new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithField(name, new ValueType(TypeKind.String));
 	public void Marshal<B>(ref B value, string name) where B : struct, IMarshalable => builder.WithField(name, global::Marshal.TypeOf<B>(chunk));
-	public void MarshalObject(ref object value) => throw new Marshal.InvalidDefinitionException();
+	public void MarshalNativeObject(ref object value) => throw new Marshal.InvalidDefinitionException();
 
 	public ValueType GetDefinedType()
 	{
@@ -192,6 +192,7 @@ internal struct FunctionDefinitionMarshaler<A, R> : IMarshaler, IDefinitionMarsh
 	{
 		this.chunk = chunk;
 		this.builder = chunk.BeginFunctionType();
+		this.builder.returnType = global::Marshal.TypeOf<R>(chunk);
 	}
 
 	public VirtualMachine VirtualMachine { get { return null; } }
@@ -202,12 +203,7 @@ internal struct FunctionDefinitionMarshaler<A, R> : IMarshaler, IDefinitionMarsh
 	public void Marshal(ref float value, string name) => builder.WithParam(new ValueType(TypeKind.Float));
 	public void Marshal(ref string value, string name) => builder.WithParam(new ValueType(TypeKind.String));
 	public void Marshal<M>(ref M value, string name) where M : struct, IMarshalable => builder.WithParam(global::Marshal.TypeOf<M>(chunk));
-	public void MarshalObject(ref object value) => throw new Marshal.InvalidDefinitionException();
-
-	public void Returns()
-	{
-		builder.returnType = global::Marshal.TypeOf<R>(chunk);
-	}
+	public void MarshalNativeObject(ref object value) => throw new Marshal.InvalidDefinitionException();
 
 	public ValueType GetDefinedType()
 	{

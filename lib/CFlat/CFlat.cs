@@ -1,3 +1,5 @@
+[assembly: System.Runtime.CompilerServices.InternalsVisibleTo("test")]
+
 public sealed class CFlat
 {
 	internal readonly struct Source
@@ -12,7 +14,7 @@ public sealed class CFlat
 		}
 	}
 
-	internal readonly VirtualMachine virtualMachine = new VirtualMachine();
+	internal readonly VirtualMachine vm = new VirtualMachine();
 	internal readonly CompilerController compiler = new CompilerController();
 	internal ByteCodeChunk chunk = new ByteCodeChunk();
 	internal Buffer<Source> sources = new Buffer<Source>();
@@ -58,12 +60,12 @@ public sealed class CFlat
 		if (compileErrors.count > 0)
 			return false;
 
-		virtualMachine.Load(chunk);
+		vm.Load(chunk);
 		return true;
 	}
 
 	public Option<RuntimeError> GetError()
 	{
-		return virtualMachine.error;
+		return vm.error;
 	}
 }

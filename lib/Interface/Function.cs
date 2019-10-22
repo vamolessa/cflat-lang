@@ -13,18 +13,42 @@ public sealed class Function<A, R>
 		this.parametersSize = parametersSize;
 	}
 
-	public R Call<C>(ref C context, A arguments) where C : IContext
-	{
-		return context.CallFunction<A, R>(this, ref arguments);
-	}
-
 	public R Call(CFlat cflat, A arguments)
 	{
-		var context = new RuntimeContext(
-			cflat.virtualMachine,
-			cflat.virtualMachine.memory.stackCount - parametersSize
-		);
+		return Call(cflat.vm, arguments);
+	}
 
-		return context.CallFunction<A, R>(this, ref arguments);
+	public R Call(VirtualMachine vm, A arguments)
+	{
+		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
+
+		vm.callframeStack.PushBackUnchecked(new CallFrame(
+			vm.chunk.bytes.count - 1,
+			vm.memory.stackCount,
+			0,
+			CallFrame.Type.EntryPoint
+		));
+		vm.callframeStack.PushBackUnchecked(new CallFrame(
+			codeIndex,
+			vm.memory.stackCount,
+			functionIndex,
+			CallFrame.Type.Function
+		));
+
+		vm.memory.PushBackStack(new ValueData(functionIndex));
+		var writer = new MemoryWriteMarshaler(vm, vm.memory.stackCount);
+		vm.memory.GrowStack(parametersSize);
+		arguments.Marshal(ref writer);
+
+		VirtualMachineInstructions.RunTopFunction(vm);
+		if (vm.error.isSome)
+			return default;
+
+		vm.memory.stackCount -= Marshal.SizeOf<R>.size;
+		var reader = new MemoryReadMarshaler(vm, vm.memory.stackCount);
+		var result = default(R);
+		result.Marshal(ref reader);
+
+		return result;
 	}
 }

@@ -1,4 +1,4 @@
-public static class CompilerDeclarationExtensions
+internal static class CompilerDeclarationExtensions
 {
 	// VARIABLES
 	public static int AddLocalVariable(this Compiler self, Slice slice, ValueType type, VariableFlags flags)

@@ -1,4 +1,4 @@
-public static class ArrayHelper
+internal static class ArrayHelper
 {
 	public static void SwapRanges<T>(this T[] self, int index, int pivot, int count)
 	{

@@ -270,16 +270,16 @@ public readonly struct Function
 	}
 }
 
-public delegate Return NativeCallback<C>(ref C context) where C : IContext;
-
 public readonly struct NativeFunction
 {
+	public delegate void Callback(VirtualMachine vm);
+
 	public readonly string name;
 	public readonly ushort typeIndex;
 	public readonly byte returnSize;
-	public readonly NativeCallback<RuntimeContext> callback;
+	public readonly Callback callback;
 
-	public NativeFunction(string name, ushort typeIndex, byte returnSize, NativeCallback<RuntimeContext> callback)
+	public NativeFunction(string name, ushort typeIndex, byte returnSize, Callback callback)
 	{
 		this.name = name;
 		this.returnSize = returnSize;

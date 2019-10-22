@@ -1,4 +1,4 @@
-public sealed class ParseRules
+internal sealed class ParseRules
 {
 	public delegate void RuleFunction(CompilerController controller, Slice slice);
 

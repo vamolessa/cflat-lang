@@ -30,7 +30,7 @@ public static class TestHelper
 			string errorMessage = null;
 			var error = cflat.GetError();
 			if (error.isSome)
-				errorMessage = VirtualMachineHelper.FormatError(source, error.value, 1, TabSize);
+				errorMessage = FormattingHelper.FormatRuntimeError(source, error.value, 1, TabSize);
 			Assert.Null(errorMessage);
 
 			{
@@ -62,7 +62,7 @@ public static class TestHelper
 	{
 		var compileErrors = cflat.CompileSource("tests", source, CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
+			throw new CompileErrorException(FormattingHelper.FormatCompileError(source, compileErrors, 1, TabSize));
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
@@ -84,7 +84,7 @@ public static class TestHelper
 	{
 		var compileErrors = cflat.CompileExpression(source, CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, TabSize));
+			throw new CompileErrorException(FormattingHelper.FormatCompileError(source, compileErrors, 1, TabSize));
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);

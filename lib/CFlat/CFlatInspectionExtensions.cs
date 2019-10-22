@@ -4,7 +4,7 @@ public static class ClefInspectionExtensions
 {
 	public static string TraceCallStack(this CFlat self)
 	{
-		var vm = self.virtualMachine;
+		var vm = self.vm;
 		var sb = new StringBuilder();
 
 		sb.AppendLine("callstack:");
@@ -22,7 +22,7 @@ public static class ClefInspectionExtensions
 					var sourceIndex = vm.chunk.sourceSlices.buffer[codeIndex].index;
 					var source = self.sources.buffer[vm.chunk.FindSourceIndex(codeIndex)];
 
-					var pos = CompilerHelper.GetLineAndColumn(
+					var pos = FormattingHelper.GetLineAndColumn(
 						source.content,
 						sourceIndex,
 						1
@@ -34,7 +34,7 @@ public static class ClefInspectionExtensions
 					vm.chunk.FormatFunction(callframe.functionIndex, sb);
 
 					sb.Append(" => ");
-					var line = CompilerHelper.GetLines(
+					var line = FormattingHelper.GetLines(
 						source.content,
 						pos.line - 1,
 						pos.line - 1
@@ -43,7 +43,7 @@ public static class ClefInspectionExtensions
 					break;
 				}
 			case CallFrame.Type.NativeFunction:
-				sb.Append("[native function] ");
+				sb.Append("[native] ");
 				vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
 				sb.AppendLine();
 				break;

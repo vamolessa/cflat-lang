@@ -190,7 +190,7 @@ public struct Class<T> : IMarshalable where T : class
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
 	{
 		object o = value;
-		marshaler.MarshalObject(ref o);
+		marshaler.MarshalNativeObject(ref o);
 		value = o as T;
 	}
 

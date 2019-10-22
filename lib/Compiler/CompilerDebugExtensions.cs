@@ -1,4 +1,4 @@
-public static class CompilerDebugExtensions
+internal static class CompilerDebugExtensions
 {
 	public static void DebugEmitPushFrame(this Compiler self)
 	{

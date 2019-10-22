@@ -1,34 +1,39 @@
+using System.Diagnostics;
+
 public static class Interpreter
 {
 	public const int TabSize = 8;
 
-	public static Return StartStopwatch<C>(ref C context) where C : IContext
+	public static Class<Stopwatch> StartStopwatch(VirtualMachine vm)
 	{
-		var body = context.Body<Class<System.Diagnostics.Stopwatch>>();
-		var sw = new System.Diagnostics.Stopwatch();
+		var sw = new Stopwatch();
 		sw.Start();
-		return body.Return(sw);
+		return sw;
 	}
 
-	public static Return StopStopwatch<C>(ref C context) where C : IContext
+	public static Float StopStopwatch(VirtualMachine vm, Class<Stopwatch> sw)
 	{
-		var sw = context.Arg<Class<System.Diagnostics.Stopwatch>>().value;
-		var body = context.Body<Float>();
-		sw.Stop();
-		return body.Return((float)sw.Elapsed.TotalSeconds);
+		sw.value.Stop();
+		return (float)sw.value.Elapsed.TotalSeconds;
+	}
+
+	public static Int DoubleAndRound(VirtualMachine vm, Float f)
+	{
+		return (int)System.MathF.Round(f.value * 2.0f);
 	}
 
 	public static void RunSource(string sourceName, string source, bool printDisassembled)
 	{
 		var cflat = new CFlat();
 
-		cflat.AddFunction(StartStopwatch, StartStopwatch);
-		cflat.AddFunction(StopStopwatch, StopStopwatch);
+		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
+		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
+		cflat.AddFunction<Float, Int>(nameof(DoubleAndRound), DoubleAndRound);
 
 		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Release);
 		if (compileErrors.count > 0)
 		{
-			var error = CompilerHelper.FormatError(source, compileErrors, 2, TabSize);
+			var error = FormattingHelper.FormatCompileError(source, compileErrors, 2, TabSize);
 			ConsoleHelper.Error("COMPILER ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
@@ -53,7 +58,7 @@ public static class Interpreter
 		var runtimeError = cflat.GetError();
 		if (runtimeError.isSome)
 		{
-			var error = VirtualMachineHelper.FormatError(source, runtimeError.value, 2, TabSize);
+			var error = FormattingHelper.FormatRuntimeError(source, runtimeError.value, 2, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();

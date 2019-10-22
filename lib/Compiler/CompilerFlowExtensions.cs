@@ -1,4 +1,4 @@
-public static class CompilerFlowExtensions
+internal static class CompilerFlowExtensions
 {
 	public static Scope BeginScope(this Compiler self)
 	{

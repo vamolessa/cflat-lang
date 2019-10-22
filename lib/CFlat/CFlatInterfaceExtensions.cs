@@ -7,30 +7,29 @@ public static class ClefInterfaceExtensions
 		if (self.compiler.compiler.errors.count > 0)
 			return Option.None;
 
-		var context = new DefinitionContext(self.chunk);
+		var marshaler = new FunctionDefinitionMarshaler<A, R>(self.chunk);
+
+		ValueType type;
 		try
 		{
-			var arguments = default(A);
-			context.CallFunction<A, R>(null, ref arguments);
-		}
-		catch (DefinitionContext.TypeReturn ret)
-		{
-			var type = ret.type;
-			for (var i = 0; i < self.chunk.functions.count; i++)
-			{
-				var function = self.chunk.functions.buffer[i];
-				if (function.name == functionName && function.typeIndex == type.index)
-				{
-					return Option.Some(new Function<A, R>(
-						function.codeIndex,
-						(ushort)i,
-						self.chunk.functionTypes.buffer[function.typeIndex].parametersSize
-					));
-				}
-			}
+			type = marshaler.GetDefinedType();
 		}
 		catch (Marshal.InvalidReflectionException)
 		{
+			return Option.None;
+		}
+
+		for (var i = 0; i < self.chunk.functions.count; i++)
+		{
+			var function = self.chunk.functions.buffer[i];
+			if (function.name == functionName && function.typeIndex == type.index)
+			{
+				return Option.Some(new Function<A, R>(
+					function.codeIndex,
+					(ushort)i,
+					self.chunk.functionTypes.buffer[function.typeIndex].parametersSize
+				));
+			}
 		}
 
 		return Option.None;
@@ -46,39 +45,50 @@ public static class ClefInterfaceExtensions
 		Marshal.TypeOf<Class<T>>(self.chunk);
 	}
 
-	public static bool AddFunction(this CFlat self, NativeCallback<DefinitionContext> definitionFunction, NativeCallback<RuntimeContext> runtimeFunction)
+	public static bool AddFunction<R>(this CFlat self, string functionName, System.Func<VirtualMachine, R> function)
+		where R : struct, IMarshalable
 	{
-		var context = new DefinitionContext(self.chunk);
-		try
+		var builder = new FunctionTypeBuilder(self.chunk);
+		builder.returnType = Marshal.TypeOf<R>(self.chunk);
+		return FinishAddFunction(self, builder, functionName, vm =>
 		{
-			definitionFunction(ref context);
-			context.builder.Cancel();
-			self.compileErrors.PushBack(new CompileError(
-				new Slice(),
-				"No native function body found"
+			var stackTop = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+			var ret = function(vm);
+			Runtime.Return(vm, ret);
+		});
+	}
+
+	public static bool AddFunction<A0, R>(this CFlat self, string functionName, System.Func<VirtualMachine, A0, R> function)
+		where A0 : struct, IMarshalable
+		where R : struct, IMarshalable
+	{
+		var builder = new FunctionTypeBuilder(self.chunk);
+		builder.WithParam(Marshal.TypeOf<A0>(self.chunk));
+		builder.returnType = Marshal.TypeOf<R>(self.chunk);
+		return FinishAddFunction(self, builder, functionName, vm =>
+		{
+			var stackTop = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+			var reader = new MemoryReadMarshaler(vm, stackTop);
+			var ret = function(
+				vm,
+				Runtime.Arg<A0>(ref reader)
+			);
+			Runtime.Return(vm, ret);
+		});
+	}
+
+	private static bool FinishAddFunction(CFlat self, FunctionTypeBuilder builder, string functionName, NativeFunction.Callback function)
+	{
+		var result = builder.Build(out var typeIndex);
+		if (self.compiler.compiler.CheckFunctionBuild(result, new Slice()))
+		{
+			self.chunk.nativeFunctions.PushBack(new NativeFunction(
+				functionName,
+				typeIndex,
+				builder.returnType.GetSize(self.chunk),
+				function
 			));
-		}
-		catch (DefinitionContext.DefinitionReturn definition)
-		{
-			var result = context.builder.Build(out var typeIndex);
-			if (self.compiler.compiler.CheckFunctionBuild(result, new Slice()))
-			{
-				self.chunk.nativeFunctions.PushBack(new NativeFunction(
-					definition.functionName,
-					typeIndex,
-					context.builder.returnType.GetSize(self.chunk),
-					runtimeFunction
-				));
-				return true;
-			}
-		}
-		catch (System.Exception e)
-		{
-			context.builder.Cancel();
-			self.compileErrors.PushBack(new CompileError(
-				new Slice(),
-				"Error when adding native function\n" + e.Message
-			));
+			return true;
 		}
 
 		return false;

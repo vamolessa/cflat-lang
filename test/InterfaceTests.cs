@@ -4,13 +4,11 @@ public sealed class InterfaceTests
 {
 	public static Function<Tuple<Int>, Int> someFunction;
 
-	public static Return TupleTestFunction<C>(ref C context) where C : IContext
+	public static Tuple<Int, Bool> TupleTestFunction(VirtualMachine vm, Tuple<Int, Bool> tuple)
 	{
-		var t = context.Arg<Tuple<Int, Bool>>();
-		var body = context.Body<Tuple<Int, Bool>>();
-		t.e0.value += 1;
-		t.e1.value = !t.e1.value;
-		return body.Return(t);
+		tuple.e0.value += 1;
+		tuple.e1.value = !tuple.e1.value;
+		return tuple;
 	}
 
 	[Theory]
@@ -19,7 +17,7 @@ public sealed class InterfaceTests
 	public void TupleIoTest(string source, int n, bool b)
 	{
 		var cflat = new CFlat();
-		cflat.AddFunction(TupleTestFunction, TupleTestFunction);
+		cflat.AddFunction<Tuple<Int, Bool>, Tuple<Int, Bool>>(nameof(TupleTestFunction), TupleTestFunction);
 		var t = TestHelper.RunExpression<Tuple<Int, Bool>>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(n, t.e0.value);
@@ -68,15 +66,12 @@ public sealed class InterfaceTests
 		Assert.Equal(z, s.z);
 	}
 
-	private static Return StructTestFunction<C>(ref C context) where C : IContext
+	private static Struct<MyStruct> StructTestFunction(VirtualMachine vm, Struct<MyStruct> s)
 	{
-		var p = context.Arg<Struct<MyStruct>>().value;
-		var body = context.Body<Struct<MyStruct>>();
-		System.Console.WriteLine("HELLO FROM C# {0}, {1}, {2}", p.x, p.y, p.z);
-		p.x += 1;
-		p.y += 1;
-		p.z += 1;
-		return body.Return(p);
+		s.value.x += 1;
+		s.value.y += 1;
+		s.value.z += 1;
+		return s;
 	}
 
 	[Theory]
@@ -85,7 +80,7 @@ public sealed class InterfaceTests
 	public void StructIoTest(string source, int x, int y, int z)
 	{
 		var cflat = new CFlat();
-		cflat.AddFunction(StructTestFunction, StructTestFunction);
+		cflat.AddFunction<Struct<MyStruct>, Struct<MyStruct>>(nameof(StructTestFunction), StructTestFunction);
 		var s = TestHelper.RunExpression<Struct<MyStruct>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(x, s.x);
@@ -133,19 +128,15 @@ public sealed class InterfaceTests
 		cflat.AddClass<MyClass>();
 	}
 
-	public static Return CreateClassTestFunction<C>(ref C context) where C : IContext
+	public static Class<MyClass> CreateClassTestFunction(VirtualMachine vm, Int n)
 	{
-		var n = context.Arg<Int>();
-		var body = context.Body<Class<MyClass>>();
-		return body.Return(new MyClass { boxed = n });
+		return new MyClass { boxed = n };
 	}
 
-	public static Return ModifyClassTestFunction<C>(ref C context) where C : IContext
+	public static Unit ModifyClassTestFunction(VirtualMachine vm, Class<MyClass> c)
 	{
-		var c = context.Arg<Class<MyClass>>().value;
-		var body = context.Body();
-		c.boxed += 1;
-		return body.Return();
+		c.value.boxed += 1;
+		return default;
 	}
 
 	[Theory]
@@ -155,8 +146,8 @@ public sealed class InterfaceTests
 	{
 		var cflat = new CFlat();
 		cflat.AddClass<MyClass>();
-		cflat.AddFunction(CreateClassTestFunction, CreateClassTestFunction);
-		cflat.AddFunction(ModifyClassTestFunction, ModifyClassTestFunction);
+		cflat.AddFunction<Int, Class<MyClass>>(nameof(CreateClassTestFunction), CreateClassTestFunction);
+		cflat.AddFunction<Class<MyClass>, Unit>(nameof(ModifyClassTestFunction), ModifyClassTestFunction);
 		var c = TestHelper.Run<Class<MyClass>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(n, c.boxed);
@@ -180,17 +171,16 @@ public sealed class InterfaceTests
 		var cflat = new CFlat();
 		cflat.AddClass<MyClass>();
 		cflat.AddStruct<MyStructWithClass>();
-		cflat.AddFunction(CreateClassTestFunction, CreateClassTestFunction);
+		cflat.AddFunction<Int, Class<MyClass>>(nameof(CreateClassTestFunction), CreateClassTestFunction);
 		var s = TestHelper.Run<Struct<MyStructWithClass>>(cflat, source, out var a).value;
 		a.AssertSuccessCall();
 		Assert.Equal(n, s.a.value.boxed);
 	}
 
-	public static Return FunctionTestFunction<C>(ref C context) where C : IContext
+	public static Int FunctionTestFunction(VirtualMachine vm)
 	{
-		var body = context.Body<Int>();
-		var n = someFunction.Call(ref context, Tuple.New(new Int(6)));
-		return body.Return(n);
+		var n = someFunction.Call(vm, Tuple.New(new Int(6)));
+		return n;
 	}
 
 	[Fact]
@@ -198,11 +188,11 @@ public sealed class InterfaceTests
 	{
 		var source = "fn some_function(a:int):int{a+1} fn f():int{FunctionTestFunction()}";
 		var cflat = new CFlat();
-		cflat.AddFunction(FunctionTestFunction, FunctionTestFunction);
+		cflat.AddFunction<Int>(nameof(FunctionTestFunction), FunctionTestFunction);
 
 		var compileErrors = cflat.CompileSource("tests", source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(CompilerHelper.FormatError(source, compileErrors, 1, 1));
+			throw new CompileErrorException(FormattingHelper.FormatCompileError(source, compileErrors, 1, 1));
 
 		cflat.Load();
 		someFunction = cflat.GetFunction<Tuple<Int>, Int>("some_function").value;
@@ -223,14 +213,12 @@ public sealed class InterfaceTests
 		});
 	}
 
-	public static Return ArrayTestFunction<C>(ref C context) where C : IContext
+	public static Unit ArrayTestFunction(VirtualMachine vm, Array<Int> a)
 	{
-		var a = context.Arg<Array<Int>>();
-		var body = context.Body();
 		var length = a.Length;
 		for (var i = 0; i < length; i++)
 			a[i] += 1;
-		return body.Return();
+		return default;
 	}
 
 	[Theory]
@@ -239,7 +227,7 @@ public sealed class InterfaceTests
 	public void ArrayIoTest(string source, int e0, int e1, int e2)
 	{
 		var cflat = new CFlat();
-		cflat.AddFunction(ArrayTestFunction, ArrayTestFunction);
+		cflat.AddFunction<Array<Int>, Unit>(nameof(ArrayTestFunction), ArrayTestFunction);
 		var array = TestHelper.RunExpression<Array<Int>>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(3, array.Length);
@@ -248,12 +236,10 @@ public sealed class InterfaceTests
 		Assert.Equal(e2, array[2].value);
 	}
 
-	public static Return RefTestFunction<C>(ref C context) where C : IContext
+	public static Unit RefTestFunction(VirtualMachine vm, MutRef<Int> r)
 	{
-		var r = context.Arg<MutRef<Int>>();
-		var body = context.Body();
 		r.Value += 1;
-		return body.Return();
+		return default;
 	}
 
 	[Theory]
@@ -262,7 +248,7 @@ public sealed class InterfaceTests
 	public void RefIoTest(string source, int n)
 	{
 		var cflat = new CFlat();
-		cflat.AddFunction(RefTestFunction, RefTestFunction);
+		cflat.AddFunction<MutRef<Int>, Unit>(nameof(RefTestFunction), RefTestFunction);
 		var v = TestHelper.RunExpression<Int>(cflat, source, out var a);
 		a.AssertSuccessCall();
 		Assert.Equal(n, v.value);

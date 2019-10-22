@@ -1,4 +1,27 @@
-public struct FunctionTypeBuilder
+internal static class ByteCodeChunkBuilderExtensins
+{
+	public static FunctionTypeBuilder BeginFunctionType(this ByteCodeChunk self)
+	{
+		return new FunctionTypeBuilder(self);
+	}
+
+	public static TupleTypeBuilder BeginTupleType(this ByteCodeChunk self)
+	{
+		return new TupleTypeBuilder(self);
+	}
+
+	public static StructTypeBuilder BeginStructType(this ByteCodeChunk self)
+	{
+		return new StructTypeBuilder(self);
+	}
+
+	public static ClassTypeBuilder BeginClassType(this ByteCodeChunk self)
+	{
+		return new ClassTypeBuilder(self);
+	}
+}
+
+internal struct FunctionTypeBuilder
 {
 	public enum Result
 	{
@@ -117,7 +140,7 @@ public struct FunctionTypeBuilder
 	}
 }
 
-public struct TupleTypeBuilder
+internal struct TupleTypeBuilder
 {
 	public enum Result
 	{
@@ -236,7 +259,7 @@ public struct TupleTypeBuilder
 	}
 }
 
-public struct StructTypeBuilder
+internal struct StructTypeBuilder
 {
 	public enum Result
 	{
@@ -340,7 +363,7 @@ public struct StructTypeBuilder
 	}
 }
 
-public struct ClassTypeBuilder
+internal struct ClassTypeBuilder
 {
 	public enum Result
 	{

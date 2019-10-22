@@ -1,4 +1,10 @@
-public sealed class Compiler
+public enum Mode
+{
+	Release,
+	Debug
+}
+
+internal sealed class Compiler
 {
 	public Mode mode;
 	public readonly Parser parser;

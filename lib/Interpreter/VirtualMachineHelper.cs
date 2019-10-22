@@ -1,6 +1,7 @@
+using System.Globalization;
 using System.Text;
 
-public static class VirtualMachineHelper
+internal static class VirtualMachineHelper
 {
 	public static int Return(ValueData[] memory, int stackCount, int stackTop, int size)
 	{
@@ -52,7 +53,7 @@ public static class VirtualMachineHelper
 			sb.Append(vm.memory.values[index].asInt);
 			return;
 		case TypeKind.Float:
-			sb.Append(vm.memory.values[index].asFloat);
+			sb.AppendFormat(CultureInfo.InvariantCulture, "{0}", vm.memory.values[index].asFloat);
 			return;
 		case TypeKind.String:
 			{
@@ -183,33 +184,5 @@ public static class VirtualMachineHelper
 			sb.Append("[+]");
 
 		sb.AppendLine();
-	}
-
-	public static string FormatError(string source, RuntimeError error, int contextSize, int tabSize)
-	{
-		var sb = new StringBuilder();
-		sb.Append((string)error.message);
-		if (error.instructionIndex < 0)
-			return sb.ToString();
-
-		var position = CompilerHelper.GetLineAndColumn(source, (int)error.slice.index, tabSize);
-
-		sb.Append(" (line: ");
-		sb.Append(position.line);
-		sb.Append(", column: ");
-		sb.Append(position.column);
-		sb.AppendLine(")");
-
-		sb.Append(CompilerHelper.GetLines(
-			source,
-			System.Math.Max(position.line - contextSize, 0),
-			System.Math.Max(position.line - 1, 0)
-		));
-		sb.AppendLine();
-		sb.Append(' ', position.column - 1);
-		sb.Append('^', (int)(error.slice.length > 0 ? error.slice.length : 1));
-		sb.Append(" here\n\n");
-
-		return sb.ToString();
 	}
 }

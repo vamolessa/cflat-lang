@@ -1,4 +1,4 @@
-public sealed class Parser
+internal sealed class Parser
 {
 	public readonly Tokenizer tokenizer;
 	private readonly System.Action<Slice, string, object[]> onError;

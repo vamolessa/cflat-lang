@@ -176,12 +176,12 @@ public static class ByteCodeChunkExtensions
 	private static void PrintLineNumber(ByteCodeChunk self, string source, int index, StringBuilder sb)
 	{
 		var currentSourceIndex = self.sourceSlices.buffer[index].index;
-		var currentPosition = CompilerHelper.GetLineAndColumn(source, currentSourceIndex, 1);
+		var currentPosition = FormattingHelper.GetLineAndColumn(source, currentSourceIndex, 1);
 		var lastLine = -1;
 		if (index > 0)
 		{
 			var lastSourceIndex = self.sourceSlices.buffer[index - 1].index;
-			lastLine = CompilerHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
+			lastLine = FormattingHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
 		}
 
 		if (currentPosition.line == lastLine)

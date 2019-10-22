@@ -1,4 +1,4 @@
-public static class CompilerTypeExtensions
+internal static class CompilerTypeExtensions
 {
 	public static bool CheckFunctionBuild(this Compiler self, FunctionTypeBuilder.Result result, Slice slice)
 	{

@@ -1,4 +1,4 @@
-public static class CompilerEmitExtensions
+internal static class CompilerEmitExtensions
 {
 	public static Compiler EmitByte(this Compiler self, byte value)
 	{
