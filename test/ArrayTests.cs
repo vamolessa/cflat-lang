@@ -8,6 +8,8 @@ public sealed class ArrayTests
 	[InlineData("[{}:1]", 1)]
 	[InlineData("[{}:8]", 8)]
 	[InlineData("[{}:999999]", 999999)]
+	[InlineData("[{}]", 1)]
+	[InlineData("[{},{},{}]", 3)]
 	public void UnitArrayCreationTest(string source, int expectedLength)
 	{
 		var v = TestHelper.RunExpression<Array<Unit>>(source, out var a);
@@ -29,6 +31,8 @@ public sealed class ArrayTests
 	[InlineData("{let a=[{}:1] length a}", 1)]
 	[InlineData("{let a=[{}:8] length a}", 8)]
 	[InlineData("{let a=[{}:999999] length a}", 999999)]
+	[InlineData("{let a=[{}] length a}", 1)]
+	[InlineData("{let a=[{},{},{}] length a}", 3)]
 	public void ArrayLengthTest(string source, int expectedLength)
 	{
 		var v = TestHelper.RunExpression<Int>(source, out var a);
@@ -41,6 +45,7 @@ public sealed class ArrayTests
 	[InlineData("[27:1]", 1, 27)]
 	[InlineData("[27:8]", 8, 27)]
 	[InlineData("[27:999999]", 999999, 27)]
+	[InlineData("[27,27,27,27]", 4, 27)]
 	public void IntArrayCreationTest(string source, int expectedLength, int expectedElements)
 	{
 		var v = TestHelper.RunExpression<Array<Int>>(source, out var a);
@@ -61,6 +66,7 @@ public sealed class ArrayTests
 	[InlineData("[{11, 12, 13}:0]", 0, 11, 12, 13)]
 	[InlineData("[{21, 22, 23}:1]", 1, 21, 22, 23)]
 	[InlineData("[{31, 32, 33}:8]", 8, 31, 32, 33)]
+	[InlineData("[{41, 42, 43}, {41, 42, 43}]", 2, 41, 42, 43)]
 	public void TupleArrayCreationTest(string source, int expectedLength, int expectedTupleElement0, int expectedTupleElement1, int expectedTupleElement2)
 	{
 		var v = TestHelper.RunExpression<Array<Tuple<Int, Int, Int>>>(source, out var a);
@@ -106,15 +112,15 @@ public sealed class ArrayTests
 	}
 
 	[Theory]
-	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].a}", 11)]
-	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].b}", 22)]
-	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}:1] a[0].c}", 33)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f0}", 11)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].a.f1}", 12)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].b.f0}", 21)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f0}", 31)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f1}", 32)]
-	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] a[0].c.f2}", 33)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}] a[0].a}", 11)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}] a[0].b}", 22)]
+	[InlineData("fn f():int{let a=[SS{a=11,b=22,c=33}] a[0].c}", 33)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] a[0].a.f0}", 11)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] a[0].a.f1}", 12)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] a[0].b.f0}", 21)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] a[0].c.f0}", 31)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] a[0].c.f1}", 32)]
+	[InlineData("fn f():int{let a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] a[0].c.f2}", 33)]
 	public void IntArrayFieldIndexingTest(string source, int expected)
 	{
 		var declarations =
@@ -142,15 +148,15 @@ public sealed class ArrayTests
 	}
 
 	[Theory]
-	[InlineData("fn f():int{let mut a=[SS{a=11,b=22,c=33}:1] set a[0].a=99 a[0].a}", 99)]
-	[InlineData("fn f():int{let mut a=[SS{a=11,b=22,c=33}:1] set a[0].b=99 a[0].b}", 99)]
-	[InlineData("fn f():int{let mut a=[SS{a=11,b=22,c=33}:1] set a[0].c=99 a[0].c}", 99)]
-	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] set a[0].a.f0=99 a[0].a.f0}", 99)]
-	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] set a[0].a.f1=99 a[0].a.f1}", 99)]
-	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] set a[0].b.f0=99 a[0].b.f0}", 99)]
-	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] set a[0].c.f0=99 a[0].c.f0}", 99)]
-	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] set a[0].c.f1=99 a[0].c.f1}", 99)]
-	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}:1] set a[0].c.f2=99 a[0].c.f2}", 99)]
+	[InlineData("fn f():int{let mut a=[SS{a=11,b=22,c=33}] set a[0].a=99 a[0].a}", 99)]
+	[InlineData("fn f():int{let mut a=[SS{a=11,b=22,c=33}] set a[0].b=99 a[0].b}", 99)]
+	[InlineData("fn f():int{let mut a=[SS{a=11,b=22,c=33}] set a[0].c=99 a[0].c}", 99)]
+	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] set a[0].a.f0=99 a[0].a.f0}", 99)]
+	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] set a[0].a.f1=99 a[0].a.f1}", 99)]
+	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] set a[0].b.f0=99 a[0].b.f0}", 99)]
+	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] set a[0].c.f0=99 a[0].c.f0}", 99)]
+	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] set a[0].c.f1=99 a[0].c.f1}", 99)]
+	[InlineData("fn f():int{let mut a=[S{a=S2{f0=11,f1=12},b=S1{f0=21},c=S3{f0=31,f1=32,f2=33}}] set a[0].c.f2=99 a[0].c.f2}", 99)]
 	public void IntArrayFieldIndexAssignmentTest(string source, int expected)
 	{
 		var declarations =

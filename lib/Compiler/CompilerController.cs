@@ -381,30 +381,82 @@ internal sealed class CompilerController
 
 	internal static void ArrayExpression(CompilerController self, Slice previousSlice)
 	{
-		var defaultValueSlice = Expression(self);
-		var defaultValueType = self.compiler.typeStack.PopLast();
-		if (defaultValueType.IsArray)
-			self.compiler.AddSoftError(defaultValueSlice, "Can not create array of arrays");
-		if (defaultValueType.IsReference)
-			self.compiler.AddSoftError(defaultValueSlice, "Can not create array of references");
+		var elementSlice = Expression(self);
+		var elementType = self.compiler.typeStack.PopLast();
+		if (elementType.IsArray)
+			self.compiler.AddSoftError(elementSlice, "Can not create array of arrays");
+		if (elementType.IsReference)
+			self.compiler.AddSoftError(elementSlice, "Can not create array of references");
 
-		self.compiler.parser.Consume(TokenKind.Colon, "Expected ':' after array element default value");
+		var arrayType = elementType.ToArrayType();
 
-		var lengthSlice = Expression(self);
-		var lengthType = self.compiler.typeStack.PopLast();
-		if (!lengthType.IsKind(TypeKind.Int))
-			self.compiler.AddSoftError(lengthSlice, "Expected int expression for array length. Got {0}", lengthType.ToString(self.compiler.chunk));
+		if (self.compiler.parser.Match(TokenKind.CloseSquareBrackets))
+		{
+			self.compiler.DebugEmitPopType(1);
+			self.compiler.EmitInstruction(Instruction.CreateArrayFromStack);
+			self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+			self.compiler.EmitByte(1);
+		}
+		else if (self.compiler.parser.Check(TokenKind.Comma))
+		{
+			var arrayLength = 1;
 
-		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
+			while (
+				!self.compiler.parser.Check(TokenKind.CloseSquareBrackets) &&
+				!self.compiler.parser.Check(TokenKind.End)
+			)
+			{
+				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after array element expression");
+				var otherElementSlice = Expression(self);
+				var otherElementType = self.compiler.typeStack.PopLast();
+				if (!otherElementType.IsEqualTo(elementType))
+					self.compiler.AddSoftError(
+						elementSlice,
+						"Array must have all elements of the same type. Expected {0}. Got {1}",
+						elementType.ToString(self.compiler.chunk),
+						otherElementType.ToString(self.compiler.chunk)
+					);
+				arrayLength += 1;
+			}
 
-		var arrayType = defaultValueType.ToArrayType();
+			self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
+
+			if (arrayLength <= byte.MaxValue)
+			{
+				self.compiler.DebugEmitPopType((byte)arrayLength);
+				self.compiler.EmitInstruction(Instruction.CreateArrayFromStack);
+				self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+				self.compiler.EmitByte((byte)arrayLength);
+			}
+			else
+			{
+				var slice = Slice.FromTo(elementSlice, self.compiler.parser.previousToken.slice);
+				self.compiler.AddSoftError(slice, "Array length is too big. Max is {0}", byte.MaxValue);
+			}
+		}
+		else if (self.compiler.parser.Match(TokenKind.Colon))
+		{
+			var lengthSlice = Expression(self);
+			var lengthType = self.compiler.typeStack.PopLast();
+			if (!lengthType.IsKind(TypeKind.Int))
+				self.compiler.AddSoftError(lengthSlice, "Expected int expression for array length. Got {0}", lengthType.ToString(self.compiler.chunk));
+
+			self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
+
+			self.compiler.DebugEmitPopType(2);
+			self.compiler.EmitInstruction(Instruction.CreateArrayFromDefault);
+			self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+		}
+		else
+		{
+			self.compiler.AddHardError(
+				self.compiler.parser.currentToken.slice,
+				"Expected array expression"
+			);
+		}
+
+
 		self.compiler.typeStack.PushBack(arrayType);
-
-		self.compiler.DebugEmitPopType(2);
-
-		self.compiler.EmitInstruction(Instruction.CreateArray);
-		self.compiler.EmitByte(defaultValueType.GetSize(self.compiler.chunk));
-
 		self.compiler.DebugEmitPushType(arrayType);
 	}
 

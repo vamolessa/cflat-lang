@@ -1,8 +1,8 @@
-internal struct Context
+internal struct FunctionInterface
 {
 	private MemoryReadMarshaler reader;
 
-	public Context(VirtualMachine vm, int stackTop)
+	public FunctionInterface(VirtualMachine vm, int stackTop)
 	{
 		reader = new MemoryReadMarshaler(vm, stackTop);
 	}

@@ -1,5 +1,6 @@
 fn main() {
-	let sw = StartStopwatch()
-	let time = StopStopwatch(sw)
-	print {"time", time}
+	let a = [11, 3, 54 + 2]
+	print a[0]
+	print a[1]
+	print a[2]
 }

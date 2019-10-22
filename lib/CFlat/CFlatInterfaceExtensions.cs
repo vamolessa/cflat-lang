@@ -52,7 +52,7 @@ public static class ClefInterfaceExtensions
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
 		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			Context.Return(vm, function(vm));
+			FunctionInterface.Return(vm, function(vm));
 		});
 	}
 
@@ -65,10 +65,10 @@ public static class ClefInterfaceExtensions
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
 		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			var context = new Context(vm, top);
-			Context.Return(vm, function(
+			var functionInterface = new FunctionInterface(vm, top);
+			FunctionInterface.Return(vm, function(
 				vm,
-				context.Arg<A0>()
+				functionInterface.Arg<A0>()
 			));
 		});
 	}
@@ -84,11 +84,11 @@ public static class ClefInterfaceExtensions
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
 		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			var context = new Context(vm, top);
-			Context.Return(vm, function(
+			var functionInterface = new FunctionInterface(vm, top);
+			FunctionInterface.Return(vm, function(
 				vm,
-				context.Arg<A0>(),
-				context.Arg<A1>()
+				functionInterface.Arg<A0>(),
+				functionInterface.Arg<A1>()
 			));
 		});
 	}
@@ -106,12 +106,12 @@ public static class ClefInterfaceExtensions
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
 		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			var context = new Context(vm, top);
-			Context.Return(vm, function(
+			var functionInterface = new FunctionInterface(vm, top);
+			FunctionInterface.Return(vm, function(
 				vm,
-				context.Arg<A0>(),
-				context.Arg<A1>(),
-				context.Arg<A2>()
+				functionInterface.Arg<A0>(),
+				functionInterface.Arg<A1>(),
+				functionInterface.Arg<A2>()
 			));
 		});
 	}
@@ -131,13 +131,13 @@ public static class ClefInterfaceExtensions
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
 		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			var context = new Context(vm, top);
-			Context.Return(vm, function(
+			var functionInterface = new FunctionInterface(vm, top);
+			FunctionInterface.Return(vm, function(
 				vm,
-				context.Arg<A0>(),
-				context.Arg<A1>(),
-				context.Arg<A2>(),
-				context.Arg<A3>()
+				functionInterface.Arg<A0>(),
+				functionInterface.Arg<A1>(),
+				functionInterface.Arg<A2>(),
+				functionInterface.Arg<A3>()
 			));
 		});
 	}

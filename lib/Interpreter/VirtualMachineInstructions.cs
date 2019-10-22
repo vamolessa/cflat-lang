@@ -210,7 +210,24 @@ internal static class VirtualMachineInstructions
 			case Instruction.FloatToInt:
 				memory.values[memory.stackCount - 1] = new ValueData((int)memory.values[memory.stackCount - 1].asFloat);
 				break;
-			case Instruction.CreateArray:
+			case Instruction.CreateArrayFromStack:
+				{
+					var elementSize = bytes[codeIndex++];
+					var arrayLength = bytes[codeIndex++];
+					var arraySize = elementSize * arrayLength;
+					memory.GrowHeap(arraySize + 1);
+					var headAddress = memory.heapStart;
+					memory.stackCount -= arraySize;
+
+					memory.values[headAddress++] = new ValueData(arrayLength);
+
+					for (var i = 0; i < arraySize; i++)
+						memory.values[headAddress + i] = memory.values[memory.stackCount + i];
+
+					memory.values[memory.stackCount++] = new ValueData(headAddress);
+					break;
+				}
+			case Instruction.CreateArrayFromDefault:
 				{
 					var elementSize = bytes[codeIndex++];
 					var arrayLength = memory.values[--memory.stackCount].asInt;
@@ -224,18 +241,18 @@ internal static class VirtualMachineInstructions
 
 					var arraySize = elementSize * arrayLength;
 					memory.GrowHeap(arraySize + 1);
-					var heapStartIndex = memory.heapStart;
+					var headAddress = memory.heapStart;
 					memory.stackCount -= elementSize;
 
-					memory.values[heapStartIndex++] = new ValueData(arrayLength);
+					memory.values[headAddress++] = new ValueData(arrayLength);
 
 					for (var i = 0; i < arraySize; i += elementSize)
 					{
 						for (var j = 0; j < elementSize; j++)
-							memory.values[heapStartIndex + i + j] = memory.values[memory.stackCount + j];
+							memory.values[headAddress + i + j] = memory.values[memory.stackCount + j];
 					}
 
-					memory.values[memory.stackCount++] = new ValueData(heapStartIndex);
+					memory.values[memory.stackCount++] = new ValueData(headAddress);
 					break;
 				}
 			case Instruction.LoadArrayLength:

@@ -10,11 +10,7 @@ internal static class CompilerTypeExtensions
 			self.AddSoftError(slice, "Too many function declarations");
 			return false;
 		case FunctionTypeBuilder.Result.ParametersTooBig:
-			self.AddSoftError(
-				slice,
-				"Function parameters size is too big. Max is {0}",
-				byte.MaxValue
-			);
+			self.AddSoftError(slice, "Function parameters size is too big. Max is {0}", byte.MaxValue);
 			return false;
 		default:
 			return false;
@@ -31,11 +27,7 @@ internal static class CompilerTypeExtensions
 			self.AddSoftError(slice, "Too many tuple declarations");
 			return false;
 		case TupleTypeBuilder.Result.ElementsTooBig:
-			self.AddSoftError(
-				slice,
-				"Tuple elements size is too big. Max is {0}",
-				byte.MaxValue
-			);
+			self.AddSoftError(slice, "Tuple elements size is too big. Max is {0}", byte.MaxValue);
 			return false;
 		default:
 			return false;
