@@ -50,11 +50,9 @@ public static class ClefInterfaceExtensions
 	{
 		var builder = new FunctionTypeBuilder(self.chunk);
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
-		return FinishAddFunction(self, builder, functionName, vm =>
+		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			var stackTop = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
-			var ret = function(vm);
-			Runtime.Return(vm, ret);
+			Context.Return(vm, function(vm));
 		});
 	}
 
@@ -65,15 +63,13 @@ public static class ClefInterfaceExtensions
 		var builder = new FunctionTypeBuilder(self.chunk);
 		builder.WithParam(Marshal.TypeOf<A0>(self.chunk));
 		builder.returnType = Marshal.TypeOf<R>(self.chunk);
-		return FinishAddFunction(self, builder, functionName, vm =>
+		return FinishAddFunction(self, builder, functionName, (vm, top) =>
 		{
-			var stackTop = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
-			var reader = new MemoryReadMarshaler(vm, stackTop);
-			var ret = function(
+			var context = new Context(vm, top);
+			Context.Return(vm, function(
 				vm,
-				Runtime.Arg<A0>(ref reader)
-			);
-			Runtime.Return(vm, ret);
+				context.Arg<A0>()
+			));
 		});
 	}
 

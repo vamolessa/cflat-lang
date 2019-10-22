@@ -1,11 +1,18 @@
-internal static class Runtime
+internal struct Context
 {
-	public static T Arg<T>(ref MemoryReadMarshaler marshaler) where T : struct, IMarshalable
+	private MemoryReadMarshaler reader;
+
+	public Context(VirtualMachine vm, int stackTop)
+	{
+		reader = new MemoryReadMarshaler(vm, stackTop);
+	}
+
+	public T Arg<T>() where T : struct, IMarshalable
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<T>.size > 0);
 
 		var value = default(T);
-		value.Marshal(ref marshaler);
+		value.Marshal(ref reader);
 		return value;
 	}
 

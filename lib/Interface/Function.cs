@@ -22,6 +22,7 @@ public sealed class Function<A, R>
 	{
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
 
+		vm.memory.PushBackStack(new ValueData(functionIndex));
 		vm.callframeStack.PushBackUnchecked(new CallFrame(
 			vm.chunk.bytes.count - 1,
 			vm.memory.stackCount,
@@ -35,7 +36,6 @@ public sealed class Function<A, R>
 			CallFrame.Type.Function
 		));
 
-		vm.memory.PushBackStack(new ValueData(functionIndex));
 		var writer = new MemoryWriteMarshaler(vm, vm.memory.stackCount);
 		vm.memory.GrowStack(parametersSize);
 		arguments.Marshal(ref writer);

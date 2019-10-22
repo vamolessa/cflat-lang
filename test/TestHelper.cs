@@ -33,21 +33,9 @@ public static class TestHelper
 				errorMessage = FormattingHelper.FormatRuntimeError(source, error.value, 1, TabSize);
 			Assert.Null(errorMessage);
 
-			{
-				var flags =
-					System.Reflection.BindingFlags.NonPublic |
-					System.Reflection.BindingFlags.Instance;
-				var virtualMachineField = cflat.GetType().GetField("virtualMachine", flags);
-				var virtualMachine = virtualMachineField.GetValue(cflat);
-				var debugDataField = virtualMachineField.FieldType.GetField("debugData", flags);
-				var debugData = debugDataField.GetValue(virtualMachine);
-				var typeStackField = debugDataField.FieldType.GetField("typeStack");
-				var typeStack = (Buffer<ValueType>)typeStackField.GetValue(debugData);
-
-				if (CompilerMode == Mode.Release)
-					typeStack.PushBack(new ValueType(TypeKind.Unit));
-				Assert.Single(typeStack.ToArray());
-			}
+			if (CompilerMode == Mode.Release)
+				cflat.vm.debugData.typeStack.PushBack(new ValueType(TypeKind.Unit));
+			Assert.Single(cflat.vm.debugData.typeStack.ToArray());
 		}
 	}
 

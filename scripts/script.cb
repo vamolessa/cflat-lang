@@ -1,3 +1,3 @@
 fn main() {
-	print DoubleAndRound(3.3)
+	print TupleTestFunction({1,true})
 }

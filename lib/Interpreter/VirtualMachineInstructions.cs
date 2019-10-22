@@ -62,7 +62,7 @@ internal static class VirtualMachineInstructions
 
 					try
 					{
-						function.callback(vm);
+						function.callback(vm, stackTop);
 					}
 					catch (System.Exception e)
 					{
