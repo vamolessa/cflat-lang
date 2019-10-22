@@ -17,26 +17,12 @@ public static class Interpreter
 		return (float)sw.value.Elapsed.TotalSeconds;
 	}
 
-	public static Int DoubleAndRound(VirtualMachine vm, Float f)
-	{
-		return (int)System.MathF.Round(f.value * 2.0f);
-	}
-
-	public static Tuple<Int, Bool> TupleTestFunction(VirtualMachine vm, Tuple<Int, Bool> tuple)
-	{
-		tuple.e0.value += 1;
-		tuple.e1.value = !tuple.e1.value;
-		return tuple;
-	}
-
 	public static void RunSource(string sourceName, string source, bool printDisassembled)
 	{
 		var cflat = new CFlat();
 
 		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
 		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
-		cflat.AddFunction<Float, Int>(nameof(DoubleAndRound), DoubleAndRound);
-		cflat.AddFunction<Tuple<Int, Bool>, Tuple<Int, Bool>>(nameof(TupleTestFunction), TupleTestFunction);
 
 		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Release);
 		if (compileErrors.count > 0)

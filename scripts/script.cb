@@ -1,3 +1,5 @@
 fn main() {
-	print TupleTestFunction({1,true})
+	let sw = StartStopwatch()
+	let time = StopStopwatch(sw)
+	print {"time", time}
 }
