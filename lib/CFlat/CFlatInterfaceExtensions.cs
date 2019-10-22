@@ -73,20 +73,87 @@ public static class ClefInterfaceExtensions
 		});
 	}
 
+	public static bool AddFunction<A0, A1, R>(this CFlat self, string functionName, System.Func<VirtualMachine, A0, A1, R> function)
+		where A0 : struct, IMarshalable
+		where A1 : struct, IMarshalable
+		where R : struct, IMarshalable
+	{
+		var builder = new FunctionTypeBuilder(self.chunk);
+		builder.WithParam(Marshal.TypeOf<A0>(self.chunk));
+		builder.WithParam(Marshal.TypeOf<A1>(self.chunk));
+		builder.returnType = Marshal.TypeOf<R>(self.chunk);
+		return FinishAddFunction(self, builder, functionName, (vm, top) =>
+		{
+			var context = new Context(vm, top);
+			Context.Return(vm, function(
+				vm,
+				context.Arg<A0>(),
+				context.Arg<A1>()
+			));
+		});
+	}
+
+	public static bool AddFunction<A0, A1, A2, R>(this CFlat self, string functionName, System.Func<VirtualMachine, A0, A1, A2, R> function)
+		where A0 : struct, IMarshalable
+		where A1 : struct, IMarshalable
+		where A2 : struct, IMarshalable
+		where R : struct, IMarshalable
+	{
+		var builder = new FunctionTypeBuilder(self.chunk);
+		builder.WithParam(Marshal.TypeOf<A0>(self.chunk));
+		builder.WithParam(Marshal.TypeOf<A1>(self.chunk));
+		builder.WithParam(Marshal.TypeOf<A2>(self.chunk));
+		builder.returnType = Marshal.TypeOf<R>(self.chunk);
+		return FinishAddFunction(self, builder, functionName, (vm, top) =>
+		{
+			var context = new Context(vm, top);
+			Context.Return(vm, function(
+				vm,
+				context.Arg<A0>(),
+				context.Arg<A1>(),
+				context.Arg<A2>()
+			));
+		});
+	}
+
+	public static bool AddFunction<A0, A1, A2, A3, R>(this CFlat self, string functionName, System.Func<VirtualMachine, A0, A1, A2, A3, R> function)
+		where A0 : struct, IMarshalable
+		where A1 : struct, IMarshalable
+		where A2 : struct, IMarshalable
+		where A3 : struct, IMarshalable
+		where R : struct, IMarshalable
+	{
+		var builder = new FunctionTypeBuilder(self.chunk);
+		builder.WithParam(Marshal.TypeOf<A0>(self.chunk));
+		builder.WithParam(Marshal.TypeOf<A1>(self.chunk));
+		builder.WithParam(Marshal.TypeOf<A2>(self.chunk));
+		builder.WithParam(Marshal.TypeOf<A3>(self.chunk));
+		builder.returnType = Marshal.TypeOf<R>(self.chunk);
+		return FinishAddFunction(self, builder, functionName, (vm, top) =>
+		{
+			var context = new Context(vm, top);
+			Context.Return(vm, function(
+				vm,
+				context.Arg<A0>(),
+				context.Arg<A1>(),
+				context.Arg<A2>(),
+				context.Arg<A3>()
+			));
+		});
+	}
+
 	private static bool FinishAddFunction(CFlat self, FunctionTypeBuilder builder, string functionName, NativeFunction.Callback function)
 	{
 		var result = builder.Build(out var typeIndex);
-		if (self.compiler.compiler.CheckFunctionBuild(result, new Slice()))
-		{
-			self.chunk.nativeFunctions.PushBack(new NativeFunction(
-				functionName,
-				typeIndex,
-				builder.returnType.GetSize(self.chunk),
-				function
-			));
-			return true;
-		}
+		if (!self.compiler.compiler.CheckFunctionBuild(result, new Slice()))
+			return false;
 
-		return false;
+		self.chunk.nativeFunctions.PushBack(new NativeFunction(
+			functionName,
+			typeIndex,
+			builder.returnType.GetSize(self.chunk),
+			function
+		));
+		return true;
 	}
 }
