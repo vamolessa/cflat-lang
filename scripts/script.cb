@@ -1,4 +1,3 @@
 fn main() {
-	let sw = StartStopwatch()
-	print StopStopwatch(sw)
+	let _a = "asd" + 3
 }

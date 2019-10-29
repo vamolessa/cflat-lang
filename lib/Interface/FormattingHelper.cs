@@ -73,32 +73,32 @@ public static class FormattingHelper
 		return new LineAndColumn(line, column);
 	}
 
-	public static Slice GetLinesSlice(string source, ushort startLineIndex, ushort endLineIndex)
+	public static Slice GetLineSlice(string source, ushort lineIndex)
 	{
-		var startLinePos = 0;
-		var lineCount = 1;
+		var lineStartIndex = 0;
 
-		for (var i = 0; i < source.Length; i++)
+		while (lineIndex > 0)
 		{
-			if (source[i] != '\n')
-				continue;
+			while (
+				lineStartIndex < source.Length &&
+				source[lineStartIndex++] != '\n'
+			)
+			{ }
 
-			if (lineCount == endLineIndex + 1)
-				return new Slice(startLinePos, i - startLinePos);
-
-			lineCount += 1;
-
-			if (lineCount == startLineIndex + 1)
-				startLinePos = i + 1;
+			lineIndex -= 1;
 		}
 
-		if (lineCount < endLineIndex + 1)
-			endLineIndex = (ushort)(lineCount - 1);
+		if (lineStartIndex >= source.Length)
+			return new Slice();
 
-		if (lineCount > startLineIndex)
-			return new Slice(startLinePos, source.Length - startLinePos);
+		var lineEndIndex = lineStartIndex;
+		while (
+			lineEndIndex < source.Length &&
+			source[lineEndIndex] != '\n'
+		)
+			lineEndIndex += 1;
 
-		return new Slice();
+		return new Slice(lineStartIndex, lineEndIndex - lineStartIndex);
 	}
 
 	public static string FormatCompileError(string source, Buffer<CompileError> errors, int contextSize, byte tabSize)
@@ -130,23 +130,31 @@ public static class FormattingHelper
 
 	private static void AddContext(string source, Slice slice, int contextSize, byte tabSize, StringBuilder sb)
 	{
+		const int LineNumberColumnWidth = 6;
 		var position = GetLineAndColumn(source, slice.index, tabSize);
-		var contextSlice = GetLinesSlice(
-			source,
-			(ushort)(position.lineIndex - contextSize + 1),
-			position.lineIndex
-		);
 
 		sb.Append(" (line: ");
 		sb.Append(position.lineIndex + 1);
 		sb.Append(", column: ");
 		sb.Append(position.columnIndex + 1);
-		sb.AppendLine(")");
+		sb.Append(")");
 
-		sb.Append(source, contextSlice.index, contextSlice.length);
+		var lineNumberTabStopOffset = (tabSize - LineNumberColumnWidth % tabSize) % tabSize;
+
+		for (var i = 0; i < contextSize; i++)
+		{
+			var lineIndex = position.lineIndex - contextSize + 1 + i;
+			var lineSlice = GetLineSlice(source, (ushort)lineIndex);
+
+			sb.AppendLine();
+			sb.Append(' ', lineNumberTabStopOffset);
+			sb.AppendFormat("{0,4}| ", lineIndex + 1);
+			sb.Append(source, lineSlice.index, lineSlice.length);
+		}
+
 		sb.AppendLine();
-		sb.Append(' ', position.columnIndex);
-		sb.Append('^', (int)(slice.length > 0 ? slice.length : 1));
+		sb.Append(' ', lineNumberTabStopOffset + LineNumberColumnWidth + position.columnIndex);
+		sb.Append('^', slice.length > 0 ? slice.length : (ushort)1);
 		sb.Append(" here\n\n");
 	}
 }

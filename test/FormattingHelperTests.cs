@@ -5,16 +5,18 @@ public sealed class FormattingHelperTests
 	private const byte TabSize = 4;
 
 	[Theory]
-	[InlineData("a", 0, 0, "a")]
-	[InlineData("a", 0, 1, "a")]
-	[InlineData("a", 0, 2, "a")]
-	[InlineData("a\nb", 0, 0, "a")]
-	[InlineData("a", 1, 1, "")]
-	[InlineData("a\nb", 0, 1, "a\nb")]
-	public void GetLinesTests(string source, ushort startLineIndex, ushort endLineIndex, string result)
+	[InlineData("abc", 0, 0, 3)]
+	[InlineData("abc\n", 0, 0, 3)]
+	[InlineData("abc", 1, 0, 0)]
+	[InlineData("abc", 2, 0, 0)]
+	[InlineData("abc\ndef", 0, 0, 3)]
+	[InlineData("abc\ndef", 1, 4, 3)]
+	[InlineData("\n", 0, 0, 0)]
+	public void GetLineTests(string source, ushort lineIndex, ushort expectedIndex, ushort expectedLength)
 	{
-		var slice = FormattingHelper.GetLinesSlice(source, startLineIndex, endLineIndex);
-		Assert.Equal(result, source.Substring(slice.index, slice.length));
+		var slice = FormattingHelper.GetLineSlice(source, lineIndex);
+		Assert.Equal(expectedIndex, slice.index);
+		Assert.Equal(expectedLength, slice.length);
 	}
 
 	[Theory]

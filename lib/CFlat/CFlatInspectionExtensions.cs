@@ -34,11 +34,7 @@ public static class ClefInspectionExtensions
 					vm.chunk.FormatFunction(callframe.functionIndex, sb);
 
 					sb.Append(" => ");
-					var slice = FormattingHelper.GetLinesSlice(
-						source.content,
-						pos.lineIndex,
-						pos.lineIndex
-					);
+					var slice = FormattingHelper.GetLineSlice(source.content, pos.lineIndex);
 					slice = FormattingHelper.Trim(source.content, slice);
 					sb.Append(source.content, slice.index, slice.length);
 					sb.AppendLine();
