@@ -39,8 +39,9 @@ public static class ClefInspectionExtensions
 						pos.lineIndex,
 						pos.lineIndex
 					);
-					var line = source.content.Substring(slice.index, slice.length).TrimStart();
-					sb.AppendLine(line);
+					slice = FormattingHelper.Trim(source.content, slice);
+					sb.Append(source.content, slice.index, slice.length);
+					sb.AppendLine();
 					break;
 				}
 			case CallFrame.Type.NativeFunction:

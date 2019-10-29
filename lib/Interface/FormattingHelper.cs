@@ -40,6 +40,20 @@ public readonly struct RuntimeError
 
 public static class FormattingHelper
 {
+	public static Slice Trim(string source, Slice slice)
+	{
+		var startIndex = (int)slice.index;
+		var endIndex = slice.index + slice.length - 1;
+
+		while (startIndex < endIndex && char.IsWhiteSpace(source, startIndex))
+			startIndex += 1;
+
+		while (endIndex > startIndex && char.IsWhiteSpace(source, endIndex))
+			endIndex -= 1;
+
+		return new Slice(startIndex, endIndex - startIndex + 1);
+	}
+
 	public static LineAndColumn GetLineAndColumn(string source, int index, byte tabSize)
 	{
 		ushort line = 0;
