@@ -34,13 +34,11 @@ internal static class VirtualMachineInstructions
 				return;
 			case Instruction.Call:
 				{
-					var size = bytes[codeIndex++];
-					baseStackIndex = memory.stackCount - size;
+					baseStackIndex = memory.stackCount - bytes[codeIndex++];
 					var functionIndex = memory.values[baseStackIndex - 1].asInt;
-					var function = vm.chunk.functions.buffer[functionIndex];
 
 					vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
-					codeIndex = function.codeIndex;
+					codeIndex = vm.chunk.functions.buffer[functionIndex].codeIndex;
 
 					vm.callframeStack.PushBackUnchecked(
 						new CallFrame(
@@ -59,6 +57,15 @@ internal static class VirtualMachineInstructions
 					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
 					vm.memory = memory;
+					vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+					vm.callframeStack.PushBackUnchecked(
+						new CallFrame(
+							0,
+							stackTop,
+							(ushort)functionIndex,
+							CallFrame.Type.NativeFunction
+						)
+					);
 
 					try
 					{
@@ -66,39 +73,39 @@ internal static class VirtualMachineInstructions
 					}
 					catch (System.Exception e)
 					{
-						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
-						vm.callframeStack.PushBackUnchecked(
-							new CallFrame(
-								0,
-								stackTop,
-								(ushort)functionIndex,
-								CallFrame.Type.NativeFunction
-							)
-						);
 						vm.Error(string.Format("{0}\nnative stack trace:\n{1}", e.Message, e.StackTrace));
 						return;
 					}
 
-					vm.memory.stackCount = VirtualMachineHelper.Return(
-						vm.memory.values,
-						vm.memory.stackCount,
-						--stackTop,
-						function.returnSize
-					);
 					memory = vm.memory;
+
+					var dstIdx = --stackTop;
+					var srcIdx = memory.stackCount - function.returnSize;
+
+					while (srcIdx < memory.stackCount)
+						memory.values[dstIdx++] = memory.values[srcIdx++];
+
+					memory.stackCount = stackTop + function.returnSize;
+
+					--vm.callframeStack.count;
 					break;
 				}
 			case Instruction.Return:
-				memory.stackCount = VirtualMachineHelper.Return(
-					memory.values,
-					memory.stackCount,
-					--baseStackIndex,
-					bytes[codeIndex++]
-				);
-				--vm.callframeStack.count;
-				codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
-				baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
-				break;
+				{
+					var size = bytes[codeIndex++];
+					var dstIdx = --baseStackIndex;
+					var srcIdx = memory.stackCount - size;
+
+					while (srcIdx < memory.stackCount)
+						memory.values[dstIdx++] = memory.values[srcIdx++];
+
+					memory.stackCount = baseStackIndex + size;
+
+					--vm.callframeStack.count;
+					codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
+					baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+					break;
+				}
 			case Instruction.Print:
 				{
 					var type = ValueType.Read(
@@ -450,8 +457,12 @@ internal static class VirtualMachineInstructions
 					break;
 				}
 			case Instruction.DebugHook:
-				if (vm.debugHook != null)
-					vm.debugHook();
+				if (vm.debugHook == null)
+					break;
+
+				vm.memory = memory;
+				vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+				vm.debugHook();
 				break;
 			case Instruction.DebugPushFrame:
 				vm.debugData.frameStack.PushBack(vm.debugData.typeStack.count);

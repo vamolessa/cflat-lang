@@ -3,17 +3,6 @@ using System.Text;
 
 internal static class VirtualMachineHelper
 {
-	public static int Return(ValueData[] memory, int stackCount, int stackTop, int size)
-	{
-		var dstIdx = stackTop;
-		var srcIdx = stackCount - size;
-
-		while (srcIdx < stackCount)
-			memory[dstIdx++] = memory[srcIdx++];
-
-		return stackTop + size;
-	}
-
 	public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 	{
 		if (type.IsReference)
