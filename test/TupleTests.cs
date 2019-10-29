@@ -76,7 +76,7 @@ public sealed class TupleTests
 		string error = null;
 		var errors = compiler.Compile(chunk, TestHelper.CompilerMode, source);
 		if (errors.count > 0)
-			error = FormattingHelper.FormatCompileError(source, errors, 1, 8);
+			error = FormattingHelper.FormatCompileError(source, errors, TestHelper.TabSize);
 		Assert.Null(error);
 
 		var sliceCount = expectedSlices.Length / 2;

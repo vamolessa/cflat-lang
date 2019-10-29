@@ -27,7 +27,7 @@ public static class Interpreter
 		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug);
 		if (compileErrors.count > 0)
 		{
-			var error = FormattingHelper.FormatCompileError(source, compileErrors, 2, TabSize);
+			var error = FormattingHelper.FormatCompileError(source, compileErrors, TabSize);
 			ConsoleHelper.Error("COMPILER ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();
@@ -52,7 +52,7 @@ public static class Interpreter
 		var runtimeError = cflat.GetError();
 		if (runtimeError.isSome)
 		{
-			var error = FormattingHelper.FormatRuntimeError(source, runtimeError.value, 2, TabSize);
+			var error = FormattingHelper.FormatRuntimeError(source, runtimeError.value, TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(error);
 			ConsoleHelper.LineBreak();

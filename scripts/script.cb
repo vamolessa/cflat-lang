@@ -1,3 +1,4 @@
 fn main() {
-	let _a = "asd" + 3
+	let _a = "asd" +
+	34
 }

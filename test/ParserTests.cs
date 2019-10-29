@@ -7,7 +7,7 @@ public sealed class ParserTest
 		var compiler = new CompilerController();
 		var compileErrors = compiler.CompileExpression(new ByteCodeChunk(), TestHelper.CompilerMode, source);
 		if (compileErrors.count > 0)
-			return "COMPILE ERROR: " + FormattingHelper.FormatCompileError(source, compileErrors, 1, TestHelper.TabSize);
+			return "COMPILE ERROR: " + FormattingHelper.FormatCompileError(source, compileErrors, TestHelper.TabSize);
 		return null;
 	}
 

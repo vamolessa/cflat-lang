@@ -101,7 +101,7 @@ public static class FormattingHelper
 		return new Slice(lineStartIndex, lineEndIndex - lineStartIndex);
 	}
 
-	public static string FormatCompileError(string source, Buffer<CompileError> errors, int contextSize, byte tabSize)
+	public static string FormatCompileError(string source, Buffer<CompileError> errors, byte tabSize)
 	{
 		var sb = new StringBuilder();
 
@@ -111,50 +111,80 @@ public static class FormattingHelper
 			sb.Append(e.message);
 
 			if (e.slice.index > 0 || e.slice.length > 0)
-				AddContext(source, e.slice, contextSize, tabSize, sb);
+				HighlightSlice(source, e.slice, tabSize, sb);
 		}
 
 		return sb.ToString();
 	}
 
-	public static string FormatRuntimeError(string source, RuntimeError error, int contextSize, byte tabSize)
+	public static string FormatRuntimeError(string source, RuntimeError error, byte tabSize)
 	{
 		var sb = new StringBuilder();
 		sb.Append((string)error.message);
 		if (error.instructionIndex < 0)
 			return sb.ToString();
 
-		AddContext(source, error.slice, contextSize, tabSize, sb);
+		HighlightSlice(source, error.slice, tabSize, sb);
 		return sb.ToString();
 	}
 
-	private static void AddContext(string source, Slice slice, int contextSize, byte tabSize, StringBuilder sb)
+	private static void HighlightSlice(string source, Slice slice, byte tabSize, StringBuilder sb)
 	{
-		const int LineNumberColumnWidth = 6;
-		var position = GetLineAndColumn(source, slice.index, tabSize);
+		var startPosition = GetLineAndColumn(source, slice.index, tabSize);
+		var endPosition = GetLineAndColumn(source, slice.index + slice.length, tabSize);
+
+		if (slice.length == 0)
+			slice = new Slice(slice.index, (ushort)1);
 
 		sb.Append(" (line: ");
-		sb.Append(position.lineIndex + 1);
+		sb.Append(startPosition.lineIndex + 1);
 		sb.Append(", column: ");
-		sb.Append(position.columnIndex + 1);
+		sb.Append(startPosition.columnIndex + 1);
 		sb.Append(")");
 
-		var lineNumberTabStopOffset = (tabSize - LineNumberColumnWidth % tabSize) % tabSize;
+		var lineNumberColumnWidth = GetDigitCount(endPosition.lineIndex + 1) + 2;
+		var lineNumberTabStopOffset = (tabSize - lineNumberColumnWidth % tabSize) % tabSize;
 
-		for (var i = 0; i < contextSize; i++)
+		sb.Append(' ', lineNumberColumnWidth - 2);
+		sb.AppendLine("|");
+		for (var i = startPosition.lineIndex; i <= endPosition.lineIndex; i++)
 		{
-			var lineIndex = position.lineIndex - contextSize + 1 + i;
-			var lineSlice = GetLineSlice(source, (ushort)lineIndex);
+			var lineSlice = GetLineSlice(source, i);
 
-			sb.AppendLine();
 			sb.Append(' ', lineNumberTabStopOffset);
-			sb.AppendFormat("{0,4}| ", lineIndex + 1);
+			sb.Append(i + 1);
+			sb.Append("| ");
 			sb.Append(source, lineSlice.index, lineSlice.length);
+			sb.AppendLine();
+
+			sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth);
+			sb.Append('|');
+			if (i == startPosition.lineIndex)
+			{
+				sb.Append(' ', lineSlice.length - 1);
+				sb.Append('^', System.Math.Min(slice.length, lineSlice.length));
+			}
+			else if (i == endPosition.lineIndex)
+			{
+				sb.Append('^', slice.index + slice.length - lineSlice.index);
+			}
+			else
+			{
+				sb.Append('^', lineSlice.length);
+			}
+			sb.AppendLine();
+		}
+	}
+
+	private static int GetDigitCount(int number)
+	{
+		var count = 1;
+		while (number > 10)
+		{
+			number /= 10;
+			count += 1;
 		}
 
-		sb.AppendLine();
-		sb.Append(' ', lineNumberTabStopOffset + LineNumberColumnWidth + position.columnIndex);
-		sb.Append('^', slice.length > 0 ? slice.length : (ushort)1);
-		sb.Append(" here\n\n");
+		return count;
 	}
 }
