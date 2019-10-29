@@ -12,7 +12,7 @@ public sealed class FunctionNotFoundException : System.Exception
 public static class TestHelper
 {
 	public static readonly Mode CompilerMode = Mode.Debug;
-	public const int TabSize = 8;
+	public const byte TabSize = 8;
 
 	public readonly struct CallAssertion
 	{

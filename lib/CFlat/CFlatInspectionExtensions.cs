@@ -28,18 +28,19 @@ public static class ClefInspectionExtensions
 						1
 					);
 					sb.Append("[line ");
-					sb.Append(pos.line);
+					sb.Append(pos.lineIndex + 1);
 					sb.Append("] ");
 
 					vm.chunk.FormatFunction(callframe.functionIndex, sb);
 
 					sb.Append(" => ");
-					var line = FormattingHelper.GetLines(
+					var slice = FormattingHelper.GetLinesSlice(
 						source.content,
-						pos.line - 1,
-						pos.line - 1
+						pos.lineIndex,
+						pos.lineIndex
 					);
-					sb.AppendLine(line.TrimStart());
+					var line = source.content.Substring(slice.index, slice.length).TrimStart();
+					sb.AppendLine(line);
 					break;
 				}
 			case CallFrame.Type.NativeFunction:

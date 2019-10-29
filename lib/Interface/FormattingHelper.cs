@@ -2,18 +2,13 @@ using System.Text;
 
 public readonly struct LineAndColumn
 {
-	public readonly int line;
-	public readonly int column;
+	public readonly ushort lineIndex;
+	public readonly ushort columnIndex;
 
-	public LineAndColumn(int line, int column)
+	public LineAndColumn(ushort lineIndex, ushort columnIndex)
 	{
-		this.line = line;
-		this.column = column;
-	}
-
-	public override string ToString()
-	{
-		return string.Format("line {0} column: {1}", line, column);
+		this.lineIndex = lineIndex;
+		this.columnIndex = columnIndex;
 	}
 }
 
@@ -45,51 +40,54 @@ public readonly struct RuntimeError
 
 public static class FormattingHelper
 {
-	public static LineAndColumn GetLineAndColumn(string source, int index, int tabSize)
+	public static LineAndColumn GetLineAndColumn(string source, int index, byte tabSize)
 	{
-		var line = 1;
-		var column = 1;
+		ushort line = 0;
+		ushort column = 0;
 
 		for (var i = 0; i < index; i++)
 		{
-			column += source[i] == '\t' ? tabSize : 1;
+			column += source[i] == '\t' ? tabSize : (byte)1;
 
 			if (source[i] == '\n')
 			{
 				line += 1;
-				column = 1;
+				column = 0;
 			}
 		}
 
 		return new LineAndColumn(line, column);
 	}
 
-	public static string GetLines(string source, int startLine, int endLine)
+	public static Slice GetLinesSlice(string source, ushort startLineIndex, ushort endLineIndex)
 	{
-		var startLineIndex = 0;
-		var lineCount = 0;
+		var startLinePos = 0;
+		var lineCount = 1;
 
 		for (var i = 0; i < source.Length; i++)
 		{
 			if (source[i] != '\n')
 				continue;
 
-			if (lineCount == endLine)
-				return source.Substring(startLineIndex, i - startLineIndex);
+			if (lineCount == endLineIndex + 1)
+				return new Slice(startLinePos, i - startLinePos);
 
 			lineCount += 1;
 
-			if (lineCount == startLine)
-				startLineIndex = i + 1;
+			if (lineCount == startLineIndex + 1)
+				startLinePos = i + 1;
 		}
 
-		if (lineCount >= startLine && lineCount <= endLine)
-			return source.Substring(startLineIndex);
+		if (lineCount < endLineIndex + 1)
+			endLineIndex = (ushort)(lineCount - 1);
 
-		return "";
+		if (lineCount > startLineIndex)
+			return new Slice(startLinePos, source.Length - startLinePos);
+
+		return new Slice();
 	}
 
-	public static string FormatCompileError(string source, Buffer<CompileError> errors, int contextSize, int tabSize)
+	public static string FormatCompileError(string source, Buffer<CompileError> errors, int contextSize, byte tabSize)
 	{
 		var sb = new StringBuilder();
 
@@ -105,7 +103,7 @@ public static class FormattingHelper
 		return sb.ToString();
 	}
 
-	public static string FormatRuntimeError(string source, RuntimeError error, int contextSize, int tabSize)
+	public static string FormatRuntimeError(string source, RuntimeError error, int contextSize, byte tabSize)
 	{
 		var sb = new StringBuilder();
 		sb.Append((string)error.message);
@@ -116,23 +114,24 @@ public static class FormattingHelper
 		return sb.ToString();
 	}
 
-	private static void AddContext(string source, Slice slice, int contextSize, int tabSize, StringBuilder sb)
+	private static void AddContext(string source, Slice slice, int contextSize, byte tabSize, StringBuilder sb)
 	{
 		var position = GetLineAndColumn(source, slice.index, tabSize);
-		var lines = GetLines(
+		var contextSlice = GetLinesSlice(
 			source,
-			System.Math.Max(position.line - contextSize, 0),
-			System.Math.Max(position.line - 1, 0)
+			(ushort)(position.lineIndex - contextSize + 1),
+			position.lineIndex
 		);
 
 		sb.Append(" (line: ");
-		sb.Append(position.line);
+		sb.Append(position.lineIndex + 1);
 		sb.Append(", column: ");
-		sb.Append(position.column);
+		sb.Append(position.columnIndex + 1);
 		sb.AppendLine(")");
 
-		sb.AppendLine(lines);
-		sb.Append(' ', position.column - 1);
+		sb.Append(source, contextSlice.index, contextSlice.length);
+		sb.AppendLine();
+		sb.Append(' ', position.columnIndex);
 		sb.Append('^', (int)(slice.length > 0 ? slice.length : 1));
 		sb.Append(" here\n\n");
 	}

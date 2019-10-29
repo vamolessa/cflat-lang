@@ -2,7 +2,7 @@ using System.Diagnostics;
 
 public static class Interpreter
 {
-	public const int TabSize = 8;
+	public const byte TabSize = 8;
 
 	public static Class<Stopwatch> StartStopwatch(VirtualMachine vm)
 	{

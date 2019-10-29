@@ -177,17 +177,17 @@ public static class ByteCodeChunkExtensions
 	{
 		var currentSourceIndex = self.sourceSlices.buffer[index].index;
 		var currentPosition = FormattingHelper.GetLineAndColumn(source, currentSourceIndex, 1);
-		var lastLine = -1;
+		var lastLineIndex = -1;
 		if (index > 0)
 		{
 			var lastSourceIndex = self.sourceSlices.buffer[index - 1].index;
-			lastLine = FormattingHelper.GetLineAndColumn(source, lastSourceIndex, 1).line;
+			lastLineIndex = FormattingHelper.GetLineAndColumn(source, lastSourceIndex, 1).lineIndex;
 		}
 
-		if (currentPosition.line == lastLine)
+		if (currentPosition.lineIndex == lastLineIndex)
 			sb.Append("   | ");
 		else
-			sb.AppendFormat("{0,4} ", currentPosition.line);
+			sb.AppendFormat("{0,4} ", currentPosition.lineIndex);
 	}
 
 	private static void PrintFunctionName(ByteCodeChunk self, int codeIndex, StringBuilder sb)
