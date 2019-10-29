@@ -61,7 +61,12 @@ public static class FormattingHelper
 
 		for (var i = 0; i < index; i++)
 		{
-			column += source[i] == '\t' ? tabSize : (byte)1;
+			switch (source[i])
+			{
+			case '\t': column += tabSize; break;
+			case '\r': break;
+			default: column += 1; break;
+			}
 
 			if (source[i] == '\n')
 			{
@@ -140,12 +145,12 @@ public static class FormattingHelper
 		sb.Append(startPosition.lineIndex + 1);
 		sb.Append(", column: ");
 		sb.Append(startPosition.columnIndex + 1);
-		sb.Append(")");
+		sb.AppendLine(")");
 
 		var lineNumberColumnWidth = GetDigitCount(endPosition.lineIndex + 1) + 2;
 		var lineNumberTabStopOffset = (tabSize - lineNumberColumnWidth % tabSize) % tabSize;
 
-		sb.Append(' ', lineNumberColumnWidth - 2);
+		sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth - 2);
 		sb.AppendLine("|");
 		for (var i = startPosition.lineIndex; i <= endPosition.lineIndex; i++)
 		{
@@ -157,20 +162,27 @@ public static class FormattingHelper
 			sb.Append(source, lineSlice.index, lineSlice.length);
 			sb.AppendLine();
 
-			sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth);
-			sb.Append('|');
+			sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth - 2);
+			sb.Append("| ");
+
 			if (i == startPosition.lineIndex)
 			{
-				sb.Append(' ', lineSlice.length - 1);
-				sb.Append('^', System.Math.Min(slice.length, lineSlice.length));
+				sb.Append(' ', startPosition.columnIndex);
+				var endColumnIndex = startPosition.lineIndex == endPosition.lineIndex ?
+					endPosition.columnIndex :
+					GetLineAndColumn(source, lineSlice.index + lineSlice.length, tabSize).columnIndex;
+
+				sb.Append('^', endColumnIndex - startPosition.columnIndex);
 			}
 			else if (i == endPosition.lineIndex)
 			{
-				sb.Append('^', slice.index + slice.length - lineSlice.index);
+				var endColumnIndex = GetLineAndColumn(source, slice.index + slice.length, tabSize).columnIndex;
+				sb.Append('^', endColumnIndex);
 			}
 			else
 			{
-				sb.Append('^', lineSlice.length);
+				var endColumnIndex = GetLineAndColumn(source, lineSlice.index + lineSlice.length, tabSize).columnIndex;
+				sb.Append('^', endColumnIndex);
 			}
 			sb.AppendLine();
 		}
