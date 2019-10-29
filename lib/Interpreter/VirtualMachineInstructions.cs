@@ -457,12 +457,12 @@ internal static class VirtualMachineInstructions
 					break;
 				}
 			case Instruction.DebugHook:
-				if (vm.debugHook == null)
+				if (vm.debugHookCallback == null)
 					break;
 
 				vm.memory = memory;
 				vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
-				vm.debugHook();
+				vm.debugHookCallback();
 				break;
 			case Instruction.DebugPushFrame:
 				vm.debugData.frameStack.PushBack(vm.debugData.typeStack.count);

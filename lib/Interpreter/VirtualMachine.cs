@@ -1,3 +1,5 @@
+public delegate void DebugHookCallback();
+
 internal struct CallFrame
 {
 	public enum Type : ushort
@@ -40,7 +42,7 @@ public sealed class VirtualMachine
 	internal Memory memory = new Memory(256);
 	internal Buffer<object> nativeObjects;
 	internal DebugData debugData = new DebugData();
-	internal System.Action debugHook;
+	internal DebugHookCallback debugHookCallback;
 	internal Option<RuntimeError> error;
 
 	internal void Load(ByteCodeChunk chunk)

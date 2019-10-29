@@ -64,6 +64,16 @@ public sealed class CFlat
 		return true;
 	}
 
+	public void AddDebugHook(DebugHookCallback callback)
+	{
+		vm.debugHookCallback += callback;
+	}
+
+	public void RemoveDebugHook(DebugHookCallback callback)
+	{
+		vm.debugHookCallback -= callback;
+	}
+
 	public Option<RuntimeError> GetError()
 	{
 		return vm.error;
