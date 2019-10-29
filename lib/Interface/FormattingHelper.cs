@@ -98,26 +98,8 @@ public static class FormattingHelper
 			var e = errors.buffer[i];
 			sb.Append(e.message);
 
-			if (e.slice.index == 0 && e.slice.length == 0)
-				continue;
-
-			var position = GetLineAndColumn(source, e.slice.index, tabSize);
-			var lines = GetLines(
-				source,
-				System.Math.Max(position.line - contextSize, 0),
-				System.Math.Max(position.line - 1, 0)
-			);
-
-			sb.Append(" (line: ");
-			sb.Append(position.line);
-			sb.Append(", column: ");
-			sb.Append(position.column);
-			sb.AppendLine(")");
-
-			sb.AppendLine(lines);
-			sb.Append(' ', position.column - 1);
-			sb.Append('^', e.slice.length > 0 ? e.slice.length : 1);
-			sb.Append(" here\n\n");
+			if (e.slice.index > 0 || e.slice.length > 0)
+				AddContext(source, e.slice, contextSize, tabSize, sb);
 		}
 
 		return sb.ToString();
@@ -130,7 +112,18 @@ public static class FormattingHelper
 		if (error.instructionIndex < 0)
 			return sb.ToString();
 
-		var position = FormattingHelper.GetLineAndColumn(source, (int)error.slice.index, tabSize);
+		AddContext(source, error.slice, contextSize, tabSize, sb);
+		return sb.ToString();
+	}
+
+	private static void AddContext(string source, Slice slice, int contextSize, int tabSize, StringBuilder sb)
+	{
+		var position = GetLineAndColumn(source, slice.index, tabSize);
+		var lines = GetLines(
+			source,
+			System.Math.Max(position.line - contextSize, 0),
+			System.Math.Max(position.line - 1, 0)
+		);
 
 		sb.Append(" (line: ");
 		sb.Append(position.line);
@@ -138,16 +131,9 @@ public static class FormattingHelper
 		sb.Append(position.column);
 		sb.AppendLine(")");
 
-		sb.Append(FormattingHelper.GetLines(
-			source,
-			System.Math.Max(position.line - contextSize, 0),
-			System.Math.Max(position.line - 1, 0)
-		));
-		sb.AppendLine();
+		sb.AppendLine(lines);
 		sb.Append(' ', position.column - 1);
-		sb.Append('^', (int)(error.slice.length > 0 ? error.slice.length : 1));
+		sb.Append('^', (int)(slice.length > 0 ? slice.length : 1));
 		sb.Append(" here\n\n");
-
-		return sb.ToString();
 	}
 }

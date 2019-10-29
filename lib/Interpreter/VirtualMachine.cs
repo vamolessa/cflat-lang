@@ -40,6 +40,7 @@ public sealed class VirtualMachine
 	internal Memory memory = new Memory(256);
 	internal Buffer<object> nativeObjects;
 	internal DebugData debugData = new DebugData();
+	internal System.Action debugHook;
 	internal Option<RuntimeError> error;
 
 	internal void Load(ByteCodeChunk chunk)

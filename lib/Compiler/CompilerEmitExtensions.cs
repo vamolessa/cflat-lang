@@ -16,6 +16,8 @@ internal static class CompilerEmitExtensions
 
 	public static Compiler EmitInstruction(this Compiler self, Instruction instruction)
 	{
+		if (instruction < Instruction.DebugHook)
+			self.EmitByte((byte)Instruction.DebugHook);
 		return self.EmitByte((byte)instruction);
 	}
 

@@ -57,6 +57,7 @@ internal enum Instruction
 	PopAndJumpForwardIfFalse,
 	RepeatLoopCheck,
 
+	DebugHook,
 	DebugPushFrame,
 	DebugPopFrame,
 	DebugPushType,

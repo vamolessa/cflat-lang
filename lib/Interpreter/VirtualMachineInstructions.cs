@@ -449,6 +449,10 @@ internal static class VirtualMachineInstructions
 					memory.PushBackStack(new ValueData(less));
 					break;
 				}
+			case Instruction.DebugHook:
+				if (vm.debugHook != null)
+					vm.debugHook();
+				break;
 			case Instruction.DebugPushFrame:
 				vm.debugData.frameStack.PushBack(vm.debugData.typeStack.count);
 				break;

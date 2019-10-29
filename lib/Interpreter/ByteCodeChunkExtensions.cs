@@ -241,6 +241,7 @@ public static class ByteCodeChunkExtensions
 		case Instruction.GreaterFloat:
 		case Instruction.LessInt:
 		case Instruction.LessFloat:
+		case Instruction.DebugHook:
 		case Instruction.DebugPushFrame:
 		case Instruction.DebugPopFrame:
 		case Instruction.DebugPopType:
