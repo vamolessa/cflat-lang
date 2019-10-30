@@ -116,16 +116,17 @@ public static class FormattingHelper
 		if (slice.length == 0)
 			slice = new Slice(slice.index, (ushort)1);
 
-		sb.Append(" (");
+		var lineNumberColumnWidth = GetDigitCount(endPosition.lineIndex + 1) + 2;
+		var lineNumberTabStopOffset = (tabSize - lineNumberColumnWidth % tabSize) % tabSize;
+
+		sb.AppendLine();
+		sb.Append(' ', lineNumberTabStopOffset);
 		sb.Append(sourceName);
 		sb.Append(':');
 		sb.Append(startPosition.lineIndex + 1);
 		sb.Append(':');
 		sb.Append(startPosition.columnIndex + 1);
-		sb.AppendLine(")");
-
-		var lineNumberColumnWidth = GetDigitCount(endPosition.lineIndex + 1) + 2;
-		var lineNumberTabStopOffset = (tabSize - lineNumberColumnWidth % tabSize) % tabSize;
+		sb.AppendLine();
 
 		sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth - 2);
 		sb.AppendLine("|");
