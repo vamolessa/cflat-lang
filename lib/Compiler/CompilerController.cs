@@ -32,9 +32,9 @@ internal sealed class CompilerController
 	public readonly Compiler compiler = new Compiler();
 	private readonly ParseRules parseRules = new ParseRules();
 
-	public Buffer<CompileError> Compile(ByteCodeChunk chunk, Mode mode, string source)
+	public Buffer<CompileError> Compile(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
 	{
-		compiler.Reset(chunk, mode, source);
+		compiler.Reset(chunk, mode, source, sourceIndex);
 
 		compiler.parser.Next();
 		while (!compiler.parser.Match(TokenKind.End))
@@ -56,9 +56,9 @@ internal sealed class CompilerController
 		return compiler.errors;
 	}
 
-	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, Mode mode, string source)
+	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
 	{
-		compiler.Reset(chunk, mode, source);
+		compiler.Reset(chunk, mode, source, sourceIndex);
 
 		{
 			compiler.DebugEmitPushFrame();

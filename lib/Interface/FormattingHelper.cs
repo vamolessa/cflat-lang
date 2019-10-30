@@ -14,11 +14,13 @@ public readonly struct LineAndColumn
 
 public readonly struct CompileError
 {
+	public readonly int sourceIndex;
 	public readonly Slice slice;
 	public readonly string message;
 
-	public CompileError(Slice slice, string message)
+	public CompileError(int sourceIndex, Slice slice, string message)
 	{
+		this.sourceIndex = sourceIndex;
 		this.slice = slice;
 		this.message = message;
 	}
@@ -106,34 +108,7 @@ public static class FormattingHelper
 		return new Slice(lineStartIndex, lineEndIndex - lineStartIndex);
 	}
 
-	public static string FormatCompileError(string source, Buffer<CompileError> errors, byte tabSize)
-	{
-		var sb = new StringBuilder();
-
-		for (var i = 0; i < errors.count; i++)
-		{
-			var e = errors.buffer[i];
-			sb.Append(e.message);
-
-			if (e.slice.index > 0 || e.slice.length > 0)
-				HighlightSlice(source, e.slice, tabSize, sb);
-		}
-
-		return sb.ToString();
-	}
-
-	public static string FormatRuntimeError(string source, RuntimeError error, byte tabSize)
-	{
-		var sb = new StringBuilder();
-		sb.Append((string)error.message);
-		if (error.instructionIndex < 0)
-			return sb.ToString();
-
-		HighlightSlice(source, error.slice, tabSize, sb);
-		return sb.ToString();
-	}
-
-	private static void HighlightSlice(string source, Slice slice, byte tabSize, StringBuilder sb)
+	public static void AddHighlightSlice(string sourceName, string source, Slice slice, byte tabSize, StringBuilder sb)
 	{
 		var startPosition = GetLineAndColumn(source, slice.index, tabSize);
 		var endPosition = GetLineAndColumn(source, slice.index + slice.length, tabSize);

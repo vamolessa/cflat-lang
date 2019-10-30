@@ -70,32 +70,31 @@ public sealed class TupleTests
 	)]
 	public void NestedTupleTest(string source, int[] expectedSlices, TypeKind[] expectedElementKinds)
 	{
-		var compiler = new CompilerController();
-		var chunk = new ByteCodeChunk();
+		var cflat = new CFlat();
 
 		string error = null;
-		var errors = compiler.Compile(chunk, TestHelper.CompilerMode, source);
+		var errors = cflat.CompileSource("source", source, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			error = FormattingHelper.FormatCompileError(source, errors, TestHelper.TabSize);
+			error = cflat.GetFormattedCompileErrors(TestHelper.TabSize);
 		Assert.Null(error);
 
 		var sliceCount = expectedSlices.Length / 2;
-		Assert.Equal(sliceCount, chunk.tupleTypes.count);
-		Assert.Equal(expectedElementKinds.Length, chunk.tupleElementTypes.count);
+		Assert.Equal(sliceCount, cflat.chunk.tupleTypes.count);
+		Assert.Equal(expectedElementKinds.Length, cflat.chunk.tupleElementTypes.count);
 
-		var slices = new int[chunk.tupleTypes.count * 2];
+		var slices = new int[cflat.chunk.tupleTypes.count * 2];
 		for (var i = 0; i < sliceCount; i++)
 		{
-			var tupleType = chunk.tupleTypes.buffer[i];
+			var tupleType = cflat.chunk.tupleTypes.buffer[i];
 			slices[i * 2] = tupleType.elements.index;
 			slices[i * 2 + 1] = tupleType.elements.length;
 		}
 		Assert.Equal(expectedSlices, slices);
 
-		var elementKinds = new TypeKind[chunk.tupleElementTypes.count];
+		var elementKinds = new TypeKind[cflat.chunk.tupleElementTypes.count];
 		for (var i = 0; i < elementKinds.Length; i++)
 		{
-			var elementType = chunk.tupleElementTypes.buffer[i];
+			var elementType = cflat.chunk.tupleElementTypes.buffer[i];
 			elementKinds[i] = elementType.kind;
 		}
 		Assert.Equal(expectedElementKinds, elementKinds);

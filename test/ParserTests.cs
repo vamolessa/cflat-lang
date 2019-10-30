@@ -4,10 +4,10 @@ public sealed class ParserTest
 {
 	public static string CompileExpression(string source)
 	{
-		var compiler = new CompilerController();
-		var compileErrors = compiler.CompileExpression(new ByteCodeChunk(), TestHelper.CompilerMode, source);
+		var cflat = new CFlat();
+		var compileErrors = cflat.CompileExpression(source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
-			return "COMPILE ERROR: " + FormattingHelper.FormatCompileError(source, compileErrors, TestHelper.TabSize);
+			return "COMPILE ERROR: " + cflat.GetFormattedCompileErrors(1);
 		return null;
 	}
 

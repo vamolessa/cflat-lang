@@ -35,7 +35,7 @@ public sealed class CFlat
 		sources.PushBack(new Source(sourceName, source));
 		chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
 
-		var errors = compiler.Compile(chunk, mode, source);
+		var errors = compiler.Compile(chunk, mode, source, sources.count - 1);
 		if (errors.count > 0)
 			compileErrors = errors;
 		return errors;
@@ -49,7 +49,7 @@ public sealed class CFlat
 		sources.PushBack(new Source("expression", source));
 		chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
 
-		var errors = compiler.CompileExpression(chunk, mode, source);
+		var errors = compiler.CompileExpression(chunk, mode, source, sources.count - 1);
 		if (errors.count > 0)
 			compileErrors = errors;
 		return errors;

@@ -1,4 +1,4 @@
-public static class ClefInterfaceExtensions
+public static class CFlatInterfaceExtensions
 {
 	public static Option<Function<A, R>> GetFunction<A, R>(this CFlat self, string functionName)
 		where A : struct, ITuple

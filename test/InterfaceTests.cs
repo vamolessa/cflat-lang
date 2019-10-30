@@ -192,7 +192,7 @@ public sealed class InterfaceTests
 
 		var compileErrors = cflat.CompileSource("tests", source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(FormattingHelper.FormatCompileError(source, compileErrors, 1));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors(1));
 
 		cflat.Load();
 		someFunction = cflat.GetFunction<Tuple<Int>, Int>("some_function").value;

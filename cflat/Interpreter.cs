@@ -27,9 +27,9 @@ public static class Interpreter
 		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug);
 		if (compileErrors.count > 0)
 		{
-			var error = FormattingHelper.FormatCompileError(source, compileErrors, TabSize);
+			var errorMessage = cflat.GetFormattedCompileErrors(TabSize);
 			ConsoleHelper.Error("COMPILER ERROR\n");
-			ConsoleHelper.Error(error);
+			ConsoleHelper.Error(errorMessage);
 			ConsoleHelper.LineBreak();
 
 			System.Environment.ExitCode = 65;
@@ -52,9 +52,9 @@ public static class Interpreter
 		var runtimeError = cflat.GetError();
 		if (runtimeError.isSome)
 		{
-			var error = FormattingHelper.FormatRuntimeError(source, runtimeError.value, TabSize);
+			var errorMessage = cflat.GetFormattedRuntimeError(TabSize);
 			ConsoleHelper.Error("RUNTIME ERROR\n");
-			ConsoleHelper.Error(error);
+			ConsoleHelper.Error(errorMessage);
 			ConsoleHelper.LineBreak();
 			ConsoleHelper.Error(cflat.TraceCallStack());
 

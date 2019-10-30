@@ -39,32 +39,31 @@ public sealed class FunctionTests
 	)]
 	public void NestedFunctionExpressionTest(string source, int[] expectedSlices, TypeKind[] expectedParamsKinds)
 	{
-		var compiler = new CompilerController();
-		var chunk = new ByteCodeChunk();
+		var cflat = new CFlat();
 
 		string error = null;
-		var errors = compiler.Compile(chunk, TestHelper.CompilerMode, source);
+		var errors = cflat.CompileSource("source", source, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			error = FormattingHelper.FormatCompileError(source, errors, TestHelper.TabSize);
+			error = cflat.GetFormattedCompileErrors(TestHelper.TabSize);
 		Assert.Null(error);
 
 		var sliceCount = expectedSlices.Length / 2;
-		Assert.Equal(sliceCount, chunk.functionTypes.count);
-		Assert.Equal(expectedParamsKinds.Length, chunk.functionParamTypes.count);
+		Assert.Equal(sliceCount, cflat.chunk.functionTypes.count);
+		Assert.Equal(expectedParamsKinds.Length, cflat.chunk.functionParamTypes.count);
 
-		var slices = new int[chunk.functionTypes.count * 2];
+		var slices = new int[cflat.chunk.functionTypes.count * 2];
 		for (var i = 0; i < sliceCount; i++)
 		{
-			var functionType = chunk.functionTypes.buffer[i];
+			var functionType = cflat.chunk.functionTypes.buffer[i];
 			slices[i * 2] = functionType.parameters.index;
 			slices[i * 2 + 1] = functionType.parameters.length;
 		}
 		Assert.Equal(expectedSlices, slices);
 
-		var fieldKinds = new TypeKind[chunk.functionParamTypes.count];
+		var fieldKinds = new TypeKind[cflat.chunk.functionParamTypes.count];
 		for (var i = 0; i < fieldKinds.Length; i++)
 		{
-			var functionParamType = chunk.functionParamTypes.buffer[i];
+			var functionParamType = cflat.chunk.functionParamTypes.buffer[i];
 			fieldKinds[i] = functionParamType.kind;
 		}
 		Assert.Equal(expectedParamsKinds, fieldKinds);

@@ -30,7 +30,7 @@ public static class TestHelper
 			string errorMessage = null;
 			var error = cflat.GetError();
 			if (error.isSome)
-				errorMessage = FormattingHelper.FormatRuntimeError(source, error.value, TabSize);
+				errorMessage = cflat.GetFormattedCompileErrors(TabSize);
 			Assert.Null(errorMessage);
 
 			if (CompilerMode == Mode.Release)
@@ -50,7 +50,7 @@ public static class TestHelper
 	{
 		var compileErrors = cflat.CompileSource("tests", source, CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(FormattingHelper.FormatCompileError(source, compileErrors, TabSize));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors(TabSize));
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
@@ -72,7 +72,7 @@ public static class TestHelper
 	{
 		var compileErrors = cflat.CompileExpression(source, CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(FormattingHelper.FormatCompileError(source, compileErrors, TabSize));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors(TabSize));
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);

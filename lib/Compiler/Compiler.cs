@@ -9,6 +9,7 @@ internal sealed class Compiler
 	public Mode mode;
 	public readonly Parser parser;
 	public Buffer<CompileError> errors = new Buffer<CompileError>();
+	public int currentSourceIndex;
 
 	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
@@ -31,16 +32,17 @@ internal sealed class Compiler
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		this.parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(null, Mode.Release, null);
+		Reset(null, Mode.Release, null, 0);
 	}
 
-	public void Reset(ByteCodeChunk chunk, Mode mode, string source)
+	public void Reset(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
 	{
+		this.mode = mode;
 		parser.tokenizer.Reset(source);
 		parser.Reset();
 
 		errors.count = 0;
-		this.mode = mode;
+		currentSourceIndex = sourceIndex;
 
 		isInPanicMode = false;
 		this.chunk = chunk;
@@ -52,7 +54,7 @@ internal sealed class Compiler
 	public Compiler AddSoftError(Slice slice, string format, params object[] args)
 	{
 		if (!isInPanicMode)
-			errors.PushBack(new CompileError(slice, string.Format(format, args)));
+			errors.PushBack(new CompileError(currentSourceIndex, slice, string.Format(format, args)));
 		return this;
 	}
 
@@ -62,9 +64,9 @@ internal sealed class Compiler
 		{
 			isInPanicMode = true;
 			if (args == null || args.Length == 0)
-				errors.PushBack(new CompileError(slice, format));
+				errors.PushBack(new CompileError(currentSourceIndex, slice, format));
 			else
-				errors.PushBack(new CompileError(slice, string.Format(format, args)));
+				errors.PushBack(new CompileError(currentSourceIndex, slice, string.Format(format, args)));
 		}
 		return this;
 	}

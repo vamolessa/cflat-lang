@@ -1,7 +1,44 @@
 using System.Text;
 
-public static class ClefInspectionExtensions
+public static class CFlatDiagnosticsExtensions
 {
+	public static string GetFormattedCompileErrors(this CFlat self, byte tabSize)
+	{
+		var sb = new StringBuilder();
+
+		for (var i = 0; i < self.compileErrors.count; i++)
+		{
+			var e = self.compileErrors.buffer[i];
+			sb.Append(e.message);
+
+			if (e.slice.index > 0 || e.slice.length > 0)
+			{
+				var source = self.sources.buffer[e.sourceIndex];
+				FormattingHelper.AddHighlightSlice(source.name, source.content, e.slice, tabSize, sb);
+			}
+		}
+
+		return sb.ToString();
+	}
+
+	public static string GetFormattedRuntimeError(this CFlat self, byte tabSize)
+	{
+		if (!self.vm.error.isSome)
+			return "";
+
+		var error = self.vm.error.value;
+
+		var sb = new StringBuilder();
+		sb.Append(error.message);
+		if (error.instructionIndex < 0)
+			return sb.ToString();
+
+		var source = self.sources.buffer[self.vm.chunk.FindSourceIndex(error.instructionIndex)];
+
+		FormattingHelper.AddHighlightSlice(source.name, source.content, error.slice, tabSize, sb);
+		return sb.ToString();
+	}
+
 	public static string TraceCallStack(this CFlat self)
 	{
 		var vm = self.vm;
