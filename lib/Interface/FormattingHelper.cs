@@ -4,11 +4,13 @@ public readonly struct LineAndColumn
 {
 	public readonly ushort lineIndex;
 	public readonly ushort columnIndex;
+	public readonly ushort formattedColumnIndex;
 
-	public LineAndColumn(ushort lineIndex, ushort columnIndex)
+	public LineAndColumn(ushort lineIndex, ushort columnIndex, ushort formattedColumnIndex)
 	{
 		this.lineIndex = lineIndex;
 		this.columnIndex = columnIndex;
+		this.formattedColumnIndex = formattedColumnIndex;
 	}
 }
 
@@ -42,6 +44,8 @@ public readonly struct RuntimeError
 
 public static class FormattingHelper
 {
+	private const int FormattedTabSize = 4;
+
 	public static Slice Trim(string source, Slice slice)
 	{
 		var startIndex = (int)slice.index;
@@ -56,28 +60,35 @@ public static class FormattingHelper
 		return new Slice(startIndex, endIndex - startIndex + 1);
 	}
 
-	public static LineAndColumn GetLineAndColumn(string source, int index, byte tabSize)
+	public static LineAndColumn GetLineAndColumn(string source, int index)
 	{
 		ushort line = 0;
 		ushort column = 0;
+		ushort formattedColumn = 0;
 
 		for (var i = 0; i < index; i++)
 		{
+			column += 1;
+
 			switch (source[i])
 			{
-			case '\t': column += tabSize; break;
-			case '\r': break;
-			default: column += 1; break;
-			}
-
-			if (source[i] == '\n')
-			{
+			case '\t':
+				formattedColumn += FormattedTabSize;
+				break;
+			case '\r':
+				break;
+			case '\n':
 				line += 1;
 				column = 0;
+				formattedColumn = 0;
+				break;
+			default:
+				formattedColumn += 1;
+				break;
 			}
 		}
 
-		return new LineAndColumn(line, column);
+		return new LineAndColumn(line, column, formattedColumn);
 	}
 
 	public static Slice GetLineSlice(string source, ushort lineIndex)
@@ -108,19 +119,16 @@ public static class FormattingHelper
 		return new Slice(lineStartIndex, lineEndIndex - lineStartIndex);
 	}
 
-	public static void AddHighlightSlice(string sourceName, string source, Slice slice, byte tabSize, StringBuilder sb)
+	public static void AddHighlightSlice(string sourceName, string source, Slice slice, StringBuilder sb)
 	{
-		var startPosition = GetLineAndColumn(source, slice.index, tabSize);
-		var endPosition = GetLineAndColumn(source, slice.index + slice.length, tabSize);
+		var startPosition = GetLineAndColumn(source, slice.index);
+		var endPosition = GetLineAndColumn(source, slice.index + slice.length);
 
 		if (slice.length == 0)
 			slice = new Slice(slice.index, (ushort)1);
 
-		var lineNumberColumnWidth = GetDigitCount(endPosition.lineIndex + 1) + 2;
-		var lineNumberTabStopOffset = (tabSize - lineNumberColumnWidth % tabSize) % tabSize;
-
 		sb.AppendLine();
-		sb.Append(' ', lineNumberTabStopOffset);
+		sb.Append("  ");
 		sb.Append(sourceName);
 		sb.Append(':');
 		sb.Append(startPosition.lineIndex + 1);
@@ -128,42 +136,41 @@ public static class FormattingHelper
 		sb.Append(startPosition.columnIndex + 1);
 		sb.AppendLine();
 
-		sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth - 2);
-		sb.AppendLine("|");
+		sb.AppendLine("    |");
 		for (var i = startPosition.lineIndex; i <= endPosition.lineIndex; i++)
 		{
 			var lineSlice = GetLineSlice(source, i);
 
-			sb.Append(' ', lineNumberTabStopOffset);
-			sb.Append(i + 1);
+			sb.AppendFormat("{0,4}", i + 1);
 			sb.Append("| ");
 			sb.Append(source, lineSlice.index, lineSlice.length);
 			sb.AppendLine();
 
-			sb.Append(' ', lineNumberTabStopOffset + lineNumberColumnWidth - 2);
-			sb.Append("| ");
+			sb.Append("    | ");
 
 			if (i == startPosition.lineIndex)
 			{
-				sb.Append(' ', startPosition.columnIndex);
+				sb.Append(' ', startPosition.formattedColumnIndex);
 				var endColumnIndex = startPosition.lineIndex == endPosition.lineIndex ?
-					endPosition.columnIndex :
-					GetLineAndColumn(source, lineSlice.index + lineSlice.length, tabSize).columnIndex;
+					endPosition.formattedColumnIndex :
+					GetLineAndColumn(source, lineSlice.index + lineSlice.length).formattedColumnIndex;
 
-				sb.Append('^', endColumnIndex - startPosition.columnIndex);
+				sb.Append('^', endColumnIndex - startPosition.formattedColumnIndex);
 			}
 			else if (i == endPosition.lineIndex)
 			{
-				var endColumnIndex = GetLineAndColumn(source, slice.index + slice.length, tabSize).columnIndex;
+				var endColumnIndex = GetLineAndColumn(source, slice.index + slice.length).formattedColumnIndex;
 				sb.Append('^', endColumnIndex);
 			}
 			else
 			{
-				var endColumnIndex = GetLineAndColumn(source, lineSlice.index + lineSlice.length, tabSize).columnIndex;
+				var endColumnIndex = GetLineAndColumn(source, lineSlice.index + lineSlice.length).formattedColumnIndex;
 				sb.Append('^', endColumnIndex);
 			}
 			sb.AppendLine();
 		}
+
+		sb.Replace("\t", new string(' ', FormattedTabSize));
 	}
 
 	private static int GetDigitCount(int number)

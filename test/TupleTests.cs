@@ -75,7 +75,7 @@ public sealed class TupleTests
 		string error = null;
 		var errors = cflat.CompileSource("source", source, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			error = cflat.GetFormattedCompileErrors(TestHelper.TabSize);
+			error = cflat.GetFormattedCompileErrors();
 		Assert.Null(error);
 
 		var sliceCount = expectedSlices.Length / 2;

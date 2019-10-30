@@ -20,17 +20,18 @@ public sealed class FormattingHelperTests
 	}
 
 	[Theory]
-	[InlineData("0123456789", 0, 0, 0)]
-	[InlineData("0123456789", 4, 0, 4)]
-	[InlineData("\n123456789", 1, 1, 0)]
-	[InlineData("0123\n56789", 7, 1, 2)]
-	[InlineData("0123\n\t\t789", 7, 1, 8)]
-	[InlineData("01\r23456789", 6, 0, 5)]
-	public void GetLineAndColumnTests(string source, int index, int expectedLineIndex, int expectedColumnIndex)
+	[InlineData("0123456789", 0, 0, 0, 0)]
+	[InlineData("0123456789", 4, 0, 4, 4)]
+	[InlineData("\n123456789", 1, 1, 0, 0)]
+	[InlineData("0123\n56789", 7, 1, 2, 2)]
+	[InlineData("0123\n\t\t789", 7, 1, 2, 8)]
+	[InlineData("01\r23456789", 6, 0, 6, 5)]
+	public void GetLineAndColumnTests(string source, int index, int expectedLineIndex, int expectedColumnIndex, int expectedFormattedColumnIndex)
 	{
-		var position = FormattingHelper.GetLineAndColumn(source, index, TabSize);
+		var position = FormattingHelper.GetLineAndColumn(source, index);
 		Assert.Equal(expectedLineIndex, position.lineIndex);
 		Assert.Equal(expectedColumnIndex, position.columnIndex);
+		Assert.Equal(expectedFormattedColumnIndex, position.formattedColumnIndex);
 	}
 
 	[Theory]

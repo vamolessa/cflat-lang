@@ -2,8 +2,6 @@ using System.Diagnostics;
 
 public static class Interpreter
 {
-	public const byte TabSize = 4;
-
 	public static Class<Stopwatch> StartStopwatch(VirtualMachine vm)
 	{
 		var sw = new Stopwatch();
@@ -27,7 +25,7 @@ public static class Interpreter
 		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug);
 		if (compileErrors.count > 0)
 		{
-			var errorMessage = cflat.GetFormattedCompileErrors(TabSize);
+			var errorMessage = cflat.GetFormattedCompileErrors();
 			ConsoleHelper.Error("COMPILER ERROR\n");
 			ConsoleHelper.Error(errorMessage);
 			ConsoleHelper.LineBreak();
@@ -52,7 +50,7 @@ public static class Interpreter
 		var runtimeError = cflat.GetError();
 		if (runtimeError.isSome)
 		{
-			var errorMessage = cflat.GetFormattedRuntimeError(TabSize);
+			var errorMessage = cflat.GetFormattedRuntimeError();
 			ConsoleHelper.Error("RUNTIME ERROR\n");
 			ConsoleHelper.Error(errorMessage);
 			ConsoleHelper.LineBreak();

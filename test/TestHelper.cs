@@ -12,7 +12,6 @@ public sealed class FunctionNotFoundException : System.Exception
 public static class TestHelper
 {
 	public static readonly Mode CompilerMode = Mode.Debug;
-	public const byte TabSize = 8;
 
 	public readonly struct CallAssertion
 	{
@@ -30,7 +29,7 @@ public static class TestHelper
 			string errorMessage = null;
 			var error = cflat.GetError();
 			if (error.isSome)
-				errorMessage = cflat.GetFormattedCompileErrors(TabSize);
+				errorMessage = cflat.GetFormattedCompileErrors();
 			Assert.Null(errorMessage);
 
 			if (CompilerMode == Mode.Release)
@@ -50,7 +49,7 @@ public static class TestHelper
 	{
 		var compileErrors = cflat.CompileSource("tests", source, CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(cflat.GetFormattedCompileErrors(TabSize));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
@@ -72,7 +71,7 @@ public static class TestHelper
 	{
 		var compileErrors = cflat.CompileExpression(source, CompilerMode);
 		if (compileErrors.count > 0)
-			throw new CompileErrorException(cflat.GetFormattedCompileErrors(TabSize));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 
 		cflat.Load();
 		assertion = new CallAssertion(source, cflat);

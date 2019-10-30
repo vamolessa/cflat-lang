@@ -2,7 +2,7 @@ using System.Text;
 
 public static class CFlatDiagnosticsExtensions
 {
-	public static string GetFormattedCompileErrors(this CFlat self, byte tabSize)
+	public static string GetFormattedCompileErrors(this CFlat self)
 	{
 		var sb = new StringBuilder();
 
@@ -14,14 +14,14 @@ public static class CFlatDiagnosticsExtensions
 			if (e.slice.index > 0 || e.slice.length > 0)
 			{
 				var source = self.sources.buffer[e.sourceIndex];
-				FormattingHelper.AddHighlightSlice(source.name, source.content, e.slice, tabSize, sb);
+				FormattingHelper.AddHighlightSlice(source.name, source.content, e.slice, sb);
 			}
 		}
 
 		return sb.ToString();
 	}
 
-	public static string GetFormattedRuntimeError(this CFlat self, byte tabSize)
+	public static string GetFormattedRuntimeError(this CFlat self)
 	{
 		if (!self.vm.error.isSome)
 			return "";
@@ -35,7 +35,7 @@ public static class CFlatDiagnosticsExtensions
 
 		var source = self.sources.buffer[self.vm.chunk.FindSourceIndex(error.instructionIndex)];
 
-		FormattingHelper.AddHighlightSlice(source.name, source.content, error.slice, tabSize, sb);
+		FormattingHelper.AddHighlightSlice(source.name, source.content, error.slice, sb);
 		return sb.ToString();
 	}
 
@@ -61,8 +61,7 @@ public static class CFlatDiagnosticsExtensions
 
 					var pos = FormattingHelper.GetLineAndColumn(
 						source.content,
-						sourceIndex,
-						1
+						sourceIndex
 					);
 					sb.Append("[line ");
 					sb.Append(pos.lineIndex + 1);

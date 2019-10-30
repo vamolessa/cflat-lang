@@ -12,10 +12,10 @@ public sealed class MultipleSourcesTests
 		var cflat = new CFlat();
 		var errors = cflat.CompileSource("source0", source0, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			throw new CompileErrorException(cflat.GetFormattedCompileErrors(1));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 		errors = cflat.CompileSource("source1", source1, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			throw new CompileErrorException(cflat.GetFormattedCompileErrors(1));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 		Assert.True(cflat.Load());
 	}
 
@@ -29,11 +29,11 @@ public sealed class MultipleSourcesTests
 		var cflat = new CFlat();
 		var errors = cflat.CompileSource("source0", source0, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			throw new CompileErrorException(cflat.GetFormattedCompileErrors(1));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 		cflat.Clear();
 		errors = cflat.CompileSource("source1", source1, TestHelper.CompilerMode);
 		if (errors.count > 0)
-			throw new CompileErrorException(cflat.GetFormattedCompileErrors(1));
+			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 		Assert.True(cflat.Load());
 	}
 }

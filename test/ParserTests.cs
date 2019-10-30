@@ -7,7 +7,7 @@ public sealed class ParserTest
 		var cflat = new CFlat();
 		var compileErrors = cflat.CompileExpression(source, TestHelper.CompilerMode);
 		if (compileErrors.count > 0)
-			return "COMPILE ERROR: " + cflat.GetFormattedCompileErrors(1);
+			return "COMPILE ERROR: " + cflat.GetFormattedCompileErrors();
 		return null;
 	}
 
