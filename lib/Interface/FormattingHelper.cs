@@ -116,9 +116,11 @@ public static class FormattingHelper
 		if (slice.length == 0)
 			slice = new Slice(slice.index, (ushort)1);
 
-		sb.Append(" (line: ");
+		sb.Append(" (");
+		sb.Append(sourceName);
+		sb.Append(':');
 		sb.Append(startPosition.lineIndex + 1);
-		sb.Append(", column: ");
+		sb.Append(':');
 		sb.Append(startPosition.columnIndex + 1);
 		sb.AppendLine(")");
 
