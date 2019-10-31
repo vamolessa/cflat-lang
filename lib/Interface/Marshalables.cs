@@ -1,3 +1,16 @@
+public interface IStruct
+{
+	void Marshal<M>(ref M marshaler) where M : IMarshaler;
+}
+
+public interface IMarshalable
+{
+	void Marshal<M>(ref M marshaler) where M : IMarshaler;
+	ValueType GetType(ByteCodeChunk chunk);
+}
+
+public interface ITuple : IMarshalable { }
+
 public readonly struct Empty : ITuple
 {
 	public void Marshal<M>(ref M marshaler) where M : IMarshaler
@@ -327,9 +340,6 @@ public struct MutRef<T> : IMarshalable where T : struct, IMarshalable
 		}
 	}
 }
-
-
-public interface ITuple : IMarshalable { }
 
 public static class Tuple
 {

@@ -1,14 +1,3 @@
-public interface IStruct
-{
-	void Marshal<M>(ref M marshaler) where M : IMarshaler;
-}
-
-public interface IMarshalable
-{
-	void Marshal<M>(ref M marshaler) where M : IMarshaler;
-	ValueType GetType(ByteCodeChunk chunk);
-}
-
 internal static class Marshal
 {
 	public sealed class InvalidReflectionException : System.Exception { }
