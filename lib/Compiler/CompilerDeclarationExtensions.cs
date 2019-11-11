@@ -24,19 +24,15 @@ internal static class CompilerDeclarationExtensions
 		return self.localVariables.count - 1;
 	}
 
-	public static int DeclareLocalVariable(this Compiler self, Slice slice, bool mutable)
+	public static int DeclareLocalVariable(this Compiler self, CompilerController.ExpressionResult expression, bool mutable)
 	{
 		if (self.localVariables.count >= self.localVariables.buffer.Length)
 		{
-			self.AddSoftError(slice, "Too many local variables in function");
+			self.AddSoftError(expression.slice, "Too many local variables in function");
 			return -1;
 		}
 
-		var type = new ValueType(TypeKind.Unit);
-		if (self.typeStack.count > 0)
-			type = self.typeStack.PopLast();
-
-		return self.AddLocalVariable(slice, type, mutable ? VariableFlags.Mutable : VariableFlags.None);
+		return self.AddLocalVariable(expression.slice, expression.type, mutable ? VariableFlags.Mutable : VariableFlags.None);
 	}
 
 	public static bool ResolveToLocalVariableIndex(this Compiler self, Slice slice, out int index)

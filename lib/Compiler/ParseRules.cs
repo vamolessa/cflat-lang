@@ -1,15 +1,16 @@
 internal sealed class ParseRules
 {
-	public delegate void RuleFunction(CompilerController controller, Slice slice);
+	public delegate ValueType PrefixFunction(CompilerController controller);
+	public delegate ValueType InfixFunction(CompilerController controller, CompilerController.ExpressionResult expression);
 
 	private const int RuleCount = (int)TokenKind.COUNT;
 	private readonly Precedence[] precedences = new Precedence[RuleCount];
-	private readonly RuleFunction[] prefixRules = new RuleFunction[RuleCount];
-	private readonly RuleFunction[] infixRules = new RuleFunction[RuleCount];
+	private readonly PrefixFunction[] prefixRules = new PrefixFunction[RuleCount];
+	private readonly InfixFunction[] infixRules = new InfixFunction[RuleCount];
 
 	public ParseRules()
 	{
-		void Set(TokenKind kind, RuleFunction prefix, RuleFunction infix, Precedence precedence)
+		void Set(TokenKind kind, PrefixFunction prefix, InfixFunction infix, Precedence precedence)
 		{
 			var index = (int)kind;
 			precedences[index] = precedence;
@@ -53,12 +54,12 @@ internal sealed class ParseRules
 		return precedences[(int)kind];
 	}
 
-	public RuleFunction GetPrefixRule(TokenKind kind)
+	public PrefixFunction GetPrefixRule(TokenKind kind)
 	{
 		return prefixRules[(int)kind];
 	}
 
-	public RuleFunction GetInfixRule(TokenKind kind)
+	public InfixFunction GetInfixRule(TokenKind kind)
 	{
 		return infixRules[(int)kind];
 	}

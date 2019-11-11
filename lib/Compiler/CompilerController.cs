@@ -2,6 +2,18 @@ using System.Text;
 
 internal sealed class CompilerController
 {
+	public readonly struct ExpressionResult
+	{
+		public readonly Slice slice;
+		public readonly ValueType type;
+
+		public ExpressionResult(Slice slice, ValueType type)
+		{
+			this.slice = slice;
+			this.type = type;
+		}
+	}
+
 	public enum StatementKind
 	{
 		Other,
@@ -66,48 +78,39 @@ internal sealed class CompilerController
 		}
 
 		compiler.parser.Next();
-		Expression(this);
+		var expression = Expression(this);
 
-		var topType = compiler.typeStack.count > 0 ?
-			compiler.typeStack.PopLast() :
-			new ValueType(TypeKind.Unit);
-
-		compiler.chunk.functionTypes.PushBack(new FunctionType(
-			new Slice(),
-			topType,
-			0
-		));
+		compiler.chunk.functionTypes.PushBack(new FunctionType(new Slice(), expression.type, 0));
 		var functionTypeIndex = (ushort)(compiler.chunk.functionTypes.count - 1);
 		compiler.chunk.functions.PushBack(new Function(string.Empty, 0, functionTypeIndex));
 
 		{
 			compiler.DebugEmitPopFrame();
-			compiler.DebugEmitPushType(topType);
+			compiler.DebugEmitPushType(expression.type);
 		}
 
 		compiler.EmitInstruction(Instruction.Return);
-		compiler.EmitByte(topType.GetSize(compiler.chunk));
+		compiler.EmitByte(expression.type.GetSize(compiler.chunk));
 
 		compiler.EmitInstruction(Instruction.Halt);
 		return compiler.errors;
 	}
 
-	private static Slice ParseWithPrecedence(CompilerController self, Precedence precedence)
+	private static ExpressionResult ParseWithPrecedence(CompilerController self, Precedence precedence)
 	{
 		var parser = self.compiler.parser;
 		parser.Next();
 		var slice = parser.previousToken.slice;
 		if (parser.previousToken.kind == TokenKind.End)
-			return slice;
+			return new ExpressionResult(slice, new ValueType(TypeKind.Unit));
 
 		var prefixRule = self.parseRules.GetPrefixRule(parser.previousToken.kind);
 		if (prefixRule == null)
 		{
 			self.compiler.AddHardError(parser.previousToken.slice, "Expected expression");
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			return slice;
+			return new ExpressionResult(slice, new ValueType(TypeKind.Unit));
 		}
-		prefixRule(self, slice);
+		var type = prefixRule(self);
 
 		while (
 			parser.currentToken.kind != TokenKind.End &&
@@ -116,11 +119,12 @@ internal sealed class CompilerController
 		{
 			parser.Next();
 			var infixRule = self.parseRules.GetInfixRule(parser.previousToken.kind);
-			infixRule(self, slice);
+			type = infixRule(self, new ExpressionResult(slice, type));
 			slice = Slice.FromTo(slice, parser.previousToken.slice);
 		}
 
-		return Slice.FromTo(slice, parser.previousToken.slice);
+		slice = Slice.FromTo(slice, parser.previousToken.slice);
+		return new ExpressionResult(slice, type);
 	}
 
 	private void Syncronize()
@@ -134,7 +138,6 @@ internal sealed class CompilerController
 			{
 			case TokenKind.Function:
 			case TokenKind.Struct:
-				compiler.typeStack.count = 0;
 				compiler.isInPanicMode = false;
 				return;
 			default:
@@ -162,7 +165,7 @@ internal sealed class CompilerController
 		ConsumeFunction(compiler.parser.previousToken.slice);
 	}
 
-	internal static void FunctionExpression(CompilerController self, Slice previousSlice)
+	internal static ValueType FunctionExpression(CompilerController self)
 	{
 		var functionJump = self.compiler.BeginEmitForwardJump(Instruction.JumpForward);
 		self.ConsumeFunction(new Slice());
@@ -173,8 +176,8 @@ internal sealed class CompilerController
 
 		self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
 		var type = new ValueType(TypeKind.Function, function.typeIndex);
-		self.compiler.typeStack.PushBack(type);
 		self.compiler.DebugEmitPushType(type);
+		return type;
 	}
 
 	private void ConsumeFunction(Slice slice)
@@ -272,8 +275,7 @@ internal sealed class CompilerController
 		}
 		else
 		{
-			Block(this);
-			var type = compiler.typeStack.PopLast();
+			var type = Block(this);
 			if (!builder.returnType.Accepts(type))
 				compiler.AddSoftError(compiler.parser.previousToken.slice, "Wrong return type. Expected {0}. Got {1}", builder.returnType.ToString(compiler.chunk), type.ToString(compiler.chunk));
 		}
@@ -342,13 +344,13 @@ internal sealed class CompilerController
 		compiler.EndStructDeclaration(builder, slice);
 	}
 
-	internal static void FinishTupleExpression(CompilerController self, Slice slice, ValueType firstElementType)
+	internal static ValueType FinishTupleExpression(CompilerController self, ExpressionResult firstElement)
 	{
 		var builder = self.compiler.chunk.BeginTupleType();
 
-		if (firstElementType.IsReference)
-			self.compiler.AddSoftError(slice, "Can not create tuple containing references");
-		builder.WithElement(firstElementType);
+		if (firstElement.type.IsReference)
+			self.compiler.AddSoftError(firstElement.slice, "Can not create tuple containing references");
+		builder.WithElement(firstElement.type);
 
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
@@ -356,45 +358,43 @@ internal sealed class CompilerController
 		)
 		{
 			self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after element value expression");
-			var expressionSlice = Expression(self);
-			var expressionType = self.compiler.typeStack.PopLast();
-			if (expressionType.IsReference)
-				self.compiler.AddSoftError(expressionSlice, "Can not create tuple containing references");
-			builder.WithElement(expressionType);
+			var expression = Expression(self);
+			if (expression.type.IsReference)
+				self.compiler.AddSoftError(expression.slice, "Can not create tuple containing references");
+			builder.WithElement(expression.type);
 		}
 		self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after tuple expression");
 
-		slice = Slice.FromTo(slice, self.compiler.parser.previousToken.slice);
+		var slice = Slice.FromTo(firstElement.slice, self.compiler.parser.previousToken.slice);
 
 		var result = builder.Build(out var typeIndex);
 		var type = self.compiler.CheckTupleBuild(result, slice) ?
 			new ValueType(TypeKind.Tuple, typeIndex) :
 			new ValueType(TypeKind.Unit);
 
-		self.compiler.typeStack.PushBack(type);
-
 		{
 			self.compiler.DebugEmitPopType((byte)builder.elementCount);
 			self.compiler.DebugEmitPushType(type);
 		}
+
+		return type;
 	}
 
-	internal static void ArrayExpression(CompilerController self, Slice previousSlice)
+	internal static ValueType ArrayExpression(CompilerController self)
 	{
-		var elementSlice = Expression(self);
-		var elementType = self.compiler.typeStack.PopLast();
-		if (elementType.IsArray)
-			self.compiler.AddSoftError(elementSlice, "Can not create array of arrays");
-		if (elementType.IsReference)
-			self.compiler.AddSoftError(elementSlice, "Can not create array of references");
+		var element = Expression(self);
+		if (element.type.IsArray)
+			self.compiler.AddSoftError(element.slice, "Can not create array of arrays");
+		if (element.type.IsReference)
+			self.compiler.AddSoftError(element.slice, "Can not create array of references");
 
-		var arrayType = elementType.ToArrayType();
+		var arrayType = element.type.ToArrayType();
 
 		if (self.compiler.parser.Match(TokenKind.CloseSquareBrackets))
 		{
 			self.compiler.DebugEmitPopType(1);
 			self.compiler.EmitInstruction(Instruction.CreateArrayFromStack);
-			self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+			self.compiler.EmitByte(element.type.GetSize(self.compiler.chunk));
 			self.compiler.EmitByte(1);
 		}
 		else if (self.compiler.parser.Check(TokenKind.Comma))
@@ -407,14 +407,13 @@ internal sealed class CompilerController
 			)
 			{
 				self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after array element expression");
-				var otherElementSlice = Expression(self);
-				var otherElementType = self.compiler.typeStack.PopLast();
-				if (!otherElementType.IsEqualTo(elementType))
+				var otherElement = Expression(self);
+				if (!otherElement.type.IsEqualTo(element.type))
 					self.compiler.AddSoftError(
-						elementSlice,
+						element.slice,
 						"Array must have all elements of the same type. Expected {0}. Got {1}",
-						elementType.ToString(self.compiler.chunk),
-						otherElementType.ToString(self.compiler.chunk)
+						element.type.ToString(self.compiler.chunk),
+						otherElement.type.ToString(self.compiler.chunk)
 					);
 				arrayLength += 1;
 			}
@@ -425,27 +424,26 @@ internal sealed class CompilerController
 			{
 				self.compiler.DebugEmitPopType((byte)arrayLength);
 				self.compiler.EmitInstruction(Instruction.CreateArrayFromStack);
-				self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+				self.compiler.EmitByte(element.type.GetSize(self.compiler.chunk));
 				self.compiler.EmitByte((byte)arrayLength);
 			}
 			else
 			{
-				var slice = Slice.FromTo(elementSlice, self.compiler.parser.previousToken.slice);
+				var slice = Slice.FromTo(element.slice, self.compiler.parser.previousToken.slice);
 				self.compiler.AddSoftError(slice, "Array length is too big. Max is {0}", byte.MaxValue);
 			}
 		}
 		else if (self.compiler.parser.Match(TokenKind.Colon))
 		{
-			var lengthSlice = Expression(self);
-			var lengthType = self.compiler.typeStack.PopLast();
-			if (!lengthType.IsKind(TypeKind.Int))
-				self.compiler.AddSoftError(lengthSlice, "Expected int expression for array length. Got {0}", lengthType.ToString(self.compiler.chunk));
+			var length = Expression(self);
+			if (!length.type.IsKind(TypeKind.Int))
+				self.compiler.AddSoftError(length.slice, "Expected int expression for array length. Got {0}", length.type.ToString(self.compiler.chunk));
 
 			self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
 
 			self.compiler.DebugEmitPopType(2);
 			self.compiler.EmitInstruction(Instruction.CreateArrayFromDefault);
-			self.compiler.EmitByte(elementType.GetSize(self.compiler.chunk));
+			self.compiler.EmitByte(element.type.GetSize(self.compiler.chunk));
 		}
 		else
 		{
@@ -455,24 +453,22 @@ internal sealed class CompilerController
 			);
 		}
 
-
-		self.compiler.typeStack.PushBack(arrayType);
 		self.compiler.DebugEmitPushType(arrayType);
+		return arrayType;
 	}
 
-	internal static void LengthExpression(CompilerController self, Slice previousSlice)
+	internal static ValueType LengthExpression(CompilerController self)
 	{
-		var expressionSlice = Expression(self);
-		var expressionType = self.compiler.typeStack.PopLast();
+		var expression = Expression(self);
 		self.compiler.DebugEmitPopType(0);
 
-		if (!expressionType.IsArray)
-			self.compiler.AddSoftError(expressionSlice, "Expected array type. Got {0}", expressionType.ToString(self.compiler.chunk));
+		if (!expression.type.IsArray)
+			self.compiler.AddSoftError(expression.slice, "Expected array type. Got {0}", expression.type.ToString(self.compiler.chunk));
 
 		self.compiler.EmitInstruction(Instruction.LoadArrayLength);
 
 		self.compiler.DebugEmitPushType(new ValueType(TypeKind.Int));
-		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Int));
+		return new ValueType(TypeKind.Int);
 	}
 
 	private void Statement(out ValueType type, out StatementKind kind)
@@ -502,18 +498,15 @@ internal sealed class CompilerController
 
 	private ValueType ExpressionStatement()
 	{
-		Expression(this);
-		var type = compiler.typeStack.count > 0 ?
-			compiler.typeStack.PopLast() :
-			new ValueType(TypeKind.Unit);
+		var expression = Expression(this);
 
 		if (!compiler.parser.Check(TokenKind.CloseCurlyBrackets))
 		{
-			compiler.EmitPop(type.GetSize(compiler.chunk));
+			compiler.EmitPop(expression.type.GetSize(compiler.chunk));
 			compiler.DebugEmitPopType(1);
 		}
 
-		return type;
+		return expression.type;
 	}
 
 	private void BlockStatement()
@@ -554,9 +547,9 @@ internal sealed class CompilerController
 		var slice = compiler.parser.previousToken.slice;
 
 		compiler.parser.Consume(TokenKind.Equal, "Expected assignment");
-		Expression(this);
+		var expression = Expression(this);
 
-		return compiler.DeclareLocalVariable(slice, isMutable);
+		return compiler.AddLocalVariable(slice, expression.type, isMutable ? VariableFlags.Mutable : VariableFlags.None);
 	}
 
 	private void MultipleVariableDeclaration()
@@ -581,20 +574,19 @@ internal sealed class CompilerController
 		}
 		compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after variable names");
 		compiler.parser.Consume(TokenKind.Equal, "Expected assignment");
-		var expressionSlice = Expression(this);
+		var expression = Expression(this);
 
-		var expressionType = compiler.typeStack.PopLast();
-		if (expressionType.kind != TypeKind.Tuple || expressionType.flags != TypeFlags.None)
+		if (expression.type.kind != TypeKind.Tuple || expression.type.flags != TypeFlags.None)
 		{
-			compiler.AddSoftError(expressionSlice, "Expression must be a tuple");
+			compiler.AddSoftError(expression.slice, "Expression must be a tuple");
 			return;
 		}
 
-		var tupleElements = compiler.chunk.tupleTypes.buffer[expressionType.index].elements;
+		var tupleElements = compiler.chunk.tupleTypes.buffer[expression.type.index].elements;
 		if (tupleElements.length != declarations.count)
 		{
 			compiler.AddSoftError(
-				expressionSlice,
+				expression.slice,
 				"Tuple element count must be equal to variable declaration count. Expected {0}. Got {1}",
 				declarations.count,
 				tupleElements.length
@@ -688,19 +680,16 @@ internal sealed class CompilerController
 
 	private void SetFunctionReturn(Slice slice, ValueType functionType)
 	{
-		compiler.typeStack.PushBack(functionType);
 		compiler.DebugEmitPushType(functionType);
 
-		Call(this, slice);
+		var type = Call(this, new ExpressionResult(slice, functionType));
 		slice = Slice.FromTo(slice, compiler.parser.previousToken.slice);
 
 		if (compiler.parser.Match(TokenKind.Dot))
 		{
-			Dot(this, slice);
+			type = Dot(this, new ExpressionResult(slice, type));
 			slice = Slice.FromTo(slice, compiler.parser.previousToken.slice);
 		}
-
-		var type = compiler.typeStack.PopLast();
 
 		if (compiler.parser.Match(TokenKind.OpenSquareBrackets))
 			SetArrayElement(slice, type, true);
@@ -720,10 +709,10 @@ internal sealed class CompilerController
 		}
 
 		var loopJump = compiler.BeginEmitBackwardJump();
-		var expressionSlice = Expression(this);
+		var expression = Expression(this);
 
-		if (!compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			compiler.AddSoftError(expressionSlice, "Expected bool expression as while condition");
+		if (!expression.type.IsKind(TypeKind.Bool))
+			compiler.AddSoftError(expression.slice, "Expected bool expression as while condition");
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
@@ -754,9 +743,9 @@ internal sealed class CompilerController
 		var itVarIndex = compiler.AddLocalVariable(new Slice(), new ValueType(TypeKind.Int), VariableFlags.Used | VariableFlags.Iteration);
 		var itVar = compiler.localVariables.buffer[itVarIndex];
 
-		var expressionSlice = Expression(this);
-		if (!compiler.typeStack.PopLast().IsKind(TypeKind.Int))
-			compiler.AddSoftError(expressionSlice, "Expected expression of type int as repeat count");
+		var expression = Expression(this);
+		if (!expression.type.IsKind(TypeKind.Int))
+			compiler.AddSoftError(expression.slice, "Expected expression of type int as repeat count");
 		var countVarIndex = compiler.AddLocalVariable(new Slice(), new ValueType(TypeKind.Int), VariableFlags.Used);
 
 		compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after repeat statement");
@@ -827,21 +816,12 @@ internal sealed class CompilerController
 	private ValueType ReturnStatement()
 	{
 		var expectedType = compiler.functionReturnTypeStack.buffer[compiler.functionReturnTypeStack.count - 1];
-		var returnType = new ValueType(TypeKind.Unit);
 
-		Slice slice;
-
+		var expression = new ExpressionResult(compiler.parser.previousToken.slice, new ValueType(TypeKind.Unit));
 		if (expectedType.IsKind(TypeKind.Unit))
-		{
-			slice = compiler.parser.previousToken.slice;
 			compiler.EmitInstruction(Instruction.LoadUnit);
-		}
 		else
-		{
-			slice = Expression(this);
-			if (compiler.typeStack.count > 0)
-				returnType = compiler.typeStack.PopLast();
-		}
+			expression = Expression(this);
 
 		{
 			compiler.DebugEmitPopFrame();
@@ -851,47 +831,46 @@ internal sealed class CompilerController
 		compiler.EmitInstruction(Instruction.Return);
 		compiler.EmitByte(expectedType.GetSize(compiler.chunk));
 
-		if (!expectedType.Accepts(returnType))
+		if (!expectedType.Accepts(expression.type))
 			compiler.AddSoftError(
-				slice,
+				expression.slice,
 				"Wrong return type. Expected {0}. Got {1}",
 				expectedType.ToString(compiler.chunk),
-				returnType.ToString(compiler.chunk)
+				expression.type.ToString(compiler.chunk)
 			);
 
-		return returnType;
+		return expression.type;
 	}
 
 	private void PrintStatement()
 	{
-		Expression(this);
+		var expression = Expression(this);
 
-		var type = compiler.typeStack.PopLast();
 		compiler.DebugEmitPopType(1);
 
 		compiler.EmitInstruction(Instruction.Print);
-		compiler.EmitType(type);
+		compiler.EmitType(expression.type);
 	}
 
-	internal static Slice Expression(CompilerController self)
+	internal static ExpressionResult Expression(CompilerController self)
 	{
 		return ParseWithPrecedence(self, Precedence.Assignment);
 	}
 
-	internal static void Grouping(CompilerController self, Slice previousSlice)
+	internal static ValueType Grouping(CompilerController self)
 	{
-		Expression(self);
+		var result = Expression(self);
 		self.compiler.parser.Consume(TokenKind.CloseParenthesis, "Expected ')' after expression");
+		return result.type;
 	}
 
-	internal static void BlockOrTupleExpression(CompilerController self, Slice previousSlice)
+	internal static ValueType BlockOrTupleExpression(CompilerController self)
 	{
 		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
 		{
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Unit));
-			return;
+			return new ValueType(TypeKind.Unit);
 		}
 		else if (
 			self.compiler.parser.Check(TokenKind.Let) ||
@@ -905,42 +884,39 @@ internal sealed class CompilerController
 		{
 			var scope = self.compiler.BeginScope();
 			self.Statement(out var firstStatementType, out var firstStatementKind);
-			FinishBlock(self, scope, firstStatementType, firstStatementKind);
-			return;
+			return FinishBlock(self, scope, firstStatementType, firstStatementKind);
 		}
 		else
 		{
 			var scope = self.compiler.BeginScope();
-			var expressionSlice = Expression(self);
-			var expressionType = self.compiler.typeStack.PopLast();
+			var expression = Expression(self);
 			if (self.compiler.parser.Check(TokenKind.Comma))
 			{
 				self.compiler.scopeDepth -= 1;
-				FinishTupleExpression(self, expressionSlice, expressionType);
+				return FinishTupleExpression(self, expression);
 			}
 			else
 			{
-				FinishBlock(self, scope, expressionType, StatementKind.Expression);
+				return FinishBlock(self, scope, expression.type, StatementKind.Expression);
 			}
 		}
 	}
 
-	internal static void Block(CompilerController self)
+	internal static ValueType Block(CompilerController self)
 	{
 		if (self.compiler.parser.Match(TokenKind.CloseCurlyBrackets))
 		{
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Unit));
-			return;
+			return new ValueType(TypeKind.Unit);
 		}
 
 		var scope = self.compiler.BeginScope();
 		self.Statement(out var firstStatementType, out var firstStatementKind);
-		FinishBlock(self, scope, firstStatementType, firstStatementKind);
+		return FinishBlock(self, scope, firstStatementType, firstStatementKind);
 	}
 
-	internal static void FinishBlock(CompilerController self, Scope scope, ValueType lastStatementType, StatementKind lastStatementKind)
+	internal static ValueType FinishBlock(CompilerController self, Scope scope, ValueType lastStatementType, StatementKind lastStatementKind)
 	{
 		while (
 			!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets) &&
@@ -961,29 +937,28 @@ internal sealed class CompilerController
 		if (lastStatementKind == StatementKind.Other)
 		{
 			self.compiler.EmitInstruction(Instruction.LoadUnit);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Unit));
+			return new ValueType(TypeKind.Unit);
 		}
 		else
 		{
-			self.compiler.typeStack.PushBack(lastStatementType);
 			self.compiler.DebugEmitPushType(lastStatementType);
+			return lastStatementType;
 		}
 	}
 
-	internal static void If(CompilerController self, Slice previousSlice)
+	internal static ValueType If(CompilerController self)
 	{
-		var expressionSlice = Expression(self);
+		var expression = Expression(self);
 
-		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(expressionSlice, "Expected bool expression as if condition");
+		if (!expression.type.IsKind(TypeKind.Bool))
+			self.compiler.AddSoftError(expression.slice, "Expected bool expression as if condition");
 
 		self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
 
 		self.compiler.DebugEmitPopType(1);
 		var elseJump = self.compiler.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
-		Block(self);
-		var thenType = self.compiler.typeStack.PopLast();
+		var thenType = Block(self);
 		var hasElse = self.compiler.parser.Match(TokenKind.Else);
 
 		if (!hasElse && !thenType.IsKind(TypeKind.Unit))
@@ -1001,17 +976,17 @@ internal sealed class CompilerController
 
 		if (hasElse)
 		{
+			var elseType = new ValueType(TypeKind.Unit);
 			if (self.compiler.parser.Match(TokenKind.If))
 			{
-				If(self, self.compiler.parser.previousToken.slice);
+				elseType = If(self);
 			}
 			else
 			{
 				self.compiler.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after else");
-				Block(self);
+				elseType = Block(self);
 			}
 
-			var elseType = self.compiler.typeStack.PopLast();
 			if (!thenType.Accepts(elseType))
 				self.compiler.AddSoftError(self.compiler.parser.previousToken.slice, "If expression must produce values of the same type on both branches. Found types: {0} and {1}", thenType, elseType);
 		}
@@ -1022,85 +997,79 @@ internal sealed class CompilerController
 		}
 
 		self.compiler.EndEmitForwardJump(thenJump);
-		self.compiler.typeStack.PushBack(thenType);
+		return thenType;
 	}
 
-	internal static void And(CompilerController self, Slice previousSlice)
+	internal static ValueType And(CompilerController self, ExpressionResult previous)
 	{
-		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(previousSlice, "Expected bool expression before '&&'");
+		if (!previous.type.IsKind(TypeKind.Bool))
+			self.compiler.AddSoftError(previous.slice, "Expected bool expression before '&&'");
 
 		var jump = self.compiler.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 		self.compiler.EmitInstruction(Instruction.Pop);
 		self.compiler.DebugEmitPopType(1);
-		var rightSlice = ParseWithPrecedence(self, Precedence.And);
+		var expression = ParseWithPrecedence(self, Precedence.And);
 		self.compiler.EndEmitForwardJump(jump);
 
-		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(rightSlice, "Expected bool expression after '&&'");
+		if (!expression.type.IsKind(TypeKind.Bool))
+			self.compiler.AddSoftError(expression.slice, "Expected bool expression after '&&'");
 
-		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
+		return new ValueType(TypeKind.Bool);
 	}
 
-	internal static void Or(CompilerController self, Slice previousSlice)
+	internal static ValueType Or(CompilerController self, ExpressionResult previous)
 	{
-		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(previousSlice, "Expected bool expression before '||'");
+		if (!previous.type.IsKind(TypeKind.Bool))
+			self.compiler.AddSoftError(previous.slice, "Expected bool expression before '||'");
 
 		var jump = self.compiler.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 		self.compiler.EmitInstruction(Instruction.Pop);
 		self.compiler.DebugEmitPopType(1);
-		var rightSlice = ParseWithPrecedence(self, Precedence.Or);
+		var expression = ParseWithPrecedence(self, Precedence.Or);
 		self.compiler.EndEmitForwardJump(jump);
 
-		if (!self.compiler.typeStack.PopLast().IsKind(TypeKind.Bool))
-			self.compiler.AddSoftError(rightSlice, "Expected bool expression after '||'");
+		if (!expression.type.IsKind(TypeKind.Bool))
+			self.compiler.AddSoftError(expression.slice, "Expected bool expression after '||'");
 
-		self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
+		return new ValueType(TypeKind.Bool);
 	}
 
-	internal static void Literal(CompilerController self, Slice previousSlice)
+	internal static ValueType Literal(CompilerController self)
 	{
 		switch (self.compiler.parser.previousToken.kind)
 		{
 		case TokenKind.True:
 			self.compiler.EmitInstruction(Instruction.LoadTrue);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			break;
+			return new ValueType(TypeKind.Bool);
 		case TokenKind.False:
 			self.compiler.EmitInstruction(Instruction.LoadFalse);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			break;
+			return new ValueType(TypeKind.Bool);
 		case TokenKind.IntLiteral:
 			self.compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetInt(self.compiler)),
 				TypeKind.Int
 			);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Int));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Int));
-			break;
+			return new ValueType(TypeKind.Int);
 		case TokenKind.FloatLiteral:
 			self.compiler.EmitLoadLiteral(
 				new ValueData(CompilerHelper.GetFloat(self.compiler)),
 				TypeKind.Float
 			);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Float));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Float));
-			break;
+			return new ValueType(TypeKind.Float);
 		case TokenKind.StringLiteral:
 			self.compiler.EmitLoadStringLiteral(CompilerHelper.GetString(self.compiler));
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.String));
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.String));
-			break;
+			return new ValueType(TypeKind.String);
 		default:
 			self.compiler.AddHardError(
 				self.compiler.parser.previousToken.slice,
 				string.Format("Expected literal. Got {0}", self.compiler.parser.previousToken.kind)
 			);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			break;
+			return new ValueType(TypeKind.Unit);
 		}
 	}
 
@@ -1132,7 +1101,7 @@ internal sealed class CompilerController
 		};
 	}
 
-	internal static void Identifier(CompilerController self, Slice previousSlice)
+	internal static ValueType Identifier(CompilerController self)
 	{
 		var slice = self.compiler.parser.previousToken.slice;
 		var storage = new Storage { variableIndex = -1 };
@@ -1140,11 +1109,10 @@ internal sealed class CompilerController
 		if (self.compiler.ResolveToLocalVariableIndex(slice, out var variableIndex))
 		{
 			var localVar = self.compiler.localVariables.buffer[variableIndex];
-
 			storage = GetStorage(self, variableIndex, localVar.type, ref slice);
 		}
 
-		Access(self, slice, storage);
+		return Access(self, slice, storage);
 	}
 
 	private static void Assign(CompilerController self, Slice slice, Storage storage)
@@ -1157,15 +1125,14 @@ internal sealed class CompilerController
 			if (!storageIsMutable)
 				self.compiler.AddSoftError(slice, "Can not write to immutable variable");
 
-			var expressionSlice = Expression(self);
-			var expressionType = self.compiler.typeStack.PopLast();
-			if (!storage.type.Accepts(expressionType))
+			var expression = Expression(self);
+			if (!storage.type.Accepts(expression.type))
 			{
 				self.compiler.AddSoftError(
-					expressionSlice,
+					expression.slice,
 					"Wrong type for assignment. Expected {0}. Got {1}",
 					storage.type.ToString(self.compiler.chunk),
-					expressionType.ToString(self.compiler.chunk)
+					expression.type.ToString(self.compiler.chunk)
 				);
 			}
 
@@ -1193,7 +1160,7 @@ internal sealed class CompilerController
 		}
 	}
 
-	private static void Access(CompilerController self, Slice slice, Storage storage)
+	private static ValueType Access(CompilerController self, Slice slice, Storage storage)
 	{
 		if (storage.variableIndex >= 0)
 		{
@@ -1207,31 +1174,31 @@ internal sealed class CompilerController
 				self.compiler.EmitByte(storage.offset);
 				self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
 
-				self.compiler.typeStack.PushBack(storage.type);
 				self.compiler.DebugEmitPushType(storage.type);
 			}
 			else
 			{
 				self.compiler.EmitLoadLocal(localVar.stackIndex + storage.offset, storage.type);
-				self.compiler.typeStack.PushBack(storage.type);
 				self.compiler.DebugEmitPushType(storage.type);
 			}
+
+			return storage.type;
 		}
 		else if (self.compiler.ResolveToFunctionIndex(slice, out var functionIndex))
 		{
 			self.compiler.EmitLoadFunction(Instruction.LoadFunction, functionIndex);
 			var function = self.compiler.chunk.functions.buffer[functionIndex];
 			var type = new ValueType(TypeKind.Function, function.typeIndex);
-			self.compiler.typeStack.PushBack(type);
 			self.compiler.DebugEmitPushType(type);
+			return type;
 		}
 		else if (self.compiler.ResolveToNativeFunctionIndex(slice, out var nativeFunctionIndex))
 		{
 			self.compiler.EmitLoadFunction(Instruction.LoadNativeFunction, nativeFunctionIndex);
 			var function = self.compiler.chunk.nativeFunctions.buffer[nativeFunctionIndex];
 			var type = new ValueType(TypeKind.NativeFunction, function.typeIndex);
-			self.compiler.typeStack.PushBack(type);
 			self.compiler.DebugEmitPushType(type);
+			return type;
 		}
 		else if (self.compiler.ResolveToStructTypeIndex(slice, out var structIndex))
 		{
@@ -1270,21 +1237,20 @@ internal sealed class CompilerController
 
 				self.compiler.parser.Consume(TokenKind.Equal, "Expected '=' after field name");
 
-				var expressionSlice = Expression(self);
-				fieldSlice = Slice.FromTo(fieldSlice, expressionSlice);
+				var expression = Expression(self);
+				fieldSlice = Slice.FromTo(fieldSlice, expression.slice);
 
 				if (!self.compiler.parser.Check(TokenKind.CloseCurlyBrackets))
 					self.compiler.parser.Consume(TokenKind.Comma, "Expected ',' after field value expression");
 
-				var expressionType = self.compiler.typeStack.PopLast();
-				if (field.isSome && !field.value.type.Accepts(expressionType))
+				if (field.isSome && !field.value.type.Accepts(expression.type))
 				{
 					self.compiler.AddSoftError(
 						fieldSlice,
 						"Wrong type for field '{0}' initializer. Expected {1}. Got {2}",
 						field.value.name,
 						field.value.type.ToString(self.compiler.chunk),
-						expressionType.ToString(self.compiler.chunk)
+						expression.type.ToString(self.compiler.chunk)
 					);
 				}
 
@@ -1298,14 +1264,14 @@ internal sealed class CompilerController
 				);
 			}
 			self.compiler.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Struct, structIndex));
 			self.compiler.DebugEmitPopType((byte)structType.fields.length);
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Struct, structIndex));
+			return new ValueType(TypeKind.Struct, structIndex);
 		}
 		else
 		{
 			self.compiler.AddSoftError(slice, "Can not read undeclared variable. Declare it with 'let'");
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
+			return new ValueType(TypeKind.Unit);
 		}
 	}
 
@@ -1347,11 +1313,11 @@ internal sealed class CompilerController
 		return false;
 	}
 
-	internal static void Dot(CompilerController self, Slice previousSlice)
+	internal static ValueType Dot(CompilerController self, ExpressionResult previous)
 	{
-		var storage = new Storage { type = self.compiler.typeStack.PopLast() };
+		var storage = new Storage { type = previous.type };
 
-		var slice = previousSlice;
+		var slice = previous.slice;
 		var structSize = storage.type.GetSize(self.compiler.chunk);
 
 		byte offset = 0;
@@ -1374,9 +1340,8 @@ internal sealed class CompilerController
 			self.compiler.EmitByte(fieldSize);
 		}
 
-		self.compiler.typeStack.PushBack(storage.type);
 		self.compiler.DebugEmitPushType(storage.type);
-		return;
+		return storage.type;
 	}
 
 	private static IndexStorage GetIndexStorage(CompilerController self, ValueType arrayType, ref Slice slice)
@@ -1384,10 +1349,9 @@ internal sealed class CompilerController
 		if (!arrayType.IsArray)
 			self.compiler.AddSoftError(slice, "Can only index array types. Got {0}", arrayType.ToString(self.compiler.chunk));
 
-		var indexExpressionSlice = Expression(self);
-		var indexExpressionType = self.compiler.typeStack.PopLast();
-		if (!indexExpressionType.IsKind(TypeKind.Int))
-			self.compiler.AddSoftError(indexExpressionSlice, "Expected int expression for array index. Got {0}", indexExpressionType.ToString(self.compiler.chunk));
+		var indexExpression = Expression(self);
+		if (!indexExpression.type.IsKind(TypeKind.Int))
+			self.compiler.AddSoftError(indexExpression.slice, "Expected int expression for array index. Got {0}", indexExpression.type.ToString(self.compiler.chunk));
 
 		self.compiler.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array indexing");
 
@@ -1414,16 +1378,14 @@ internal sealed class CompilerController
 		return storage;
 	}
 
-	internal static void Index(CompilerController self, Slice previousSlice)
+	internal static ValueType Index(CompilerController self, ExpressionResult previous)
 	{
-		var arrayType = self.compiler.typeStack.PopLast();
-		var slice = previousSlice;
-
-		var storage = GetIndexStorage(self, arrayType, ref slice);
-		IndexAccess(self, storage);
+		var slice = previous.slice;
+		var storage = GetIndexStorage(self, previous.type, ref slice);
+		return IndexAccess(self, storage);
 	}
 
-	private static void IndexAccess(CompilerController self, IndexStorage storage)
+	private static ValueType IndexAccess(CompilerController self, IndexStorage storage)
 	{
 		self.compiler.DebugEmitPopType(2);
 
@@ -1432,21 +1394,20 @@ internal sealed class CompilerController
 		self.compiler.EmitByte(storage.type.GetSize(self.compiler.chunk));
 		self.compiler.EmitByte(storage.offset);
 
-		self.compiler.typeStack.PushBack(storage.type);
 		self.compiler.DebugEmitPushType(storage.type);
+		return storage.type;
 	}
 
 	private static void IndexAssign(CompilerController self, IndexStorage storage)
 	{
-		var expressionSlice = Expression(self);
-		var expressionType = self.compiler.typeStack.PopLast();
-		if (!storage.type.Accepts(expressionType))
+		var expression = Expression(self);
+		if (!storage.type.Accepts(expression.type))
 		{
 			self.compiler.AddSoftError(
-				expressionSlice,
+				expression.slice,
 				"Wrong type for assignment. Expected {0}. Got {1}",
 				storage.type.ToString(self.compiler.chunk),
-				expressionType.ToString(self.compiler.chunk)
+				expression.type.ToString(self.compiler.chunk)
 			);
 		}
 
@@ -1458,11 +1419,11 @@ internal sealed class CompilerController
 		self.compiler.EmitByte(storage.offset);
 	}
 
-	internal static void Call(CompilerController self, Slice previousSlice)
+	internal static ValueType Call(CompilerController self, ExpressionResult previous)
 	{
-		var slice = previousSlice;
+		var slice = previous.slice;
 
-		var type = self.compiler.typeStack.PopLast();
+		var type = previous.type;
 		var isFunction = self.compiler.chunk.GetFunctionType(type, out var functionType);
 		if (!isFunction)
 			self.compiler.AddSoftError(slice, "Callee must be a function");
@@ -1472,24 +1433,20 @@ internal sealed class CompilerController
 		{
 			do
 			{
-				var argSlice = Expression(self);
-				var argType = self.compiler.typeStack.PopLast();
+				var arg = Expression(self);
 
-				if (
-					isFunction &&
-					argIndex < functionType.parameters.length
-				)
+				if (isFunction && argIndex < functionType.parameters.length)
 				{
 					var paramType = self.compiler.chunk.functionParamTypes.buffer[functionType.parameters.index + argIndex];
 
-					if (!paramType.Accepts(argType))
+					if (!paramType.Accepts(arg.type))
 					{
 						self.compiler.AddSoftError(
-							argSlice,
+							arg.slice,
 							"Wrong type for argument {0}. Expected {1}. Got {2}",
 							argIndex + 1,
 							paramType.ToString(self.compiler.chunk),
-							argType.ToString(self.compiler.chunk)
+							arg.type.ToString(self.compiler.chunk)
 						);
 					}
 				}
@@ -1515,13 +1472,14 @@ internal sealed class CompilerController
 
 		self.compiler.EmitByte((byte)(isFunction ? functionType.parametersSize : 0));
 		var returnType = isFunction ? functionType.returnType : new ValueType(TypeKind.Unit);
-		self.compiler.typeStack.PushBack(returnType);
 
 		if (type.kind == TypeKind.NativeFunction)
 			self.compiler.DebugEmitPushType(returnType);
+
+		return returnType;
 	}
 
-	internal static void Reference(CompilerController self, Slice previousSlice)
+	internal static ValueType Reference(CompilerController self)
 	{
 		var isMutable = self.compiler.parser.Match(TokenKind.Mut);
 
@@ -1569,13 +1527,12 @@ internal sealed class CompilerController
 
 			var referenceType = referredType.ToReferenceType(isMutable);
 			self.compiler.DebugEmitPushType(referenceType);
-			self.compiler.typeStack.PushBack(referenceType);
+			return referenceType;
 		}
 		else
 		{
 			self.compiler.AddHardError(slice, "Could not find variable named '{0}'", CompilerHelper.GetSlice(self.compiler, slice));
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			return;
+			return new ValueType(TypeKind.Unit);
 		}
 	}
 
@@ -1598,130 +1555,124 @@ internal sealed class CompilerController
 		}
 	}
 
-	internal static void Unary(CompilerController self, Slice previousSlice)
+	internal static ValueType Unary(CompilerController self)
 	{
 		var opToken = self.compiler.parser.previousToken;
-
-		var slice = ParseWithPrecedence(self, Precedence.Unary);
-		slice = Slice.FromTo(previousSlice, slice);
-
-		var type = self.compiler.typeStack.PopLast();
+		var expression = ParseWithPrecedence(self, Precedence.Unary);
 
 		switch (opToken.kind)
 		{
 		case TokenKind.Minus:
-			if (type.IsKind(TypeKind.Int))
+			if (expression.type.IsKind(TypeKind.Int))
 			{
 				self.compiler.EmitInstruction(Instruction.NegateInt);
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Int));
+				return new ValueType(TypeKind.Int);
 			}
-			else if (type.IsKind(TypeKind.Float))
+			else if (expression.type.IsKind(TypeKind.Float))
 			{
 				self.compiler.EmitInstruction(Instruction.NegateFloat);
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Float));
+				return new ValueType(TypeKind.Float);
 			}
 			else
 			{
-				self.compiler.AddSoftError(slice, "Unary '-' operator can only be applied to ints or floats. Got type {0}", type.ToString(self.compiler.chunk));
-				self.compiler.typeStack.PushBack(type);
+				self.compiler.AddSoftError(expression.slice, "Unary '-' operator can only be applied to ints or floats. Got type {0}", expression.type.ToString(self.compiler.chunk));
+				return expression.type;
 			}
-			break;
 		case TokenKind.Bang:
-			if (type.IsKind(TypeKind.Bool))
-			{
+			if (expression.type.IsKind(TypeKind.Bool))
 				self.compiler.EmitInstruction(Instruction.Not);
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
-			}
 			else
-			{
-				self.compiler.AddSoftError(slice, "'!' operator can only be applied to bools. Got type {0}", type.ToString(self.compiler.chunk));
-				self.compiler.typeStack.PushBack(new ValueType(TypeKind.Bool));
-			}
-			break;
+				self.compiler.AddSoftError(expression.slice, "'!' operator can only be applied to bools. Got type {0}", expression.type.ToString(self.compiler.chunk));
+			return new ValueType(TypeKind.Bool);
 		case TokenKind.Int:
-			if (type.IsKind(TypeKind.Float))
+			if (expression.type.IsKind(TypeKind.Float))
 				self.compiler.EmitInstruction(Instruction.FloatToInt);
 			else
-				self.compiler.AddSoftError(slice, "Can only convert floats to int. Got type {0}", type.ToString(self.compiler.chunk));
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Int));
+				self.compiler.AddSoftError(expression.slice, "Can only convert floats to int. Got type {0}", expression.type.ToString(self.compiler.chunk));
 
 			self.compiler.DebugEmitPopType(1);
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Int));
-			break;
+			return new ValueType(TypeKind.Int);
 		case TokenKind.Float:
-			if (type.IsKind(TypeKind.Int))
+			if (expression.type.IsKind(TypeKind.Int))
 				self.compiler.EmitInstruction(Instruction.IntToFloat);
 			else
-				self.compiler.AddSoftError(slice, "Can only convert ints to float. Got {0}", type.ToString(self.compiler.chunk));
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Float));
+				self.compiler.AddSoftError(expression.slice, "Can only convert ints to float. Got {0}", expression.type.ToString(self.compiler.chunk));
 
 			self.compiler.DebugEmitPopType(1);
 			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Float));
-			break;
+			return new ValueType(TypeKind.Float);
 		default:
 			self.compiler.AddHardError(
-					slice,
+					expression.slice,
 					string.Format("Expected unary operator. Got token {0}", opToken.kind)
 				);
-			self.compiler.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			break;
+			return new ValueType(TypeKind.Unit);
 		}
 	}
 
-	internal static void Binary(CompilerController self, Slice previousSlice)
+	internal static ValueType Binary(CompilerController self, ExpressionResult previous)
 	{
 		var c = self.compiler;
 		var opToken = c.parser.previousToken;
 
 		var opPrecedence = self.parseRules.GetPrecedence(opToken.kind);
-		var slice = ParseWithPrecedence(self, opPrecedence + 1);
-		slice = Slice.FromTo(previousSlice, slice);
+		var expression = ParseWithPrecedence(self, opPrecedence + 1);
+		var slice = Slice.FromTo(previous.slice, expression.slice);
 
-		var bType = c.typeStack.PopLast();
-		var aType = c.typeStack.PopLast();
+		var aType = previous.type;
+		var bType = expression.type;
+
+		ValueType MathOp(Instruction intOp, Instruction floatOp, string errorMessage)
+		{
+			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
+			{
+				c.EmitInstruction(intOp);
+				c.DebugEmitPopType(1);
+				return new ValueType(TypeKind.Int);
+			}
+			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
+			{
+				c.EmitInstruction(floatOp);
+				c.DebugEmitPopType(1);
+				return new ValueType(TypeKind.Float);
+			}
+			else
+			{
+				c.AddSoftError(slice, "{0}. Got types {1} and {2}", errorMessage, aType.ToString(c.chunk), bType.ToString(c.chunk));
+				c.DebugEmitPopType(1);
+				return aType;
+			}
+		}
+
+		ValueType CompOp(Instruction intOp, Instruction floatOp, bool negate, string errorMessage)
+		{
+			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
+				c.EmitInstruction(intOp);
+			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
+				c.EmitInstruction(floatOp);
+			else
+				c.AddSoftError(slice, "{0}. Got types {1} and {2}", errorMessage, aType.ToString(self.compiler.chunk));
+
+			if (negate)
+				c.EmitInstruction(Instruction.Not);
+
+			self.compiler.DebugEmitPopType(2);
+			self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
+
+			return new ValueType(TypeKind.Bool);
+		}
 
 		switch (opToken.kind)
 		{
 		case TokenKind.Plus:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.AddInt).typeStack.PushBack(new ValueType(TypeKind.Int));
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.AddFloat).typeStack.PushBack(new ValueType(TypeKind.Float));
-			else
-				c.AddSoftError(slice, "Plus operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk)).typeStack.PushBack(aType);
-
-			self.compiler.DebugEmitPopType(1);
-			break;
+			return MathOp(Instruction.AddInt, Instruction.AddFloat, "'+' operator can only be applied to ints or floats");
 		case TokenKind.Minus:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.SubtractInt).typeStack.PushBack(new ValueType(TypeKind.Int));
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.SubtractFloat).typeStack.PushBack(new ValueType(TypeKind.Float));
-			else
-				c.AddSoftError(slice, "Minus operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk)).typeStack.PushBack(aType);
-
-			self.compiler.DebugEmitPopType(1);
-			break;
+			return MathOp(Instruction.SubtractInt, Instruction.SubtractFloat, "'-' operator can only be applied to ints or floats");
 		case TokenKind.Asterisk:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.MultiplyInt).typeStack.PushBack(new ValueType(TypeKind.Int));
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.MultiplyFloat).typeStack.PushBack(new ValueType(TypeKind.Float));
-			else
-				c.AddSoftError(slice, "Multiply operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk)).typeStack.PushBack(aType);
-
-			self.compiler.DebugEmitPopType(1);
-			break;
+			return MathOp(Instruction.MultiplyInt, Instruction.MultiplyFloat, "'*' operator can only be applied to ints or floats");
 		case TokenKind.Slash:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.DivideInt).typeStack.PushBack(new ValueType(TypeKind.Int));
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.DivideFloat).typeStack.PushBack(new ValueType(TypeKind.Float));
-			else
-				c.AddSoftError(slice, "Divide operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk)).typeStack.PushBack(aType);
-
-			self.compiler.DebugEmitPopType(1);
-			break;
+			return MathOp(Instruction.DivideInt, Instruction.DivideFloat, "'/' operator can only be applied to ints or floats");
 		case TokenKind.EqualEqual:
 		case TokenKind.BangEqual:
 			{
@@ -1730,13 +1681,12 @@ internal sealed class CompilerController
 				if (!aType.IsEqualTo(bType))
 				{
 					c.AddSoftError(slice, "'{0}' operator can only be applied to same type values. Got types {1} and {2}", operatorName, aType.ToString(self.compiler.chunk), bType.ToString(self.compiler.chunk));
-					c.typeStack.PushBack(new ValueType(TypeKind.Bool));
-					break;
+					return new ValueType(TypeKind.Bool);
 				}
 				if (!aType.IsSimple)
 				{
 					c.AddSoftError(slice, "'{0}' operator can not be applied to unit, tuples or structs types. Got type {1}", operatorName, aType.ToString(self.compiler.chunk));
-					break;
+					return aType;
 				}
 
 				switch (aType.kind)
@@ -1764,72 +1714,20 @@ internal sealed class CompilerController
 				if (opToken.kind == TokenKind.BangEqual)
 					self.compiler.EmitInstruction(Instruction.Not);
 
-				c.typeStack.PushBack(new ValueType(TypeKind.Bool));
-
-				{
-					self.compiler.DebugEmitPopType(2);
-					self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-				}
-				break;
+				self.compiler.DebugEmitPopType(2);
+				self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
+				return new ValueType(TypeKind.Bool);
 			}
 		case TokenKind.Greater:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.GreaterInt);
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.GreaterFloat);
-			else
-				c.AddSoftError(slice, "Greater operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk));
-			c.typeStack.PushBack(new ValueType(TypeKind.Bool));
-
-			{
-				self.compiler.DebugEmitPopType(2);
-				self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			}
-			break;
+			return CompOp(Instruction.GreaterInt, Instruction.GreaterFloat, false, "'>' operator can only be applied to ints or floats");
 		case TokenKind.GreaterEqual:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.LessInt).EmitInstruction(Instruction.Not);
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.LessFloat).EmitInstruction(Instruction.Not);
-			else
-				c.AddSoftError(slice, "GreaterOrEqual operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk));
-			c.typeStack.PushBack(new ValueType(TypeKind.Bool));
-
-			{
-				self.compiler.DebugEmitPopType(2);
-				self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			}
-			break;
+			return CompOp(Instruction.LessInt, Instruction.LessFloat, true, "'>=' operator can only be applied to ints or floats");
 		case TokenKind.Less:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.LessInt);
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.LessFloat);
-			else
-				c.AddSoftError(slice, "Less operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk));
-			c.typeStack.PushBack(new ValueType(TypeKind.Bool));
-
-			{
-				self.compiler.DebugEmitPopType(2);
-				self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			}
-			break;
+			return CompOp(Instruction.LessInt, Instruction.LessFloat, false, "'<' operator can only be applied to ints or floats");
 		case TokenKind.LessEqual:
-			if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
-				c.EmitInstruction(Instruction.GreaterInt).EmitInstruction(Instruction.Not);
-			else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
-				c.EmitInstruction(Instruction.GreaterFloat).EmitInstruction(Instruction.Not);
-			else
-				c.AddSoftError(slice, "LessOrEqual operator can only be applied to ints or floats. Got types {0} and {1}", aType.ToString(self.compiler.chunk));
-			c.typeStack.PushBack(new ValueType(TypeKind.Bool));
-
-			{
-				self.compiler.DebugEmitPopType(2);
-				self.compiler.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			}
-			break;
+			return CompOp(Instruction.GreaterInt, Instruction.GreaterFloat, true, "'<=' operator can only be applied to ints or floats");
 		default:
-			return;
+			return new ValueType(TypeKind.Unit);
 		}
 	}
 }

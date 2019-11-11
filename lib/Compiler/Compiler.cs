@@ -13,7 +13,6 @@ internal sealed class Compiler
 
 	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
-	public Buffer<ValueType> typeStack = new Buffer<ValueType>(256);
 
 	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	public int scopeDepth;
@@ -31,7 +30,7 @@ internal sealed class Compiler
 		}
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
-		this.parser = new Parser(tokenizer, AddTokenizerError);
+		parser = new Parser(tokenizer, AddTokenizerError);
 		Reset(null, Mode.Release, null, 0);
 	}
 
@@ -46,7 +45,6 @@ internal sealed class Compiler
 
 		isInPanicMode = false;
 		this.chunk = chunk;
-		typeStack.count = 0;
 		localVariables.count = 0;
 		scopeDepth = 0;
 	}
