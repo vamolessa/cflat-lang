@@ -1,12 +1,12 @@
 internal static class CompilerFlowExtensions
 {
-	public static Scope BeginScope(this Compiler self)
+	public static Scope BeginScope(this CompilerIO self)
 	{
 		self.scopeDepth += 1;
 		return new Scope(self.localVariables.count);
 	}
 
-	public static void EndScope(this Compiler self, Scope scope, int sizeLeftOnStack)
+	public static void EndScope(this CompilerIO self, Scope scope, int sizeLeftOnStack)
 	{
 		self.scopeDepth -= 1;
 
@@ -46,12 +46,12 @@ internal static class CompilerFlowExtensions
 		self.DebugEmitPopType((byte)localCount);
 	}
 
-	public static void BeginLoop(this Compiler self, Slice labelSlice)
+	public static void BeginLoop(this CompilerIO self, Slice labelSlice)
 	{
 		self.loopNesting.PushBack(labelSlice);
 	}
 
-	public static void EndLoop(this Compiler self)
+	public static void EndLoop(this CompilerIO self)
 	{
 		self.loopNesting.count -= 1;
 

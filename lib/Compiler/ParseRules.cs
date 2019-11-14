@@ -1,7 +1,7 @@
 internal sealed class ParseRules
 {
-	public delegate ValueType PrefixFunction(CompilerController controller);
-	public delegate ValueType InfixFunction(CompilerController controller, CompilerController.ExpressionResult expression);
+	public delegate ValueType PrefixFunction(Compiler controller);
+	public delegate ValueType InfixFunction(Compiler controller, Compiler.ExpressionResult expression);
 
 	private const int RuleCount = (int)TokenKind.COUNT;
 	private readonly Precedence[] precedences = new Precedence[RuleCount];
@@ -18,35 +18,35 @@ internal sealed class ParseRules
 			infixRules[index] = infix;
 		}
 
-		Set(TokenKind.Dot, null, CompilerController.Dot, Precedence.Call);
-		Set(TokenKind.OpenParenthesis, CompilerController.Grouping, CompilerController.Call, Precedence.Call);
-		Set(TokenKind.OpenCurlyBrackets, CompilerController.BlockOrTupleExpression, null, Precedence.None);
-		Set(TokenKind.OpenSquareBrackets, CompilerController.ArrayExpression, CompilerController.Index, Precedence.Call);
-		Set(TokenKind.Minus, CompilerController.Unary, CompilerController.Binary, Precedence.Term);
-		Set(TokenKind.Plus, null, CompilerController.Binary, Precedence.Term);
-		Set(TokenKind.Slash, null, CompilerController.Binary, Precedence.Factor);
-		Set(TokenKind.Asterisk, null, CompilerController.Binary, Precedence.Factor);
-		Set(TokenKind.Bang, CompilerController.Unary, null, Precedence.None);
-		Set(TokenKind.EqualEqual, null, CompilerController.Binary, Precedence.Equality);
-		Set(TokenKind.BangEqual, null, CompilerController.Binary, Precedence.Equality);
-		Set(TokenKind.Length, CompilerController.LengthExpression, null, Precedence.None);
-		Set(TokenKind.Greater, null, CompilerController.Binary, Precedence.Comparison);
-		Set(TokenKind.GreaterEqual, null, CompilerController.Binary, Precedence.Comparison);
-		Set(TokenKind.Less, null, CompilerController.Binary, Precedence.Comparison);
-		Set(TokenKind.LessEqual, null, CompilerController.Binary, Precedence.Comparison);
-		Set(TokenKind.Identifier, CompilerController.Identifier, null, Precedence.None);
-		Set(TokenKind.StringLiteral, CompilerController.Literal, null, Precedence.None);
-		Set(TokenKind.IntLiteral, CompilerController.Literal, null, Precedence.None);
-		Set(TokenKind.And, null, CompilerController.And, Precedence.And);
-		Set(TokenKind.False, CompilerController.Literal, null, Precedence.None);
-		Set(TokenKind.If, CompilerController.If, null, Precedence.None);
-		Set(TokenKind.Or, null, CompilerController.Or, Precedence.Or);
-		Set(TokenKind.FloatLiteral, CompilerController.Literal, null, Precedence.None);
-		Set(TokenKind.True, CompilerController.Literal, null, Precedence.None);
-		Set(TokenKind.Function, CompilerController.FunctionExpression, null, Precedence.None);
-		Set(TokenKind.Ampersand, CompilerController.Reference, null, Precedence.None);
-		Set(TokenKind.Int, CompilerController.Unary, null, Precedence.None);
-		Set(TokenKind.Float, CompilerController.Unary, null, Precedence.None);
+		Set(TokenKind.Dot, null, Compiler.Dot, Precedence.Call);
+		Set(TokenKind.OpenParenthesis, Compiler.Grouping, Compiler.Call, Precedence.Call);
+		Set(TokenKind.OpenCurlyBrackets, Compiler.BlockOrTupleExpression, null, Precedence.None);
+		Set(TokenKind.OpenSquareBrackets, Compiler.ArrayExpression, Compiler.Index, Precedence.Call);
+		Set(TokenKind.Minus, Compiler.Unary, Compiler.Binary, Precedence.Term);
+		Set(TokenKind.Plus, null, Compiler.Binary, Precedence.Term);
+		Set(TokenKind.Slash, null, Compiler.Binary, Precedence.Factor);
+		Set(TokenKind.Asterisk, null, Compiler.Binary, Precedence.Factor);
+		Set(TokenKind.Bang, Compiler.Unary, null, Precedence.None);
+		Set(TokenKind.EqualEqual, null, Compiler.Binary, Precedence.Equality);
+		Set(TokenKind.BangEqual, null, Compiler.Binary, Precedence.Equality);
+		Set(TokenKind.Length, Compiler.LengthExpression, null, Precedence.None);
+		Set(TokenKind.Greater, null, Compiler.Binary, Precedence.Comparison);
+		Set(TokenKind.GreaterEqual, null, Compiler.Binary, Precedence.Comparison);
+		Set(TokenKind.Less, null, Compiler.Binary, Precedence.Comparison);
+		Set(TokenKind.LessEqual, null, Compiler.Binary, Precedence.Comparison);
+		Set(TokenKind.Identifier, Compiler.Identifier, null, Precedence.None);
+		Set(TokenKind.StringLiteral, Compiler.Literal, null, Precedence.None);
+		Set(TokenKind.IntLiteral, Compiler.Literal, null, Precedence.None);
+		Set(TokenKind.And, null, Compiler.And, Precedence.And);
+		Set(TokenKind.False, Compiler.Literal, null, Precedence.None);
+		Set(TokenKind.If, Compiler.If, null, Precedence.None);
+		Set(TokenKind.Or, null, Compiler.Or, Precedence.Or);
+		Set(TokenKind.FloatLiteral, Compiler.Literal, null, Precedence.None);
+		Set(TokenKind.True, Compiler.Literal, null, Precedence.None);
+		Set(TokenKind.Function, Compiler.FunctionExpression, null, Precedence.None);
+		Set(TokenKind.Ampersand, Compiler.Reference, null, Precedence.None);
+		Set(TokenKind.Int, Compiler.Unary, null, Precedence.None);
+		Set(TokenKind.Float, Compiler.Unary, null, Precedence.None);
 	}
 
 	public Precedence GetPrecedence(TokenKind kind)

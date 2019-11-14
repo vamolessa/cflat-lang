@@ -1,6 +1,6 @@
 internal static class CompilerTypeExtensions
 {
-	public static bool CheckFunctionBuild(this Compiler self, FunctionTypeBuilder.Result result, Slice slice)
+	public static bool CheckFunctionBuild(this CompilerIO self, FunctionTypeBuilder.Result result, Slice slice)
 	{
 		switch (result)
 		{
@@ -17,7 +17,7 @@ internal static class CompilerTypeExtensions
 		}
 	}
 
-	public static bool CheckTupleBuild(this Compiler self, TupleTypeBuilder.Result result, Slice slice)
+	public static bool CheckTupleBuild(this CompilerIO self, TupleTypeBuilder.Result result, Slice slice)
 	{
 		switch (result)
 		{
@@ -34,7 +34,7 @@ internal static class CompilerTypeExtensions
 		}
 	}
 
-	public static bool CheckStructBuild(this Compiler self, StructTypeBuilder.Result result, Slice slice, string name)
+	public static bool CheckStructBuild(this CompilerIO self, StructTypeBuilder.Result result, Slice slice, string name)
 	{
 		switch (result)
 		{
@@ -51,13 +51,13 @@ internal static class CompilerTypeExtensions
 		}
 	}
 
-	public static ValueType ParseType(this Compiler self, string error)
+	public static ValueType ParseType(this CompilerIO self, string error)
 	{
 		var slice = self.parser.currentToken.slice;
 		return self.ParseTypeRecursive(error, slice, 0);
 	}
 
-	private static ValueType ParseTypeRecursive(this Compiler self, string error, Slice slice, int recursionLevel)
+	private static ValueType ParseTypeRecursive(this CompilerIO self, string error, Slice slice, int recursionLevel)
 	{
 		if (recursionLevel > 8)
 		{
@@ -95,7 +95,7 @@ internal static class CompilerTypeExtensions
 		return new ValueType(TypeKind.Unit);
 	}
 
-	private static Option<ValueType> ParseTupleType(this Compiler self, Slice slice, int recursionLevel)
+	private static Option<ValueType> ParseTupleType(this CompilerIO self, Slice slice, int recursionLevel)
 	{
 		var source = self.parser.tokenizer.source;
 		var builder = self.chunk.BeginTupleType();
@@ -124,7 +124,7 @@ internal static class CompilerTypeExtensions
 		return Option.Some(type);
 	}
 
-	private static Option<ValueType> ParseStructOrClassType(this Compiler self, int recursionLevel)
+	private static Option<ValueType> ParseStructOrClassType(this CompilerIO self, int recursionLevel)
 	{
 		var source = self.parser.tokenizer.source;
 		var slice = self.parser.previousToken.slice;
@@ -146,7 +146,7 @@ internal static class CompilerTypeExtensions
 		return Option.None;
 	}
 
-	private static Option<ValueType> ParseFunctionType(this Compiler self, Slice slice, int recursionLevel)
+	private static Option<ValueType> ParseFunctionType(this CompilerIO self, Slice slice, int recursionLevel)
 	{
 		var builder = self.chunk.BeginFunctionType();
 
@@ -177,7 +177,7 @@ internal static class CompilerTypeExtensions
 		return Option.Some(type);
 	}
 
-	private static Option<ValueType> ParseArrayType(this Compiler self, Slice slice, int recursionLevel)
+	private static Option<ValueType> ParseArrayType(this CompilerIO self, Slice slice, int recursionLevel)
 	{
 		slice = Slice.FromTo(slice, self.parser.previousToken.slice);
 		var elementType = self.ParseTypeRecursive("Expected array element type", slice, recursionLevel);
@@ -193,7 +193,7 @@ internal static class CompilerTypeExtensions
 		return Option.Some(elementType.ToArrayType());
 	}
 
-	private static Option<ValueType> ParseReferenceType(this Compiler self, Slice slice, int recursionLevel)
+	private static Option<ValueType> ParseReferenceType(this CompilerIO self, Slice slice, int recursionLevel)
 	{
 		var isMutable = self.parser.Match(TokenKind.Mut);
 

@@ -1,6 +1,7 @@
 internal static class TokenScanners
 {
 	public static readonly Scanner[] scanners = new Scanner[] {
+		new ExactScanner("mod").ForToken(TokenKind.Mod),
 		new ExactScanner("fn").ForToken(TokenKind.Function),
 		new ExactScanner("struct").ForToken(TokenKind.Struct),
 		new ExactScanner("if").ForToken(TokenKind.If),

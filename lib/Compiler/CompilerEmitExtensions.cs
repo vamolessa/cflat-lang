@@ -1,12 +1,12 @@
 internal static class CompilerEmitExtensions
 {
-	public static Compiler EmitByte(this Compiler self, byte value)
+	public static CompilerIO EmitByte(this CompilerIO self, byte value)
 	{
 		self.chunk.WriteByte(value, self.parser.previousToken.slice);
 		return self;
 	}
 
-	public static Compiler EmitUShort(this Compiler self, ushort value)
+	public static CompilerIO EmitUShort(this CompilerIO self, ushort value)
 	{
 		BytesHelper.UShortToBytes(value, out var b0, out var b1);
 		self.chunk.WriteByte(b0, self.parser.previousToken.slice);
@@ -14,14 +14,14 @@ internal static class CompilerEmitExtensions
 		return self;
 	}
 
-	public static Compiler EmitInstruction(this Compiler self, Instruction instruction)
+	public static CompilerIO EmitInstruction(this CompilerIO self, Instruction instruction)
 	{
 		if (instruction < Instruction.DebugHook)
 			self.EmitByte((byte)Instruction.DebugHook);
 		return self.EmitByte((byte)instruction);
 	}
 
-	public static Compiler EmitPop(this Compiler self, int size)
+	public static CompilerIO EmitPop(this CompilerIO self, int size)
 	{
 		if (size > 1)
 		{
@@ -36,21 +36,21 @@ internal static class CompilerEmitExtensions
 		return self;
 	}
 
-	public static Compiler EmitLoadLiteral(this Compiler self, ValueData value, TypeKind type)
+	public static CompilerIO EmitLoadLiteral(this CompilerIO self, ValueData value, TypeKind type)
 	{
 		var index = self.chunk.AddValueLiteral(value, type);
 		self.EmitInstruction(Instruction.LoadLiteral);
 		return self.EmitUShort((ushort)index);
 	}
 
-	public static Compiler EmitLoadStringLiteral(this Compiler self, string value)
+	public static CompilerIO EmitLoadStringLiteral(this CompilerIO self, string value)
 	{
 		var index = self.chunk.AddStringLiteral(value);
 		self.EmitInstruction(Instruction.LoadLiteral);
 		return self.EmitUShort((ushort)index);
 	}
 
-	public static Compiler EmitSetLocal(this Compiler self, int stackIndex, ValueType type)
+	public static CompilerIO EmitSetLocal(this CompilerIO self, int stackIndex, ValueType type)
 	{
 		var typeSize = type.GetSize(self.chunk);
 		if (typeSize > 1)
@@ -66,7 +66,7 @@ internal static class CompilerEmitExtensions
 		}
 	}
 
-	public static Compiler EmitLoadLocal(this Compiler self, int stackIndex, ValueType type)
+	public static CompilerIO EmitLoadLocal(this CompilerIO self, int stackIndex, ValueType type)
 	{
 		var typeSize = type.GetSize(self.chunk);
 		if (typeSize > 1)
@@ -82,18 +82,18 @@ internal static class CompilerEmitExtensions
 		}
 	}
 
-	public static Compiler EmitLoadFunction(this Compiler self, Instruction instruction, int functionIndex)
+	public static CompilerIO EmitLoadFunction(this CompilerIO self, Instruction instruction, int functionIndex)
 	{
 		self.EmitInstruction(instruction);
 		return self.EmitUShort((ushort)functionIndex);
 	}
 
-	public static int BeginEmitBackwardJump(this Compiler self)
+	public static int BeginEmitBackwardJump(this CompilerIO self)
 	{
 		return self.chunk.bytes.count;
 	}
 
-	public static void EndEmitBackwardJump(this Compiler self, Instruction instruction, int jumpIndex)
+	public static void EndEmitBackwardJump(this CompilerIO self, Instruction instruction, int jumpIndex)
 	{
 		self.EmitInstruction(instruction);
 
@@ -107,7 +107,7 @@ internal static class CompilerEmitExtensions
 		self.EmitUShort((ushort)offset);
 	}
 
-	public static int BeginEmitForwardJump(this Compiler self, Instruction instruction)
+	public static int BeginEmitForwardJump(this CompilerIO self, Instruction instruction)
 	{
 		self.EmitInstruction(instruction);
 		self.EmitUShort(0);
@@ -115,7 +115,7 @@ internal static class CompilerEmitExtensions
 		return self.chunk.bytes.count - 2;
 	}
 
-	public static void EndEmitForwardJump(this Compiler self, int jumpIndex)
+	public static void EndEmitForwardJump(this CompilerIO self, int jumpIndex)
 	{
 		var offset = self.chunk.bytes.count - jumpIndex - 2;
 		if (offset > ushort.MaxValue)
@@ -128,7 +128,7 @@ internal static class CompilerEmitExtensions
 		);
 	}
 
-	public static void EmitType(this Compiler self, ValueType type)
+	public static void EmitType(this CompilerIO self, ValueType type)
 	{
 		type.Write(out var b0, out var b1, out var b2, out var b3);
 		self.EmitByte(b0);

@@ -1,7 +1,7 @@
 internal static class CompilerDeclarationExtensions
 {
 	// VARIABLES
-	public static int AddLocalVariable(this Compiler self, Slice slice, ValueType type, VariableFlags flags)
+	public static int AddLocalVariable(this CompilerIO self, Slice slice, ValueType type, VariableFlags flags)
 	{
 		byte stackIndex = 0;
 		if (self.localVariables.count > 0)
@@ -24,18 +24,7 @@ internal static class CompilerDeclarationExtensions
 		return self.localVariables.count - 1;
 	}
 
-	public static int DeclareLocalVariable(this Compiler self, CompilerController.ExpressionResult expression, bool mutable)
-	{
-		if (self.localVariables.count >= self.localVariables.buffer.Length)
-		{
-			self.AddSoftError(expression.slice, "Too many local variables in function");
-			return -1;
-		}
-
-		return self.AddLocalVariable(expression.slice, expression.type, mutable ? VariableFlags.Mutable : VariableFlags.None);
-	}
-
-	public static bool ResolveToLocalVariableIndex(this Compiler self, Slice slice, out int index)
+	public static bool ResolveToLocalVariableIndex(this CompilerIO self, Slice slice, out int index)
 	{
 		var source = self.parser.tokenizer.source;
 
@@ -66,12 +55,12 @@ internal static class CompilerDeclarationExtensions
 	}
 
 	// FUNCTIONS
-	public static FunctionTypeBuilder BeginFunctionDeclaration(this Compiler self)
+	public static FunctionTypeBuilder BeginFunctionDeclaration(this CompilerIO self)
 	{
 		return self.chunk.BeginFunctionType();
 	}
 
-	public static int EndFunctionDeclaration(this Compiler self, FunctionTypeBuilder builder, Slice slice, bool hasBody)
+	public static int EndFunctionDeclaration(this CompilerIO self, FunctionTypeBuilder builder, Slice slice, bool hasBody)
 	{
 		var name = CompilerHelper.GetSlice(self, slice);
 		var result = builder.Build(out var index);
@@ -122,7 +111,7 @@ internal static class CompilerDeclarationExtensions
 		return functionIndex;
 	}
 
-	public static bool ResolveToFunctionIndex(this Compiler self, Slice slice, out int index)
+	public static bool ResolveToFunctionIndex(this CompilerIO self, Slice slice, out int index)
 	{
 		var source = self.parser.tokenizer.source;
 
@@ -141,7 +130,7 @@ internal static class CompilerDeclarationExtensions
 	}
 
 	// NATIVE FUNCTIONS
-	public static bool ResolveToNativeFunctionIndex(this Compiler self, Slice slice, out int index)
+	public static bool ResolveToNativeFunctionIndex(this CompilerIO self, Slice slice, out int index)
 	{
 		var source = self.parser.tokenizer.source;
 
@@ -160,19 +149,19 @@ internal static class CompilerDeclarationExtensions
 	}
 
 	// STRUCTS
-	public static StructTypeBuilder BeginStructDeclaration(this Compiler self)
+	public static StructTypeBuilder BeginStructDeclaration(this CompilerIO self)
 	{
 		return self.chunk.BeginStructType();
 	}
 
-	public static void EndStructDeclaration(this Compiler self, StructTypeBuilder builder, Slice slice)
+	public static void EndStructDeclaration(this CompilerIO self, StructTypeBuilder builder, Slice slice)
 	{
 		var name = CompilerHelper.GetSlice(self, slice);
 		var result = builder.Build(name, out var index);
 		self.CheckStructBuild(result, slice, name);
 	}
 
-	public static bool ResolveToStructTypeIndex(this Compiler self, Slice slice, out int index)
+	public static bool ResolveToStructTypeIndex(this CompilerIO self, Slice slice, out int index)
 	{
 		var source = self.parser.tokenizer.source;
 

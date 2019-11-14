@@ -1,5 +1,16 @@
 ﻿using System.Globalization;
 
+public enum Mode
+{
+	Release,
+	Debug
+}
+
+public interface IModuleResolver
+{
+	string Resolve(string requestingSource, string moduleName);
+}
+
 [System.Flags]
 internal enum VariableFlags : byte
 {
@@ -100,25 +111,25 @@ internal static class CompilerHelper
 		return true;
 	}
 
-	public static string GetSlice(Compiler compiler, Slice slice)
+	public static string GetSlice(CompilerIO compiler, Slice slice)
 	{
 		return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
 	}
 
-	public static string GetPreviousSlice(Compiler compiler)
+	public static string GetPreviousSlice(CompilerIO compiler)
 	{
 		var slice = compiler.parser.previousToken.slice;
 		return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
 	}
 
-	public static int GetInt(Compiler compiler)
+	public static int GetInt(CompilerIO compiler)
 	{
 		var sub = GetPreviousSlice(compiler);
 		int.TryParse(sub, out var value);
 		return value;
 	}
 
-	public static float GetFloat(Compiler compiler)
+	public static float GetFloat(CompilerIO compiler)
 	{
 		var sub = GetPreviousSlice(compiler);
 		float.TryParse(
@@ -129,7 +140,7 @@ internal static class CompilerHelper
 		return value;
 	}
 
-	public static string GetString(Compiler compiler)
+	public static string GetString(CompilerIO compiler)
 	{
 		var slice = new Slice(
 			compiler.parser.previousToken.slice.index + 1,

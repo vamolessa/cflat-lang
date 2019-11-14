@@ -4,7 +4,7 @@ public static class CFlatInterfaceExtensions
 		where A : struct, ITuple
 		where R : struct, IMarshalable
 	{
-		if (self.compiler.compiler.errors.count > 0)
+		if (self.compiler.io.errors.count > 0)
 			return Option.None;
 
 		var marshaler = new FunctionDefinitionMarshaler<A, R>(self.chunk);
@@ -145,7 +145,7 @@ public static class CFlatInterfaceExtensions
 	private static bool FinishAddFunction(CFlat self, FunctionTypeBuilder builder, string functionName, NativeFunction.Callback function)
 	{
 		var result = builder.Build(out var typeIndex);
-		if (!self.compiler.compiler.CheckFunctionBuild(result, new Slice()))
+		if (!self.compiler.io.CheckFunctionBuild(result, new Slice()))
 			return false;
 
 		self.chunk.nativeFunctions.PushBack(new NativeFunction(

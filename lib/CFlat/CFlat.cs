@@ -15,17 +15,10 @@ public sealed class CFlat
 	}
 
 	internal readonly VirtualMachine vm = new VirtualMachine();
-	internal readonly CompilerController compiler = new CompilerController();
+	internal readonly Compiler compiler = new Compiler();
 	internal ByteCodeChunk chunk = new ByteCodeChunk();
 	internal Buffer<Source> sources = new Buffer<Source>();
 	internal Buffer<CompileError> compileErrors = new Buffer<CompileError>();
-
-	public void Clear()
-	{
-		chunk = new ByteCodeChunk();
-		sources.count = 0;
-		compileErrors.count = 0;
-	}
 
 	public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode)
 	{

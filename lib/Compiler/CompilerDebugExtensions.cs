@@ -1,18 +1,18 @@
 internal static class CompilerDebugExtensions
 {
-	public static void DebugEmitPushFrame(this Compiler self)
+	public static void DebugEmitPushFrame(this CompilerIO self)
 	{
 		if (self.mode == Mode.Debug)
 			self.EmitInstruction(Instruction.DebugPushFrame);
 	}
 
-	public static void DebugEmitPopFrame(this Compiler self)
+	public static void DebugEmitPopFrame(this CompilerIO self)
 	{
 		if (self.mode == Mode.Debug)
 			self.EmitInstruction(Instruction.DebugPopFrame);
 	}
 
-	public static void DebugEmitPushType(this Compiler self, ValueType type)
+	public static void DebugEmitPushType(this CompilerIO self, ValueType type)
 	{
 		if (self.mode == Mode.Debug)
 		{
@@ -21,7 +21,7 @@ internal static class CompilerDebugExtensions
 		}
 	}
 
-	public static void DebugEmitPopType(this Compiler self, byte count)
+	public static void DebugEmitPopType(this CompilerIO self, byte count)
 	{
 		if (self.mode == Mode.Debug)
 		{

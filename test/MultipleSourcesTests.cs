@@ -1,7 +1,8 @@
-using Xunit;
+//using Xunit;
 
 public sealed class MultipleSourcesTests
 {
+	/*
 	[Theory]
 	[InlineData("", "")]
 	[InlineData("struct S{a:int} fn f(){let _=S{a=0}}", "")]
@@ -36,4 +37,5 @@ public sealed class MultipleSourcesTests
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 		Assert.True(cflat.Load());
 	}
+	*/
 }
