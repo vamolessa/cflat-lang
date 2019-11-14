@@ -108,7 +108,7 @@ public sealed class ArrayTests
 	{
 		var cflat = new CFlat();
 		var v = TestHelper.RunExpression<Int>(cflat, source, out var a);
-		Assert.True(cflat.GetError().isSome);
+		Assert.True(cflat.GetRuntimeError().isSome);
 	}
 
 	[Theory]

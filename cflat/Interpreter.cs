@@ -40,14 +40,13 @@ public static class Interpreter
 			ConsoleHelper.LineBreak();
 		}
 
-		cflat.Load();
 		var main = cflat.GetFunction<Empty, Unit>("main");
 		if (main.isSome)
 			System.Console.WriteLine("RESULT: {0}", main.value.Call(cflat, new Empty()));
 		else
 			System.Console.WriteLine("NOT FOUNDED");
 
-		var runtimeError = cflat.GetError();
+		var runtimeError = cflat.GetRuntimeError();
 		if (runtimeError.isSome)
 		{
 			var errorMessage = cflat.GetFormattedRuntimeError();

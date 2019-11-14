@@ -27,7 +27,7 @@ public static class TestHelper
 		public void AssertSuccessCall()
 		{
 			string errorMessage = null;
-			var error = cflat.GetError();
+			var error = cflat.GetRuntimeError();
 			if (error.isSome)
 				errorMessage = cflat.GetFormattedCompileErrors();
 			Assert.Null(errorMessage);
@@ -51,7 +51,6 @@ public static class TestHelper
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 
-		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
 		var function = cflat.GetFunction<Empty, R>("f");
 		if (!function.isSome)
@@ -73,7 +72,6 @@ public static class TestHelper
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 
-		cflat.Load();
 		assertion = new CallAssertion(source, cflat);
 		var function = cflat.GetFunction<Empty, R>(string.Empty);
 		if (!function.isSome)

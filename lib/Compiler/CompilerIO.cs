@@ -3,7 +3,7 @@ internal sealed class CompilerIO
 	public Mode mode;
 	public readonly Parser parser;
 	public Buffer<CompileError> errors = new Buffer<CompileError>();
-	public int currentSourceIndex;
+	public int sourceIndex;
 
 	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
@@ -31,11 +31,11 @@ internal sealed class CompilerIO
 	public void Reset(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
 	{
 		this.mode = mode;
+		this.sourceIndex = sourceIndex;
 		parser.tokenizer.Reset(source);
 		parser.Reset();
 
 		errors.count = 0;
-		currentSourceIndex = sourceIndex;
 
 		isInPanicMode = false;
 		this.chunk = chunk;
@@ -46,7 +46,7 @@ internal sealed class CompilerIO
 	public CompilerIO AddSoftError(Slice slice, string format, params object[] args)
 	{
 		if (!isInPanicMode)
-			errors.PushBack(new CompileError(currentSourceIndex, slice, string.Format(format, args)));
+			errors.PushBack(new CompileError(sourceIndex, slice, string.Format(format, args)));
 		return this;
 	}
 
@@ -56,9 +56,9 @@ internal sealed class CompilerIO
 		{
 			isInPanicMode = true;
 			if (args == null || args.Length == 0)
-				errors.PushBack(new CompileError(currentSourceIndex, slice, format));
+				errors.PushBack(new CompileError(sourceIndex, slice, format));
 			else
-				errors.PushBack(new CompileError(currentSourceIndex, slice, string.Format(format, args)));
+				errors.PushBack(new CompileError(sourceIndex, slice, string.Format(format, args)));
 		}
 		return this;
 	}

@@ -194,11 +194,10 @@ public sealed class InterfaceTests
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 
-		cflat.Load();
 		someFunction = cflat.GetFunction<Tuple<Int>, Int>("some_function").value;
 
 		var n = cflat.GetFunction<Empty, Int>("f").value.Call(cflat, new Empty());
-		Assert.False(cflat.GetError().isSome);
+		Assert.False(cflat.GetRuntimeError().isSome);
 		Assert.Equal(7, n.value);
 	}
 

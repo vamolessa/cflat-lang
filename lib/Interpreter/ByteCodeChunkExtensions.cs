@@ -143,7 +143,7 @@ public static class ByteCodeChunkExtensions
 		sb.AppendLine("== end ==");
 	}
 
-	internal static void Disassemble(this ByteCodeChunk self, CFlat.Source[] sources, StringBuilder sb)
+	internal static void Disassemble(this ByteCodeChunk self, Source[] sources, StringBuilder sb)
 	{
 		var currentSourceIndex = -1;
 
@@ -159,7 +159,7 @@ public static class ByteCodeChunkExtensions
 			if (sourceIndex != currentSourceIndex)
 			{
 				sb.Append("== ");
-				sb.Append(source.name);
+				sb.Append(source.uri);
 				sb.AppendLine(" ==");
 				currentSourceIndex = sourceIndex;
 			}

@@ -13,8 +13,8 @@ public static class CFlatDiagnosticsExtensions
 
 			if (e.slice.index > 0 || e.slice.length > 0)
 			{
-				var source = self.sources.buffer[e.sourceIndex];
-				FormattingHelper.AddHighlightSlice(source.name, source.content, e.slice, sb);
+				var source = self.compiler.compiledSources.buffer[e.sourceIndex];
+				FormattingHelper.AddHighlightSlice(source.uri, source.content, e.slice, sb);
 			}
 		}
 
@@ -33,9 +33,9 @@ public static class CFlatDiagnosticsExtensions
 		if (error.instructionIndex < 0)
 			return sb.ToString();
 
-		var source = self.sources.buffer[self.vm.chunk.FindSourceIndex(error.instructionIndex)];
+		var source = self.compiler.compiledSources.buffer[self.vm.chunk.FindSourceIndex(error.instructionIndex)];
 
-		FormattingHelper.AddHighlightSlice(source.name, source.content, error.slice, sb);
+		FormattingHelper.AddHighlightSlice(source.uri, source.content, error.slice, sb);
 		return sb.ToString();
 	}
 
@@ -57,7 +57,7 @@ public static class CFlatDiagnosticsExtensions
 				{
 					var codeIndex = System.Math.Max(callframe.codeIndex - 1, 0);
 					var sourceIndex = vm.chunk.sourceSlices.buffer[codeIndex].index;
-					var source = self.sources.buffer[vm.chunk.FindSourceIndex(codeIndex)];
+					var source = self.compiler.compiledSources.buffer[vm.chunk.FindSourceIndex(codeIndex)];
 
 					var pos = FormattingHelper.GetLineAndColumn(
 						source.content,
@@ -90,7 +90,7 @@ public static class CFlatDiagnosticsExtensions
 	public static string Disassemble(this CFlat self)
 	{
 		var sb = new StringBuilder();
-		self.chunk.Disassemble(self.sources.buffer, sb);
+		self.chunk.Disassemble(self.compiler.compiledSources.buffer, sb);
 		return sb.ToString();
 	}
 }

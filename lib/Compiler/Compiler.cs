@@ -42,11 +42,16 @@ internal sealed class Compiler
 	}
 
 	public readonly CompilerIO io = new CompilerIO();
+	public Buffer<Source> compiledSources = new Buffer<Source>();
+	public Buffer<Source> pendingSources = new Buffer<Source>();
+	private IModuleResolver moduleResolver = null;
 	private readonly ParseRules parseRules = new ParseRules();
 
-	public Buffer<CompileError> Compile(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
+	public Buffer<CompileError> Compile(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
 	{
-		io.Reset(chunk, mode, source, sourceIndex);
+		this.moduleResolver = moduleResolver;
+		pendingSources.PushBack(source);
+		io.Reset(chunk, mode, source.content, compiledSources.count);
 
 		io.parser.Next();
 		while (!io.parser.Match(TokenKind.End))
@@ -65,12 +70,14 @@ internal sealed class Compiler
 			}
 		}
 
+		compiledSources.PushBack(source);
 		return io.errors;
 	}
 
-	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
+	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
 	{
-		io.Reset(chunk, mode, source, sourceIndex);
+		this.moduleResolver = moduleResolver;
+		io.Reset(chunk, mode, source.content, compiledSources.count);
 
 		{
 			io.DebugEmitPushFrame();
@@ -93,6 +100,8 @@ internal sealed class Compiler
 		io.EmitByte(expression.type.GetSize(io.chunk));
 
 		io.EmitInstruction(Instruction.Halt);
+
+		compiledSources.PushBack(source);
 		return io.errors;
 	}
 
@@ -150,13 +159,48 @@ internal sealed class Compiler
 
 	private void Declaration()
 	{
-		if (io.parser.Match(TokenKind.Function))
+		if (io.parser.Match(TokenKind.Mod))
+			ModuleImport();
+		else if (io.parser.Match(TokenKind.Function))
 			FunctionDeclaration();
 		else if (io.parser.Match(TokenKind.Struct))
 			StructDeclaration();
 		else
 			io.AddHardError(io.parser.currentToken.slice, "Expected function or struct declaration");
 		Syncronize();
+	}
+
+	private void ModuleImport()
+	{
+		var slice = io.parser.previousToken.slice;
+		io.parser.Consume(TokenKind.StringLiteral, "Expected module path string");
+		var modulePath = CompilerHelper.GetParsedString(io);
+		slice = Slice.FromTo(slice, io.parser.previousToken.slice);
+
+		if (compiledSources.count > 0)
+		{
+			io.AddSoftError(slice, "Module imports must appear at the top");
+			return;
+		}
+
+		if (moduleResolver == null)
+		{
+			io.AddSoftError(slice, "No module resolver present. Could not load module");
+			return;
+		}
+
+		var currentSource = pendingSources.buffer[pendingSources.count - 1];
+		var moduleUri = moduleResolver.ResolveModuleUri(currentSource.uri, modulePath);
+
+		for (var i = 0; i < compiledSources.count; i++)
+		{
+			var source = compiledSources.buffer[i];
+			if (source.uri == moduleUri)
+				return;
+		}
+
+		var moduleSource = moduleResolver.ResolveModuleSource(currentSource.uri, modulePath);
+		// COMPILE MODULE!
 	}
 
 	private void FunctionDeclaration()
@@ -1048,20 +1092,20 @@ internal sealed class Compiler
 			return new ValueType(TypeKind.Bool);
 		case TokenKind.IntLiteral:
 			self.io.EmitLoadLiteral(
-				new ValueData(CompilerHelper.GetInt(self.io)),
+				new ValueData(CompilerHelper.GetParsedInt(self.io)),
 				TypeKind.Int
 			);
 			self.io.DebugEmitPushType(new ValueType(TypeKind.Int));
 			return new ValueType(TypeKind.Int);
 		case TokenKind.FloatLiteral:
 			self.io.EmitLoadLiteral(
-				new ValueData(CompilerHelper.GetFloat(self.io)),
+				new ValueData(CompilerHelper.GetParsedFloat(self.io)),
 				TypeKind.Float
 			);
 			self.io.DebugEmitPushType(new ValueType(TypeKind.Float));
 			return new ValueType(TypeKind.Float);
 		case TokenKind.StringLiteral:
-			self.io.EmitLoadStringLiteral(CompilerHelper.GetString(self.io));
+			self.io.EmitLoadStringLiteral(CompilerHelper.GetParsedString(self.io));
 			self.io.DebugEmitPushType(new ValueType(TypeKind.String));
 			return new ValueType(TypeKind.String);
 		default:

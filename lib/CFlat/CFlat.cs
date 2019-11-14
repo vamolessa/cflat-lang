@@ -1,60 +1,64 @@
 [assembly: System.Runtime.CompilerServices.InternalsVisibleTo("test")]
 
+public enum Mode
+{
+	Release,
+	Debug
+}
+
+public readonly struct Source
+{
+	public readonly string uri;
+	public readonly string content;
+
+	public Source(string uri, string content)
+	{
+		this.uri = uri;
+		this.content = content;
+	}
+}
+
+public interface IModuleResolver
+{
+	string ResolveModuleUri(string requestingSourceUri, string modulePath);
+	string ResolveModuleSource(string requestingSourceUri, string moduleUri);
+}
+
 public sealed class CFlat
 {
-	internal readonly struct Source
-	{
-		public readonly string name;
-		public readonly string content;
-
-		public Source(string name, string content)
-		{
-			this.name = name;
-			this.content = content;
-		}
-	}
-
 	internal readonly VirtualMachine vm = new VirtualMachine();
 	internal readonly Compiler compiler = new Compiler();
 	internal ByteCodeChunk chunk = new ByteCodeChunk();
-	internal Buffer<Source> sources = new Buffer<Source>();
 	internal Buffer<CompileError> compileErrors = new Buffer<CompileError>();
 
-	public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode)
+	public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode, IModuleResolver moduleResolver = null)
 	{
 		if (compileErrors.count > 0)
 			return compileErrors;
 
-		sources.PushBack(new Source(sourceName, source));
 		chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
 
-		var errors = compiler.Compile(chunk, mode, source, sources.count - 1);
+		var errors = compiler.Compile(chunk, moduleResolver, mode, new Source(sourceName, source));
 		if (errors.count > 0)
 			compileErrors = errors;
+		else
+			vm.Load(chunk);
 		return errors;
 	}
 
-	public Buffer<CompileError> CompileExpression(string source, Mode mode)
+	public Buffer<CompileError> CompileExpression(string source, Mode mode, IModuleResolver moduleResolver = null)
 	{
 		if (compileErrors.count > 0)
 			return compileErrors;
 
-		sources.PushBack(new Source("expression", source));
 		chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
 
-		var errors = compiler.CompileExpression(chunk, mode, source, sources.count - 1);
+		var errors = compiler.CompileExpression(chunk, moduleResolver, mode, new Source("expression", source));
 		if (errors.count > 0)
 			compileErrors = errors;
+		else
+			vm.Load(chunk);
 		return errors;
-	}
-
-	public bool Load()
-	{
-		if (compileErrors.count > 0)
-			return false;
-
-		vm.Load(chunk);
-		return true;
 	}
 
 	public void AddDebugHook(DebugHookCallback callback)
@@ -67,7 +71,7 @@ public sealed class CFlat
 		vm.debugHookCallback -= callback;
 	}
 
-	public Option<RuntimeError> GetError()
+	public Option<RuntimeError> GetRuntimeError()
 	{
 		return vm.error;
 	}

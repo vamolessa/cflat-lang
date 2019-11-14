@@ -43,9 +43,9 @@ public sealed class ValueTests
 	[InlineData("struct A{a:int,b:int} struct B{a:A,b:A}", 4)]
 	public void StructSizeTests(string source, int expectedSize)
 	{
-		var cc = new Compiler();
+		var c = new Compiler();
 		var chunk = new ByteCodeChunk();
-		var errors = cc.Compile(chunk, TestHelper.CompilerMode, source, 0);
+		var errors = c.Compile(chunk, null, TestHelper.CompilerMode, new Source("source", source));
 		Assert.Empty(errors.ToArray());
 
 		var type = new ValueType(TypeKind.Struct, chunk.structTypes.count - 1);
