@@ -26,32 +26,12 @@ public interface IModuleResolver
 
 public sealed class CFlat
 {
-	private sealed class NullModuleResolver : IModuleResolver
-	{
-		public static NullModuleResolver Instance = new NullModuleResolver();
-
-		public Option<string> ResolveModuleUri(string requestingSourceUri, string modulePath)
-		{
-			return Option.None;
-		}
-
-		public Option<string> ResolveModuleSource(string requestingSourceUri, string moduleUri)
-		{
-			return Option.None;
-		}
-	}
-
 	internal readonly VirtualMachine vm = new VirtualMachine();
 	internal readonly Compiler compiler = new Compiler();
 	internal ByteCodeChunk chunk = new ByteCodeChunk();
 	internal Buffer<CompileError> compileErrors = new Buffer<CompileError>();
 
-	public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode)
-	{
-		return CompileSource(sourceName, source, mode, NullModuleResolver.Instance);
-	}
-
-	public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode, IModuleResolver moduleResolver)
+	public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode, Option<IModuleResolver> moduleResolver)
 	{
 		if (compileErrors.count > 0)
 			return compileErrors;

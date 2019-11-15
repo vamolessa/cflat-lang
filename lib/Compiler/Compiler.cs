@@ -44,9 +44,9 @@ internal sealed class Compiler
 	public readonly CompilerIO io = new CompilerIO();
 	public Buffer<Source> compiledSources = new Buffer<Source>(1);
 	private readonly ParseRules parseRules = new ParseRules();
-	private IModuleResolver moduleResolver = null;
+	private Option<IModuleResolver> moduleResolver = Option.None;
 
-	public Buffer<CompileError> CompileSource(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
+	public Buffer<CompileError> CompileSource(ByteCodeChunk chunk, Option<IModuleResolver> moduleResolver, Mode mode, Source source)
 	{
 		this.moduleResolver = moduleResolver;
 		compiledSources.count = 0;
@@ -61,9 +61,10 @@ internal sealed class Compiler
 		io.BeginSource(source.content, compiledSources.count);
 		compiledSources.PushBack(source);
 
+		var finishedModuleImports = false;
 		io.parser.Next();
 		while (!io.parser.Match(TokenKind.End))
-			Declaration();
+			Declaration(ref finishedModuleImports);
 
 		io.EmitInstruction(Instruction.Halt);
 
@@ -167,34 +168,52 @@ internal sealed class Compiler
 		}
 	}
 
-	private void Declaration()
+	private void Declaration(ref bool finishedModuleImports)
 	{
 		if (io.parser.Match(TokenKind.Mod))
-			ModuleImport();
+		{
+			ModuleImport(finishedModuleImports);
+		}
 		else if (io.parser.Match(TokenKind.Function))
+		{
+			finishedModuleImports = true;
 			FunctionDeclaration();
+		}
 		else if (io.parser.Match(TokenKind.Struct))
+		{
+			finishedModuleImports = true;
 			StructDeclaration();
+		}
 		else
-			io.AddHardError(io.parser.currentToken.slice, "Expected function or struct declaration");
+		{
+			finishedModuleImports = true;
+			io.AddHardError(io.parser.currentToken.slice, "Expected module import or function/struct declaration");
+		}
+
 		Syncronize();
 	}
 
-	private void ModuleImport()
+	private void ModuleImport(bool finishedModuleImports)
 	{
 		var slice = io.parser.previousToken.slice;
 		io.parser.Consume(TokenKind.StringLiteral, "Expected module path string");
 		var modulePath = CompilerHelper.GetParsedString(io);
 		slice = Slice.FromTo(slice, io.parser.previousToken.slice);
 
-		if (compiledSources.count > 0)
+		if (finishedModuleImports)
 		{
 			io.AddSoftError(slice, "Module imports must appear at the top");
 			return;
 		}
 
+		if (!moduleResolver.isSome)
+		{
+			io.AddSoftError(slice, "No module resolver provided. Can't import module '{0}'", modulePath);
+			return;
+		}
+
 		var currentSource = compiledSources.buffer[compiledSources.count - 1];
-		var maybeModuleUri = moduleResolver.ResolveModuleUri(currentSource.uri, modulePath);
+		var maybeModuleUri = moduleResolver.value.ResolveModuleUri(currentSource.uri, modulePath);
 		if (!maybeModuleUri.isSome)
 		{
 			io.AddSoftError(slice, "Could not resolve module uri '{0}' from '{1}'", modulePath, currentSource.uri);
@@ -208,7 +227,7 @@ internal sealed class Compiler
 				return;
 		}
 
-		var maybeModuleSource = moduleResolver.ResolveModuleSource(currentSource.uri, moduleUri);
+		var maybeModuleSource = moduleResolver.value.ResolveModuleSource(currentSource.uri, moduleUri);
 		if (!maybeModuleSource.isSome)
 		{
 			io.AddSoftError(slice, "Could not resolve module source '{0}' from '{1}'", moduleUri, currentSource.uri);

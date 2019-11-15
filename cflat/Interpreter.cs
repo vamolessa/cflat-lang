@@ -22,7 +22,7 @@ public static class Interpreter
 		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
 		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
 
-		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug);
+		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug, Option.None);
 		if (compileErrors.count > 0)
 		{
 			var errorMessage = cflat.GetFormattedCompileErrors();

@@ -47,7 +47,7 @@ public static class TestHelper
 	public static R Run<R>(CFlat cflat, string source, out CallAssertion assertion)
 		where R : struct, IMarshalable
 	{
-		var compileErrors = cflat.CompileSource("tests", source, CompilerMode);
+		var compileErrors = cflat.CompileSource("tests", source, CompilerMode, Option.None);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 
