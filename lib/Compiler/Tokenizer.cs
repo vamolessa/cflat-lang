@@ -1,9 +1,9 @@
 ﻿internal sealed class Tokenizer
 {
 	public string source;
+	public int nextIndex;
 
 	private readonly Scanner[] scanners;
-	private int nextIndex;
 
 	public Tokenizer(Scanner[] scanners)
 	{

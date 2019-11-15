@@ -41,22 +41,25 @@ internal sealed class Compiler
 		public bool isMutable;
 	}
 
-	public CompilerIO io = new CompilerIO();
+	public readonly CompilerIO io = new CompilerIO();
+	public Buffer<Source> compiledSources = new Buffer<Source>(1);
 	private readonly ParseRules parseRules = new ParseRules();
 	private IModuleResolver moduleResolver = null;
 
 	public Buffer<CompileError> CompileSource(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
 	{
 		this.moduleResolver = moduleResolver;
-		io.Reset(chunk, mode);
-		Compile(chunk, mode, source);
+		compiledSources.count = 0;
+
+		io.Reset(mode, chunk);
+		Compile(source);
 		return io.errors;
 	}
 
 	private void Compile(Source source)
 	{
-		pendingSourcesStack.PushBack(source);
-		io.Reset(chunk, mode, source.content, compiledSources.count);
+		io.BeginSource(source.content, compiledSources.count);
+		compiledSources.PushBack(source);
 
 		io.parser.Next();
 		while (!io.parser.Match(TokenKind.End))
@@ -75,14 +78,15 @@ internal sealed class Compiler
 			}
 		}
 
-		pendingSourcesStack.count -= 1;
-		compiledSources.PushBack(source);
+		io.EndSource();
 	}
 
 	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, Mode mode, Source source)
 	{
 		moduleResolver = null;
-		io.Reset(chunk, mode, source.content, compiledSources.count);
+		io.Reset(mode, chunk);
+		io.BeginSource(source.content, compiledSources.count);
+		compiledSources.PushBack(source);
 
 		{
 			io.DebugEmitPushFrame();
@@ -106,7 +110,7 @@ internal sealed class Compiler
 
 		io.EmitInstruction(Instruction.Halt);
 
-		compiledSources.PushBack(source);
+		io.EndSource();
 		return io.errors;
 	}
 
@@ -189,7 +193,7 @@ internal sealed class Compiler
 			return;
 		}
 
-		var currentSource = pendingSourcesStack.buffer[pendingSourcesStack.count - 1];
+		var currentSource = compiledSources.buffer[compiledSources.count - 1];
 		var maybeModuleUri = moduleResolver.ResolveModuleUri(currentSource.uri, modulePath);
 		if (!maybeModuleUri.isSome)
 		{
@@ -200,8 +204,7 @@ internal sealed class Compiler
 
 		for (var i = 0; i < compiledSources.count; i++)
 		{
-			var source = compiledSources.buffer[i];
-			if (source.uri == moduleUri)
+			if (compiledSources.buffer[i].uri == moduleUri)
 				return;
 		}
 
@@ -211,9 +214,8 @@ internal sealed class Compiler
 			io.AddSoftError(slice, "Could not resolve module source '{0}' from '{1}'", moduleUri, currentSource.uri);
 			return;
 		}
-		var moduleSource = maybeModuleSource.value;
 
-		// COMPILE MODULE SOURCE!
+		Compile(new Source(moduleUri, maybeModuleSource.value));
 	}
 
 	private void FunctionDeclaration()

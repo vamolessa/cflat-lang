@@ -2,13 +2,21 @@ internal sealed class CompilerIO
 {
 	private readonly struct StateFrame
 	{
+		public readonly string sourceContent;
 		public readonly int sourceIndex;
-		public readonly bool isInPanicMode;
-		public readonly ushort localVariablesIndex;
-		public readonly int scopeDepth;
-		public readonly ushort functionReturnTypeStackIndex;
-		public readonly ushort loopBreaksIndex;
-		public readonly ushort loopNestingIndex;
+
+		public readonly int tokenizerIndex;
+		public readonly Token previousToken;
+		public readonly Token currentToken;
+
+		public StateFrame(string sourceContent, int sourceIndex, int tokenizerIndex, Token previousToken, Token currentToken)
+		{
+			this.sourceContent = sourceContent;
+			this.sourceIndex = sourceIndex;
+			this.tokenizerIndex = tokenizerIndex;
+			this.previousToken = previousToken;
+			this.currentToken = currentToken;
+		}
 	}
 
 	public Mode mode;
@@ -38,35 +46,54 @@ internal sealed class CompilerIO
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(null, Mode.Release);
 	}
 
-	public void Reset(ByteCodeChunk chunk, Mode mode)
+	public void Reset(Mode mode, ByteCodeChunk chunk)
 	{
 		this.mode = mode;
-		this.sourceIndex = -1;
-
+		this.chunk = chunk;
 		errors.count = 0;
+		stateFrameStack.count = 0;
+	}
+
+	private void RestoreState(StateFrame state)
+	{
+		parser.tokenizer.Reset(state.sourceContent, state.tokenizerIndex);
+		parser.Reset(state.previousToken, state.currentToken);
+		sourceIndex = state.sourceIndex;
 
 		isInPanicMode = false;
-		this.chunk = chunk;
+
 		localVariables.count = 0;
 		scopeDepth = 0;
 
-		stateFrameStack.count = 0;
+		functionReturnTypeStack.count = 0;
+		loopBreaks.count = 0;
+		loopNesting.count = 0;
 	}
 	
-	public void PushSource(string source)
+	public void BeginSource(string source, int sourceIndex)
 	{
-		// SAVE STATE
+		stateFrameStack.PushBack(new StateFrame(
+			parser.tokenizer.source,
+			this.sourceIndex,
+			parser.tokenizer.nextIndex,
+			parser.previousToken,
+			parser.currentToken
+		));
 
-		parser.tokenizer.Reset(source, 0);
-		parser.Reset(new Token(TokenKind.End, new Slice()), new Token(TokenKind.End, new Slice()));
+		RestoreState(new StateFrame(
+			source,
+			sourceIndex,
+			0,
+			new Token(TokenKind.End, new Slice()),
+			new Token(TokenKind.End, new Slice())
+		));
 	}
 
-	public void PopSource()
+	public void EndSource()
 	{
-		// RESTORE STATE
+		RestoreState(stateFrameStack.PopLast());
 	}
 
 	public CompilerIO AddSoftError(Slice slice, string format, params object[] args)
