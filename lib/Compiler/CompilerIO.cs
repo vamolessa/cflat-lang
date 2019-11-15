@@ -1,12 +1,23 @@
 internal sealed class CompilerIO
 {
+	private readonly struct StateFrame
+	{
+		public readonly int sourceIndex;
+		public readonly bool isInPanicMode;
+		public readonly ushort localVariablesIndex;
+		public readonly int scopeDepth;
+		public readonly ushort functionReturnTypeStackIndex;
+		public readonly ushort loopBreaksIndex;
+		public readonly ushort loopNestingIndex;
+	}
+
 	public Mode mode;
 	public readonly Parser parser;
-	public Buffer<CompileError> errors = new Buffer<CompileError>();
-	public int sourceIndex;
-
-	public bool isInPanicMode;
 	public ByteCodeChunk chunk;
+	public Buffer<CompileError> errors = new Buffer<CompileError>();
+
+	public int sourceIndex;
+	public bool isInPanicMode;
 
 	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	public int scopeDepth;
@@ -15,6 +26,8 @@ internal sealed class CompilerIO
 
 	public Buffer<LoopBreak> loopBreaks = new Buffer<LoopBreak>(4);
 	public Buffer<Slice> loopNesting = new Buffer<Slice>(4);
+
+	private Buffer<StateFrame> stateFrameStack = new Buffer<StateFrame>();
 
 	public CompilerIO()
 	{
@@ -25,15 +38,13 @@ internal sealed class CompilerIO
 
 		var tokenizer = new Tokenizer(TokenScanners.scanners);
 		parser = new Parser(tokenizer, AddTokenizerError);
-		Reset(null, Mode.Release, null, 0);
+		Reset(null, Mode.Release);
 	}
 
-	public void Reset(ByteCodeChunk chunk, Mode mode, string source, int sourceIndex)
+	public void Reset(ByteCodeChunk chunk, Mode mode)
 	{
 		this.mode = mode;
-		this.sourceIndex = sourceIndex;
-		parser.tokenizer.Reset(source);
-		parser.Reset();
+		this.sourceIndex = -1;
 
 		errors.count = 0;
 
@@ -41,6 +52,21 @@ internal sealed class CompilerIO
 		this.chunk = chunk;
 		localVariables.count = 0;
 		scopeDepth = 0;
+
+		stateFrameStack.count = 0;
+	}
+	
+	public void PushSource(string source)
+	{
+		// SAVE STATE
+
+		parser.tokenizer.Reset(source, 0);
+		parser.Reset(new Token(TokenKind.End, new Slice()), new Token(TokenKind.End, new Slice()));
+	}
+
+	public void PopSource()
+	{
+		// RESTORE STATE
 	}
 
 	public CompilerIO AddSoftError(Slice slice, string format, params object[] args)

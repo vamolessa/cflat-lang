@@ -12,8 +12,8 @@ internal static class VirtualMachineInstructions
 		var bytes = vm.chunk.bytes.buffer;
 		var memory = vm.memory;
 
-		var codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
-		var baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+		var codeIndex = vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex;
+		var baseStackIndex = vm.callFrameStack.buffer[vm.callFrameStack.count - 1].baseStackIndex;
 
 		while (true)
 		{
@@ -29,7 +29,7 @@ internal static class VirtualMachineInstructions
 			switch (nextInstruction)
 			{
 			case Instruction.Halt:
-				--vm.callframeStack.count;
+				--vm.callFrameStack.count;
 				vm.memory = memory;
 				return;
 			case Instruction.Call:
@@ -37,10 +37,10 @@ internal static class VirtualMachineInstructions
 					baseStackIndex = memory.stackCount - bytes[codeIndex++];
 					var functionIndex = memory.values[baseStackIndex - 1].asInt;
 
-					vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+					vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
 					codeIndex = vm.chunk.functions.buffer[functionIndex].codeIndex;
 
-					vm.callframeStack.PushBackUnchecked(
+					vm.callFrameStack.PushBackUnchecked(
 						new CallFrame(
 							codeIndex,
 							baseStackIndex,
@@ -57,8 +57,8 @@ internal static class VirtualMachineInstructions
 					var function = vm.chunk.nativeFunctions.buffer[functionIndex];
 
 					vm.memory = memory;
-					vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
-					vm.callframeStack.PushBackUnchecked(
+					vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
+					vm.callFrameStack.PushBackUnchecked(
 						new CallFrame(
 							0,
 							stackTop,
@@ -87,7 +87,7 @@ internal static class VirtualMachineInstructions
 
 					memory.stackCount = stackTop + function.returnSize;
 
-					--vm.callframeStack.count;
+					--vm.callFrameStack.count;
 					break;
 				}
 			case Instruction.Return:
@@ -101,9 +101,9 @@ internal static class VirtualMachineInstructions
 
 					memory.stackCount = baseStackIndex + size;
 
-					--vm.callframeStack.count;
-					codeIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex;
-					baseStackIndex = vm.callframeStack.buffer[vm.callframeStack.count - 1].baseStackIndex;
+					--vm.callFrameStack.count;
+					codeIndex = vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex;
+					baseStackIndex = vm.callFrameStack.buffer[vm.callFrameStack.count - 1].baseStackIndex;
 					break;
 				}
 			case Instruction.Print:
@@ -240,7 +240,7 @@ internal static class VirtualMachineInstructions
 					var arrayLength = memory.values[--memory.stackCount].asInt;
 					if (arrayLength < 0)
 					{
-						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+						vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
 						vm.Error("Negative array length");
 						vm.memory = memory;
 						return;
@@ -280,7 +280,7 @@ internal static class VirtualMachineInstructions
 					var length = memory.values[heapStartIndex - 1].asInt;
 					if (index < 0 || index >= length)
 					{
-						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+						vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
 						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
 						vm.memory = memory;
 						return;
@@ -304,7 +304,7 @@ internal static class VirtualMachineInstructions
 					var length = memory.values[heapStartIndex - 1].asInt;
 					if (index < 0 || index >= length)
 					{
-						vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+						vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
 						vm.Error(string.Format("Index out of bounds. Index: {0}. Array length: {1}", index, length));
 						vm.memory = memory;
 						return;
@@ -461,7 +461,7 @@ internal static class VirtualMachineInstructions
 					break;
 
 				vm.memory = memory;
-				vm.callframeStack.buffer[vm.callframeStack.count - 1].codeIndex = codeIndex;
+				vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
 				vm.debugHookCallback();
 				break;
 			case Instruction.DebugPushFrame:

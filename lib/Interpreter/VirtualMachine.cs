@@ -38,7 +38,7 @@ internal struct DebugData
 public sealed class VirtualMachine
 {
 	internal ByteCodeChunk chunk;
-	internal Buffer<CallFrame> callframeStack = new Buffer<CallFrame>(64);
+	internal Buffer<CallFrame> callFrameStack = new Buffer<CallFrame>(64);
 	internal Memory memory = new Memory(256);
 	internal Buffer<object> nativeObjects;
 	internal DebugData debugData = new DebugData();
@@ -50,7 +50,7 @@ public sealed class VirtualMachine
 		this.chunk = chunk;
 		error = Option.None;
 
-		callframeStack.count = 0;
+		callFrameStack.count = 0;
 		memory.Reset();
 
 		nativeObjects = new Buffer<object>
@@ -67,8 +67,8 @@ public sealed class VirtualMachine
 	public void Error(string message)
 	{
 		var ip = -1;
-		if (callframeStack.count > 0)
-			ip = callframeStack.buffer[callframeStack.count - 1].codeIndex;
+		if (callFrameStack.count > 0)
+			ip = callFrameStack.buffer[callFrameStack.count - 1].codeIndex;
 
 		error = Option.Some(new RuntimeError(
 			ip,

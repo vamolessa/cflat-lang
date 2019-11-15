@@ -23,13 +23,13 @@ public sealed class Function<A, R>
 		System.Diagnostics.Debug.Assert(Marshal.SizeOf<R>.size > 0);
 
 		vm.memory.PushBackStack(new ValueData(functionIndex));
-		vm.callframeStack.PushBackUnchecked(new CallFrame(
+		vm.callFrameStack.PushBackUnchecked(new CallFrame(
 			vm.chunk.bytes.count - 1,
 			vm.memory.stackCount,
 			0,
 			CallFrame.Type.EntryPoint
 		));
-		vm.callframeStack.PushBackUnchecked(new CallFrame(
+		vm.callFrameStack.PushBackUnchecked(new CallFrame(
 			codeIndex,
 			vm.memory.stackCount,
 			functionIndex,

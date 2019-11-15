@@ -8,13 +8,13 @@
 	public Tokenizer(Scanner[] scanners)
 	{
 		this.scanners = scanners;
-		Reset(string.Empty);
+		Reset(string.Empty, 0);
 	}
 
-	public void Reset(string source)
+	public void Reset(string source, int nextIndex)
 	{
 		this.source = source;
-		nextIndex = 0;
+		this.nextIndex = nextIndex;
 	}
 
 	public Token Next()

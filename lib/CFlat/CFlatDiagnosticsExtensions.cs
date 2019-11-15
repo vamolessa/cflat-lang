@@ -45,9 +45,9 @@ public static class CFlatDiagnosticsExtensions
 		var sb = new StringBuilder();
 
 		sb.AppendLine("callstack:");
-		for (var i = vm.callframeStack.count - 1; i >= 0; i--)
+		for (var i = vm.callFrameStack.count - 1; i >= 0; i--)
 		{
-			var callframe = vm.callframeStack.buffer[i];
+			var callframe = vm.callFrameStack.buffer[i];
 
 			switch (callframe.type)
 			{

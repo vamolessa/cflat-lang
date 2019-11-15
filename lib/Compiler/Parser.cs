@@ -11,13 +11,13 @@ internal sealed class Parser
 		this.tokenizer = tokenizer;
 		this.onError = onError;
 
-		Reset();
+		Reset(new Token(TokenKind.End, new Slice()), new Token(TokenKind.End, new Slice()));
 	}
 
-	public void Reset()
+	public void Reset(Token previousToken, Token currentToken)
 	{
-		this.previousToken = new Token(TokenKind.End, new Slice());
-		this.currentToken = new Token(TokenKind.End, new Slice());
+		this.previousToken = previousToken;
+		this.currentToken = currentToken;
 	}
 
 	public void Next()

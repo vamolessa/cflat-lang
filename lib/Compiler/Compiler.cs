@@ -41,16 +41,21 @@ internal sealed class Compiler
 		public bool isMutable;
 	}
 
-	public readonly CompilerIO io = new CompilerIO();
-	public Buffer<Source> compiledSources = new Buffer<Source>();
-	public Buffer<Source> pendingSources = new Buffer<Source>();
-	private IModuleResolver moduleResolver = null;
+	public CompilerIO io = new CompilerIO();
 	private readonly ParseRules parseRules = new ParseRules();
+	private IModuleResolver moduleResolver = null;
 
-	public Buffer<CompileError> Compile(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
+	public Buffer<CompileError> CompileSource(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
 	{
 		this.moduleResolver = moduleResolver;
-		pendingSources.PushBack(source);
+		io.Reset(chunk, mode);
+		Compile(chunk, mode, source);
+		return io.errors;
+	}
+
+	private void Compile(Source source)
+	{
+		pendingSourcesStack.PushBack(source);
 		io.Reset(chunk, mode, source.content, compiledSources.count);
 
 		io.parser.Next();
@@ -70,13 +75,13 @@ internal sealed class Compiler
 			}
 		}
 
+		pendingSourcesStack.count -= 1;
 		compiledSources.PushBack(source);
-		return io.errors;
 	}
 
-	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, IModuleResolver moduleResolver, Mode mode, Source source)
+	public Buffer<CompileError> CompileExpression(ByteCodeChunk chunk, Mode mode, Source source)
 	{
-		this.moduleResolver = moduleResolver;
+		moduleResolver = null;
 		io.Reset(chunk, mode, source.content, compiledSources.count);
 
 		{
@@ -145,6 +150,7 @@ internal sealed class Compiler
 		{
 			switch (io.parser.currentToken.kind)
 			{
+			case TokenKind.Mod:
 			case TokenKind.Function:
 			case TokenKind.Struct:
 				io.isInPanicMode = false;
@@ -183,14 +189,14 @@ internal sealed class Compiler
 			return;
 		}
 
-		if (moduleResolver == null)
+		var currentSource = pendingSourcesStack.buffer[pendingSourcesStack.count - 1];
+		var maybeModuleUri = moduleResolver.ResolveModuleUri(currentSource.uri, modulePath);
+		if (!maybeModuleUri.isSome)
 		{
-			io.AddSoftError(slice, "No module resolver present. Could not load module");
+			io.AddSoftError(slice, "Could not resolve module uri '{0}' from '{1}'", modulePath, currentSource.uri);
 			return;
 		}
-
-		var currentSource = pendingSources.buffer[pendingSources.count - 1];
-		var moduleUri = moduleResolver.ResolveModuleUri(currentSource.uri, modulePath);
+		var moduleUri = maybeModuleUri.value;
 
 		for (var i = 0; i < compiledSources.count; i++)
 		{
@@ -199,8 +205,15 @@ internal sealed class Compiler
 				return;
 		}
 
-		var moduleSource = moduleResolver.ResolveModuleSource(currentSource.uri, modulePath);
-		// COMPILE MODULE!
+		var maybeModuleSource = moduleResolver.ResolveModuleSource(currentSource.uri, moduleUri);
+		if (!maybeModuleSource.isSome)
+		{
+			io.AddSoftError(slice, "Could not resolve module source '{0}' from '{1}'", moduleUri, currentSource.uri);
+			return;
+		}
+		var moduleSource = maybeModuleSource.value;
+
+		// COMPILE MODULE SOURCE!
 	}
 
 	private void FunctionDeclaration()
