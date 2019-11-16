@@ -42,7 +42,8 @@ public sealed class MultipleSourcesTests
 	[InlineData("mod \"source1\" fn f(){let _=S{a=0}}", "pub struct S{a:int}")]
 	[InlineData("mod \"source1\" mod \"source1\" fn f(){let _=S{a=0}}", "pub struct S{a:int}")]
 	[InlineData("mod \"source1\"", "mod \"source0\"")]
-	[InlineData("mod \"source1\" struct S{a:int}", "struct S{a:int}")]
+	[InlineData("mod \"source1\" pub struct S{a:int}", "struct S{a:int}")]
+	[InlineData("mod \"source1\" pub fn f(){}", "fn f(){}")]
 	public void CompileMultipleSourcesTests(string source0, string source1)
 	{
 		var cflat = new CFlat();
@@ -59,6 +60,7 @@ public sealed class MultipleSourcesTests
 	[Theory]
 	[InlineData("mod \"source1\" fn f(){let _=S{a=0}}", "struct S{a:int}")]
 	[InlineData("mod \"source1\" struct S{a:int}", "pub struct S{a:int}")]
+	[InlineData("mod \"source1\" fn f(){}", "pub fn f(){}")]
 	public void CompileMultipleSourcesErrors(string source0, string source1)
 	{
 		var cflat = new CFlat();
