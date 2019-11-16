@@ -7,6 +7,7 @@ public sealed class ByteCodeChunk
 	{
 		Success,
 		AlreadyDefined,
+		VisibilityMismatch,
 		TypeMismatch,
 	}
 
@@ -57,7 +58,7 @@ public sealed class ByteCodeChunk
 		return AddValueLiteral(new ValueData(stringIndex), TypeKind.String);
 	}
 
-	public AddFunctionResult AddFunction(string name, ushort typeIndex, bool hasBody, Slice slice, out int functionIndex)
+	public AddFunctionResult AddFunction(string name, bool isPublic, ushort typeIndex, bool hasBody, Slice slice, int currentSourceFunctionsStartIndex, out int functionIndex)
 	{
 		functionIndex = functions.count;
 		var result = AddFunctionResult.Success;
@@ -67,7 +68,7 @@ public sealed class ByteCodeChunk
 			for (var i = 0; i < functions.count; i++)
 			{
 				var function = functions.buffer[i];
-				if (function.name != name)
+				if (function.name != name || !CompilerHelper.IsFunctionVisible(this, i, currentSourceFunctionsStartIndex))
 					continue;
 
 				functionIndex = i;
@@ -78,19 +79,31 @@ public sealed class ByteCodeChunk
 					break;
 				}
 
+				if (function.isPublic != isPublic)
+				{
+					result = AddFunctionResult.VisibilityMismatch;
+					break;
+				}
+
 				if (function.typeIndex != typeIndex)
 				{
 					result = AddFunctionResult.TypeMismatch;
 					break;
 				}
 
-				functions.buffer[i] = new Function(name, bytes.count, typeIndex);
+				functions.buffer[i] = new Function(
+					name,
+					function.isPublic,
+					bytes.count,
+					function.typeIndex
+				);
 				return AddFunctionResult.Success;
 			}
 		}
 
 		functions.PushBack(new Function(
 			name,
+			isPublic,
 			hasBody ? bytes.count : -slice.index,
 			typeIndex
 		));

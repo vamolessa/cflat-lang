@@ -296,6 +296,7 @@ internal struct StructTypeBuilder
 
 				structType = new StructType(
 					structType.name,
+					structType.isPublic,
 					new Slice(
 						fieldsSlice.index - fieldCount,
 						fieldsSlice.length
@@ -316,7 +317,7 @@ internal struct StructTypeBuilder
 		chunk.structTypeFields.count -= fieldCount;
 	}
 
-	public Result Build(string name, out ushort typeIndex)
+	public Result Build(string name, bool isPublic, int currentSourceStructTypesStartIndex, out ushort typeIndex)
 	{
 		if (chunk.structTypes.count >= ushort.MaxValue)
 		{
@@ -327,7 +328,10 @@ internal struct StructTypeBuilder
 
 		for (var i = 0; i < chunk.structTypes.count; i++)
 		{
-			if (chunk.structTypes.buffer[i].name == name)
+			if (
+				CompilerHelper.IsStructTypeVisible(chunk, i, currentSourceStructTypesStartIndex) &&
+				chunk.structTypes.buffer[i].name == name
+			)
 			{
 				Cancel();
 				typeIndex = (ushort)i;
@@ -352,6 +356,7 @@ internal struct StructTypeBuilder
 		typeIndex = (ushort)chunk.structTypes.count;
 		chunk.structTypes.PushBack(new StructType(
 			name,
+			isPublic,
 			new Slice(
 				fieldsIndex,
 				fieldCount

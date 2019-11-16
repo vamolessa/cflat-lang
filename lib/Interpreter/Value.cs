@@ -259,12 +259,14 @@ public readonly struct FunctionType
 public readonly struct Function
 {
 	public readonly string name;
+	public readonly bool isPublic;
 	public readonly int codeIndex;
 	public readonly ushort typeIndex;
 
-	public Function(string name, int codeIndex, ushort typeIndex)
+	public Function(string name, bool isPublic, int codeIndex, ushort typeIndex)
 	{
 		this.name = name;
+		this.isPublic = isPublic;
 		this.codeIndex = codeIndex;
 		this.typeIndex = typeIndex;
 	}
@@ -303,12 +305,14 @@ public readonly struct TupleType
 public readonly struct StructType
 {
 	public readonly string name;
+	public readonly bool isPublic;
 	public readonly Slice fields;
 	public readonly byte size;
 
-	public StructType(string name, Slice fields, byte size)
+	public StructType(string name, bool isPublic, Slice fields, byte size)
 	{
 		this.name = name;
+		this.isPublic = isPublic;
 		this.fields = fields;
 		this.size = size;
 	}

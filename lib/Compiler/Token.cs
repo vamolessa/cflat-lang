@@ -1,7 +1,7 @@
 internal enum TokenKind
 {
 	IntLiteral, FloatLiteral, StringLiteral, True, False, Identifier,
-	Mod, Function, Struct, If, Else, Repeat, While, Return, Break,
+	Mod, Pub, Function, Struct, If, Else, Repeat, While, Return, Break,
 	Dot, Comma, Colon, Bang, And, Or, Length,
 
 	Let, Mut, Ampersand, Set,

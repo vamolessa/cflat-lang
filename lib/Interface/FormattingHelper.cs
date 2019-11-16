@@ -171,6 +171,7 @@ public static class FormattingHelper
 		}
 
 		sb.Replace("\t", new string(' ', FormattedTabSize));
+		sb.AppendLine();
 	}
 
 	private static int GetDigitCount(int number)

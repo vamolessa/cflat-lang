@@ -137,4 +137,18 @@ internal static class CompilerHelper
 		);
 		return GetSlice(compiler, slice);
 	}
+
+	public static bool IsFunctionVisible(ByteCodeChunk chunk, int functionIndex, int currentSourceFunctionsStartIndex)
+	{
+		return
+			currentSourceFunctionsStartIndex <= functionIndex ||
+			chunk.functions.buffer[functionIndex].isPublic;
+	}
+
+	public static bool IsStructTypeVisible(ByteCodeChunk chunk, int structTypeIndex, int currentSourceStructTypesStartIndex)
+	{
+		return
+			currentSourceStructTypesStartIndex <= structTypeIndex ||
+			chunk.structTypes.buffer[structTypeIndex].isPublic;
+	}
 }

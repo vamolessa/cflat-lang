@@ -13,6 +13,7 @@ internal sealed class CompilerIO
 		{
 			this.sourceContent = sourceContent;
 			this.sourceIndex = sourceIndex;
+
 			this.tokenizerIndex = tokenizerIndex;
 			this.previousToken = previousToken;
 			this.currentToken = currentToken;
@@ -26,6 +27,8 @@ internal sealed class CompilerIO
 
 	public int sourceIndex;
 	public bool isInPanicMode;
+	public int functionsStartIndex;
+	public int structTypesStartIndex;
 
 	public Buffer<LocalVariable> localVariables = new Buffer<LocalVariable>(256);
 	public int scopeDepth;
@@ -54,6 +57,9 @@ internal sealed class CompilerIO
 		this.chunk = chunk;
 		errors.count = 0;
 		stateFrameStack.count = 0;
+
+		functionsStartIndex = 0;
+		structTypesStartIndex = 0;
 	}
 
 	private void RestoreState(StateFrame state)
@@ -71,12 +77,13 @@ internal sealed class CompilerIO
 		loopBreaks.count = 0;
 		loopNesting.count = 0;
 	}
-	
+
 	public void BeginSource(string source, int sourceIndex)
 	{
 		stateFrameStack.PushBack(new StateFrame(
 			parser.tokenizer.source,
 			this.sourceIndex,
+
 			parser.tokenizer.nextIndex,
 			parser.previousToken,
 			parser.currentToken
@@ -94,6 +101,8 @@ internal sealed class CompilerIO
 	public void EndSource()
 	{
 		RestoreState(stateFrameStack.PopLast());
+		functionsStartIndex = chunk.functions.count;
+		structTypesStartIndex = chunk.structTypes.count;
 	}
 
 	public CompilerIO AddSoftError(Slice slice, string format, params object[] args)

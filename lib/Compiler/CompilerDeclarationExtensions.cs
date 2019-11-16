@@ -60,7 +60,7 @@ internal static class CompilerDeclarationExtensions
 		return self.chunk.BeginFunctionType();
 	}
 
-	public static int EndFunctionDeclaration(this CompilerIO self, FunctionTypeBuilder builder, Slice slice, bool hasBody)
+	public static int EndFunctionDeclaration(this CompilerIO self, FunctionTypeBuilder builder, Slice slice, bool isPublic, bool hasBody)
 	{
 		var name = CompilerHelper.GetSlice(self, slice);
 		var result = builder.Build(out var index);
@@ -68,31 +68,53 @@ internal static class CompilerDeclarationExtensions
 
 		if (self.CheckFunctionBuild(result, slice))
 		{
-			switch (self.chunk.AddFunction(name, index, hasBody, slice, out functionIndex))
+			switch (self.chunk.AddFunction(name, isPublic, index, hasBody, slice, self.functionsStartIndex, out functionIndex))
 			{
 			case ByteCodeChunk.AddFunctionResult.AlreadyDefined:
-				self.AddSoftError(slice, "There's already a function named '{0}'", name);
+				self.AddSoftError(slice, "Function '{0}' is already defined", name);
 				break;
-			case ByteCodeChunk.AddFunctionResult.TypeMismatch:
-				if (self.ResolveToFunctionIndex(slice, out int prototypeIndex))
+			case ByteCodeChunk.AddFunctionResult.VisibilityMismatch:
 				{
-					var typeIndex = self.chunk.functions.buffer[prototypeIndex].typeIndex;
-					var prototypeType = new ValueType(TypeKind.Function, typeIndex);
-					var functionType = new ValueType(TypeKind.Function, index);
+					if (self.ResolveToFunctionIndex(slice, out int prototypeIndex))
+					{
+						var prototypeIsPublic = self.chunk.functions.buffer[prototypeIndex].isPublic;
 
-					self.AddSoftError(
-						slice,
-						"Type mismatch between function '{0}' prototype and its body. Expected {1}. Got {2}",
-						name,
-						prototypeType.ToString(self.chunk),
-						functionType.ToString(self.chunk)
-					);
+						self.AddSoftError(
+							slice,
+							"Visibility mismatch between function '{0}' prototype and its body. Expected {1}. Got {2}",
+							name,
+							prototypeIsPublic ? "'pub'" : "no 'pub'",
+							isPublic ? "'pub'" : "no 'pub'"
+						);
+					}
+					else
+					{
+						self.AddSoftError(slice, "Visibility mismatch between function '{0}' prototype and its body", name);
+					}
+					break;
 				}
-				else
+			case ByteCodeChunk.AddFunctionResult.TypeMismatch:
 				{
-					self.AddSoftError(slice, "Type mismatch between function '{0}' prototype and its body", name);
+					if (self.ResolveToFunctionIndex(slice, out int prototypeIndex))
+					{
+						var typeIndex = self.chunk.functions.buffer[prototypeIndex].typeIndex;
+						var prototypeType = new ValueType(TypeKind.Function, typeIndex);
+						var functionType = new ValueType(TypeKind.Function, index);
+
+						self.AddSoftError(
+							slice,
+							"Type mismatch between function '{0}' prototype and its body. Expected {1}. Got {2}",
+							name,
+							prototypeType.ToString(self.chunk),
+							functionType.ToString(self.chunk)
+						);
+					}
+					else
+					{
+						self.AddSoftError(slice, "Type mismatch between function '{0}' prototype and its body", name);
+					}
+					break;
 				}
-				break;
 			default:
 				break;
 			}
@@ -105,7 +127,7 @@ internal static class CompilerDeclarationExtensions
 				self.chunk.functionTypes.PushBack(new FunctionType(new Slice(), new ValueType(TypeKind.Unit), 0));
 			var typeIndex = self.chunk.functionTypes.count - 1;
 
-			self.chunk.functions.PushBack(new Function(name, -slice.index, (ushort)typeIndex));
+			self.chunk.functions.PushBack(new Function(name, isPublic, -slice.index, (ushort)typeIndex));
 		}
 
 		return functionIndex;
@@ -117,8 +139,12 @@ internal static class CompilerDeclarationExtensions
 
 		for (var i = 0; i < self.chunk.functions.count; i++)
 		{
+
 			var f = self.chunk.functions.buffer[i];
-			if (CompilerHelper.AreEqual(source, slice, f.name))
+			if (
+				CompilerHelper.IsFunctionVisible(self.chunk, i, self.functionsStartIndex) &&
+				CompilerHelper.AreEqual(source, slice, f.name)
+			)
 			{
 				index = i;
 				return true;
@@ -154,10 +180,10 @@ internal static class CompilerDeclarationExtensions
 		return self.chunk.BeginStructType();
 	}
 
-	public static void EndStructDeclaration(this CompilerIO self, StructTypeBuilder builder, Slice slice)
+	public static void EndStructDeclaration(this CompilerIO self, StructTypeBuilder builder, Slice slice, bool isPublic)
 	{
 		var name = CompilerHelper.GetSlice(self, slice);
-		var result = builder.Build(name, out var index);
+		var result = builder.Build(name, isPublic, self.structTypesStartIndex, out var index);
 		self.CheckStructBuild(result, slice, name);
 	}
 
@@ -168,7 +194,10 @@ internal static class CompilerDeclarationExtensions
 		for (var i = 0; i < self.chunk.structTypes.count; i++)
 		{
 			var s = self.chunk.structTypes.buffer[i];
-			if (CompilerHelper.AreEqual(source, slice, s.name))
+			if (
+				CompilerHelper.IsStructTypeVisible(self.chunk, i, self.structTypesStartIndex) &&
+				CompilerHelper.AreEqual(source, slice, s.name)
+			)
 			{
 				index = i;
 				return true;

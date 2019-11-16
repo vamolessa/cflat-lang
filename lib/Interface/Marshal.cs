@@ -153,7 +153,7 @@ internal struct StructDefinitionMarshaler<A> : IMarshaler, IDefinitionMarshaler 
 	public ValueType GetDefinedType()
 	{
 		default(A).Marshal(ref this);
-		var result = builder.Build(typeof(A).Name, out var typeIndex);
+		var result = builder.Build(typeof(A).Name, true, chunk.structTypes.count, out var typeIndex);
 		if (
 			result == StructTypeBuilder.Result.Success ||
 			(

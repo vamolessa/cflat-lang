@@ -99,7 +99,7 @@ internal sealed class Compiler
 
 		io.chunk.functionTypes.PushBack(new FunctionType(new Slice(), expression.type, 0));
 		var functionTypeIndex = (ushort)(io.chunk.functionTypes.count - 1);
-		io.chunk.functions.PushBack(new Function(string.Empty, 0, functionTypeIndex));
+		io.chunk.functions.PushBack(new Function(string.Empty, true, 0, functionTypeIndex));
 
 		{
 			io.DebugEmitPopFrame();
@@ -170,19 +170,21 @@ internal sealed class Compiler
 
 	private void Declaration(ref bool finishedModuleImports)
 	{
-		if (io.parser.Match(TokenKind.Mod))
+		var isPublic = io.parser.Match(TokenKind.Pub);
+
+		if (!isPublic && io.parser.Match(TokenKind.Mod))
 		{
 			ModuleImport(finishedModuleImports);
 		}
 		else if (io.parser.Match(TokenKind.Function))
 		{
 			finishedModuleImports = true;
-			FunctionDeclaration();
+			FunctionDeclaration(isPublic);
 		}
 		else if (io.parser.Match(TokenKind.Struct))
 		{
 			finishedModuleImports = true;
-			StructDeclaration();
+			StructDeclaration(isPublic);
 		}
 		else
 		{
@@ -237,16 +239,16 @@ internal sealed class Compiler
 		Compile(new Source(moduleUri, maybeModuleSource.value));
 	}
 
-	private void FunctionDeclaration()
+	private void FunctionDeclaration(bool isPublic)
 	{
 		io.parser.Consume(TokenKind.Identifier, "Expected function name");
-		ConsumeFunction(io.parser.previousToken.slice);
+		ConsumeFunction(io.parser.previousToken.slice, isPublic);
 	}
 
 	internal static ValueType FunctionExpression(Compiler self)
 	{
 		var functionJump = self.io.BeginEmitForwardJump(Instruction.JumpForward);
-		self.ConsumeFunction(new Slice());
+		self.ConsumeFunction(new Slice(), false);
 		self.io.EndEmitForwardJump(functionJump);
 
 		var functionIndex = self.io.chunk.functions.count - 1;
@@ -258,7 +260,7 @@ internal sealed class Compiler
 		return type;
 	}
 
-	private void ConsumeFunction(Slice slice)
+	private void ConsumeFunction(Slice slice, bool isPublic)
 	{
 		const int MaxParamCount = 8;
 
@@ -327,12 +329,12 @@ internal sealed class Compiler
 		else if (!io.parser.Match(TokenKind.OpenCurlyBrackets))
 		{
 			io.localVariables.count -= builder.parameterCount;
-			io.EndFunctionDeclaration(builder, slice, false);
+			io.EndFunctionDeclaration(builder, slice, isPublic, false);
 			return;
 		}
 
 		io.functionReturnTypeStack.PushBack(builder.returnType);
-		var functionIndex = io.EndFunctionDeclaration(builder, slice, true);
+		var functionIndex = io.EndFunctionDeclaration(builder, slice, isPublic, true);
 
 		{
 			var functionTypeIndex = io.chunk.functions.buffer[functionIndex].typeIndex;
@@ -370,7 +372,7 @@ internal sealed class Compiler
 		io.localVariables.count -= builder.parameterCount;
 	}
 
-	private void StructDeclaration()
+	private void StructDeclaration(bool isPublic)
 	{
 		io.parser.Consume(TokenKind.Identifier, "Expected struct name");
 		var slice = io.parser.previousToken.slice;
@@ -419,7 +421,7 @@ internal sealed class Compiler
 		}
 		io.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct fields");
 
-		io.EndStructDeclaration(builder, slice);
+		io.EndStructDeclaration(builder, slice, isPublic);
 	}
 
 	internal static ValueType FinishTupleExpression(Compiler self, ExpressionResult firstElement)
