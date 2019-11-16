@@ -1,4 +1,5 @@
 using Xunit;
+using cflat;
 
 public sealed class BytesHelperTests
 {

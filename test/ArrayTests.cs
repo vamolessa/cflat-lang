@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using Xunit;
+using cflat;
 
 public sealed class ArrayTests
 {

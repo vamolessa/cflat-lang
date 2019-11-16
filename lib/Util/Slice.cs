@@ -1,25 +1,28 @@
-public readonly struct Slice
+namespace cflat
 {
-	public readonly ushort index;
-	public readonly ushort length;
-
-	public static Slice FromTo(Slice a, Slice b)
+	public readonly struct Slice
 	{
-		return new Slice(
-			a.index,
-			b.index + b.length - a.index
-		);
-	}
+		public readonly ushort index;
+		public readonly ushort length;
 
-	public Slice(ushort index, ushort length)
-	{
-		this.index = index;
-		this.length = length;
-	}
+		public static Slice FromTo(Slice a, Slice b)
+		{
+			return new Slice(
+				a.index,
+				b.index + b.length - a.index
+			);
+		}
 
-	public Slice(int index, int length)
-	{
-		this.index = (ushort)index;
-		this.length = (ushort)length;
+		public Slice(ushort index, ushort length)
+		{
+			this.index = index;
+			this.length = length;
+		}
+
+		public Slice(int index, int length)
+		{
+			this.index = (ushort)index;
+			this.length = (ushort)length;
+		}
 	}
 }

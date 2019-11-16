@@ -1,15 +1,16 @@
 using System.Diagnostics;
+using cflat;
 
 public static class Interpreter
 {
-	public static Class<Stopwatch> StartStopwatch(VirtualMachine vm)
+	public static Class<Stopwatch> StartStopwatch()
 	{
 		var sw = new Stopwatch();
 		sw.Start();
 		return sw;
 	}
 
-	public static Float StopStopwatch(VirtualMachine vm, Class<Stopwatch> sw)
+	public static Float StopStopwatch(Class<Stopwatch> sw)
 	{
 		sw.value.Stop();
 		return (float)sw.value.Elapsed.TotalSeconds;

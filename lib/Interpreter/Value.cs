@@ -1,343 +1,346 @@
 using System.Runtime.InteropServices;
 using System.Text;
 
-[StructLayout(LayoutKind.Explicit)]
-public struct ValueData
+namespace cflat
 {
-	[FieldOffset(0)]
-	public bool asBool;
-	[FieldOffset(0)]
-	public int asInt;
-	[FieldOffset(0)]
-	public float asFloat;
-
-	public ValueData(bool value)
+	[StructLayout(LayoutKind.Explicit)]
+	public struct ValueData
 	{
-		this = default;
-		asBool = value;
-	}
+		[FieldOffset(0)]
+		public bool asBool;
+		[FieldOffset(0)]
+		public int asInt;
+		[FieldOffset(0)]
+		public float asFloat;
 
-	public ValueData(int value)
-	{
-		this = default;
-		asInt = value;
-	}
-
-	public ValueData(float value)
-	{
-		this = default;
-		asFloat = value;
-	}
-}
-
-public enum TypeKind : byte
-{
-	Unit,
-	Bool,
-	Int,
-	Float,
-	String,
-	Function,
-	NativeFunction,
-	Tuple,
-	Struct,
-	NativeClass,
-}
-
-[System.Flags]
-public enum TypeFlags : byte
-{
-	None = 0b0000,
-	Array = 0b0001,
-	Reference = 0b0010,
-	Mutable = 0b0100,
-}
-
-public readonly struct ValueType
-{
-	public readonly TypeKind kind;
-	public readonly TypeFlags flags;
-	public readonly ushort index;
-
-	public bool IsSimple
-	{
-		get { return index == 0 && flags == TypeFlags.None; }
-	}
-
-	public bool IsArray
-	{
-		get { return flags == TypeFlags.Array; }
-	}
-
-	public bool IsReference
-	{
-		get { return (flags & TypeFlags.Reference) != 0; }
-	}
-
-	public bool IsMutable
-	{
-		get { return (flags & TypeFlags.Mutable) != 0; }
-	}
-
-	public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
-	{
-		return new ValueType(
-			(TypeKind)b0,
-			(TypeFlags)b1,
-			BytesHelper.BytesToUShort(b2, b3)
-		);
-	}
-
-	public ValueType(TypeKind kind)
-	{
-		this.kind = kind;
-		this.flags = TypeFlags.None;
-		this.index = 0;
-	}
-
-	public ValueType(TypeKind kind, int index)
-	{
-		this.kind = kind;
-		this.flags = TypeFlags.None;
-		this.index = (ushort)index;
-	}
-
-	public ValueType(TypeKind kind, TypeFlags flags, ushort index)
-	{
-		this.kind = kind;
-		this.flags = flags;
-		this.index = index;
-	}
-
-	public bool IsEqualTo(ValueType other)
-	{
-		return
-			kind == other.kind &&
-			flags == other.flags &&
-			index == other.index;
-	}
-
-	public bool Accepts(ValueType other)
-	{
-		return IsEqualTo(other);
-	}
-
-	public bool IsKind(TypeKind kind)
-	{
-		return this.kind == kind && flags == 0 && index == 0;
-	}
-
-	public void Write(out byte b0, out byte b1, out byte b2, out byte b3)
-	{
-		b0 = (byte)kind;
-		b1 = (byte)flags;
-
-		BytesHelper.UShortToBytes(
-			index,
-			out b2,
-			out b3
-		);
-	}
-
-	public byte GetSize(ByteCodeChunk chunk)
-	{
-		if (flags != TypeFlags.None)
-			return 1;
-
-		switch (kind)
+		public ValueData(bool value)
 		{
-		case TypeKind.Tuple:
-			return chunk.tupleTypes.buffer[index].size;
-		case TypeKind.Struct:
-			return chunk.structTypes.buffer[index].size;
-		default:
-			return 1;
+			this = default;
+			asBool = value;
+		}
+
+		public ValueData(int value)
+		{
+			this = default;
+			asInt = value;
+		}
+
+		public ValueData(float value)
+		{
+			this = default;
+			asFloat = value;
 		}
 	}
 
-	public ValueType ToArrayElementType()
+	public enum TypeKind : byte
 	{
-		return new ValueType(kind, flags & ~TypeFlags.Array, index);
+		Unit,
+		Bool,
+		Int,
+		Float,
+		String,
+		Function,
+		NativeFunction,
+		Tuple,
+		Struct,
+		NativeClass,
 	}
 
-	public ValueType ToArrayType()
+	[System.Flags]
+	public enum TypeFlags : byte
 	{
-		return new ValueType(kind, flags | TypeFlags.Array, index);
+		None = 0b0000,
+		Array = 0b0001,
+		Reference = 0b0010,
+		Mutable = 0b0100,
 	}
 
-	public ValueType ToReferenceType(bool mutable)
+	public readonly struct ValueType
 	{
-		var mutableFlag = mutable ? TypeFlags.Mutable : TypeFlags.None;
-		return new ValueType(kind, flags | TypeFlags.Reference | mutableFlag, index);
-	}
+		public readonly TypeKind kind;
+		public readonly TypeFlags flags;
+		public readonly ushort index;
 
-	public ValueType ToReferredType()
-	{
-		var mask = ~(TypeFlags.Reference | TypeFlags.Mutable);
-		return new ValueType(kind, flags & mask, index);
-	}
-
-	public void Format(ByteCodeChunk chunk, StringBuilder sb)
-	{
-		if (IsReference)
+		public bool IsSimple
 		{
-			sb.Append(IsMutable ? "&mut " : "&");
-			ToReferredType().Format(chunk, sb);
-			return;
+			get { return index == 0 && flags == TypeFlags.None; }
 		}
 
-		if (IsArray)
+		public bool IsArray
 		{
-			sb.Append('[');
-			ToArrayElementType().Format(chunk, sb);
-			sb.Append(']');
-			return;
+			get { return flags == TypeFlags.Array; }
 		}
 
-		switch (kind)
+		public bool IsReference
 		{
-		case TypeKind.Unit:
-			sb.Append("{}");
-			break;
-		case TypeKind.Bool:
-			sb.Append("bool");
-			break;
-		case TypeKind.Int:
-			sb.Append("int");
-			break;
-		case TypeKind.Float:
-			sb.Append("float");
-			break;
-		case TypeKind.String:
-			sb.Append("string");
-			break;
-		case TypeKind.Function:
-			chunk.FormatFunctionType(index, sb);
-			break;
-		case TypeKind.NativeFunction:
-			sb.Append("native ");
-			chunk.FormatFunctionType(index, sb);
-			break;
-		case TypeKind.Tuple:
-			chunk.FormatTupleType(index, sb);
-			break;
-		case TypeKind.Struct:
-			chunk.FormatStructType(index, sb);
-			break;
-		case TypeKind.NativeClass:
-			sb.Append("native ");
-			sb.Append(chunk.nativeClassTypes.buffer[index].name);
-			break;
-		default:
-			sb.Append("unreachable");
-			break;
+			get { return (flags & TypeFlags.Reference) != 0; }
+		}
+
+		public bool IsMutable
+		{
+			get { return (flags & TypeFlags.Mutable) != 0; }
+		}
+
+		public static ValueType Read(byte b0, byte b1, byte b2, byte b3)
+		{
+			return new ValueType(
+				(TypeKind)b0,
+				(TypeFlags)b1,
+				BytesHelper.BytesToUShort(b2, b3)
+			);
+		}
+
+		public ValueType(TypeKind kind)
+		{
+			this.kind = kind;
+			this.flags = TypeFlags.None;
+			this.index = 0;
+		}
+
+		public ValueType(TypeKind kind, int index)
+		{
+			this.kind = kind;
+			this.flags = TypeFlags.None;
+			this.index = (ushort)index;
+		}
+
+		public ValueType(TypeKind kind, TypeFlags flags, ushort index)
+		{
+			this.kind = kind;
+			this.flags = flags;
+			this.index = index;
+		}
+
+		public bool IsEqualTo(ValueType other)
+		{
+			return
+				kind == other.kind &&
+				flags == other.flags &&
+				index == other.index;
+		}
+
+		public bool Accepts(ValueType other)
+		{
+			return IsEqualTo(other);
+		}
+
+		public bool IsKind(TypeKind kind)
+		{
+			return this.kind == kind && flags == 0 && index == 0;
+		}
+
+		public void Write(out byte b0, out byte b1, out byte b2, out byte b3)
+		{
+			b0 = (byte)kind;
+			b1 = (byte)flags;
+
+			BytesHelper.UShortToBytes(
+				index,
+				out b2,
+				out b3
+			);
+		}
+
+		public byte GetSize(ByteCodeChunk chunk)
+		{
+			if (flags != TypeFlags.None)
+				return 1;
+
+			switch (kind)
+			{
+			case TypeKind.Tuple:
+				return chunk.tupleTypes.buffer[index].size;
+			case TypeKind.Struct:
+				return chunk.structTypes.buffer[index].size;
+			default:
+				return 1;
+			}
+		}
+
+		public ValueType ToArrayElementType()
+		{
+			return new ValueType(kind, flags & ~TypeFlags.Array, index);
+		}
+
+		public ValueType ToArrayType()
+		{
+			return new ValueType(kind, flags | TypeFlags.Array, index);
+		}
+
+		public ValueType ToReferenceType(bool mutable)
+		{
+			var mutableFlag = mutable ? TypeFlags.Mutable : TypeFlags.None;
+			return new ValueType(kind, flags | TypeFlags.Reference | mutableFlag, index);
+		}
+
+		public ValueType ToReferredType()
+		{
+			var mask = ~(TypeFlags.Reference | TypeFlags.Mutable);
+			return new ValueType(kind, flags & mask, index);
+		}
+
+		public void Format(ByteCodeChunk chunk, StringBuilder sb)
+		{
+			if (IsReference)
+			{
+				sb.Append(IsMutable ? "&mut " : "&");
+				ToReferredType().Format(chunk, sb);
+				return;
+			}
+
+			if (IsArray)
+			{
+				sb.Append('[');
+				ToArrayElementType().Format(chunk, sb);
+				sb.Append(']');
+				return;
+			}
+
+			switch (kind)
+			{
+			case TypeKind.Unit:
+				sb.Append("{}");
+				break;
+			case TypeKind.Bool:
+				sb.Append("bool");
+				break;
+			case TypeKind.Int:
+				sb.Append("int");
+				break;
+			case TypeKind.Float:
+				sb.Append("float");
+				break;
+			case TypeKind.String:
+				sb.Append("string");
+				break;
+			case TypeKind.Function:
+				chunk.FormatFunctionType(index, sb);
+				break;
+			case TypeKind.NativeFunction:
+				sb.Append("native ");
+				chunk.FormatFunctionType(index, sb);
+				break;
+			case TypeKind.Tuple:
+				chunk.FormatTupleType(index, sb);
+				break;
+			case TypeKind.Struct:
+				chunk.FormatStructType(index, sb);
+				break;
+			case TypeKind.NativeClass:
+				sb.Append("native ");
+				sb.Append(chunk.nativeClassTypes.buffer[index].name);
+				break;
+			default:
+				sb.Append("unreachable");
+				break;
+			}
+		}
+
+		public string ToString(ByteCodeChunk chunk)
+		{
+			var sb = new StringBuilder();
+			Format(chunk, sb);
+			return sb.ToString();
 		}
 	}
 
-	public string ToString(ByteCodeChunk chunk)
+	public readonly struct FunctionType
 	{
-		var sb = new StringBuilder();
-		Format(chunk, sb);
-		return sb.ToString();
+		public readonly Slice parameters;
+		public readonly ValueType returnType;
+		public readonly byte parametersSize;
+
+		public FunctionType(Slice parameters, ValueType returnType, byte parametersTotalSize)
+		{
+			this.parameters = parameters;
+			this.returnType = returnType;
+			this.parametersSize = parametersTotalSize;
+		}
 	}
-}
 
-public readonly struct FunctionType
-{
-	public readonly Slice parameters;
-	public readonly ValueType returnType;
-	public readonly byte parametersSize;
-
-	public FunctionType(Slice parameters, ValueType returnType, byte parametersTotalSize)
+	public readonly struct Function
 	{
-		this.parameters = parameters;
-		this.returnType = returnType;
-		this.parametersSize = parametersTotalSize;
+		public readonly string name;
+		public readonly bool isPublic;
+		public readonly int codeIndex;
+		public readonly ushort typeIndex;
+
+		public Function(string name, bool isPublic, int codeIndex, ushort typeIndex)
+		{
+			this.name = name;
+			this.isPublic = isPublic;
+			this.codeIndex = codeIndex;
+			this.typeIndex = typeIndex;
+		}
 	}
-}
 
-public readonly struct Function
-{
-	public readonly string name;
-	public readonly bool isPublic;
-	public readonly int codeIndex;
-	public readonly ushort typeIndex;
-
-	public Function(string name, bool isPublic, int codeIndex, ushort typeIndex)
+	public readonly struct NativeFunction
 	{
-		this.name = name;
-		this.isPublic = isPublic;
-		this.codeIndex = codeIndex;
-		this.typeIndex = typeIndex;
+		public delegate void Callback(VirtualMachine vm, int stackTop);
+
+		public readonly string name;
+		public readonly ushort typeIndex;
+		public readonly byte returnSize;
+		public readonly Callback callback;
+
+		public NativeFunction(string name, ushort typeIndex, byte returnSize, Callback callback)
+		{
+			this.name = name;
+			this.returnSize = returnSize;
+			this.typeIndex = typeIndex;
+			this.callback = callback;
+		}
 	}
-}
 
-public readonly struct NativeFunction
-{
-	public delegate void Callback(VirtualMachine vm, int stackTop);
-
-	public readonly string name;
-	public readonly ushort typeIndex;
-	public readonly byte returnSize;
-	public readonly Callback callback;
-
-	public NativeFunction(string name, ushort typeIndex, byte returnSize, Callback callback)
+	public readonly struct TupleType
 	{
-		this.name = name;
-		this.returnSize = returnSize;
-		this.typeIndex = typeIndex;
-		this.callback = callback;
+		public readonly Slice elements;
+		public readonly byte size;
+
+		public TupleType(Slice elements, byte size)
+		{
+			this.elements = elements;
+			this.size = size;
+		}
 	}
-}
 
-public readonly struct TupleType
-{
-	public readonly Slice elements;
-	public readonly byte size;
-
-	public TupleType(Slice elements, byte size)
+	public readonly struct StructType
 	{
-		this.elements = elements;
-		this.size = size;
+		public readonly string name;
+		public readonly bool isPublic;
+		public readonly Slice fields;
+		public readonly byte size;
+
+		public StructType(string name, bool isPublic, Slice fields, byte size)
+		{
+			this.name = name;
+			this.isPublic = isPublic;
+			this.fields = fields;
+			this.size = size;
+		}
 	}
-}
 
-public readonly struct StructType
-{
-	public readonly string name;
-	public readonly bool isPublic;
-	public readonly Slice fields;
-	public readonly byte size;
-
-	public StructType(string name, bool isPublic, Slice fields, byte size)
+	public readonly struct StructTypeField
 	{
-		this.name = name;
-		this.isPublic = isPublic;
-		this.fields = fields;
-		this.size = size;
+		public readonly string name;
+		public readonly ValueType type;
+
+		public StructTypeField(string name, ValueType type)
+		{
+			this.name = name;
+			this.type = type;
+		}
 	}
-}
 
-public readonly struct StructTypeField
-{
-	public readonly string name;
-	public readonly ValueType type;
-
-	public StructTypeField(string name, ValueType type)
+	public readonly struct NativeClassType
 	{
-		this.name = name;
-		this.type = type;
-	}
-}
+		public readonly string name;
+		public readonly System.Type type;
 
-public readonly struct NativeClassType
-{
-	public readonly string name;
-	public readonly System.Type type;
-
-	public NativeClassType(string name, System.Type type)
-	{
-		this.name = name;
-		this.type = type;
+		public NativeClassType(string name, System.Type type)
+		{
+			this.name = name;
+			this.type = type;
+		}
 	}
 }

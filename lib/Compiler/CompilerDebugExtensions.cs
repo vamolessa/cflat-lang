@@ -1,38 +1,41 @@
-internal static class CompilerDebugExtensions
+namespace cflat
 {
-	public static void DebugEmitPushFrame(this CompilerIO self)
+	internal static class CompilerDebugExtensions
 	{
-		if (self.mode == Mode.Debug)
-			self.EmitInstruction(Instruction.DebugPushFrame);
-	}
-
-	public static void DebugEmitPopFrame(this CompilerIO self)
-	{
-		if (self.mode == Mode.Debug)
-			self.EmitInstruction(Instruction.DebugPopFrame);
-	}
-
-	public static void DebugEmitPushType(this CompilerIO self, ValueType type)
-	{
-		if (self.mode == Mode.Debug)
+		public static void DebugEmitPushFrame(this CompilerIO self)
 		{
-			self.EmitInstruction(Instruction.DebugPushType);
-			self.EmitType(type);
+			if (self.mode == Mode.Debug)
+				self.EmitInstruction(Instruction.DebugPushFrame);
 		}
-	}
 
-	public static void DebugEmitPopType(this CompilerIO self, byte count)
-	{
-		if (self.mode == Mode.Debug)
+		public static void DebugEmitPopFrame(this CompilerIO self)
 		{
-			if (count > 1)
+			if (self.mode == Mode.Debug)
+				self.EmitInstruction(Instruction.DebugPopFrame);
+		}
+
+		public static void DebugEmitPushType(this CompilerIO self, ValueType type)
+		{
+			if (self.mode == Mode.Debug)
 			{
-				self.EmitInstruction(Instruction.DebugPopTypeMultiple);
-				self.EmitByte(count);
+				self.EmitInstruction(Instruction.DebugPushType);
+				self.EmitType(type);
 			}
-			else
+		}
+
+		public static void DebugEmitPopType(this CompilerIO self, byte count)
+		{
+			if (self.mode == Mode.Debug)
 			{
-				self.EmitInstruction(Instruction.DebugPopType);
+				if (count > 1)
+				{
+					self.EmitInstruction(Instruction.DebugPopTypeMultiple);
+					self.EmitByte(count);
+				}
+				else
+				{
+					self.EmitInstruction(Instruction.DebugPopType);
+				}
 			}
 		}
 	}

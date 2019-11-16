@@ -1,10 +1,11 @@
 using Xunit;
+using cflat;
 
 public sealed class InterfaceTests
 {
 	public static Function<Tuple<Int>, Int> someFunction;
 
-	public static Tuple<Int, Bool> TupleTestFunction(VirtualMachine vm, Tuple<Int, Bool> tuple)
+	public static Tuple<Int, Bool> TupleTestFunction(Tuple<Int, Bool> tuple)
 	{
 		tuple.e0.value += 1;
 		tuple.e1.value = !tuple.e1.value;
@@ -66,7 +67,7 @@ public sealed class InterfaceTests
 		Assert.Equal(z, s.z);
 	}
 
-	private static Struct<MyStruct> StructTestFunction(VirtualMachine vm, Struct<MyStruct> s)
+	private static Struct<MyStruct> StructTestFunction(Struct<MyStruct> s)
 	{
 		s.value.x += 1;
 		s.value.y += 1;
@@ -128,12 +129,12 @@ public sealed class InterfaceTests
 		cflat.AddClass<MyClass>();
 	}
 
-	public static Class<MyClass> CreateClassTestFunction(VirtualMachine vm, Int n)
+	public static Class<MyClass> CreateClassTestFunction(Int n)
 	{
 		return new MyClass { boxed = n };
 	}
 
-	public static Unit ModifyClassTestFunction(VirtualMachine vm, Class<MyClass> c)
+	public static Unit ModifyClassTestFunction(Class<MyClass> c)
 	{
 		c.value.boxed += 1;
 		return default;
@@ -177,17 +178,15 @@ public sealed class InterfaceTests
 		Assert.Equal(n, s.a.value.boxed);
 	}
 
-	public static Int FunctionTestFunction(VirtualMachine vm)
-	{
-		var n = someFunction.Call(vm, Tuple.New(new Int(6)));
-		return n;
-	}
-
 	[Fact]
 	public void FunctionCallTest()
 	{
 		var source = "fn some_function(a:int):int{a+1} fn f():int{FunctionTestFunction()}";
 		var cflat = new CFlat();
+		Int FunctionTestFunction()
+		{
+			return someFunction.Call(cflat, Tuple.New(new Int(6)));
+		}
 		cflat.AddFunction<Int>(nameof(FunctionTestFunction), FunctionTestFunction);
 
 		var compileErrors = cflat.CompileSource("tests", source, TestHelper.CompilerMode, Option.None);
@@ -212,7 +211,7 @@ public sealed class InterfaceTests
 		});
 	}
 
-	public static Unit ArrayTestFunction(VirtualMachine vm, Array<Int> a)
+	public static Unit ArrayTestFunction(Array<Int> a)
 	{
 		var length = a.Length;
 		for (var i = 0; i < length; i++)
@@ -235,7 +234,7 @@ public sealed class InterfaceTests
 		Assert.Equal(e2, array[2].value);
 	}
 
-	public static Unit RefTestFunction(VirtualMachine vm, MutRef<Int> r)
+	public static Unit RefTestFunction(MutRef<Int> r)
 	{
 		r.Value += 1;
 		return default;

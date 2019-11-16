@@ -1,58 +1,61 @@
-internal sealed class Parser
+namespace cflat
 {
-	public readonly Tokenizer tokenizer;
-	private readonly System.Action<Slice, string, object[]> onError;
-
-	public Token previousToken;
-	public Token currentToken;
-
-	public Parser(Tokenizer tokenizer, System.Action<Slice, string, object[]> onError)
+	internal sealed class Parser
 	{
-		this.tokenizer = tokenizer;
-		this.onError = onError;
+		public readonly Tokenizer tokenizer;
+		private readonly System.Action<Slice, string, object[]> onError;
 
-		Reset(new Token(TokenKind.End, new Slice()), new Token(TokenKind.End, new Slice()));
-	}
+		public Token previousToken;
+		public Token currentToken;
 
-	public void Reset(Token previousToken, Token currentToken)
-	{
-		this.previousToken = previousToken;
-		this.currentToken = currentToken;
-	}
-
-	public void Next()
-	{
-		previousToken = currentToken;
-
-		while (true)
+		public Parser(Tokenizer tokenizer, System.Action<Slice, string, object[]> onError)
 		{
-			currentToken = tokenizer.Next();
-			if (currentToken.kind != TokenKind.Error)
-				break;
+			this.tokenizer = tokenizer;
+			this.onError = onError;
 
-			onError(currentToken.slice, "Invalid char", new object[0]);
+			Reset(new Token(TokenKind.End, new Slice()), new Token(TokenKind.End, new Slice()));
 		}
-	}
 
-	public bool Check(TokenKind tokenKind)
-	{
-		return currentToken.kind == tokenKind;
-	}
+		public void Reset(Token previousToken, Token currentToken)
+		{
+			this.previousToken = previousToken;
+			this.currentToken = currentToken;
+		}
 
-	public bool Match(TokenKind tokenKind)
-	{
-		if (currentToken.kind != tokenKind)
-			return false;
+		public void Next()
+		{
+			previousToken = currentToken;
 
-		Next();
-		return true;
-	}
+			while (true)
+			{
+				currentToken = tokenizer.Next();
+				if (currentToken.kind != TokenKind.Error)
+					break;
 
-	public void Consume(TokenKind tokenKind, string errorFormat, params object[] args)
-	{
-		if (currentToken.kind == tokenKind)
+				onError(currentToken.slice, "Invalid char", new object[0]);
+			}
+		}
+
+		public bool Check(TokenKind tokenKind)
+		{
+			return currentToken.kind == tokenKind;
+		}
+
+		public bool Match(TokenKind tokenKind)
+		{
+			if (currentToken.kind != tokenKind)
+				return false;
+
 			Next();
-		else
-			onError(currentToken.slice, errorFormat, args);
+			return true;
+		}
+
+		public void Consume(TokenKind tokenKind, string errorFormat, params object[] args)
+		{
+			if (currentToken.kind == tokenKind)
+				Next();
+			else
+				onError(currentToken.slice, errorFormat, args);
+		}
 	}
 }
