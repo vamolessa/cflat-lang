@@ -157,9 +157,9 @@ namespace cflat
 			while (valueIndex < vm.memory.stackCount)
 			{
 				sb.Append("[");
-				if (typeIndex < vm.debugData.typeStack.count)
+				if (typeIndex < vm.debugData.stackTypes.count)
 				{
-					var type = vm.debugData.typeStack.buffer[typeIndex++];
+					var type = vm.debugData.stackTypes.buffer[typeIndex++];
 					ValueToString(vm, valueIndex, type, sb);
 					valueIndex += type.GetSize(vm.chunk);
 				}
@@ -171,7 +171,7 @@ namespace cflat
 				sb.Append("]");
 			}
 
-			for (var i = typeIndex; i < vm.debugData.typeStack.count; i++)
+			for (var i = typeIndex; i < vm.debugData.stackTypes.count; i++)
 				sb.Append("[+]");
 
 			sb.AppendLine();

@@ -22,7 +22,6 @@ public static class Interpreter
 		{
 			Debugger.Break();
 		});
-		debugger.AddBreakpoint(new Debugger.Breakpoint(0, new Slice(14, 13)));
 		debugger.AddBreakpoint(new Debugger.Breakpoint(0, new Slice(30, 7)));
 
 		var cflat = new CFlat();

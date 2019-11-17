@@ -29,25 +29,25 @@ namespace cflat
 	{
 		public readonly struct Frame
 		{
-			public readonly ushort typeStackBaseIndex;
-			public readonly ushort localVariableNamesBaseIndex;
+			public readonly ushort stackTypesBaseIndex;
+			public readonly ushort stackNamesBaseIndex;
 
 			public Frame(ushort typeStackBaseIndex, ushort localVariableNamesBaseIndex)
 			{
-				this.typeStackBaseIndex = typeStackBaseIndex;
-				this.localVariableNamesBaseIndex = localVariableNamesBaseIndex;
+				this.stackTypesBaseIndex = typeStackBaseIndex;
+				this.stackNamesBaseIndex = localVariableNamesBaseIndex;
 			}
 		}
 
 		public Buffer<Frame> frameStack;
-		public Buffer<ValueType> typeStack;
-		public Buffer<string> localVariableNames;
+		public Buffer<ValueType> stackTypes;
+		public Buffer<string> stackNames;
 
 		public void Clear()
 		{
 			frameStack.count = 0;
-			typeStack.count = 0;
-			localVariableNames.count = 0;
+			stackTypes.count = 0;
+			stackNames.count = 0;
 		}
 	}
 

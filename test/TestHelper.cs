@@ -34,8 +34,8 @@ public static class TestHelper
 			Assert.Null(errorMessage);
 
 			if (CompilerMode == Mode.Release)
-				cflat.vm.debugData.typeStack.PushBack(new ValueType(TypeKind.Unit));
-			Assert.Single(cflat.vm.debugData.typeStack.ToArray());
+				cflat.vm.debugData.stackTypes.PushBack(new ValueType(TypeKind.Unit));
+			Assert.Single(cflat.vm.debugData.stackTypes.ToArray());
 		}
 	}
 

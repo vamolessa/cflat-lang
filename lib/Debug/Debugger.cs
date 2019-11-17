@@ -5,7 +5,7 @@ namespace cflat
 {
 	public sealed class Debugger
 	{
-		public delegate void BreakCallback(Breakpoint breakpoint, Dictionary<string, string> localVariables);
+		public delegate void BreakCallback(Breakpoint breakpoint, LocalVariable[] localVariables);
 
 		public readonly struct Breakpoint
 		{
@@ -16,6 +16,20 @@ namespace cflat
 			{
 				this.sourceIndex = sourceIndex;
 				this.slice = slice;
+			}
+		}
+
+		public readonly struct LocalVariable
+		{
+			public readonly string name;
+			public readonly string type;
+			public readonly string value;
+
+			public LocalVariable(string name, string type, string value)
+			{
+				this.name = name;
+				this.type = type;
+				this.value = value;
 			}
 		}
 
@@ -80,28 +94,38 @@ namespace cflat
 			return slice.index <= position && position <= slice.index + slice.length;
 		}
 
-		private static Dictionary<string, string> GetLocalVariables(VirtualMachine vm)
+		private static LocalVariable[] GetLocalVariables(VirtualMachine vm)
 		{
-			var stackIndex = vm.callFrameStack.buffer[vm.callFrameStack.count - 1].baseStackIndex;
+			var topCallFrame = vm.callFrameStack.buffer[vm.callFrameStack.count - 1];
+			if (topCallFrame.type != CallFrame.Type.Function)
+				return new LocalVariable[0];
+
 			var topDebugFrame = vm.debugData.frameStack.buffer[vm.debugData.frameStack.count - 1];
+			var stackTypesBaseIndex = topDebugFrame.stackTypesBaseIndex + 1;
 
 			var count = System.Math.Min(
-				vm.debugData.typeStack.count - topDebugFrame.typeStackBaseIndex,
-				vm.debugData.localVariableNames.count - topDebugFrame.localVariableNamesBaseIndex
+				vm.debugData.stackTypes.count - stackTypesBaseIndex,
+				vm.debugData.stackNames.count - topDebugFrame.stackNamesBaseIndex
 			);
+			var stackIndex = topCallFrame.baseStackIndex;
 
-			var localVariables = new Dictionary<string, string>(count);
+			var localVariables = new LocalVariable[count];
 			var sb = new StringBuilder();
 
 			for (var i = 0; i < count; i++)
 			{
-				var type = vm.debugData.typeStack.buffer[topDebugFrame.typeStackBaseIndex + i];
-				var name = vm.debugData.localVariableNames.buffer[topDebugFrame.localVariableNamesBaseIndex + i];
+				var type = vm.debugData.stackTypes.buffer[stackTypesBaseIndex + i];
+				var name = vm.debugData.stackNames.buffer[topDebugFrame.stackNamesBaseIndex + i];
+
+				sb.Clear();
+				type.Format(vm.chunk, sb);
+				var typeString = sb.ToString();
 
 				sb.Clear();
 				VirtualMachineHelper.ValueToString(vm, stackIndex, type, sb);
+				var valueString = sb.ToString();
 
-				localVariables.Add(name, sb.ToString());
+				localVariables[i] = new LocalVariable(name, typeString, valueString);
 
 				stackIndex += type.GetSize(vm.chunk);
 			}

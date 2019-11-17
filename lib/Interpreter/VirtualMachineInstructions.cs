@@ -468,15 +468,15 @@ namespace cflat
 					break;
 				case Instruction.DebugPushFrame:
 					vm.debugData.frameStack.PushBack(new DebugData.Frame(
-						(ushort)vm.debugData.typeStack.count,
-						(ushort)vm.debugData.localVariableNames.count
+						(ushort)vm.debugData.stackTypes.count,
+						(ushort)vm.debugData.stackNames.count
 					));
 					break;
 				case Instruction.DebugPopFrame:
 					{
 						var frame = vm.debugData.frameStack.PopLast();
-						vm.debugData.typeStack.count = frame.typeStackBaseIndex;
-						vm.debugData.localVariableNames.count = frame.localVariableNamesBaseIndex;
+						vm.debugData.stackTypes.count = frame.stackTypesBaseIndex;
+						vm.debugData.stackNames.count = frame.stackNamesBaseIndex;
 					}
 					break;
 				case Instruction.DebugPushType:
@@ -488,22 +488,22 @@ namespace cflat
 							bytes[codeIndex++]
 						);
 
-						vm.debugData.typeStack.PushBack(type);
+						vm.debugData.stackTypes.PushBack(type);
 						break;
 					}
 				case Instruction.DebugPopTypeMultiple:
-					vm.debugData.typeStack.count -= bytes[codeIndex++];
+					vm.debugData.stackTypes.count -= bytes[codeIndex++];
 					break;
 				case Instruction.DebugPushLocalVariableName:
 					{
 						var literalIndex = BytesHelper.BytesToUShort(bytes[codeIndex++], bytes[codeIndex++]);
 						var stringIndex = vm.chunk.literalData.buffer[literalIndex].asInt;
 						var name = vm.chunk.stringLiterals.buffer[stringIndex];
-						vm.debugData.localVariableNames.PushBack(name);
+						vm.debugData.stackNames.PushBack(name);
 						break;
 					}
 				case Instruction.DebugPopLocalVariableNameMultiple:
-					vm.debugData.localVariableNames.count -= bytes[codeIndex++];
+					vm.debugData.stackNames.count -= bytes[codeIndex++];
 					break;
 				default:
 					break;
