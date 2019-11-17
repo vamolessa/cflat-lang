@@ -189,7 +189,7 @@ public sealed class InterfaceTests
 		}
 		cflat.AddFunction<Int>(nameof(FunctionTestFunction), FunctionTestFunction);
 
-		var compileErrors = cflat.CompileSource("tests", source, TestHelper.CompilerMode, Option.None);
+		var compileErrors = cflat.CompileSource(new Source(new Uri("source"), source), TestHelper.CompilerMode, Option.None);
 		if (compileErrors.count > 0)
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 

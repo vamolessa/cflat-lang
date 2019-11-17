@@ -8,22 +8,9 @@ namespace cflat
 		Debug
 	}
 
-	public readonly struct Source
-	{
-		public readonly string uri;
-		public readonly string content;
-
-		public Source(string uri, string content)
-		{
-			this.uri = uri;
-			this.content = content;
-		}
-	}
-
 	public interface IModuleResolver
 	{
-		Option<string> ResolveModuleUri(string requestingSourceUri, string modulePath);
-		Option<string> ResolveModuleSource(string requestingSourceUri, string moduleUri);
+		Option<string> ResolveModuleSource(Uri requestingSourceUri, Uri moduleUri);
 	}
 
 	public sealed class CFlat
@@ -39,9 +26,9 @@ namespace cflat
 			compileErrors.count = 0;
 		}
 
-		public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode, Option<IModuleResolver> moduleResolver)
+		public Buffer<CompileError> CompileSource(Source source, Mode mode, Option<IModuleResolver> moduleResolver)
 		{
-			var errors = compiler.CompileSource(chunk, moduleResolver, mode, new Source(sourceName, source));
+			var errors = compiler.CompileSource(chunk, moduleResolver, mode, source);
 			if (errors.count > 0)
 				compileErrors = errors;
 			else
@@ -53,9 +40,9 @@ namespace cflat
 			return errors;
 		}
 
-		public Buffer<CompileError> CompileExpression(string source, Mode mode)
+		public Buffer<CompileError> CompileExpression(string expression, Mode mode)
 		{
-			var errors = compiler.CompileExpression(chunk, mode, new Source(string.Empty, source));
+			var errors = compiler.CompileExpression(chunk, mode, new Source(new Uri("/"), expression));
 			if (errors.count > 0)
 				compileErrors = errors;
 			else

@@ -7,27 +7,16 @@ public sealed class MultipleSourcesTests
 	{
 		private readonly Source[] sources;
 
-		public ModuleResolver(params Source[] sources)
+		public ModuleResolver(Source[] sources)
 		{
 			this.sources = sources;
 		}
 
-		public Option<string> ResolveModuleUri(string requestingSourceUri, string modulePath)
+		public Option<string> ResolveModuleSource(Uri requestingSourceUri, Uri moduleUri)
 		{
 			foreach (var source in sources)
 			{
-				if (source.uri == modulePath)
-					return source.uri;
-			}
-
-			return Option.None;
-		}
-
-		public Option<string> ResolveModuleSource(string requestingSourceUri, string moduleUri)
-		{
-			foreach (var source in sources)
-			{
-				if (source.uri == moduleUri)
+				if (source.uri.value == moduleUri.value)
 					return source.content;
 			}
 
@@ -47,13 +36,14 @@ public sealed class MultipleSourcesTests
 	[InlineData("mod \"source1\" pub fn f(){}", "fn f(){}")]
 	public void CompileMultipleSourcesTests(string source0, string source1)
 	{
+		var sources = new Source[] {
+			new Source(new Uri("source0"), source0),
+			new Source(new Uri("source1"), source1)
+		};
 		var cflat = new CFlat();
-		var moduleResolver = new ModuleResolver(
-			new Source("source0", source0),
-			new Source("source1", source1)
-		);
+		var moduleResolver = new ModuleResolver(sources);
 
-		var errors = cflat.CompileSource("source0", source0, TestHelper.CompilerMode, moduleResolver);
+		var errors = cflat.CompileSource(sources[0], TestHelper.CompilerMode, moduleResolver);
 		if (errors.count > 0)
 			throw new CompileErrorException(cflat.GetFormattedCompileErrors());
 	}
@@ -64,13 +54,14 @@ public sealed class MultipleSourcesTests
 	[InlineData("mod \"source1\" fn f(){}", "pub fn f(){}")]
 	public void CompileMultipleSourcesErrors(string source0, string source1)
 	{
+		var sources = new Source[] {
+			new Source(new Uri("source0"), source0),
+			new Source(new Uri("source1"), source1)
+		};
 		var cflat = new CFlat();
-		var moduleResolver = new ModuleResolver(
-			new Source("source0", source0),
-			new Source("source1", source1)
-		);
+		var moduleResolver = new ModuleResolver(sources);
 
-		var errors = cflat.CompileSource("source0", source0, TestHelper.CompilerMode, moduleResolver);
+		var errors = cflat.CompileSource(sources[0], TestHelper.CompilerMode, moduleResolver);
 		Assert.NotEqual(0, errors.count);
 	}
 }

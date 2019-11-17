@@ -212,33 +212,27 @@ namespace cflat
 
 			if (!moduleResolver.isSome)
 			{
-				io.AddSoftError(slice, "No module resolver provided. Can't import module '{0}'", modulePath);
+				io.AddSoftError(slice, "No module resolver provided. Could not import module '{0}'", modulePath);
 				return;
 			}
 
 			var currentSource = compiledSources.buffer[compiledSources.count - 1];
-			var maybeModuleUri = moduleResolver.value.ResolveModuleUri(currentSource.uri, modulePath);
-			if (!maybeModuleUri.isSome)
-			{
-				io.AddSoftError(slice, "Could not resolve module uri '{0}' from '{1}'", modulePath, currentSource.uri);
-				return;
-			}
-			var moduleUri = maybeModuleUri.value;
+			var moduleUri = Uri.Resolve(currentSource.uri, modulePath);
 
 			for (var i = 0; i < compiledSources.count; i++)
 			{
-				if (compiledSources.buffer[i].uri == moduleUri)
+				if (compiledSources.buffer[i].uri.value == moduleUri.value)
 					return;
 			}
 
-			var maybeModuleSource = moduleResolver.value.ResolveModuleSource(currentSource.uri, moduleUri);
-			if (!maybeModuleSource.isSome)
+			var moduleSource = moduleResolver.value.ResolveModuleSource(currentSource.uri, moduleUri);
+			if (!moduleSource.isSome)
 			{
-				io.AddSoftError(slice, "Could not resolve module source '{0}' from '{1}'", moduleUri, currentSource.uri);
+				io.AddSoftError(slice, "Could not resolve module '{0}' from '{1}'", moduleUri, currentSource.uri);
 				return;
 			}
 
-			Compile(new Source(moduleUri, maybeModuleSource.value));
+			Compile(new Source(moduleUri, moduleSource.value));
 		}
 
 		private void FunctionDeclaration(bool isPublic)

@@ -1,3 +1,4 @@
+using System.IO;
 using cflat;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -16,13 +17,16 @@ public static class Interpreter
 		return (float)sw.value.Elapsed.TotalSeconds;
 	}
 
-	public static void RunSource(string sourceUri, string sourceContent, bool printDisassembled)
+	public static void RunSource(string sourcePath, string sourceContent, bool printDisassembled)
 	{
+		var filename = Path.GetFileNameWithoutExtension(sourcePath);
+		var source = new Source(new Uri(filename), sourceContent);
+
 		var debugger = new Debugger((breakpoint, vars) =>
 		{
 			Debugger.Break();
 		});
-		debugger.AddBreakpoint(new Debugger.SourcePosition(sourceUri, 3));
+		debugger.AddBreakpoint(new Debugger.SourcePosition(source.uri, 3));
 
 		var cflat = new CFlat();
 		cflat.SetDebugger(debugger);
@@ -30,7 +34,7 @@ public static class Interpreter
 		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
 		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
 
-		var compileErrors = cflat.CompileSource(sourceUri, sourceContent, Mode.Debug, Option.None);
+		var compileErrors = cflat.CompileSource(source, Mode.Debug, Option.None);
 		if (compileErrors.count > 0)
 		{
 			var errorMessage = cflat.GetFormattedCompileErrors();

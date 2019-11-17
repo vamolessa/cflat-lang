@@ -395,6 +395,11 @@ namespace cflat
 		{
 			return new TupleDefinitionMarshaler<Tuple<E0>>(chunk).GetDefinedType();
 		}
+
+		public void Deconstruct(out E0 e0)
+		{
+			e0 = this.e0;
+		}
 	}
 
 	public struct Tuple<E0, E1> : ITuple
@@ -419,6 +424,12 @@ namespace cflat
 		public ValueType GetType(ByteCodeChunk chunk)
 		{
 			return new TupleDefinitionMarshaler<Tuple<E0, E1>>(chunk).GetDefinedType();
+		}
+
+		public void Deconstruct(out E0 e0, out E1 e1)
+		{
+			e0 = this.e0;
+			e1 = this.e1;
 		}
 	}
 
@@ -448,6 +459,13 @@ namespace cflat
 		public ValueType GetType(ByteCodeChunk chunk)
 		{
 			return new TupleDefinitionMarshaler<Tuple<E0, E1, E2>>(chunk).GetDefinedType();
+		}
+
+		public void Deconstruct(out E0 e0, out E1 e1, out E2 e2)
+		{
+			e0 = this.e0;
+			e1 = this.e1;
+			e2 = this.e2;
 		}
 	}
 
@@ -481,6 +499,14 @@ namespace cflat
 		public ValueType GetType(ByteCodeChunk chunk)
 		{
 			return new TupleDefinitionMarshaler<Tuple<E0, E1, E2, E3>>(chunk).GetDefinedType();
+		}
+
+		public void Deconstruct(out E0 e0, out E1 e1, out E2 e2, out E3 e3)
+		{
+			e0 = this.e0;
+			e1 = this.e1;
+			e2 = this.e2;
+			e3 = this.e3;
 		}
 	}
 }

@@ -16,7 +16,7 @@ namespace cflat
 				if (e.slice.index > 0 || e.slice.length > 0)
 				{
 					var source = self.compiler.compiledSources.buffer[e.sourceIndex];
-					FormattingHelper.AddHighlightSlice(source.uri, source.content, e.slice, sb);
+					FormattingHelper.AddHighlightSlice(source.uri.value, source.content, e.slice, sb);
 				}
 			}
 
@@ -37,7 +37,7 @@ namespace cflat
 
 			var source = self.compiler.compiledSources.buffer[self.vm.chunk.FindSourceIndex(error.instructionIndex)];
 
-			FormattingHelper.AddHighlightSlice(source.uri, source.content, error.slice, sb);
+			FormattingHelper.AddHighlightSlice(source.uri.value, source.content, error.slice, sb);
 			return sb.ToString();
 		}
 

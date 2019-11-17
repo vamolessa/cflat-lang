@@ -43,7 +43,7 @@ public sealed class FunctionTests
 		var cflat = new CFlat();
 
 		string error = null;
-		var errors = cflat.CompileSource("source", source, TestHelper.CompilerMode, Option.None);
+		var errors = cflat.CompileSource(new Source(new Uri("source"), source), TestHelper.CompilerMode, Option.None);
 		if (errors.count > 0)
 			error = cflat.GetFormattedCompileErrors();
 		Assert.Null(error);

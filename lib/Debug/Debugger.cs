@@ -14,12 +14,12 @@ namespace cflat
 
 		public readonly struct SourcePosition
 		{
-			public readonly string sourceUri;
+			public readonly Uri uri;
 			public readonly ushort line;
 
-			public SourcePosition(string sourceUri, ushort line)
+			public SourcePosition(Uri uri, ushort line)
 			{
-				this.sourceUri = sourceUri;
+				this.uri = uri;
 				this.line = line;
 			}
 		}
@@ -88,7 +88,7 @@ namespace cflat
 			{
 				var breakpoint = breakpoints.buffer[i];
 				if (
-					(lastPosition.sourceUri != position.sourceUri ||
+					(lastPosition.uri.value != position.uri.value ||
 						lastPosition.line != breakpoint.line) &&
 					position.line == breakpoint.line
 				)
