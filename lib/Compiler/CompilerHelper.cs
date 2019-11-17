@@ -102,27 +102,27 @@ namespace cflat
 			return true;
 		}
 
-		public static string GetSlice(CompilerIO compiler, Slice slice)
+		public static string GetSlice(CompilerIO io, Slice slice)
 		{
-			return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
+			return io.parser.tokenizer.source.Substring(slice.index, slice.length);
 		}
 
-		public static string GetPreviousSlice(CompilerIO compiler)
+		public static string GetPreviousSlice(CompilerIO io)
 		{
-			var slice = compiler.parser.previousToken.slice;
-			return compiler.parser.tokenizer.source.Substring(slice.index, slice.length);
+			var slice = io.parser.previousToken.slice;
+			return io.parser.tokenizer.source.Substring(slice.index, slice.length);
 		}
 
-		public static int GetParsedInt(CompilerIO compiler)
+		public static int GetParsedInt(CompilerIO io)
 		{
-			var sub = GetPreviousSlice(compiler);
+			var sub = GetPreviousSlice(io);
 			int.TryParse(sub, out var value);
 			return value;
 		}
 
-		public static float GetParsedFloat(CompilerIO compiler)
+		public static float GetParsedFloat(CompilerIO io)
 		{
-			var sub = GetPreviousSlice(compiler);
+			var sub = GetPreviousSlice(io);
 			float.TryParse(
 				sub,
 				NumberStyles.Float,
@@ -131,13 +131,13 @@ namespace cflat
 			return value;
 		}
 
-		public static string GetParsedString(CompilerIO compiler)
+		public static string GetParsedString(CompilerIO io)
 		{
 			var slice = new Slice(
-				compiler.parser.previousToken.slice.index + 1,
-				compiler.parser.previousToken.slice.length - 2
+				io.parser.previousToken.slice.index + 1,
+				io.parser.previousToken.slice.length - 2
 			);
-			return GetSlice(compiler, slice);
+			return GetSlice(io, slice);
 		}
 
 		public static bool IsFunctionVisible(ByteCodeChunk chunk, int functionIndex, int currentSourceFunctionsStartIndex)

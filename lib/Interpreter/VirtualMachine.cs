@@ -27,13 +27,27 @@ namespace cflat
 
 	public struct DebugData
 	{
-		public Buffer<int> frameStack;
+		public readonly struct Frame
+		{
+			public readonly ushort typeStackBaseIndex;
+			public readonly ushort localVariableNamesBaseIndex;
+
+			public Frame(ushort typeStackBaseIndex, ushort localVariableNamesBaseIndex)
+			{
+				this.typeStackBaseIndex = typeStackBaseIndex;
+				this.localVariableNamesBaseIndex = localVariableNamesBaseIndex;
+			}
+		}
+
+		public Buffer<Frame> frameStack;
 		public Buffer<ValueType> typeStack;
+		public Buffer<string> localVariableNames;
 
 		public void Clear()
 		{
 			frameStack.count = 0;
 			typeStack.count = 0;
+			localVariableNames.count = 0;
 		}
 	}
 

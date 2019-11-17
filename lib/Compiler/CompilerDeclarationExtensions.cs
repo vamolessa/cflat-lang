@@ -5,6 +5,12 @@ namespace cflat
 		// VARIABLES
 		public static int AddLocalVariable(this CompilerIO self, Slice slice, ValueType type, VariableFlags flags)
 		{
+			self.DebugPushLocalVariableName(
+				(flags & VariableFlags.Iteration) != 0 ?
+					"it" :
+					CompilerHelper.GetSlice(self, slice)
+			);
+
 			byte stackIndex = 0;
 			if (self.localVariables.count > 0)
 			{

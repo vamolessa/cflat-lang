@@ -63,7 +63,8 @@ namespace cflat
 		DebugPushFrame,
 		DebugPopFrame,
 		DebugPushType,
-		DebugPopType,
 		DebugPopTypeMultiple,
+		DebugPushLocalVariableName,
+		DebugPopLocalVariableNameMultiple,
 	}
 }

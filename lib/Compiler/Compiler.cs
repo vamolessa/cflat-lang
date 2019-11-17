@@ -455,7 +455,7 @@ namespace cflat
 				new ValueType(TypeKind.Unit);
 
 			{
-				self.io.DebugEmitPopType((byte)builder.elementCount);
+				self.io.DebugEmitPopTypes((byte)builder.elementCount);
 				self.io.DebugEmitPushType(type);
 			}
 
@@ -474,7 +474,7 @@ namespace cflat
 
 			if (self.io.parser.Match(TokenKind.CloseSquareBrackets))
 			{
-				self.io.DebugEmitPopType(1);
+				self.io.DebugEmitPopTypes(1);
 				self.io.EmitInstruction(Instruction.CreateArrayFromStack);
 				self.io.EmitByte(element.type.GetSize(self.io.chunk));
 				self.io.EmitByte(1);
@@ -504,7 +504,7 @@ namespace cflat
 
 				if (arrayLength <= byte.MaxValue)
 				{
-					self.io.DebugEmitPopType((byte)arrayLength);
+					self.io.DebugEmitPopTypes((byte)arrayLength);
 					self.io.EmitInstruction(Instruction.CreateArrayFromStack);
 					self.io.EmitByte(element.type.GetSize(self.io.chunk));
 					self.io.EmitByte((byte)arrayLength);
@@ -523,7 +523,7 @@ namespace cflat
 
 				self.io.parser.Consume(TokenKind.CloseSquareBrackets, "Expected ']' after array expression");
 
-				self.io.DebugEmitPopType(2);
+				self.io.DebugEmitPopTypes(2);
 				self.io.EmitInstruction(Instruction.CreateArrayFromDefault);
 				self.io.EmitByte(element.type.GetSize(self.io.chunk));
 			}
@@ -542,7 +542,7 @@ namespace cflat
 		internal static ValueType LengthExpression(Compiler self)
 		{
 			var expression = Expression(self);
-			self.io.DebugEmitPopType(0);
+			self.io.DebugEmitPopTypes(0);
 
 			if (!expression.type.IsArray)
 				self.io.AddSoftError(expression.slice, "Expected array type. Got {0}", expression.type.ToString(self.io.chunk));
@@ -585,7 +585,7 @@ namespace cflat
 			if (!io.parser.Check(TokenKind.CloseCurlyBrackets))
 			{
 				io.EmitPop(expression.type.GetSize(io.chunk));
-				io.DebugEmitPopType(1);
+				io.DebugEmitPopTypes(1);
 			}
 
 			return expression.type;
@@ -607,7 +607,7 @@ namespace cflat
 			if (lastStatementKind == StatementKind.Expression)
 			{
 				io.EmitPop(lastStatementType.GetSize(io.chunk));
-				io.DebugEmitPopType(1);
+				io.DebugEmitPopTypes(1);
 			}
 
 			io.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after block.");
@@ -798,7 +798,7 @@ namespace cflat
 
 			io.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after while statement");
 
-			io.DebugEmitPopType(1);
+			io.DebugEmitPopTypes(1);
 			var breakJump = io.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 			io.BeginLoop(labelSlice);
 			BlockStatement();
@@ -837,7 +837,7 @@ namespace cflat
 			io.EmitByte((byte)itVar.stackIndex);
 
 			io.DebugEmitPushType(new ValueType(TypeKind.Bool));
-			io.DebugEmitPopType(1);
+			io.DebugEmitPopTypes(1);
 			var breakJump = io.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 			io.BeginLoop(labelSlice);
 			BlockStatement();
@@ -928,7 +928,7 @@ namespace cflat
 		{
 			var expression = Expression(this);
 
-			io.DebugEmitPopType(1);
+			io.DebugEmitPopTypes(1);
 
 			io.EmitInstruction(Instruction.Print);
 			io.EmitType(expression.type);
@@ -1038,7 +1038,7 @@ namespace cflat
 
 			self.io.parser.Consume(TokenKind.OpenCurlyBrackets, "Expected '{' after if expression");
 
-			self.io.DebugEmitPopType(1);
+			self.io.DebugEmitPopTypes(1);
 			var elseJump = self.io.BeginEmitForwardJump(Instruction.PopAndJumpForwardIfFalse);
 			var thenType = Block(self);
 			var hasElse = self.io.parser.Match(TokenKind.Else);
@@ -1047,7 +1047,7 @@ namespace cflat
 			{
 				var size = thenType.GetSize(self.io.chunk);
 				self.io.EmitPop(size);
-				self.io.DebugEmitPopType(1);
+				self.io.DebugEmitPopTypes(1);
 				self.io.EmitInstruction(Instruction.LoadUnit);
 				self.io.DebugEmitPushType(new ValueType(TypeKind.Unit));
 				thenType = new ValueType(TypeKind.Unit);
@@ -1089,7 +1089,7 @@ namespace cflat
 
 			var jump = self.io.BeginEmitForwardJump(Instruction.JumpForwardIfFalse);
 			self.io.EmitInstruction(Instruction.Pop);
-			self.io.DebugEmitPopType(1);
+			self.io.DebugEmitPopTypes(1);
 			var expression = ParseWithPrecedence(self, Precedence.And);
 			self.io.EndEmitForwardJump(jump);
 
@@ -1106,7 +1106,7 @@ namespace cflat
 
 			var jump = self.io.BeginEmitForwardJump(Instruction.JumpForwardIfTrue);
 			self.io.EmitInstruction(Instruction.Pop);
-			self.io.DebugEmitPopType(1);
+			self.io.DebugEmitPopTypes(1);
 			var expression = ParseWithPrecedence(self, Precedence.Or);
 			self.io.EndEmitForwardJump(jump);
 
@@ -1218,7 +1218,7 @@ namespace cflat
 					);
 				}
 
-				self.io.DebugEmitPopType(1);
+				self.io.DebugEmitPopTypes(1);
 
 				if (localVar.type.IsReference)
 				{
@@ -1346,7 +1346,7 @@ namespace cflat
 					);
 				}
 				self.io.parser.Consume(TokenKind.CloseCurlyBrackets, "Expected '}' after struct initializer");
-				self.io.DebugEmitPopType((byte)structType.fields.length);
+				self.io.DebugEmitPopTypes((byte)structType.fields.length);
 				self.io.DebugEmitPushType(new ValueType(TypeKind.Struct, structIndex));
 				return new ValueType(TypeKind.Struct, structIndex);
 			}
@@ -1413,7 +1413,7 @@ namespace cflat
 			var sizeAboveField = structSize - storage.offset - fieldSize;
 
 			self.io.EmitPop(sizeAboveField);
-			self.io.DebugEmitPopType(1);
+			self.io.DebugEmitPopTypes(1);
 
 			if (storage.offset > 0)
 			{
@@ -1469,7 +1469,7 @@ namespace cflat
 
 		private static ValueType IndexAccess(Compiler self, IndexStorage storage)
 		{
-			self.io.DebugEmitPopType(2);
+			self.io.DebugEmitPopTypes(2);
 
 			self.io.EmitInstruction(Instruction.LoadArrayElement);
 			self.io.EmitByte(storage.elementSize);
@@ -1493,7 +1493,7 @@ namespace cflat
 				);
 			}
 
-			self.io.DebugEmitPopType(3);
+			self.io.DebugEmitPopTypes(3);
 
 			self.io.EmitInstruction(Instruction.SetArrayElement);
 			self.io.EmitByte(storage.elementSize);
@@ -1545,7 +1545,7 @@ namespace cflat
 				self.io.AddSoftError(slice, "Wrong number of arguments. Expected {0}. Got {1}", functionType.parameters.length, argIndex);
 
 			var popCount = isFunction ? functionType.parameters.length + 1 : 1;
-			self.io.DebugEmitPopType((byte)popCount);
+			self.io.DebugEmitPopTypes((byte)popCount);
 
 			if (type.kind == TypeKind.Function)
 				self.io.EmitInstruction(Instruction.Call);
@@ -1672,7 +1672,7 @@ namespace cflat
 				else
 					self.io.AddSoftError(expression.slice, "Can only convert floats to int. Got type {0}", expression.type.ToString(self.io.chunk));
 
-				self.io.DebugEmitPopType(1);
+				self.io.DebugEmitPopTypes(1);
 				self.io.DebugEmitPushType(new ValueType(TypeKind.Int));
 				return new ValueType(TypeKind.Int);
 			case TokenKind.Float:
@@ -1681,7 +1681,7 @@ namespace cflat
 				else
 					self.io.AddSoftError(expression.slice, "Can only convert ints to float. Got {0}", expression.type.ToString(self.io.chunk));
 
-				self.io.DebugEmitPopType(1);
+				self.io.DebugEmitPopTypes(1);
 				self.io.DebugEmitPushType(new ValueType(TypeKind.Float));
 				return new ValueType(TypeKind.Float);
 			default:
@@ -1710,19 +1710,19 @@ namespace cflat
 				if (aType.IsKind(TypeKind.Int) && bType.IsKind(TypeKind.Int))
 				{
 					c.EmitInstruction(intOp);
-					c.DebugEmitPopType(1);
+					c.DebugEmitPopTypes(1);
 					return new ValueType(TypeKind.Int);
 				}
 				else if (aType.IsKind(TypeKind.Float) && bType.IsKind(TypeKind.Float))
 				{
 					c.EmitInstruction(floatOp);
-					c.DebugEmitPopType(1);
+					c.DebugEmitPopTypes(1);
 					return new ValueType(TypeKind.Float);
 				}
 				else
 				{
 					c.AddSoftError(slice, "{0}. Got types {1} and {2}", errorMessage, aType.ToString(c.chunk), bType.ToString(c.chunk));
-					c.DebugEmitPopType(1);
+					c.DebugEmitPopTypes(1);
 					return aType;
 				}
 			}
@@ -1739,7 +1739,7 @@ namespace cflat
 				if (negate)
 					c.EmitInstruction(Instruction.Not);
 
-				self.io.DebugEmitPopType(2);
+				self.io.DebugEmitPopTypes(2);
 				self.io.DebugEmitPushType(new ValueType(TypeKind.Bool));
 
 				return new ValueType(TypeKind.Bool);
@@ -1796,7 +1796,7 @@ namespace cflat
 					if (opToken.kind == TokenKind.BangEqual)
 						self.io.EmitInstruction(Instruction.Not);
 
-					self.io.DebugEmitPopType(2);
+					self.io.DebugEmitPopTypes(2);
 					self.io.DebugEmitPushType(new ValueType(TypeKind.Bool));
 					return new ValueType(TypeKind.Bool);
 				}

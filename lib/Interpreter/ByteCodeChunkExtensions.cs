@@ -246,7 +246,6 @@ namespace cflat
 			case Instruction.DebugHook:
 			case Instruction.DebugPushFrame:
 			case Instruction.DebugPopFrame:
-			case Instruction.DebugPopType:
 				return OneByteInstruction(instruction, index, sb);
 			case Instruction.Call:
 			case Instruction.CallNative:
@@ -259,12 +258,14 @@ namespace cflat
 			case Instruction.CreateStackReference:
 			case Instruction.RepeatLoopCheck:
 			case Instruction.DebugPopTypeMultiple:
+			case Instruction.DebugPopLocalVariableNameMultiple:
 				return TwoByteInstruction(self, instruction, index, sb);
 			case Instruction.Move:
 			case Instruction.SetLocalMultiple:
 			case Instruction.CreateArrayFromStack:
 			case Instruction.LoadLocalMultiple:
 			case Instruction.CreateArrayElementReference:
+			case Instruction.DebugPushLocalVariableName:
 				return ThreeByteInstruction(self, instruction, index, sb);
 			case Instruction.SetArrayElement:
 			case Instruction.LoadArrayElement:

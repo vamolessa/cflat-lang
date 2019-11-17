@@ -45,7 +45,8 @@ namespace cflat
 
 			self.localVariables.count -= localCount;
 
-			self.DebugEmitPopType((byte)localCount);
+			self.DebugEmitPopTypes((byte)localCount);
+			self.DebugPopLocalVariableNames((byte)localCount);
 		}
 
 		public static void BeginLoop(this CompilerIO self, Slice labelSlice)

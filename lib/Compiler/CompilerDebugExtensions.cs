@@ -23,19 +23,31 @@ namespace cflat
 			}
 		}
 
-		public static void DebugEmitPopType(this CompilerIO self, byte count)
+		public static void DebugEmitPopTypes(this CompilerIO self, byte count)
 		{
 			if (self.mode == Mode.Debug)
 			{
-				if (count > 1)
-				{
-					self.EmitInstruction(Instruction.DebugPopTypeMultiple);
-					self.EmitByte(count);
-				}
-				else
-				{
-					self.EmitInstruction(Instruction.DebugPopType);
-				}
+				self.EmitInstruction(Instruction.DebugPopTypeMultiple);
+				self.EmitByte(count);
+			}
+		}
+
+		public static void DebugPushLocalVariableName(this CompilerIO self, string name)
+		{
+			if (self.mode == Mode.Debug)
+			{
+				var stringIndex = self.chunk.AddStringLiteral(name);
+				self.EmitInstruction(Instruction.DebugPushLocalVariableName);
+				self.EmitUShort((ushort)stringIndex);
+			}
+		}
+
+		public static void DebugPopLocalVariableNames(this CompilerIO self, byte count)
+		{
+			if (self.mode == Mode.Debug)
+			{
+				self.EmitInstruction(Instruction.DebugPopLocalVariableNameMultiple);
+				self.EmitByte(count);
 			}
 		}
 	}
