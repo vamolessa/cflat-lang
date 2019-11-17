@@ -23,9 +23,9 @@ namespace cflat
 				new Uri(baseUri.GetPrefix() + path);
 		}
 
-		public Uri(string value)
+		public Uri(string path)
 		{
-			this.value = value.StartsWith("/") ? value : "/" + value;
+			this.value = path.StartsWith("/") ? path : "/" + path;
 		}
 
 		private string GetPrefix()

@@ -1,6 +1,6 @@
 using System.IO;
-using cflat;
 using Stopwatch = System.Diagnostics.Stopwatch;
+using cflat;
 
 public static class Interpreter
 {
