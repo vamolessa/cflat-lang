@@ -459,11 +459,11 @@ namespace cflat
 						break;
 					}
 				case Instruction.DebugHook:
-					if (vm.debugHookCallback != null)
+					if (vm.debugger.isSome)
 					{
 						vm.memory = memory;
 						vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
-						vm.debugHookCallback(vm);
+						vm.debugger.value.OnDebugHook(vm);
 					}
 					break;
 				case Instruction.DebugPushFrame:

@@ -16,21 +16,21 @@ public static class Interpreter
 		return (float)sw.value.Elapsed.TotalSeconds;
 	}
 
-	public static void RunSource(string sourceName, string source, bool printDisassembled)
+	public static void RunSource(string sourceUri, string sourceContent, bool printDisassembled)
 	{
 		var debugger = new Debugger((breakpoint, vars) =>
 		{
 			Debugger.Break();
 		});
-		debugger.AddBreakpoint(new Debugger.Breakpoint(0, new Slice(30, 7)));
+		debugger.AddBreakpoint(new Debugger.SourcePosition(sourceUri, 3));
 
 		var cflat = new CFlat();
-		cflat.AddDebugHook(debugger.DebugHook);
+		cflat.SetDebugger(debugger);
 
 		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
 		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
 
-		var compileErrors = cflat.CompileSource(sourceName, source, Mode.Debug, Option.None);
+		var compileErrors = cflat.CompileSource(sourceUri, sourceContent, Mode.Debug, Option.None);
 		if (compileErrors.count > 0)
 		{
 			var errorMessage = cflat.GetFormattedCompileErrors();

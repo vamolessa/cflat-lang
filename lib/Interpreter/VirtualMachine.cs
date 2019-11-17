@@ -1,7 +1,5 @@
 namespace cflat
 {
-	public delegate void DebugHookCallback(VirtualMachine vm);
-
 	public struct CallFrame
 	{
 		public enum Type : ushort
@@ -58,7 +56,7 @@ namespace cflat
 		public Memory memory = new Memory(256);
 		public Buffer<object> nativeObjects;
 		public DebugData debugData = new DebugData();
-		internal DebugHookCallback debugHookCallback;
+		internal Option<IDebugger> debugger;
 		internal Option<RuntimeError> error;
 
 		internal void Load(ByteCodeChunk chunk)

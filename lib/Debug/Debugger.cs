@@ -1,21 +1,26 @@
-using System.Collections.Generic;
 using System.Text;
 
 namespace cflat
 {
-	public sealed class Debugger
+	public interface IDebugger
 	{
-		public delegate void BreakCallback(Breakpoint breakpoint, LocalVariable[] localVariables);
+		void OnGetSources(Buffer<Source> sources);
+		void OnDebugHook(VirtualMachine vm);
+	}
 
-		public readonly struct Breakpoint
+	public sealed class Debugger : IDebugger
+	{
+		public delegate void BreakCallback(SourcePosition sourcePosition, LocalVariable[] localVariables);
+
+		public readonly struct SourcePosition
 		{
-			public readonly int sourceIndex;
-			public readonly Slice slice;
+			public readonly string sourceUri;
+			public readonly ushort line;
 
-			public Breakpoint(int sourceIndex, Slice slice)
+			public SourcePosition(string sourceUri, ushort line)
 			{
-				this.sourceIndex = sourceIndex;
-				this.slice = slice;
+				this.sourceUri = sourceUri;
+				this.line = line;
 			}
 		}
 
@@ -34,8 +39,9 @@ namespace cflat
 		}
 
 		private readonly BreakCallback onBreak;
-		private Buffer<Breakpoint> breakpoints = new Buffer<Breakpoint>(8);
-		private Breakpoint lastPosition = new Breakpoint();
+		private Buffer<SourcePosition> breakpoints = new Buffer<SourcePosition>(8);
+		private Buffer<Source> sources = new Buffer<Source>();
+		private SourcePosition lastPosition = new SourcePosition();
 
 		public static void Break()
 		{
@@ -51,12 +57,17 @@ namespace cflat
 			breakpoints.count = 0;
 		}
 
-		public void AddBreakpoint(Breakpoint breakpoint)
+		public void AddBreakpoint(SourcePosition breakpoint)
 		{
 			breakpoints.PushBack(breakpoint);
 		}
 
-		public void DebugHook(VirtualMachine vm)
+		public void OnGetSources(Buffer<Source> sources)
+		{
+			this.sources = sources;
+		}
+
+		public void OnDebugHook(VirtualMachine vm)
 		{
 			if (onBreak == null)
 				return;
@@ -68,16 +79,18 @@ namespace cflat
 			if (sourceIndex < 0)
 				return;
 
+			var source = sources.buffer[sourceIndex];
 			var sourceSlice = vm.chunk.sourceSlices.buffer[codeIndex];
-			var position = new Breakpoint(sourceIndex, sourceSlice);
+			var line = (ushort)(FormattingHelper.GetLineAndColumn(source.content, sourceSlice.index).lineIndex + 1);
+			var position = new SourcePosition(source.uri, line);
 
 			for (var i = 0; i < breakpoints.count; i++)
 			{
 				var breakpoint = breakpoints.buffer[i];
 				if (
-					lastPosition.sourceIndex != position.sourceIndex ||
-					!IsInsideSlice(lastPosition.slice.index, breakpoint.slice) &&
-					IsInsideSlice(position.slice.index, breakpoint.slice)
+					(lastPosition.sourceUri != position.sourceUri ||
+						lastPosition.line != breakpoint.line) &&
+					position.line == breakpoint.line
 				)
 				{
 					var localVariables = GetLocalVariables(vm);
@@ -87,11 +100,6 @@ namespace cflat
 			}
 
 			lastPosition = position;
-		}
-
-		private static bool IsInsideSlice(ushort position, Slice slice)
-		{
-			return slice.index <= position && position <= slice.index + slice.length;
 		}
 
 		private static LocalVariable[] GetLocalVariables(VirtualMachine vm)

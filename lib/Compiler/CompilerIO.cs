@@ -82,6 +82,8 @@ namespace cflat
 
 		public void BeginSource(string source, int sourceIndex)
 		{
+			chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
+
 			stateFrameStack.PushBack(new StateFrame(
 				parser.tokenizer.source,
 				this.sourceIndex,

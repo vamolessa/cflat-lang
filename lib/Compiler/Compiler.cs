@@ -176,7 +176,7 @@ namespace cflat
 
 			if (!isPublic && io.parser.Match(TokenKind.Mod))
 			{
-				ModuleImport(finishedModuleImports);
+				ModuleDeclaration(finishedModuleImports);
 			}
 			else if (io.parser.Match(TokenKind.Function))
 			{
@@ -197,7 +197,7 @@ namespace cflat
 			Syncronize();
 		}
 
-		private void ModuleImport(bool finishedModuleImports)
+		private void ModuleDeclaration(bool finishedModuleImports)
 		{
 			var slice = io.parser.previousToken.slice;
 			io.parser.Consume(TokenKind.StringLiteral, "Expected module path string");
@@ -206,7 +206,7 @@ namespace cflat
 
 			if (finishedModuleImports)
 			{
-				io.AddSoftError(slice, "Module imports must appear at the top");
+				io.AddSoftError(slice, "Modules must appear at the top");
 				return;
 			}
 

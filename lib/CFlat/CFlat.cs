@@ -33,44 +33,43 @@ namespace cflat
 		internal ByteCodeChunk chunk = new ByteCodeChunk();
 		internal Buffer<CompileError> compileErrors = new Buffer<CompileError>();
 
+		public void Reset()
+		{
+			chunk = new ByteCodeChunk();
+			compileErrors.count = 0;
+		}
+
 		public Buffer<CompileError> CompileSource(string sourceName, string source, Mode mode, Option<IModuleResolver> moduleResolver)
 		{
-			if (compileErrors.count > 0)
-				return compileErrors;
-
-			chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
-
 			var errors = compiler.CompileSource(chunk, moduleResolver, mode, new Source(sourceName, source));
 			if (errors.count > 0)
 				compileErrors = errors;
 			else
 				vm.Load(chunk);
+
+			if (vm.debugger.isSome)
+				vm.debugger.value.OnGetSources(compiler.compiledSources);
+
 			return errors;
 		}
 
 		public Buffer<CompileError> CompileExpression(string source, Mode mode)
 		{
-			if (compileErrors.count > 0)
-				return compileErrors;
-
-			chunk.sourceStartIndexes.PushBack(chunk.bytes.count);
-
-			var errors = compiler.CompileExpression(chunk, mode, new Source("expression", source));
+			var errors = compiler.CompileExpression(chunk, mode, new Source(string.Empty, source));
 			if (errors.count > 0)
 				compileErrors = errors;
 			else
 				vm.Load(chunk);
+
+			if (vm.debugger.isSome)
+				vm.debugger.value.OnGetSources(compiler.compiledSources);
+
 			return errors;
 		}
 
-		public void AddDebugHook(DebugHookCallback callback)
+		public void SetDebugger(Option<IDebugger> debugger)
 		{
-			vm.debugHookCallback += callback;
-		}
-
-		public void RemoveDebugHook(DebugHookCallback callback)
-		{
-			vm.debugHookCallback -= callback;
+			vm.debugger = debugger;
 		}
 
 		public Option<RuntimeError> GetRuntimeError()
