@@ -17,10 +17,14 @@ namespace cflat
 		private Buffer<Breakpoint> breakpoints = new Buffer<Breakpoint>(8);
 		private Breakpoint lastPosition = new Breakpoint();
 
-		public void Reset()
+		public void ClearBreakpoints()
 		{
 			breakpoints.count = 0;
-			lastPosition = new Breakpoint();
+		}
+
+		public void AddBreakpoint(Breakpoint breakpoint)
+		{
+			breakpoints.PushBack(breakpoint);
 		}
 
 		public void DebugHook(VirtualMachine vm)
@@ -48,6 +52,8 @@ namespace cflat
 					break;
 				}
 			}
+
+			lastPosition = position;
 		}
 
 		private static bool IsInsideSlice(ushort position, Slice slice)

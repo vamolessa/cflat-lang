@@ -1,4 +1,4 @@
 fn main() {
-	let _a = 123 +
-	"asd"
+	let a = 3 + 4
+	print a
 }

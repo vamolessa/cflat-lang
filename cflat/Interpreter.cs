@@ -1,5 +1,5 @@
-using System.Diagnostics;
 using cflat;
+using Stopwatch = System.Diagnostics.Stopwatch;
 
 public static class Interpreter
 {
@@ -18,7 +18,10 @@ public static class Interpreter
 
 	public static void RunSource(string sourceName, string source, bool printDisassembled)
 	{
+		var debugger = new Debugger();
+		debugger.AddBreakpoint(new Debugger.Breakpoint(0, new Slice(14, 13)));
 		var cflat = new CFlat();
+		cflat.AddDebugHook(debugger.DebugHook);
 
 		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
 		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
