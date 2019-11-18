@@ -26,7 +26,7 @@ public static class Interpreter
 		{
 			Debugger.Break();
 		});
-		debugger.AddBreakpoint(new Debugger.SourcePosition(source.uri, 3));
+		debugger.AddBreakpoint(new SourcePosition(source.uri, 3));
 
 		var cflat = new CFlat();
 		cflat.SetDebugger(debugger);

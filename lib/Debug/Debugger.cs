@@ -8,21 +8,21 @@ namespace cflat
 		void OnDebugHook(VirtualMachine vm);
 	}
 
+	public readonly struct SourcePosition
+	{
+		public readonly Uri uri;
+		public readonly ushort line;
+
+		public SourcePosition(Uri uri, ushort line)
+		{
+			this.uri = uri;
+			this.line = line;
+		}
+	}
+
 	public sealed class Debugger : IDebugger
 	{
 		public delegate void BreakCallback(SourcePosition sourcePosition, LocalVariable[] localVariables);
-
-		public readonly struct SourcePosition
-		{
-			public readonly Uri uri;
-			public readonly ushort line;
-
-			public SourcePosition(Uri uri, ushort line)
-			{
-				this.uri = uri;
-				this.line = line;
-			}
-		}
 
 		public readonly struct LocalVariable
 		{

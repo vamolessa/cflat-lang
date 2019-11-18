@@ -1,3 +1,4 @@
+using System.Collections.Specialized;
 using System.IO;
 using System.Net;
 using System.Threading;
@@ -6,7 +7,7 @@ namespace cflat.debug
 {
 	public interface IRequestHandler
 	{
-		void OnRequest(string uriLocalPath, string body, JsonWriter writer);
+		void OnRequest(string uriLocalPath, NameValueCollection query, JsonWriter writer);
 	}
 
 	public sealed class Server
@@ -59,11 +60,12 @@ namespace cflat.debug
 			try
 			{
 				var context = server.EndGetContext(result);
-				var reader = new StreamReader(context.Request.InputStream);
-				var body = reader.ReadToEnd();
 
 				var json = JsonWriter.New();
-				handler.OnRequest(context.Request.Url.LocalPath, body, json);
+				lock (handler)
+				{
+					handler.OnRequest(context.Request.Url.LocalPath, context.Request.QueryString, json);
+				}
 
 				var response = context.Response;
 				response.ContentType = "application/json";

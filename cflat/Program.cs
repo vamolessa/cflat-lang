@@ -1,5 +1,4 @@
-﻿using System.Collections.Specialized;
-using System.IO;
+﻿using System.IO;
 
 /*
 sysexits:
@@ -7,44 +6,12 @@ https://www.freebsd.org/cgi/man.cgi?query=sysexits
 */
 public static class Program
 {
-	public sealed class Test : cflat.debug.IRequestHandler
-	{
-		public void OnRequest(string uriLocalPath, string body, cflat.debug.JsonWriter writer)
-		{
-			using (var o = writer.Object)
-			{
-				o.String("path", uriLocalPath);
-				o.String("body", body);
-
-				using (var sub = o.Object("sub"))
-				{
-					sub.Boolean("bool", true);
-					sub.Number("number", 3.5f);
-					using (var a = sub.Array("some array"))
-					{
-						a.String("this");
-						a.String("is");
-						a.String("another");
-						a.String("array:");
-						using (var oa = a.Array)
-						{
-							oa.String("something");
-							oa.Boolean(false);
-						}
-					}
-				}
-			}
-		}
-	}
-
 	public static void Main(string[] args)
 	{
-		ConsoleHelper.Write("BEGIN!\n");
-		var server = new cflat.debug.Server(4747, new Test());
+		var server = new cflat.debug.DebugServer(4747);
 		server.Start();
-		System.Console.ReadKey();
-		server.Stop();
-		return;
+		while (true)
+			System.Threading.Thread.Sleep(1000);
 
 		if (args.Length == 0)
 		{
