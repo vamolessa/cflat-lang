@@ -9,11 +9,13 @@ public static class Program
 {
 	public sealed class Test : cflat.debug.IRequestHandler
 	{
-		public void OnRequest(string uriLocalPath, cflat.debug.JsonWriter writer)
+		public void OnRequest(string uriLocalPath, string body, cflat.debug.JsonWriter writer)
 		{
 			using (var o = writer.Object)
 			{
 				o.String("path", uriLocalPath);
+				o.String("body", body);
+
 				using (var sub = o.Object("sub"))
 				{
 					sub.Boolean("bool", true);
