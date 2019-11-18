@@ -1,4 +1,4 @@
 fn main() {
-	let a = 3 + 4
+	let a.asd = 3 + 4
 	print a
 }

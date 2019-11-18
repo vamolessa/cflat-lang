@@ -9,6 +9,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "lib", "lib\lib.csproj", "{A
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "cflat", "cflat\cflat.csproj", "{18809835-FB3B-4B1A-AB12-9FA37CF3C318}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "debug-lib", "debug-lib\debug-lib.csproj", "{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -82,5 +84,17 @@ Global
 		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x64.Build.0 = Release|Any CPU
 		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x86.ActiveCfg = Release|Any CPU
 		{18809835-FB3B-4B1A-AB12-9FA37CF3C318}.Release|x86.Build.0 = Release|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Debug|x64.Build.0 = Debug|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Debug|x86.Build.0 = Debug|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Release|Any CPU.Build.0 = Release|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Release|x64.ActiveCfg = Release|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Release|x64.Build.0 = Release|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Release|x86.ActiveCfg = Release|Any CPU
+		{D93A627A-BFD4-4BCB-8E76-6B209C7D91E0}.Release|x86.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal
