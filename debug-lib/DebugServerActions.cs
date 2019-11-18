@@ -10,9 +10,17 @@ namespace cflat.debug
 			{
 				root.String("/", "show this help");
 
-				root.String("/breakpoints/list", "list breakpoints");
-				root.String("/breakpoints/clear", "clear all breakpoints");
-				root.String("/breakpoints/set", "set all breakpoints for a source");
+				root.String("/continue", "resume execution");
+				root.String("/pause", "pause execution");
+				root.String("/stop", "stop debug server");
+
+				root.String("/breakpoints/all", "list all breakpoints of all sources");
+				root.String("/breakpoints/clear", "clear all breakpoints of all sources");
+				root.String("/breakpoints/set?source=dot.separated.source.uri&lines=1,2,42,999", "set all breakpoints for a source");
+
+				root.String("/query/paused", "query if execution is paused");
+				root.String("/query/all", "query all values on stack");
+				root.String("/query/value?myvar.field", "query a value on stack");
 			}
 		}
 
@@ -94,7 +102,7 @@ namespace cflat.debug
 		{
 		}
 
-		public static void QueryVariable(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static void QueryValue(this DebugServer self, NameValueCollection query, JsonWriter writer)
 		{
 		}
 	}

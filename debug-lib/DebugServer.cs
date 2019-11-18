@@ -50,7 +50,7 @@ namespace cflat.debug
 
 			case "/query/paused": this.QueryPaused(query, writer); break;
 			case "/query/all": this.QueryAll(query, writer); break;
-			case "/query/variable": this.QueryVariable(query, writer); break;
+			case "/query/value": this.QueryValue(query, writer); break;
 
 			default: this.Help(query, writer); break;
 			}
