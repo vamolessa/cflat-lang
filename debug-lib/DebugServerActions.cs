@@ -155,16 +155,12 @@ namespace cflat.debug
 						var codeIndex = System.Math.Max(callframe.codeIndex - 1, 0);
 						var sourceIndex = self.vm.chunk.sourceSlices.buffer[codeIndex].index;
 						var source = self.sources.buffer[self.vm.chunk.FindSourceIndex(codeIndex)];
-
 						var pos = FormattingHelper.GetLineAndColumn(
 							source.content,
 							sourceIndex
 						);
 
-						sb.Clear();
-						self.vm.chunk.FormatFunction(callframe.functionIndex, sb);
-						st.String("name", sb.ToString());
-
+						st.String("name", source.uri.value);
 						st.Number("line", pos.lineIndex + 1);
 						st.Number("column", pos.columnIndex + 1);
 						st.String("source", source.uri.value);
@@ -174,6 +170,7 @@ namespace cflat.debug
 					using (var st = root.Object)
 					{
 						sb.Clear();
+						sb.Append("native ");
 						self.vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
 						st.String("name", sb.ToString());
 					}
