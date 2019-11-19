@@ -3,7 +3,7 @@ using System.Text;
 
 namespace cflat
 {
-	internal static class VirtualMachineHelper
+	public static class VirtualMachineHelper
 	{
 		public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 		{

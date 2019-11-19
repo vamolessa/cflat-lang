@@ -4,8 +4,8 @@ namespace cflat
 {
 	public interface IDebugger
 	{
-		void OnGetSources(Buffer<Source> sources);
-		void OnDebugHook(VirtualMachine vm);
+		void Reset(VirtualMachine vm, Buffer<Source> sources);
+		void OnDebugHook();
 	}
 
 	public readonly struct SourcePosition
@@ -40,6 +40,7 @@ namespace cflat
 
 		private readonly BreakCallback onBreak;
 		private Buffer<SourcePosition> breakpoints = new Buffer<SourcePosition>(8);
+		private VirtualMachine vm;
 		private Buffer<Source> sources = new Buffer<Source>();
 		private SourcePosition lastPosition = new SourcePosition();
 
@@ -62,12 +63,13 @@ namespace cflat
 			breakpoints.PushBack(breakpoint);
 		}
 
-		public void OnGetSources(Buffer<Source> sources)
+		public void Reset(VirtualMachine vm, Buffer<Source> sources)
 		{
+			this.vm = vm;
 			this.sources = sources;
 		}
 
-		public void OnDebugHook(VirtualMachine vm)
+		public void OnDebugHook()
 		{
 			if (onBreak == null)
 				return;

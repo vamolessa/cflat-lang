@@ -463,7 +463,7 @@ namespace cflat
 					{
 						vm.memory = memory;
 						vm.callFrameStack.buffer[vm.callFrameStack.count - 1].codeIndex = codeIndex;
-						vm.debugger.value.OnDebugHook(vm);
+						vm.debugger.value.OnDebugHook();
 					}
 					break;
 				case Instruction.DebugPushFrame:

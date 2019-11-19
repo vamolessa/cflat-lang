@@ -35,7 +35,7 @@ namespace cflat
 				vm.Load(chunk);
 
 			if (vm.debugger.isSome)
-				vm.debugger.value.OnGetSources(compiler.compiledSources);
+				vm.debugger.value.Reset(vm, compiler.compiledSources);
 
 			return errors;
 		}
@@ -49,7 +49,7 @@ namespace cflat
 				vm.Load(chunk);
 
 			if (vm.debugger.isSome)
-				vm.debugger.value.OnGetSources(compiler.compiledSources);
+				vm.debugger.value.Reset(vm, compiler.compiledSources);
 
 			return errors;
 		}

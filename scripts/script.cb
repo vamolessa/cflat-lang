@@ -2,3 +2,4 @@ fn main() {
 	let a.asd = 3 + 4
 	print a
 }
+
