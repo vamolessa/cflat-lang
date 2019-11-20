@@ -13,6 +13,7 @@ namespace cflat.debug
 
 			root.String("/execution/poll", "poll execution state");
 			root.String("/execution/continue", "resume execution");
+			root.String("/execution/step", "step execution");
 			root.String("/execution/pause", "pause execution");
 			root.String("/execution/stop", "stop debug server");
 
@@ -27,18 +28,38 @@ namespace cflat.debug
 		public static void ExecutionPoll(this DebugServer self, NameValueCollection query, JsonWriter writer)
 		{
 			using var root = writer.Object;
-			root.Boolean("paused", self.paused);
+			var execution = self.execution switch
+			{
+				DebugServer.Execution.Continuing =>
+					nameof(DebugServer.Execution.Continuing),
+				DebugServer.Execution.Stepping =>
+					nameof(DebugServer.Execution.Stepping),
+				DebugServer.Execution.ExternalPaused =>
+					nameof(DebugServer.Execution.ExternalPaused),
+				DebugServer.Execution.BreakpointPaused =>
+					nameof(DebugServer.Execution.BreakpointPaused),
+				DebugServer.Execution.StepPaused =>
+					nameof(DebugServer.Execution.StepPaused),
+				_ => "",
+			};
+			root.String("execution", execution);
 		}
 
 		public static void ExecutionContinue(this DebugServer self, NameValueCollection query, JsonWriter writer)
 		{
-			self.paused = false;
+			self.execution = DebugServer.Execution.Continuing;
+			self.ExecutionPoll(query, writer);
+		}
+
+		public static void ExecutionStep(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		{
+			self.execution = DebugServer.Execution.Stepping;
 			self.ExecutionPoll(query, writer);
 		}
 
 		public static void ExecutionPause(this DebugServer self, NameValueCollection query, JsonWriter writer)
 		{
-			self.paused = true;
+			self.execution = DebugServer.Execution.ExternalPaused;
 			self.ExecutionPoll(query, writer);
 		}
 
@@ -64,12 +85,11 @@ namespace cflat.debug
 
 		public static void BreakpointsSet(this DebugServer self, NameValueCollection query, JsonWriter writer)
 		{
+			using var root = writer.Array;
+
 			var uri = query["source"].Replace('.', '/');
 			if (string.IsNullOrEmpty(uri))
-			{
-				self.BreakpointsAll(query, writer);
 				return;
-			}
 
 			var lines = query["lines"].Split(',');
 
@@ -88,10 +108,10 @@ namespace cflat.debug
 						new Uri(uri),
 						(ushort)lineNumber
 					));
+
+					root.Number(lineNumber);
 				}
 			}
-
-			self.BreakpointsAll(query, writer);
 		}
 
 		public static void Values(this DebugServer self, NameValueCollection query, JsonWriter writer)

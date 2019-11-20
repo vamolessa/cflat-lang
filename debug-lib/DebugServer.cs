@@ -5,6 +5,15 @@ namespace cflat.debug
 {
 	public sealed class DebugServer : IDebugger, IRequestHandler
 	{
+		public enum Execution
+		{
+			Continuing,
+			Stepping,
+			ExternalPaused,
+			BreakpointPaused,
+			StepPaused,
+		}
+
 		public const int DefaultPort = 4747;
 
 		internal VirtualMachine vm;
@@ -14,7 +23,7 @@ namespace cflat.debug
 		private SourcePosition lastPosition = new SourcePosition();
 
 		internal Buffer<SourcePosition> breakpoints = new Buffer<SourcePosition>();
-		internal bool paused = false;
+		internal Execution execution = Execution.ExternalPaused;
 
 		public DebugServer(int port)
 		{
@@ -23,12 +32,13 @@ namespace cflat.debug
 
 		public void Start()
 		{
-			paused = true;
+			execution = Execution.ExternalPaused;
 			server.Start();
 		}
 
 		public void ExecutionStop()
 		{
+			execution = Execution.ExternalPaused;
 			server.Stop();
 		}
 
@@ -52,43 +62,72 @@ namespace cflat.debug
 			var line = (ushort)(FormattingHelper.GetLineAndColumn(source.content, sourceSlice.index).lineIndex + 1);
 			var position = new SourcePosition(source.uri, line);
 
-			lock (this)
+			switch (execution)
 			{
-				for (var i = 0; i < breakpoints.count; i++)
+			case Execution.Continuing:
+				lock (this)
 				{
-					var breakpoint = breakpoints.buffer[i];
-					if (
-						(lastPosition.uri.value != position.uri.value ||
-							lastPosition.line != breakpoint.line) &&
-						position.line == breakpoint.line
-					)
+					for (var i = 0; i < breakpoints.count; i++)
 					{
-						paused = true;
-						break;
+						var breakpoint = breakpoints.buffer[i];
+						var wasOnBreakpoint =
+							lastPosition.uri.value == position.uri.value &&
+							lastPosition.line == breakpoint.line;
+
+						if (!wasOnBreakpoint && position.line == breakpoint.line)
+						{
+							execution = Execution.BreakpointPaused;
+							break;
+						}
 					}
 				}
+				break;
+			case Execution.Stepping:
+				if (lastPosition.uri.value != position.uri.value || lastPosition.line != position.line)
+				{
+					execution = Execution.StepPaused;
+					break;
+				}
+				break;
+			case Execution.ExternalPaused:
+			case Execution.BreakpointPaused:
+			case Execution.StepPaused:
+				while (true)
+				{
+					lock (this)
+					{
+						if (execution != Execution.ExternalPaused)
+							break;
+					}
+
+					Thread.Sleep(1000);
+				}
+				break;
 			}
 
 			lastPosition = position;
-
-			while (true)
-			{
-				lock (this)
-				{
-					if (paused)
-						break;
-				}
-
-				Thread.Sleep(1000);
-			}
 		}
 
 		void IRequestHandler.OnRequest(string uriLocalPath, NameValueCollection query, JsonWriter writer)
 		{
+			var sb = new System.Text.StringBuilder();
+			sb.AppendLine(uriLocalPath);
+			foreach (var key in query.AllKeys)
+			{
+				sb.Append("> ");
+				sb.Append(key);
+				sb.Append(": ");
+				sb.Append(query[key]);
+				sb.AppendLine();
+			}
+			sb.AppendLine("--\n");
+			System.Console.Write(sb);
+
 			switch (uriLocalPath)
 			{
 			case "/execution/poll": this.ExecutionPoll(query, writer); break;
 			case "/execution/continue": this.ExecutionContinue(query, writer); break;
+			case "/execution/step": this.ExecutionStep(query, writer); break;
 			case "/execution/pause": this.ExecutionPause(query, writer); break;
 			case "/execution/stop": this.ExecutionStop(); break;
 
