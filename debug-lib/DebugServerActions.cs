@@ -87,7 +87,7 @@ namespace cflat.debug
 		{
 			using var root = writer.Array;
 
-			var uri = query["source"];
+			var uri = query["source"].Replace("\\", "/");
 			if (string.IsNullOrEmpty(uri))
 				return;
 
@@ -117,6 +117,8 @@ namespace cflat.debug
 		public static void Values(this DebugServer self, NameValueCollection query, JsonWriter writer)
 		{
 			using var root = writer.Array;
+			if (self.vm == null)
+				return;
 
 			var topCallFrame = self.vm.callFrameStack.buffer[self.vm.callFrameStack.count - 1];
 			if (topCallFrame.type != CallFrame.Type.Function)
@@ -157,7 +159,19 @@ namespace cflat.debug
 		{
 			using var root = writer.Array;
 			if (self.vm == null)
+			{
+				using var st = root.Object;
+
+				if (self.breakpoints.count > 0)
+				{
+					var bp = self.breakpoints.buffer[0];
+					st.String("name", bp.uri.value);
+					st.Number("line", bp.line);
+					st.Number("column", 1);
+					st.String("source", bp.uri.value);
+				}
 				return;
+			}
 
 			var sb = new StringBuilder();
 
