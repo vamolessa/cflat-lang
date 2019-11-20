@@ -87,7 +87,7 @@ namespace cflat.debug
 		{
 			using var root = writer.Array;
 
-			var uri = query["source"].Replace('.', '/');
+			var uri = query["source"];
 			if (string.IsNullOrEmpty(uri))
 				return;
 

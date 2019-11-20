@@ -30,7 +30,13 @@ namespace cflat.debug
 			server = new Server(port, this);
 		}
 
-		public void Start()
+		public void StartExecuting()
+		{
+			execution = Execution.Continuing;
+			server.Start();
+		}
+
+		public void StartPaused()
 		{
 			execution = Execution.ExternalPaused;
 			server.Start();
