@@ -1,9 +1,10 @@
 ﻿using System.Collections.Specialized;
+using System.Text;
 using System.Threading;
 
 namespace cflat.debug
 {
-	public sealed class DebugServer : IDebugger, IRequestHandler, System.IDisposable
+	public sealed class DebugServer : IDebugger, Server.IRequestHandler, System.IDisposable
 	{
 		public enum Execution
 		{
@@ -53,7 +54,7 @@ namespace cflat.debug
 			server.Start();
 		}
 
-		public void ExecutionStop()
+		public void Stop()
 		{
 			execution = Execution.ExternalPaused;
 			server.Stop();
@@ -99,7 +100,7 @@ namespace cflat.debug
 					{
 						var breakpoint = breakpoints.buffer[i];
 						var wasOnBreakpoint =
-							lastPosition.uri.value == position.uri.value &&
+							//lastPosition.uri.value == position.uri.value &&
 							lastPosition.line == breakpoint.line;
 
 						if (!wasOnBreakpoint && position.line == breakpoint.line)
@@ -136,39 +137,55 @@ namespace cflat.debug
 			lastPosition = position;
 		}
 
-		void IRequestHandler.OnRequest(string uriLocalPath, NameValueCollection query, JsonWriter writer)
+		Server.ResponseType Server.IRequestHandler.OnRequest(string uriLocalPath, NameValueCollection query, StringBuilder sb)
 		{
-			var sb = new System.Text.StringBuilder();
-			sb.AppendLine(uriLocalPath);
+			var debugSb = new System.Text.StringBuilder();
+			debugSb.AppendLine(uriLocalPath);
 			foreach (var key in query.AllKeys)
 			{
-				sb.Append("> ");
-				sb.Append(key);
-				sb.Append(": ");
-				sb.Append(query[key]);
-				sb.AppendLine();
+				debugSb.Append("> ");
+				debugSb.Append(key);
+				debugSb.Append(": ");
+				debugSb.Append(query[key]);
+				debugSb.AppendLine();
 			}
-			sb.AppendLine("--\n");
-			System.Console.Write(sb);
+			debugSb.AppendLine("--\n");
+			System.Console.Write(debugSb);
 
-			switch (uriLocalPath)
+			return uriLocalPath switch
 			{
-			case "/execution/poll": this.ExecutionPoll(query, writer); break;
-			case "/execution/continue": this.ExecutionContinue(query, writer); break;
-			case "/execution/step": this.ExecutionStep(query, writer); break;
-			case "/execution/pause": this.ExecutionPause(query, writer); break;
-			case "/execution/stop": this.ExecutionStop(); break;
+				"/execution/poll" =>
+					this.ExecutionPoll(query, sb),
+				"/execution/continue" =>
+					this.ExecutionContinue(query, sb),
+				"/execution/step" =>
+					this.ExecutionStep(query, sb),
+				"/execution/pause" =>
+					this.ExecutionPause(query, sb),
+				"/execution/stop" =>
+					this.ExecutionStop(query, sb),
 
-			case "/breakpoints/list": this.BreakpointsAll(query, writer); break;
-			case "/breakpoints/clear": this.BreakpointsClear(query, writer); break;
-			case "/breakpoints/set": this.BreakpointsSet(query, writer); break;
+				"/breakpoints/list" =>
+					this.BreakpointsAll(query, sb),
+				"/breakpoints/clear" =>
+					this.BreakpointsClear(query, sb),
+				"/breakpoints/set" =>
+					this.BreakpointsSet(query, sb),
 
-			case "/values/stack": this.Values(query, writer); break;
+				"/values/stack" =>
+					this.Values(query, sb),
 
-			case "/stacktrace": this.Stacktrace(query, writer); break;
+				"/stacktrace" =>
+					this.Stacktrace(query, sb),
 
-			default: this.Help(query, writer); break;
-			}
+				"/sources/list" =>
+					this.SourcesList(query, sb),
+				"/sources/content" =>
+					this.SourcesContent(query, sb),
+
+				_ =>
+					this.Help(query, sb),
+			};
 		}
 	}
 }

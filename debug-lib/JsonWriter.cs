@@ -2,7 +2,7 @@ using System.Text;
 
 namespace cflat.debug
 {
-	public readonly struct JsonWriter
+	public readonly struct JsonWriter : System.IDisposable
 	{
 		public readonly struct ObjectScope : System.IDisposable
 		{
@@ -61,7 +61,7 @@ namespace cflat.debug
 				return new ArrayScope(sb);
 			}
 
-			public void Dispose()
+			void System.IDisposable.Dispose()
 			{
 				if (sb[sb.Length - 1] == ',')
 					sb.Remove(sb.Length - 1, 1);
@@ -105,7 +105,7 @@ namespace cflat.debug
 				get { return new ArrayScope(sb); }
 			}
 
-			public void Dispose()
+			void System.IDisposable.Dispose()
 			{
 				if (sb[sb.Length - 1] == ',')
 					sb.Remove(sb.Length - 1, 1);
@@ -115,14 +115,15 @@ namespace cflat.debug
 
 		private readonly StringBuilder sb;
 
-		public static JsonWriter New()
-		{
-			return new JsonWriter(new StringBuilder());
-		}
-
 		public JsonWriter(StringBuilder sb)
 		{
 			this.sb = sb;
+		}
+
+		void System.IDisposable.Dispose()
+		{
+			if (sb[sb.Length - 1] == ',')
+				sb.Remove(sb.Length - 1, 1);
 		}
 
 		public override string ToString()

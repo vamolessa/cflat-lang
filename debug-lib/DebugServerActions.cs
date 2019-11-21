@@ -5,8 +5,9 @@ namespace cflat.debug
 {
 	internal static class DebugServerActions
 	{
-		public static void Help(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType Help(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
+			using var writer = new JsonWriter(sb);
 			using var root = writer.Object;
 
 			root.String("/", "show this help");
@@ -19,16 +20,22 @@ namespace cflat.debug
 
 			root.String("/breakpoints/list", "list all breakpoints of all sources");
 			root.String("/breakpoints/clear", "clear all breakpoints of all sources");
-			root.String("/breakpoints/set?source=dot.separated.source.uri&lines=1,2,42,999", "set all breakpoints for a single source");
+			root.String("/breakpoints/set?path=source/path&lines=1,2,42,999", "set all breakpoints for a single source");
 
 			root.String("/values/stack", "list values on the stack");
 
 			root.String("/stacktrace", "query the stacktrace");
+
+			root.String("/sources/list", "list all loaded sources");
+			root.String("/sources/content?uri=source/uri", "list all loaded sources");
+			return Server.ResponseType.Json;
 		}
 
-		public static void ExecutionPoll(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType ExecutionPoll(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
+			using var writer = new JsonWriter(sb);
 			using var root = writer.Object;
+
 			var execution = self.execution switch
 			{
 				DebugServer.Execution.Continuing =>
@@ -44,28 +51,36 @@ namespace cflat.debug
 				_ => "",
 			};
 			root.String("execution", execution);
+			return Server.ResponseType.Json;
 		}
 
-		public static void ExecutionContinue(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType ExecutionContinue(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
 			self.execution = DebugServer.Execution.Continuing;
-			self.ExecutionPoll(query, writer);
+			return self.ExecutionPoll(query, sb);
 		}
 
-		public static void ExecutionStep(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType ExecutionStep(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
 			self.execution = DebugServer.Execution.Stepping;
-			self.ExecutionPoll(query, writer);
+			return self.ExecutionPoll(query, sb);
 		}
 
-		public static void ExecutionPause(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType ExecutionPause(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
 			self.execution = DebugServer.Execution.ExternalPaused;
-			self.ExecutionPoll(query, writer);
+			return self.ExecutionPoll(query, sb);
 		}
 
-		public static void BreakpointsAll(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType ExecutionStop(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
+			self.Stop();
+			return Server.ResponseType.Text;
+		}
+
+		public static Server.ResponseType BreakpointsAll(this DebugServer self, NameValueCollection query, StringBuilder sb)
+		{
+			using var writer = new JsonWriter(sb);
 			using var root = writer.Array;
 
 			for (var i = 0; i < self.breakpoints.count; i++)
@@ -76,28 +91,33 @@ namespace cflat.debug
 				b.String("source", breakpoint.uri.value);
 				b.Number("line", breakpoint.line);
 			}
+
+			return Server.ResponseType.Json;
 		}
 
-		public static void BreakpointsClear(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType BreakpointsClear(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
 			self.breakpoints.count = 0;
-			self.BreakpointsAll(query, writer);
+			return self.BreakpointsAll(query, sb);
 		}
 
-		public static void BreakpointsSet(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType BreakpointsSet(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
+			using var writer = new JsonWriter(sb);
 			using var root = writer.Array;
 
-			var uri = query["source"].Replace("\\", "/");
-			if (string.IsNullOrEmpty(uri))
-				return;
+			var path = query["path"];
+			if (string.IsNullOrEmpty(path))
+				return Server.ResponseType.Json;
+
+			path = path.Replace("\\", "/");
 
 			var lines = query["lines"].Split(',');
 
 			for (var i = self.breakpoints.count - 1; i >= 0; i--)
 			{
 				var breakpoint = self.breakpoints.buffer[i];
-				if (breakpoint.uri.value == uri)
+				if (breakpoint.uri.value == path)
 					self.breakpoints.SwapRemove(i);
 			}
 
@@ -106,24 +126,28 @@ namespace cflat.debug
 				if (int.TryParse(line, out var lineNumber))
 				{
 					self.breakpoints.PushBack(new SourcePosition(
-						new Uri(uri),
+						new Uri(path),
 						(ushort)lineNumber
 					));
 
 					root.Number(lineNumber);
 				}
 			}
+
+			return Server.ResponseType.Json;
 		}
 
-		public static void Values(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType Values(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
+			using var writer = new JsonWriter(sb);
 			using var root = writer.Array;
+
 			if (self.vm == null)
-				return;
+				return Server.ResponseType.Json;
 
 			var topCallFrame = self.vm.callFrameStack.buffer[self.vm.callFrameStack.count - 1];
 			if (topCallFrame.type != CallFrame.Type.Function)
-				return;
+				return Server.ResponseType.Json;
 
 			var topDebugFrame = self.vm.debugData.frameStack.buffer[self.vm.debugData.frameStack.count - 1];
 			var stackTypesBaseIndex = topDebugFrame.stackTypesBaseIndex + 1;
@@ -134,7 +158,7 @@ namespace cflat.debug
 			);
 			var stackIndex = topCallFrame.baseStackIndex;
 
-			var sb = new StringBuilder();
+			var cache = new StringBuilder();
 
 			for (var i = 0; i < count; i++)
 			{
@@ -147,10 +171,12 @@ namespace cflat.debug
 					ref stackIndex,
 					name,
 					type,
-					sb,
+					cache,
 					variable
 				);
 			}
+
+			return Server.ResponseType.Json;
 		}
 
 		private static void Value(VirtualMachine vm, ref int index, string name, ValueType type, StringBuilder sb, JsonWriter.ObjectScope writer)
@@ -231,13 +257,15 @@ namespace cflat.debug
 			}
 		}
 
-		public static void Stacktrace(this DebugServer self, NameValueCollection query, JsonWriter writer)
+		public static Server.ResponseType Stacktrace(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
+			using var writer = new JsonWriter(sb);
 			using var root = writer.Array;
-			if (self.vm == null)
-				return;
 
-			var sb = new StringBuilder();
+			if (self.vm == null)
+				return Server.ResponseType.Json;
+
+			var cache = new StringBuilder();
 
 			for (var i = self.vm.callFrameStack.count - 1; i >= 0; i--)
 			{
@@ -251,30 +279,70 @@ namespace cflat.debug
 					using (var st = root.Object)
 					{
 						var codeIndex = System.Math.Max(callframe.codeIndex - 1, 0);
-						var sourceIndex = self.vm.chunk.sourceSlices.buffer[codeIndex].index;
-						var source = self.sources.buffer[self.vm.chunk.FindSourceIndex(codeIndex)];
+						var sourceContentIndex = self.vm.chunk.sourceSlices.buffer[codeIndex].index;
+						var sourceNumber = self.vm.chunk.FindSourceIndex(codeIndex);
+						var source = self.sources.buffer[sourceNumber];
 						var pos = FormattingHelper.GetLineAndColumn(
 							source.content,
-							sourceIndex
+							sourceContentIndex
 						);
 
-						st.String("name", source.uri.value);
+						cache.Clear();
+						self.vm.chunk.FormatFunction(callframe.functionIndex, cache);
+						st.String("name", cache.ToString());
 						st.Number("line", pos.lineIndex + 1);
 						st.Number("column", pos.columnIndex + 1);
-						st.String("source", source.uri.value);
+						st.String("sourceUri", source.uri.value);
+						st.Number("sourceNumber", sourceNumber + 1);
 					}
 					break;
 				case CallFrame.Type.NativeFunction:
 					using (var st = root.Object)
 					{
-						sb.Clear();
-						sb.Append("native ");
-						self.vm.chunk.FormatNativeFunction(callframe.functionIndex, sb);
-						st.String("name", sb.ToString());
+						cache.Clear();
+						cache.Append("native ");
+						self.vm.chunk.FormatNativeFunction(callframe.functionIndex, cache);
+						st.String("name", cache.ToString());
 					}
 					break;
 				}
 			}
+
+			return Server.ResponseType.Json;
+		}
+
+		public static Server.ResponseType SourcesList(this DebugServer self, NameValueCollection query, StringBuilder sb)
+		{
+			using var writer = new JsonWriter(sb);
+			using var root = writer.Array;
+			for (var i = 0; i < self.sources.count; i++)
+			{
+				var source = self.sources.buffer[i];
+				root.String(source.uri.value);
+			}
+
+			return Server.ResponseType.Json;
+		}
+
+		public static Server.ResponseType SourcesContent(this DebugServer self, NameValueCollection query, StringBuilder sb)
+		{
+			var sourceUri = query["uri"];
+			if (string.IsNullOrEmpty(sourceUri))
+				return Server.ResponseType.Text;
+
+			var uri = new Uri(sourceUri);
+
+			for (var i = 0; i < self.sources.count; i++)
+			{
+				var source = self.sources.buffer[i];
+				if (source.uri.value == uri.value)
+				{
+					sb.Append(source.content);
+					break;
+				}
+			}
+
+			return Server.ResponseType.Text;
 		}
 	}
 }

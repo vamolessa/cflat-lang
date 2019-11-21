@@ -23,10 +23,15 @@ public static class Interpreter
 		var filename = Path.GetFileNameWithoutExtension(sourcePath);
 		var source = new Source(new Uri(filename), sourceContent);
 
+		/*
 		var debugger = new EmbeddedDebugger((s, v) =>
 		{
 			EmbeddedDebugger.Break();
 		});
+		/*/
+		var debugger = new DebugServer(DebugServer.DefaultPort);
+		debugger.StartPaused();
+		//*/
 
 		var cflat = new CFlat();
 		cflat.SetDebugger(debugger);

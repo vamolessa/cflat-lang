@@ -1,17 +1,24 @@
 using System.Collections.Specialized;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Threading;
 
 namespace cflat.debug
 {
-	public interface IRequestHandler
-	{
-		void OnRequest(string uriLocalPath, NameValueCollection query, JsonWriter writer);
-	}
-
 	public sealed class Server
 	{
+		public enum ResponseType
+		{
+			Text,
+			Json,
+		}
+
+		public interface IRequestHandler
+		{
+			ResponseType OnRequest(string uriLocalPath, NameValueCollection query, StringBuilder sb);
+		}
+
 		private readonly HttpListener server;
 		private readonly Thread thread;
 		private readonly IRequestHandler handler;
@@ -61,16 +68,22 @@ namespace cflat.debug
 			{
 				var context = server.EndGetContext(result);
 
-				var json = JsonWriter.New();
+				var sb = new StringBuilder();
+				ResponseType responseType;
 				lock (handler)
 				{
-					handler.OnRequest(context.Request.Url.LocalPath, context.Request.QueryString, json);
+					responseType = handler.OnRequest(context.Request.Url.LocalPath, context.Request.QueryString, sb);
 				}
 
 				var response = context.Response;
-				response.ContentType = "application/json";
+				response.ContentType = responseType switch
+				{
+					ResponseType.Text => "text/plain",
+					ResponseType.Json => "application/json",
+					_ => ""
+				};
 				var writer = new StreamWriter(response.OutputStream);
-				writer.Write(json.ToString());
+				writer.Write(sb.ToString());
 				writer.Flush();
 
 				context.Response.Close();
