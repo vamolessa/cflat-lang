@@ -1,6 +1,7 @@
 using System.IO;
 using Stopwatch = System.Diagnostics.Stopwatch;
 using cflat;
+using cflat.debug;
 
 public static class Interpreter
 {
@@ -22,11 +23,8 @@ public static class Interpreter
 		var filename = Path.GetFileNameWithoutExtension(sourcePath);
 		var source = new Source(new Uri(filename), sourceContent);
 
-		var debugger = new Debugger((breakpoint, vars) =>
-		{
-			Debugger.Break();
-		});
-		debugger.AddBreakpoint(new SourcePosition(source.uri, 3));
+		using var debugger = new DebugServer(DebugServer.DefaultPort);
+		debugger.StartPaused();
 
 		var cflat = new CFlat();
 		cflat.SetDebugger(debugger);

@@ -5,7 +5,7 @@ namespace cflat
 {
 	public static class VirtualMachineHelper
 	{
-		public static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
+		internal static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 		{
 			if (type.IsReference)
 			{

@@ -3,7 +3,7 @@ using System.Threading;
 
 namespace cflat.debug
 {
-	public sealed class DebugServer : IDebugger, IRequestHandler
+	public sealed class DebugServer : IDebugger, IRequestHandler, System.IDisposable
 	{
 		public enum Execution
 		{
@@ -24,6 +24,17 @@ namespace cflat.debug
 
 		internal Buffer<SourcePosition> breakpoints = new Buffer<SourcePosition>();
 		internal Execution execution = Execution.ExternalPaused;
+
+		public bool IsPaused
+		{
+			get
+			{
+				return
+					execution == Execution.ExternalPaused ||
+					execution == Execution.BreakpointPaused ||
+					execution == Execution.StepPaused;
+			}
+		}
 
 		public DebugServer(int port)
 		{
@@ -48,6 +59,11 @@ namespace cflat.debug
 			server.Stop();
 		}
 
+		void System.IDisposable.Dispose()
+		{
+			server.Stop();
+		}
+
 		void IDebugger.Reset(VirtualMachine vm, Buffer<Source> sources)
 		{
 			this.vm = vm;
@@ -68,7 +84,13 @@ namespace cflat.debug
 			var line = (ushort)(FormattingHelper.GetLineAndColumn(source.content, sourceSlice.index).lineIndex + 1);
 			var position = new SourcePosition(source.uri, line);
 
-			switch (execution)
+			Execution ex;
+			lock (this)
+			{
+				ex = execution;
+			}
+
+			switch (ex)
 			{
 			case Execution.Continuing:
 				lock (this)
@@ -91,24 +113,24 @@ namespace cflat.debug
 			case Execution.Stepping:
 				if (lastPosition.uri.value != position.uri.value || lastPosition.line != position.line)
 				{
-					execution = Execution.StepPaused;
+					lock (this)
+					{
+						execution = Execution.StepPaused;
+					}
 					break;
 				}
 				break;
-			case Execution.ExternalPaused:
-			case Execution.BreakpointPaused:
-			case Execution.StepPaused:
-				while (true)
-				{
-					lock (this)
-					{
-						if (execution != Execution.ExternalPaused)
-							break;
-					}
+			}
 
-					Thread.Sleep(1000);
+			while (true)
+			{
+				lock (this)
+				{
+					if (!IsPaused)
+						break;
 				}
-				break;
+
+				Thread.Sleep(1000);
 			}
 
 			lastPosition = position;
@@ -137,11 +159,12 @@ namespace cflat.debug
 			case "/execution/pause": this.ExecutionPause(query, writer); break;
 			case "/execution/stop": this.ExecutionStop(); break;
 
-			case "/breakpoints/all": this.BreakpointsAll(query, writer); break;
+			case "/breakpoints/list": this.BreakpointsAll(query, writer); break;
 			case "/breakpoints/clear": this.BreakpointsClear(query, writer); break;
 			case "/breakpoints/set": this.BreakpointsSet(query, writer); break;
 
-			case "/values": this.Values(query, writer); break;
+			case "/values/stack": this.Values(query, writer); break;
+
 			case "/stacktrace": this.Stacktrace(query, writer); break;
 
 			default: this.Help(query, writer); break;

@@ -17,11 +17,12 @@ namespace cflat.debug
 			root.String("/execution/pause", "pause execution");
 			root.String("/execution/stop", "stop debug server");
 
-			root.String("/breakpoints/all", "list all breakpoints of all sources");
+			root.String("/breakpoints/list", "list all breakpoints of all sources");
 			root.String("/breakpoints/clear", "clear all breakpoints of all sources");
 			root.String("/breakpoints/set?source=dot.separated.source.uri&lines=1,2,42,999", "set all breakpoints for a single source");
 
-			root.String("/values?myvar.field", "query values on the stack");
+			root.String("/values/stack", "list values on the stack");
+
 			root.String("/stacktrace", "query the stacktrace");
 		}
 
@@ -137,21 +138,96 @@ namespace cflat.debug
 
 			for (var i = 0; i < count; i++)
 			{
-				var type = self.vm.debugData.stackTypes.buffer[stackTypesBaseIndex + i];
 				var name = self.vm.debugData.stackNames.buffer[topDebugFrame.stackNamesBaseIndex + i];
+				var type = self.vm.debugData.stackTypes.buffer[stackTypesBaseIndex + i];
 
 				using var variable = root.Object;
-				variable.String("name", name);
+				Value(
+					self.vm,
+					ref stackIndex,
+					name,
+					type,
+					sb,
+					variable
+				);
+			}
+		}
 
-				sb.Clear();
-				type.Format(self.vm.chunk, sb);
-				variable.String("type", sb.ToString());
+		private static void Value(VirtualMachine vm, ref int index, string name, ValueType type, StringBuilder sb, JsonWriter.ObjectScope writer)
+		{
+			writer.String("name", name);
 
-				sb.Clear();
-				VirtualMachineHelper.ValueToString(self.vm, stackIndex, type, sb);
-				variable.String("value", sb.ToString());
+			sb.Clear();
+			type.Format(vm.chunk, sb);
+			var typeString = sb.ToString();
+			writer.String("type", typeString);
 
-				stackIndex += type.GetSize(self.vm.chunk);
+			var value = vm.memory.values[index];
+			var valueString = type.kind switch
+			{
+				TypeKind.Unit => "{}",
+				TypeKind.Bool => value.asBool ? "true" : "false",
+				TypeKind.Int => value.asInt.ToString(),
+				TypeKind.Float => value.asFloat.ToString(),
+				TypeKind.String => vm.nativeObjects.buffer[value.asInt].ToString(),
+				TypeKind.Function => vm.chunk.functions.buffer[value.asInt].name,
+				TypeKind.NativeFunction => vm.chunk.nativeFunctions.buffer[value.asInt].name,
+				TypeKind.Tuple => typeString,
+				TypeKind.Struct => typeString,
+				TypeKind.NativeClass => vm.nativeObjects.buffer[vm.memory.values[index].asInt].ToString(),
+				_ => "",
+			};
+
+			writer.String("value", valueString);
+			writer.Number("index", index);
+
+			using var children = writer.Array("children");
+			switch (type.kind)
+			{
+			case TypeKind.Struct:
+				{
+					var structType = vm.chunk.structTypes.buffer[type.index];
+					for (var i = 0; i < structType.fields.length; i++)
+					{
+						using var child = children.Object;
+						var field = vm.chunk.structTypeFields.buffer[structType.fields.index + i];
+						Value(
+							vm,
+							ref index,
+							field.name,
+							field.type,
+							sb,
+							child
+						);
+					}
+				}
+				break;
+			case TypeKind.Tuple:
+				{
+					var tupleType = vm.chunk.tupleTypes.buffer[type.index];
+					for (var i = 0; i < tupleType.elements.length; i++)
+					{
+						using var child = children.Object;
+						var elementType = vm.chunk.tupleElementTypes.buffer[tupleType.elements.index + i];
+
+						sb.Clear();
+						sb.Append("item ");
+						sb.Append(i);
+
+						Value(
+							vm,
+							ref index,
+							sb.ToString(),
+							elementType,
+							sb,
+							child
+						);
+					}
+				}
+				break;
+			default:
+				index += type.GetSize(vm.chunk);
+				break;
 			}
 		}
 

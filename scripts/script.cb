@@ -1,5 +1,14 @@
+struct Point {
+	x: int,
+	y: int,
+}
+
 fn main() {
-	let a.asd = 3 + 4
+	let mut p = Point {x = 12, y = 45}
+	set p.x = p.x + 1
+
+	let a = p
+
 	print a
 }
 

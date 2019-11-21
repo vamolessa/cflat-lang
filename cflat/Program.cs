@@ -8,12 +8,6 @@ public static class Program
 {
 	public static void Main(string[] args)
 	{
-		var server = new cflat.debug.DebugServer(cflat.debug.DebugServer.DefaultPort);
-		server.StartPaused();
-		ConsoleHelper.Write("SERVER STARTED\n");
-		while (true)
-			System.Threading.Thread.Sleep(1000);
-
 		if (args.Length == 0)
 		{
 			Repl.Start();
