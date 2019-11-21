@@ -159,19 +159,7 @@ namespace cflat.debug
 		{
 			using var root = writer.Array;
 			if (self.vm == null)
-			{
-				using var st = root.Object;
-
-				if (self.breakpoints.count > 0)
-				{
-					var bp = self.breakpoints.buffer[0];
-					st.String("name", bp.uri.value);
-					st.Number("line", bp.line);
-					st.Number("column", 1);
-					st.String("source", bp.uri.value);
-				}
 				return;
-			}
 
 			var sb = new StringBuilder();
 
