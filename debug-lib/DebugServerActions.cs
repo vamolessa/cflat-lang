@@ -104,20 +104,35 @@ namespace cflat.debug
 		public static Server.ResponseType BreakpointsSet(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
 			using var writer = new JsonWriter(sb);
-			using var root = writer.Array;
+			using var root = writer.Object;
 
 			var path = query["path"];
 			if (string.IsNullOrEmpty(path))
 				return Server.ResponseType.Json;
 
-			path = path.Replace("\\", "/");
-
 			var lines = query["lines"].Split(',');
 
+			var uri = new Uri();
+			for (var i = 0; i < self.sources.count; i++)
+			{
+				var source = self.sources.buffer[i];
+				if (path.EndsWith(source.uri.value))
+				{
+					uri = source.uri;
+					break;
+				}
+			}
+
+			if (string.IsNullOrEmpty(uri.value))
+				return Server.ResponseType.Json;
+
+			root.String("sourceUri", uri.value);
+			using var breakpoints = root.Array("breakpoints");
+			
 			for (var i = self.breakpoints.count - 1; i >= 0; i--)
 			{
 				var breakpoint = self.breakpoints.buffer[i];
-				if (breakpoint.uri.value == path)
+				if (breakpoint.uri.value == uri.value)
 					self.breakpoints.SwapRemove(i);
 			}
 
@@ -126,11 +141,11 @@ namespace cflat.debug
 				if (int.TryParse(line, out var lineNumber))
 				{
 					self.breakpoints.PushBack(new SourcePosition(
-						new Uri(path),
+						uri,
 						(ushort)lineNumber
 					));
 
-					root.Number(lineNumber);
+					breakpoints.Number(lineNumber);
 				}
 			}
 
@@ -280,8 +295,7 @@ namespace cflat.debug
 					{
 						var codeIndex = System.Math.Max(callframe.codeIndex - 1, 0);
 						var sourceContentIndex = self.vm.chunk.sourceSlices.buffer[codeIndex].index;
-						var sourceNumber = self.vm.chunk.FindSourceIndex(codeIndex);
-						var source = self.sources.buffer[sourceNumber];
+						var source = self.sources.buffer[self.vm.chunk.FindSourceIndex(codeIndex)];
 						var pos = FormattingHelper.GetLineAndColumn(
 							source.content,
 							sourceContentIndex
@@ -293,7 +307,6 @@ namespace cflat.debug
 						st.Number("line", pos.lineIndex + 1);
 						st.Number("column", pos.columnIndex + 1);
 						st.String("sourceUri", source.uri.value);
-						st.Number("sourceNumber", sourceNumber + 1);
 					}
 					break;
 				case CallFrame.Type.NativeFunction:
