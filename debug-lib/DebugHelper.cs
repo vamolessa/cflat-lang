@@ -1,11 +1,29 @@
 using System.Globalization;
 using System.Text;
 
-namespace cflat
+namespace cflat.debug
 {
-	public static class VirtualMachineHelper
+	internal static class DebugHelper
 	{
-		internal static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
+		public static void WriteValue(VirtualMachine vm, int memoryIndex, string name, ValueType type, StringBuilder sb, JsonWriter.ObjectScope writer)
+		{
+			writer.String("name", name);
+
+			sb.Clear();
+			type.Format(vm.chunk, sb);
+			writer.String("type", sb.ToString());
+
+			sb.Clear();
+			DebugHelper.ValueToString(
+				vm,
+				memoryIndex,
+				type,
+				sb
+			);
+			writer.String("value", sb.ToString());
+		}
+
+		private static void ValueToString(VirtualMachine vm, int index, ValueType type, StringBuilder sb)
 		{
 			if (type.IsReference)
 			{
@@ -74,54 +92,9 @@ namespace cflat
 					return;
 				}
 			case TypeKind.Tuple:
-				{
-					if (type.index >= vm.chunk.tupleTypes.count)
-					{
-						sb.Append("<!>");
-						return;
-					}
-
-					var tupleType = vm.chunk.tupleTypes.buffer[type.index];
-					sb.Append('{');
-					var offset = 0;
-					for (var i = 0; i < tupleType.elements.length; i++)
-					{
-						var elementIndex = tupleType.elements.index + i;
-						var elementType = vm.chunk.tupleElementTypes.buffer[elementIndex];
-						ValueToString(vm, index + offset, elementType, sb);
-						if (i < tupleType.elements.length - 1)
-							sb.Append(',');
-
-						offset += elementType.GetSize(vm.chunk);
-					}
-					sb.Append('}');
-					return;
-				}
 			case TypeKind.Struct:
 				{
-					if (type.index >= vm.chunk.structTypes.count)
-					{
-						sb.Append("<!>");
-						return;
-					}
-
-					var structType = vm.chunk.structTypes.buffer[type.index];
-					sb.Append(structType.name);
-					sb.Append('{');
-					var offset = 0;
-					for (var i = 0; i < structType.fields.length; i++)
-					{
-						var fieldIndex = structType.fields.index + i;
-						var field = vm.chunk.structTypeFields.buffer[fieldIndex];
-						sb.Append(field.name);
-						sb.Append('=');
-						ValueToString(vm, index + offset, field.type, sb);
-						if (i < structType.fields.length - 1)
-							sb.Append(',');
-
-						offset += field.type.GetSize(vm.chunk);
-					}
-					sb.Append('}');
+					type.Format(vm.chunk, sb);
 					return;
 				}
 			case TypeKind.NativeClass:
@@ -144,35 +117,6 @@ namespace cflat
 				sb.Append("<!>");
 				return;
 			}
-		}
-
-		public static void TraceStack(VirtualMachine vm, StringBuilder sb)
-		{
-			sb.Append("          ");
-
-			var valueIndex = 0;
-			var typeIndex = 0;
-			while (valueIndex < vm.memory.stackCount)
-			{
-				sb.Append("[");
-				if (typeIndex < vm.debugData.stackTypes.count)
-				{
-					var type = vm.debugData.stackTypes.buffer[typeIndex++];
-					ValueToString(vm, valueIndex, type, sb);
-					valueIndex += type.GetSize(vm.chunk);
-				}
-				else
-				{
-					sb.Append("?");
-					valueIndex += 1;
-				}
-				sb.Append("]");
-			}
-
-			for (var i = typeIndex; i < vm.debugData.stackTypes.count; i++)
-				sb.Append("[+]");
-
-			sb.AppendLine();
 		}
 	}
 }

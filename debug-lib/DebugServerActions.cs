@@ -128,7 +128,7 @@ namespace cflat.debug
 
 			root.String("sourceUri", uri.value);
 			using var breakpoints = root.Array("breakpoints");
-			
+
 			for (var i = self.breakpoints.count - 1; i >= 0; i--)
 			{
 				var breakpoint = self.breakpoints.buffer[i];
@@ -155,7 +155,12 @@ namespace cflat.debug
 		public static Server.ResponseType Values(this DebugServer self, NameValueCollection query, StringBuilder sb)
 		{
 			using var writer = new JsonWriter(sb);
-			using var root = writer.Array;
+			using var root = writer.Object;
+
+			var pathString = query["path"];
+			var path = string.IsNullOrEmpty(pathString) ?
+				new string[1] :
+				pathString.Split('.');
 
 			if (self.vm == null)
 				return Server.ResponseType.Json;
@@ -173,102 +178,172 @@ namespace cflat.debug
 			);
 			var stackIndex = topCallFrame.baseStackIndex;
 
-			var cache = new StringBuilder();
+			var cacheSb = new StringBuilder();
 
-			for (var i = 0; i < count; i++)
+			if (string.IsNullOrEmpty(path[0]))
 			{
-				var name = self.vm.debugData.stackNames.buffer[topDebugFrame.stackNamesBaseIndex + i];
-				var type = self.vm.debugData.stackTypes.buffer[stackTypesBaseIndex + i];
+				using var valuesWriter = root.Array("values");
+				for (var i = 0; i < count; i++)
+				{
+					var name = self.vm.debugData.stackNames.buffer[topDebugFrame.stackNamesBaseIndex + i];
+					var type = self.vm.debugData.stackTypes.buffer[stackTypesBaseIndex + i];
 
-				using var variable = root.Object;
-				Value(
-					self.vm,
-					ref stackIndex,
-					name,
-					type,
-					cache,
-					variable
-				);
+					using var valueWriter = valuesWriter.Object;
+					path[0] = name;
+					NestedValues(
+						self.vm,
+						ref stackIndex,
+						path,
+						1,
+						type,
+						cacheSb,
+						valueWriter
+					);
+				}
+			}
+			else
+			{
+				for (var i = 0; i < count; i++)
+				{
+					var name = self.vm.debugData.stackNames.buffer[topDebugFrame.stackNamesBaseIndex + i];
+					var type = self.vm.debugData.stackTypes.buffer[stackTypesBaseIndex + i];
+
+					if (path[0] == name)
+					{
+						NestedValues(
+							self.vm,
+							ref stackIndex,
+							path,
+							1,
+							type,
+							cacheSb,
+							root
+						);
+						break;
+					}
+				}
 			}
 
 			return Server.ResponseType.Json;
 		}
 
-		private static void Value(VirtualMachine vm, ref int index, string name, ValueType type, StringBuilder sb, JsonWriter.ObjectScope writer)
+		private static void NestedValues(VirtualMachine vm, ref int memoryIndex, string[] path, int pathIndex, ValueType type, StringBuilder sb, JsonWriter.ObjectScope writer)
 		{
-			writer.String("name", name);
+			var isReferenceType = type.IsArray || type.IsReference;
 
-			sb.Clear();
-			type.Format(vm.chunk, sb);
-			var typeString = sb.ToString();
-			writer.String("type", typeString);
-
-			var value = vm.memory.values[index];
-			var valueString = type.kind switch
+			if (pathIndex < path.Length)
 			{
-				TypeKind.Unit => "{}",
-				TypeKind.Bool => value.asBool ? "true" : "false",
-				TypeKind.Int => value.asInt.ToString(),
-				TypeKind.Float => value.asFloat.ToString(),
-				TypeKind.String => vm.nativeObjects.buffer[value.asInt].ToString(),
-				TypeKind.Function => vm.chunk.functions.buffer[value.asInt].name,
-				TypeKind.NativeFunction => vm.chunk.nativeFunctions.buffer[value.asInt].name,
-				TypeKind.Tuple => typeString,
-				TypeKind.Struct => typeString,
-				TypeKind.NativeClass => vm.nativeObjects.buffer[vm.memory.values[index].asInt].ToString(),
-				_ => "",
-			};
+				if (isReferenceType)
+					return;
 
-			writer.String("value", valueString);
-			writer.Number("index", index);
-
-			using var children = writer.Array("children");
-			switch (type.kind)
-			{
-			case TypeKind.Struct:
+				var name = path[pathIndex++];
+				if (type.kind == TypeKind.Struct)
 				{
 					var structType = vm.chunk.structTypes.buffer[type.index];
 					for (var i = 0; i < structType.fields.length; i++)
 					{
-						using var child = children.Object;
 						var field = vm.chunk.structTypeFields.buffer[structType.fields.index + i];
-						Value(
-							vm,
-							ref index,
-							field.name,
-							field.type,
-							sb,
-							child
-						);
+						if (field.name == name)
+						{
+							NestedValues(
+								vm,
+								ref memoryIndex,
+								path,
+								pathIndex,
+								field.type,
+								sb,
+								writer
+							);
+							break;
+						}
+
+						memoryIndex += field.type.GetSize(vm.chunk);
 					}
 				}
-				break;
-			case TypeKind.Tuple:
+				else if (type.kind == TypeKind.Tuple)
 				{
+					if (!int.TryParse(name, out var elementIndex))
+						return;
+
 					var tupleType = vm.chunk.tupleTypes.buffer[type.index];
 					for (var i = 0; i < tupleType.elements.length; i++)
 					{
-						using var child = children.Object;
 						var elementType = vm.chunk.tupleElementTypes.buffer[tupleType.elements.index + i];
 
-						sb.Clear();
-						sb.Append("item ");
-						sb.Append(i);
+						if (elementIndex == i)
+						{
+							NestedValues(
+								vm,
+								ref memoryIndex,
+								path,
+								pathIndex,
+								elementType,
+								sb,
+								writer
+							);
+							break;
+						}
 
-						Value(
-							vm,
-							ref index,
-							sb.ToString(),
-							elementType,
-							sb,
-							child
-						);
+						memoryIndex += elementType.GetSize(vm.chunk);
 					}
 				}
-				break;
-			default:
-				index += type.GetSize(vm.chunk);
-				break;
+			}
+			else
+			{
+				DebugHelper.WriteValue(
+					vm,
+					memoryIndex,
+					path[path.Length - 1],
+					type,
+					sb,
+					writer
+				);
+
+				if (isReferenceType)
+					return;
+
+				if (type.kind == TypeKind.Struct)
+				{
+					using var valueWriter = writer.Array("values");
+					var structType = vm.chunk.structTypes.buffer[type.index];
+					for (var i = 0; i < structType.fields.length; i++)
+					{
+						var field = vm.chunk.structTypeFields.buffer[structType.fields.index + i];
+						using var fieldWriter = valueWriter.Object;
+
+						DebugHelper.WriteValue(
+							vm,
+							memoryIndex,
+							field.name,
+							field.type,
+							sb,
+							fieldWriter
+						);
+
+						memoryIndex += field.type.GetSize(vm.chunk);
+					}
+				}
+				else if (type.kind == TypeKind.Tuple)
+				{
+					using var valueWriter = writer.Array("values");
+					var tupleType = vm.chunk.tupleTypes.buffer[type.index];
+					for (var i = 0; i < tupleType.elements.length; i++)
+					{
+						var elementType = vm.chunk.tupleElementTypes.buffer[tupleType.elements.index + i];
+						using var elementWriter = valueWriter.Object;
+
+						DebugHelper.WriteValue(
+							vm,
+							memoryIndex,
+							i.ToString(),
+							elementType,
+							sb,
+							elementWriter
+						);
+
+						memoryIndex += elementType.GetSize(vm.chunk);
+					}
+				}
 			}
 		}
 

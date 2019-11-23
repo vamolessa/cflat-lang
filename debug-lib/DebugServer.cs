@@ -10,6 +10,7 @@ namespace cflat.debug
 		{
 			Continuing,
 			Stepping,
+			StartPaused,
 			ExternalPaused,
 			BreakpointPaused,
 			StepPaused,
@@ -31,6 +32,7 @@ namespace cflat.debug
 			get
 			{
 				return
+					execution == Execution.StartPaused ||
 					execution == Execution.ExternalPaused ||
 					execution == Execution.BreakpointPaused ||
 					execution == Execution.StepPaused;
@@ -50,7 +52,7 @@ namespace cflat.debug
 
 		public void StartPaused()
 		{
-			execution = Execution.ExternalPaused;
+			execution = Execution.StartPaused;
 			server.Start();
 		}
 
@@ -139,6 +141,7 @@ namespace cflat.debug
 
 		Server.ResponseType Server.IRequestHandler.OnRequest(string uriLocalPath, NameValueCollection query, StringBuilder sb)
 		{
+#if true
 			var debugSb = new System.Text.StringBuilder();
 			debugSb.AppendLine(uriLocalPath);
 			foreach (var key in query.AllKeys)
@@ -151,6 +154,10 @@ namespace cflat.debug
 			}
 			debugSb.AppendLine("--\n");
 			System.Console.Write(debugSb);
+#endif
+
+			if (execution == Execution.StartPaused)
+				execution = Execution.Continuing;
 
 			return uriLocalPath switch
 			{
@@ -172,8 +179,8 @@ namespace cflat.debug
 				"/breakpoints/set" =>
 					this.BreakpointsSet(query, sb),
 
-				"/values/stack" =>
-					this.Values(query, sb),
+				"/values" =>
+						this.Values(query, sb),
 
 				"/stacktrace" =>
 					this.Stacktrace(query, sb),
