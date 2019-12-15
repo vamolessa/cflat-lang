@@ -1,0 +1,52 @@
+3
+$value
+
+trigger "some trigger"
+hold
+	> delay 3
+	not
+		> actor "first"
+		> actor "second"
+	> delay 5
+	actor "other"
+
+trigger "adhjha" > hold >{
+	delay 3 > not >{
+		actor "first"
+		actor "second"
+	}
+	delay 5 > actor "other"
+}> not
+
+trigger > [$in, true] > memory
+
+[true, false] > or > actor
+
+node myfunc $param
+	$in > delay
+	$param > actor "asda"
+
+----
+
+true
+$my_var
+
+do
+	:set
+	trigger "trig"
+
+    :reset
+    trigger "other"
+memory
+actor "some actor"
+
+trigger "name"
+not
+	delay 2
+    	not
+    	actor "first"
+
+		actor "second"
+    delay 3
+and
+actor "actr"_

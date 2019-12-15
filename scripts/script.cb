@@ -11,3 +11,10 @@ fn main() {
 
 	print a
 }
+
+fn main {} {
+	set x {4 2 1}
+	if (< n 1)
+		1
+		* n (fact (- n 1))
+}
