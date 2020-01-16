@@ -107,22 +107,16 @@ namespace cflat
 			return io.parser.tokenizer.source.Substring(slice.index, slice.length);
 		}
 
-		public static string GetPreviousSlice(CompilerIO io)
-		{
-			var slice = io.parser.previousToken.slice;
-			return io.parser.tokenizer.source.Substring(slice.index, slice.length);
-		}
-
 		public static int GetParsedInt(CompilerIO io)
 		{
-			var sub = GetPreviousSlice(io);
+			var sub = GetSlice(io, io.parser.previousToken.slice);
 			int.TryParse(sub, out var value);
 			return value;
 		}
 
 		public static float GetParsedFloat(CompilerIO io)
 		{
-			var sub = GetPreviousSlice(io);
+			var sub = GetSlice(io, io.parser.previousToken.slice);
 			float.TryParse(
 				sub,
 				NumberStyles.Float,
