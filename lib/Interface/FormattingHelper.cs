@@ -175,17 +175,5 @@ namespace cflat
 			sb.Replace("\t", new string(' ', FormattedTabSize));
 			sb.AppendLine();
 		}
-
-		private static int GetDigitCount(int number)
-		{
-			var count = 1;
-			while (number > 10)
-			{
-				number /= 10;
-				count += 1;
-			}
-
-			return count;
-		}
 	}
 }
