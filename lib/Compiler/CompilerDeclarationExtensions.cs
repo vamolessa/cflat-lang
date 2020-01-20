@@ -24,7 +24,6 @@ namespace cflat
 			self.localVariables.PushBack(new LocalVariable(
 				slice,
 				stackIndex,
-				self.scopeDepth,
 				type,
 				flags
 			));

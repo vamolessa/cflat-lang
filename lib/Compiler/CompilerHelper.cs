@@ -15,7 +15,6 @@ namespace cflat
 	internal struct LocalVariable
 	{
 		public Slice slice;
-		public int depth;
 		public ValueType type;
 		public VariableFlags flags;
 		public byte stackIndex;
@@ -40,11 +39,10 @@ namespace cflat
 			get { return (flags & VariableFlags.Changed) != 0; }
 		}
 
-		public LocalVariable(Slice slice, byte stackIndex, int depth, ValueType type, VariableFlags flags)
+		public LocalVariable(Slice slice, byte stackIndex, ValueType type, VariableFlags flags)
 		{
 			this.slice = slice;
 			this.stackIndex = stackIndex;
-			this.depth = depth;
 			this.type = type;
 			this.flags = flags;
 		}
