@@ -18,7 +18,7 @@ namespace cflat
 
 		public static CompilerIO EmitInstruction(this CompilerIO self, Instruction instruction)
 		{
-			if (instruction < Instruction.DebugHook)
+			if (self.mode == Mode.Debug && instruction < Instruction.DebugHook)
 				self.EmitByte((byte)Instruction.DebugHook);
 			return self.EmitByte((byte)instruction);
 		}
