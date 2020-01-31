@@ -1,20 +1,11 @@
-struct Point {
-	x: int,
-	y: int,
-}
-
 fn main() {
-	let mut p = Point {x = 12, y = 45}
-	set p.x = p.x + 1
+	let a = 23
 
-	let a = p
+	let f = fn(): int {
+		a // should be error!
+	}
 
-	print a
-}
+	let b = f()
 
-fn main {} {
-	set x {4 2 1}
-	if (< n 1)
-		1
-		* n (fact (- n 1))
+	print b
 }

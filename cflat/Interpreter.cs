@@ -34,7 +34,7 @@ public static class Interpreter
 		//*/
 
 		var cflat = new CFlat();
-		cflat.SetDebugger(debugger);
+		//cflat.SetDebugger(debugger);
 
 		cflat.AddFunction<Class<Stopwatch>>(nameof(StartStopwatch), StartStopwatch);
 		cflat.AddFunction<Class<Stopwatch>, Float>(nameof(StopStopwatch), StopStopwatch);
