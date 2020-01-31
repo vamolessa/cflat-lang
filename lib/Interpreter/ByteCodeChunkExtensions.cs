@@ -160,9 +160,7 @@ namespace cflat
 				var source = sources[sourceIndex];
 				if (sourceIndex != currentSourceIndex)
 				{
-					sb.Append("== ");
-					sb.Append(source.uri);
-					sb.AppendLine(" ==");
+					sb.Append(source.uri.value);
 					currentSourceIndex = sourceIndex;
 				}
 
