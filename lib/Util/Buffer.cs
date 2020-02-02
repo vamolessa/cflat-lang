@@ -65,7 +65,7 @@ namespace cflat
 
 		public void SwapRemove(int index)
 		{
-			buffer[--count] = buffer[index];
+			buffer[index] = buffer[--count];
 		}
 
 		public T[] ToArray()
